@@ -23,7 +23,10 @@ struct RTFExportWriter: TextExportWriter {
     let id = "rtf"
     let name = "RTF"
     let fileExtension = "rtf"
-    let hint = "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit."
+    var hint: String {
+        // Translators: The hint of the Convert to picker in the Export dialog while RTF is chosen. Word, Pages, and TextEdit are apps' names.
+        InterfaceText.line("rtfExportWriter.hint", "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.")
+    }
 
     /// Writes the RTF of `document` as a new file at `url`; a file already
     /// there is an error, and is left as it was.
@@ -84,7 +87,7 @@ struct RTFExportWriter: TextExportWriter {
 
         // The frame: the character set, the two fonts, and the style sheet.
         lines.append(#"{\rtf1\ansi\ansicpg1252\deff0\uc1"#)
-        lines.append(#"{\fonttbl{\f0\fswiss\fcharset0 Helvetica;}{\f1\fmodern\fcharset0 Courier New;}}"#)
+        lines.append(#"{\fonttbl{\f0\fswiss\fcharset0 Helvetica;}{\f1\fmodern\fcharset0 Courier New;}}"#) // l10n: no (RTF file syntax)
         lines.append(#"{\stylesheet"#)
         lines.append(#"{\s0\sa120\f0\fs\#(bodySize) Normal;}"#)
         for level in 1...headingSizes.count {
@@ -181,6 +184,9 @@ struct RTFExportWriter: TextExportWriter {
             return [#"\pard\plain\s0\sa120\brdrb\brdrs\brdrw10\brsp20\f0\fs\#(bodySize)\par"#]
         case .table(let table):
             return tableLines(table, indent: indent)
+        case .pageBreak, .navigationTarget:
+            // RTF has no page target; this writer's document never keeps them.
+            return []
         }
     }
 

@@ -25,8 +25,16 @@ import json
 import subprocess
 import sys
 import time
+from pathlib import Path
 
-SCRIPT = "/Users/roberteggleston/.claude/skills/claude-usage-left/scripts/claude_usage.py"
+# Importing a sibling module must leave no __pycache__ folder in the repository (set before the import below).
+sys.dont_write_bytecode = True
+# repo_paths.py is beside this script; python3 -I leaves its folder out of sys.path.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import repo_paths  # noqa: E402  (imported by path, after sys.path is set)
+
+# The claude-usage-left skill's script, in the home folder of whoever runs this.
+SCRIPT = str(repo_paths.claude_usage_script())
 # A window this low counts as spent: agents are being refused, or soon will be.
 SPENT_LEFT = 2.0
 # A spent window with this much left again has reset.

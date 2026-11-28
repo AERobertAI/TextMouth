@@ -1,0 +1,1276 @@
+"""Tests of run-ios-ui-tests.py: the iPhone interface tests the GitHub workflow runs in the iOS Simulator.
+
+Run with: python3 -I -B -m unittest discover -s Scripts/agents/tests
+
+No test boots a simulator or runs xcodebuild. The parts that read `simctl`'s answers and xcodebuild's log are pure
+functions, tested with the text those tools print; the whole script is run with a stand-in for each tool.
+"""
+import contextlib
+import importlib.util
+import io
+import json
+import os
+import re
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest import mock
+
+from heavy_lock_case import HeavyLockTestCase  # noqa: F401  (puts the scripts' folder on the path)
+import test_command  # noqa: E402
+
+AGENTS = Path(test_command.AGENTS)
+ROOT = AGENTS.parents[1]
+# The script's name has hyphens, so it is loaded by path.
+_spec = importlib.util.spec_from_file_location("run_ios_ui_tests", AGENTS / "run-ios-ui-tests.py")
+uitests = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(uitests)
+
+RUNNER_ROOT = Path("/Users/runner/work/TextMouth/TextMouth")
+# A log as xcodebuild prints it for two classes: one pass, one failure with its message, one skip with its reason.
+LOG = f"""\
+Test Suite 'Selected tests' started at 2026-11-10 10:00:00.000.
+Test Case '-[TextMouthiOSUITests.ReaderUITests testTheReaderHasTheSpecsOrder]' started.
+Test Case '-[TextMouthiOSUITests.ReaderUITests testTheReaderHasTheSpecsOrder]' passed (3.2 seconds).
+Test Case '-[TextMouthiOSUITests.PlaybackUITests testPlayBecomesPauseAndPauseBecomesPlay]' started.
+{RUNNER_ROOT}/TextMouthiOSUITests/PlaybackUITests.swift:60: error: -[TextMouthiOSUITests.PlaybackUITests testPlayBecomesPauseAndPauseBecomesPlay] : XCTAssertTrue failed - Play was pressed and the control never read Pause
+{RUNNER_ROOT}/TextMouthiOSUITests/PlaybackUITests.swift:61: error: -[TextMouthiOSUITests.PlaybackUITests testPlayBecomesPauseAndPauseBecomesPlay] : a second message
+Test Case '-[TextMouthiOSUITests.PlaybackUITests testPlayBecomesPauseAndPauseBecomesPlay]' failed (61.0 seconds).
+Test Case '-[TextMouthiOSUITests.SearchUITests testWithNothingSearchedTheSheetSaysSo]' started.
+{RUNNER_ROOT}/TextMouthiOSUITests/TextMouthUITestCase.swift:40: -[TextMouthiOSUITests.SearchUITests testATermTypedWhole] : Test skipped - Typing makes sound
+Test Case '-[TextMouthiOSUITests.SearchUITests testATermTypedWhole]' skipped (0.0 seconds).
+Test Case '-[TextMouthiOSUITests.SearchUITests testWithNothingSearchedTheSheetSaysSo]' passed (4.1 seconds).
+Test case 'ReaderUITests.testTheReaderHasTheSpecsOrder()' passed on 'iPhone 17 - TextMouthiOS (4242)' (3.3 seconds)
+** TEST FAILED **
+"""
+PASSED_LOG = ("Test Case '-[TextMouthiOSUITests.ReaderUITests testA]' passed (1.0 seconds).\n"
+              "Test case 'ReaderUITests.testB()' passed on 'iPhone 17 - TextMouthiOS (1)' (1.0 seconds)\n"
+              "** TEST SUCCEEDED **\n")
+
+RUNTIMES = [
+    {"identifier": "com.apple.CoreSimulator.SimRuntime.iOS-26-0", "version": "26.0.1", "isAvailable": True},
+    {"identifier": "com.apple.CoreSimulator.SimRuntime.iOS-26-2", "version": "26.2", "isAvailable": True},
+    {"identifier": "com.apple.CoreSimulator.SimRuntime.iOS-18-6", "version": "18.6", "isAvailable": True},
+    {"identifier": "com.apple.CoreSimulator.SimRuntime.tvOS-26-0", "version": "26.0", "isAvailable": True},
+]
+
+
+class ChoosingTheSimulatorTests(unittest.TestCase):
+    """The runtime is the downloaded iOS 26.0; the device an iPhone 17 on it."""
+
+    def test_the_wanted_runtime_is_chosen_over_a_newer_one(self):
+        self.assertEqual(uitests.choose_runtime(RUNTIMES)["identifier"], "com.apple.CoreSimulator.SimRuntime.iOS-26-0")
+
+    def test_without_it_the_newest_ios_runtime_is_used_and_never_another_platforms(self):
+        newer = [RUNTIMES[1], RUNTIMES[2], RUNTIMES[3]]
+        self.assertEqual(uitests.choose_runtime(newer)["version"], "26.2")
+
+    def test_an_unavailable_runtime_is_not_chosen(self):
+        broken = [{**RUNTIMES[0], "isAvailable": False}, RUNTIMES[2]]
+        self.assertEqual(uitests.choose_runtime(broken)["version"], "18.6")
+
+    def test_no_ios_runtime_is_none(self):
+        self.assertIsNone(uitests.choose_runtime([RUNTIMES[3]]))
+        self.assertIsNone(uitests.choose_runtime([]))
+
+    def test_versions_order_by_number_and_not_by_text(self):
+        self.assertGreater(uitests.version_key("26.10"), uitests.version_key("26.9"))
+        self.assertEqual(uitests.version_key("26.x"), (26, 0))
+
+    def test_an_existing_iphone_17_on_the_runtime_is_used(self):
+        devices = {"com.apple.CoreSimulator.SimRuntime.iOS-26-0": [
+            {"name": "iPhone 16", "udid": "A", "isAvailable": True}, {"name": "iPhone 17", "udid": "B", "isAvailable": True}]}
+        self.assertEqual(uitests.choose_device(devices, "com.apple.CoreSimulator.SimRuntime.iOS-26-0"), "B")
+
+    def test_no_device_on_the_runtime_is_none_and_so_is_an_unavailable_one(self):
+        runtime = "com.apple.CoreSimulator.SimRuntime.iOS-26-0"
+        self.assertIsNone(uitests.choose_device({}, runtime))
+        self.assertIsNone(uitests.choose_device({runtime: [{"name": "iPhone 17", "udid": "B", "isAvailable": False}]}, runtime))
+        self.assertIsNone(uitests.choose_device({"other": [{"name": "iPhone 17", "udid": "B"}]}, runtime))
+
+
+# A log of one run of both bundles (its paths under this checkout, whose sources say which bundle a class is in): three unit tests (one failed), two interface tests (one passed in xcodebuild's form).
+UNIT_LOG = f"""\
+Test Case '-[TextMouthiOSTests.IOSRuntimeTests testThisHostingProcessRunsInASandbox]' passed (0.1 seconds).
+Test Case '-[TextMouthiOSTests.PhoneValueRowTests testAtEveryOrdinarySizeTheValueStaysBesideTheName]' started.
+{ROOT}/TextMouthiOSTests/PhoneValueRowTests.swift:90: error: -[TextMouthiOSTests.PhoneValueRowTests testAtEveryOrdinarySizeTheValueStaysBesideTheName] : XCTAssertTrue failed - beside
+Test Case '-[TextMouthiOSTests.PhoneValueRowTests testAtEveryOrdinarySizeTheValueStaysBesideTheName]' failed (0.2 seconds).
+Test Case '-[TextMouthiOSTests.PhoneControlButtonTests testTheButtonIsOneElement]' passed (0.1 seconds).
+Test Case '-[TextMouthiOSUITests.ReaderUITests testA]' passed (3.0 seconds).
+Test case 'SearchUITests.testB()' passed on 'iPhone 17 - TextMouthiOS (1)' (1.0 seconds)
+** TEST FAILED **
+"""
+
+
+class ReadingTheLogTests(unittest.TestCase):
+    """Each test's outcome, its first failure message with where it was, and a skip's reason, come from the log."""
+
+    def parsed(self, text=LOG):
+        """The log read as the script reads it."""
+        return uitests.parse_results(text, RUNNER_ROOT)
+
+    def test_each_test_has_the_outcome_the_log_gives_it_in_either_form(self):
+        self.assertEqual(self.parsed()["cases"], {
+            "ReaderUITests.testTheReaderHasTheSpecsOrder": "passed",
+            "PlaybackUITests.testPlayBecomesPauseAndPauseBecomesPlay": "failed",
+            "SearchUITests.testATermTypedWhole": "skipped",
+            "SearchUITests.testWithNothingSearchedTheSheetSaysSo": "passed"})
+
+    def test_a_failed_test_is_named_with_its_file_line_and_first_message_as_the_macs_are(self):
+        self.assertEqual(self.parsed()["failures"], [
+            "FAILED PlaybackUITests.testPlayBecomesPauseAndPauseBecomesPlay (TextMouthiOSUITests) at "
+            "TextMouthiOSUITests/PlaybackUITests.swift:60: XCTAssertTrue failed - Play was pressed and the control never read Pause"])
+
+    def test_a_skipped_test_says_why(self):
+        self.assertEqual(self.parsed()["skips"], ["SearchUITests.testATermTypedWhole: Typing makes sound"])
+
+    def test_a_failure_with_no_message_line_still_names_the_test(self):
+        parsed = self.parsed("Test Case '-[TextMouthiOSUITests.AUITests testX]' failed (1.0 seconds).\n")
+        self.assertEqual(parsed["failures"], ["FAILED AUITests.testX (TextMouthiOSUITests) at (no location): failed"])
+
+    def test_a_long_message_is_cut(self):
+        long = "x" * 1000
+        parsed = self.parsed(
+            f"{RUNNER_ROOT}/A.swift:1: error: -[M.AUITests testX] : {long}\n"
+            "Test Case '-[M.AUITests testX]' failed (1.0 seconds).\n")
+        self.assertLessEqual(len(parsed["failures"][0]), len("FAILED AUITests.testX at A.swift:1: ") + uitests.MESSAGE_LIMIT)
+
+    def test_a_test_that_started_and_never_finished_is_named_as_failed(self):
+        """The host app crashed in the middle of a test, or the time limit stopped the run there: no outcome line follows its
+        start, and the summary must still name it (with the bundle) and count it."""
+        parsed = self.parsed("Test Case '-[TextMouthiOSUITests.ReaderUITests testA]' started.\n"
+                             "Test Case '-[TextMouthiOSUITests.ReaderUITests testA]' passed (1.0 seconds).\n"
+                             "Test Case '-[TextMouthiOSTests.IOSRuntimeTests testB]' started.\n")
+        self.assertEqual(parsed["cases"], {"ReaderUITests.testA": "passed", "IOSRuntimeTests.testB": "failed"})
+        self.assertEqual(parsed["failures"], [
+            f"FAILED IOSRuntimeTests.testB (TextMouthiOSTests) at (no location): {uitests.UNFINISHED}"])
+
+    def test_a_started_test_that_printed_an_error_keeps_the_errors_message(self):
+        parsed = self.parsed(f"Test Case '-[TextMouthiOSUITests.AUITests testX]' started.\n"
+                             f"{RUNNER_ROOT}/A.swift:7: error: -[TextMouthiOSUITests.AUITests testX] : it broke\n")
+        self.assertEqual(parsed["failures"], ["FAILED AUITests.testX (TextMouthiOSUITests) at A.swift:7: it broke"])
+
+    def test_a_test_that_started_twice_and_finished_once_is_not_unfinished(self):
+        parsed = self.parsed("Test Case '-[M.AUITests testX]' started.\nTest Case '-[M.AUITests testX]' started.\n"
+                             "Test Case '-[M.AUITests testX]' passed (1.0 seconds).\n")
+        self.assertEqual(parsed["cases"], {"AUITests.testX": "passed"})
+        self.assertEqual(parsed["failures"], [])
+
+    def test_a_result_with_another_process_text_in_front_of_it_is_found(self):
+        """Train 1122-0353: CoreAudio's log line was cut in two by the test's result line, which printed after its text on the
+        same line. The test passed; it must not be called unfinished."""
+        parsed = self.parsed(
+            "Test Case '-[TextMouthiOSTests.KF8ReviewFixTests testABookOfOneDocumentWhoseGuideNamesItIsNotRefused]' started.\n"
+            "2026-11-22 09:10:26.302366+0000 TextMouth[43561:114022] [AMCP]          HALC_ProxyIOContext.cpp:1623  "
+            "HALC_ProxyIOContext::IOWorkLoop: skippingTest Case '-[TextMouthiOSTests.KF8ReviewFixTests "
+            "testABookOfOneDocumentWhoseGuideNamesItIsNotRefused]' passed (0.161 seconds).\n"
+            " cycle due to overload\n")
+        self.assertEqual(parsed["cases"], {"KF8ReviewFixTests.testABookOfOneDocumentWhoseGuideNamesItIsNotRefused": "passed"})
+        self.assertEqual(parsed["failures"], [])
+
+    def test_a_start_with_log_text_in_front_of_it_still_counts_as_started(self):
+        parsed = self.parsed("2026-11-22 09:10:26.1+0000 TextMouth[1:2] [AMCP] noiseTest Case "
+                             "'-[TextMouthiOSTests.IOSRuntimeTests testB]' started.\n")
+        self.assertEqual(parsed["failures"], [
+            f"FAILED IOSRuntimeTests.testB (TextMouthiOSTests) at (no location): {uitests.UNFINISHED}"])
+
+    def test_a_started_test_with_no_result_anywhere_is_still_unfinished(self):
+        parsed = self.parsed("Test Case '-[TextMouthiOSTests.IOSRuntimeTests testB]' started.\n"
+                             "some noise from another process\nTest Case '-[TextMouthiOSTests.IOSRuntimeTests testC]' started.\n"
+                             "noiseTest Case '-[TextMouthiOSTests.IOSRuntimeTests testC]' passed (0.1 seconds).\n")
+        self.assertEqual(parsed["cases"], {"IOSRuntimeTests.testB": "failed", "IOSRuntimeTests.testC": "passed"})
+        self.assertEqual(len(parsed["failures"]), 1)
+
+    def test_an_xcodebuild_result_with_text_in_front_of_it_is_found(self):
+        parsed = self.parsed("noiseTest case 'AUITests.testX()' failed on 'iPhone 17 - X (1)' (1.0 seconds)\n")
+        self.assertEqual(parsed["cases"], {"AUITests.testX": "failed"})
+
+    def test_a_test_printed_twice_counts_once(self):
+        parsed = self.parsed("Test Case '-[M.AUITests testX]' passed (1.0 seconds).\n"
+                             "Test case 'AUITests.testX()' passed on 'iPhone 17 - X (1)' (1.0 seconds)\n")
+        self.assertEqual(parsed["cases"], {"AUITests.testX": "passed"})
+
+
+class SplitResultLineTests(unittest.TestCase):
+    """TL17: an app log line that lands in the middle of a start or result line must not make a passed test 'never finished'."""
+
+    APP = "2026-11-25 17:06:45.859092+0000 TextMouth[65200:169312] [Client] XPC connection interrupted\n"
+    START = "Test Case '-[TextMouthiOSTests.BrailleFileReaderTests testUnseenCharactersAreNamedByTheirCode]' started.\n"
+    RESULT = "Test Case '-[TextMouthiOSTests.BrailleFileReaderTests testUnseenCharactersAreNamedByTheirCode]' passed (0.003 seconds).\n"
+    NAME = "BrailleFileReaderTests.testUnseenCharactersAreNamedByTheirCode"
+
+    def parsed(self, text):
+        """The log read as the script reads it."""
+        return uitests.parse_results(text, ROOT)
+
+    def split_at(self, text, where, count=1):
+        """`text` with the app's line put in the middle of its result line, just before the first `where` in it."""
+        at = text.index(where)
+        return text[:at] + self.APP * count + text[at:]
+
+    def test_the_exact_fragment_of_train_1125_1123_reads_as_a_pass(self):
+        log = (self.START + "Test Case '-[TextMouthiOSTests" + self.APP
+               + ".BrailleFileReaderTests testUnseenCharactersAreNamedByTheirCode]' passed (0.003 seconds).\n")
+        parsed = self.parsed(log)
+        self.assertEqual(parsed["cases"], {self.NAME: "passed"})
+        self.assertEqual(parsed["failures"], [])
+        self.assertIn(self.APP, uitests.rejoin_split_results(log), "the app's line is kept, not dropped")
+
+    def test_a_split_in_the_class_the_method_or_the_status_is_read(self):
+        for where in (".BrailleFileReaderTests", " testUnseen", "passed", "(0.003", "seconds)."):
+            with self.subTest(split_before=where):
+                parsed = self.parsed(self.START + self.split_at(self.RESULT, where))
+                self.assertEqual(parsed["cases"], {self.NAME: "passed"})
+                self.assertEqual(parsed["failures"], [])
+
+    def test_a_split_in_the_middle_of_a_word_is_read(self):
+        for where in ("sed (", "ssed (", "Reader"):
+            with self.subTest(split_before=where):
+                self.assertEqual(self.parsed(self.START + self.split_at(self.RESULT, where))["cases"], {self.NAME: "passed"})
+
+    def test_a_failed_and_a_skipped_result_line_split_are_read_too(self):
+        for outcome in ("failed", "skipped"):
+            result = self.RESULT.replace("passed", outcome)
+            self.assertEqual(self.parsed(self.START + self.split_at(result, "BrailleFileReaderTests"))["cases"], {self.NAME: outcome})
+
+    def test_the_swift_form_split_is_read(self):
+        result = "Test case 'ReaderUITests.testA()' passed on 'iPhone 17 - xctest (123)' (1.234 seconds)\n"
+        self.assertEqual(self.parsed(self.split_at(result, "testA"))["cases"], {"ReaderUITests.testA": "passed"})
+
+    def test_two_splits_in_one_line_are_both_rejoined(self):
+        line = self.split_at(self.split_at(self.RESULT, "BrailleFileReaderTests"), "passed")
+        self.assertEqual(line.count(self.APP), 2)
+        parsed = self.parsed(self.START + line)
+        self.assertEqual(parsed["cases"], {self.NAME: "passed"})
+        self.assertEqual(parsed["failures"], [])
+        self.assertEqual(self.parsed(self.START + self.split_at(self.RESULT, "BrailleFileReaderTests", count=3))["cases"],
+                         {self.NAME: "passed"}, "three app lines in a row")
+
+    def test_a_split_start_line_still_starts_the_test(self):
+        # The start is cut and the result never comes: the test is named as unfinished, as a whole start line's is.
+        parsed = self.parsed(self.split_at(self.START, "BrailleFileReaderTests"))
+        self.assertEqual(parsed["cases"], {self.NAME: "failed"})
+        self.assertEqual(parsed["failures"], [f"FAILED {self.NAME} (TextMouthiOSTests) at (no location): {uitests.UNFINISHED}"])
+
+    def test_a_real_crash_a_started_test_with_no_result_line_is_still_reported(self):
+        # The app's lines follow the start line (whole) and no result ever comes.
+        parsed = self.parsed(self.START + self.APP + self.APP)
+        self.assertEqual(parsed["failures"], [f"FAILED {self.NAME} (TextMouthiOSTests) at (no location): {uitests.UNFINISHED}"])
+        # An app line after the start line on the same line, with nothing of the test's after it.
+        parsed = self.parsed(self.START.rstrip("\n") + self.APP)
+        self.assertEqual(parsed["cases"], {self.NAME: "failed"})
+        # A crash in a test whose neighbour's result line was split: only the neighbour is rescued.
+        other = self.START.replace("BrailleFileReaderTests", "OtherTests").replace("testUnseenCharactersAreNamedByTheirCode", "testB")
+        parsed = self.parsed(self.START + self.split_at(self.RESULT, "BrailleFileReaderTests") + other + self.APP)
+        self.assertEqual(parsed["cases"], {self.NAME: "passed", "OtherTests.testB": "failed"})
+
+    def test_a_whole_line_and_text_that_only_looks_like_one_are_left_alone(self):
+        whole = self.START + self.APP + self.RESULT + self.APP
+        self.assertEqual(uitests.rejoin_split_results(whole), whole)
+        self.assertEqual(uitests.rejoin_split_results("no tests here\n" + self.APP), "no tests here\n" + self.APP)
+        self.assertEqual(uitests.rejoin_split_results(""), "")
+
+
+class TheTwoBundlesTests(unittest.TestCase):
+    """One run holds the unit tests and the interface tests; the results name each test's bundle and count each apart."""
+
+    def parsed(self, text=UNIT_LOG):
+        """The log read as the script reads it (the real sources tell xcodebuild's form which bundle a class is in)."""
+        return uitests.parse_results(text, ROOT)
+
+    def test_each_test_is_put_in_the_bundle_its_class_is_in_whichever_form_the_log_gives(self):
+        bundles = self.parsed()["bundles"]
+        self.assertEqual(bundles["IOSRuntimeTests.testThisHostingProcessRunsInASandbox"], "TextMouthiOSTests")
+        self.assertEqual(bundles["ReaderUITests.testA"], "TextMouthiOSUITests")
+        # xcodebuild's own form names no module: the sources of the class say which bundle it is in.
+        self.assertEqual(bundles["SearchUITests.testB"], "TextMouthiOSUITests")
+        self.assertEqual(self.parsed("Test case 'PhoneValueRowTests.testX()' passed on 'iPhone 17 - X (1)' (1.0 seconds)\n")
+                         ["bundles"]["PhoneValueRowTests.testX"], "TextMouthiOSTests")
+
+    def test_a_failed_unit_test_is_named_with_its_bundle_and_its_class_first(self):
+        failures = self.parsed()["failures"]
+        self.assertEqual(failures, [
+            "FAILED PhoneValueRowTests.testAtEveryOrdinarySizeTheValueStaysBesideTheName (TextMouthiOSTests) at "
+            "TextMouthiOSTests/PhoneValueRowTests.swift:90: XCTAssertTrue failed - beside"])
+        # The build train reads the class from the first word after FAILED.
+        train = uitests.ios_ui_tests  # the module the script shares with the train
+        self.assertTrue(train)
+        self.assertRegex(failures[0], r"^FAILED\s+PhoneValueRowTests\.")
+
+    def test_a_class_in_neither_bundle_has_no_bundle_in_its_failure(self):
+        parsed = self.parsed("Test Case '-[M.NobodysTests testX]' failed (1.0 seconds).\n")
+        self.assertEqual(parsed["bundles"], {"NobodysTests.testX": ""})
+        self.assertEqual(parsed["failures"], ["FAILED NobodysTests.testX at (no location): failed"])
+
+    def test_the_summary_counts_each_bundle_apart(self):
+        lines = uitests.summary_lines("FAILED", self.parsed(), 120.0, 60.0, "iPhone 17", [], ["1 test(s) failed"])
+        self.assertEqual(lines[1], "Executed 5 tests, with 0 tests skipped and 1 failures (0 unexpected) in 120.000 (120.000) seconds")
+        self.assertIn("Unit tests (TextMouthiOSTests): 3 ran, 0 skipped, 1 failed", lines)
+        self.assertIn("Interface tests (TextMouthiOSUITests): 2 ran, 0 skipped, 0 failed", lines)
+
+    def test_a_bundle_no_asked_class_is_in_says_not_asked_and_not_zero(self):
+        lines = uitests.summary_lines("PASSED", self.parsed(PASSED_LOG), 1.0, 1.0, "iPhone 17", ["ReaderUITests"], [],
+                                      asked=("TextMouthiOSUITests",))
+        self.assertIn("Unit tests (TextMouthiOSTests): not asked", lines)
+        self.assertIn("Interface tests (TextMouthiOSUITests): 2 ran, 0 skipped, 0 failed", lines)
+
+    def test_the_counts_reach_the_places_that_show_one_line(self):
+        lines = uitests.summary_lines("PASSED", self.parsed(), 1.0, 1.0, "iPhone 17", [], [])
+        shown = uitests.ios_ui_tests.executed_with_counts(lines)
+        self.assertIn("unit tests (TextMouthiOSTests): 3 ran", shown)
+        self.assertIn("interface tests (TextMouthiOSUITests): 2 ran", shown)
+
+
+class TheVerdictTests(unittest.TestCase):
+    """A run passes only when xcodebuild says so, nothing failed, and something ran."""
+
+    def judge(self, log, status=0, timed_out=False, expected=0):
+        """The verdict for a log."""
+        return uitests.judge(status, timed_out, log, uitests.parse_results(log, RUNNER_ROOT), expected=expected)
+
+    # What the review of 1f5f5f4a fed the old verdict: every sound test skipped (the variable never reached the runner),
+    # and one passing test out of 34 asked. Both were judged passed.
+    SKIPPED_FOR_SOUND = "".join(
+        f"{RUNNER_ROOT}/TextMouthiOSUITests/TextMouthUITestCase.swift:44: -[TextMouthiOSUITests.PlaybackUITests testPlay{n}] : "
+        f"Test skipped - Pressing Play makes sound, so it {uitests.SOUND_SKIP_MARKER}, where TEXTMOUTH_UI_SOUND is 1 "
+        f"(Scripts/agents/run-ios-ui-tests.py sets it); on this Mac it is skipped.\n"
+        f"Test Case '-[TextMouthiOSUITests.PlaybackUITests testPlay{n}]' skipped (0.0 seconds).\n" for n in range(12)
+    ) + "Test Case '-[TextMouthiOSUITests.ReaderUITests testA]' passed (1.0 seconds).\n** TEST EXECUTE SUCCEEDED **\n"
+
+    def test_a_run_whose_sound_tests_all_skipped_for_sound_is_not_a_pass(self):
+        passed, reasons = self.judge(self.SKIPPED_FOR_SOUND)
+        self.assertFalse(passed)
+        self.assertIn("12 test(s) skipped because they make sound", reasons[0])
+        self.assertIn("TEXTMOUTH_UI_SOUND did not reach the test runner", reasons[0])
+
+    def test_a_skip_for_another_reason_is_not_judged_as_a_sound_skip(self):
+        log = ("/x/A.swift:3: -[M.AUITests testX] : Test skipped - not on this device\n"
+               "Test Case '-[M.AUITests testX]' skipped (0.0 seconds).\n"
+               "Test Case '-[M.AUITests testY]' passed (0.0 seconds).\n** TEST EXECUTE SUCCEEDED **\n")
+        self.assertEqual(self.judge(log), (True, []))
+
+    def test_fewer_results_than_the_asked_classes_hold_is_not_a_pass(self):
+        log = "Test Case '-[M.ReaderUITests testA]' passed (1.0 seconds).\n** TEST EXECUTE SUCCEEDED **\n"
+        passed, reasons = self.judge(log, expected=34)
+        self.assertFalse(passed)
+        self.assertEqual(reasons, ["1 test results came back, and the classes asked for hold 34"])
+        self.assertEqual(self.judge(log, expected=1), (True, []), "as many results as tests is a pass")
+
+    def test_the_skip_marker_is_the_text_the_swift_helper_writes(self):
+        swift = (ROOT / "TextMouthiOSUITests" / "TextMouthUITestCase.swift").read_text()
+        self.assertIn(f'static let soundSkipMarker = "{uitests.SOUND_SKIP_MARKER}"', swift)
+        self.assertIn("so it \\(Self.soundSkipMarker)", swift, "requireSound writes the marker in its reason")
+
+    def test_the_counts_of_tests_are_read_from_the_swift_files_of_each_class(self):
+        counts = uitests.ios_ui_tests.test_counts(ROOT)
+        self.assertEqual(counts["ReaderUITests"], 4)
+        self.assertEqual(set(counts), set(uitests.ios_ui_tests.ui_classes(ROOT)))
+        self.assertGreaterEqual(sum(counts.values()), 30)
+
+    def test_a_log_of_passing_tests_with_the_success_line_passes(self):
+        self.assertEqual(self.judge(PASSED_LOG), (True, []))
+
+    def test_a_failed_test_fails_the_run_and_is_counted_in_the_reason(self):
+        passed, reasons = self.judge(LOG, status=65)
+        self.assertFalse(passed)
+        self.assertEqual(reasons, ["1 test(s) failed"])
+
+    def test_test_without_building_ends_with_execute_succeeded_and_that_is_a_pass(self):
+        # Run 42957244945: 34 tests passed and the run was judged FAILED for want of "** TEST SUCCEEDED **".
+        log = PASSED_LOG.replace("** TEST SUCCEEDED **", "** TEST EXECUTE SUCCEEDED **")
+        self.assertEqual(self.judge(log), (True, []))
+
+    def test_a_run_that_ran_nothing_is_not_a_pass(self):
+        passed, reasons = self.judge("** TEST SUCCEEDED **\n")
+        self.assertFalse(passed)
+        self.assertIn("no test result was found in the log", reasons)
+
+    def test_a_zero_exit_without_the_success_line_is_not_a_pass(self):
+        passed, reasons = self.judge("Test Case '-[M.AUITests testX]' passed (1.0 seconds).\n")
+        self.assertFalse(passed)
+        self.assertTrue(reasons[0].startswith("xcodebuild ended with status 0 and did not print TEST SUCCEEDED"))
+
+    def test_a_run_stopped_at_its_limit_fails(self):
+        passed, reasons = self.judge(PASSED_LOG, status=-15, timed_out=True)
+        self.assertFalse(passed)
+        self.assertEqual(reasons, ["the run was stopped at its time limit"])
+
+
+class TheVerdictOfTwoBundlesTests(unittest.TestCase):
+    """A unit test that failed or is missing turns the iPhone job red; each bundle must give back what its classes hold."""
+
+    BOTH = {"TextMouthiOSTests": 3, "TextMouthiOSUITests": 2}
+    # Three unit tests and two interface tests, all passing.
+    PASSING = ("".join(f"Test Case '-[TextMouthiOSTests.IOSRuntimeTests testU{n}]' passed (0.1 seconds).\n" for n in range(3))
+               + "".join(f"Test Case '-[TextMouthiOSUITests.ReaderUITests testI{n}]' passed (0.1 seconds).\n" for n in range(2))
+               + "** TEST EXECUTE SUCCEEDED **\n")
+
+    def judge(self, log, expected_by_bundle=None, status=0):
+        """The verdict for a log, with the per-bundle counts asked for."""
+        return uitests.judge(status, False, log, uitests.parse_results(log, ROOT),
+                             expected_by_bundle=self.BOTH if expected_by_bundle is None else expected_by_bundle)
+
+    def test_all_of_both_bundles_passes(self):
+        self.assertEqual(self.judge(self.PASSING), (True, []))
+
+    def test_a_failed_unit_test_fails_the_run_though_every_interface_test_passed(self):
+        log = self.PASSING.replace("testU1]' passed", "testU1]' failed").replace("SUCCEEDED", "FAILED")
+        passed, reasons = self.judge(log, status=65)
+        self.assertFalse(passed)
+        self.assertEqual(reasons, ["1 test(s) failed"])
+
+    def test_a_missing_unit_test_fails_the_run_and_the_reason_names_the_bundle(self):
+        # The interface tests are all there and xcodebuild says it succeeded: only the count of the unit bundle is short.
+        log = self.PASSING.replace("Test Case '-[TextMouthiOSTests.IOSRuntimeTests testU2]' passed (0.1 seconds).\n", "")
+        passed, reasons = self.judge(log)
+        self.assertFalse(passed)
+        self.assertEqual(reasons, ["2 unit tests (TextMouthiOSTests) results came back, and the classes asked for hold 3"])
+
+    def test_a_missing_interface_test_fails_the_run_and_the_reason_names_the_bundle(self):
+        log = self.PASSING.replace("Test Case '-[TextMouthiOSUITests.ReaderUITests testI1]' passed (0.1 seconds).\n", "")
+        passed, reasons = self.judge(log)
+        self.assertFalse(passed)
+        self.assertEqual(reasons, ["1 interface tests (TextMouthiOSUITests) results came back, and the classes asked for hold 2"])
+
+    def test_the_unit_bundle_that_never_ran_is_a_failure_though_the_others_are_all_there(self):
+        log = "".join(line for line in self.PASSING.splitlines(True) if "TextMouthiOSTests" not in line)
+        passed, reasons = self.judge(log)
+        self.assertFalse(passed)
+        self.assertIn("0 unit tests (TextMouthiOSTests) results came back, and the classes asked for hold 3", reasons)
+
+    def test_a_bundle_that_was_not_asked_for_is_not_missed(self):
+        only_ui = "".join(line for line in self.PASSING.splitlines(True) if "TextMouthiOSTests" not in line)
+        self.assertEqual(self.judge(only_ui, {"TextMouthiOSUITests": 2}), (True, []))
+
+
+class TheSummaryTests(unittest.TestCase):
+    """The summary has the verdict, the Executed line the Mac's tools read, and every failure."""
+
+    def lines(self, verdict="FAILED", reasons=("1 test(s) failed",), classes=()):
+        """The summary lines for the sample log."""
+        return uitests.summary_lines(verdict, uitests.parse_results(LOG, RUNNER_ROOT), 120.0, 60.0,
+                                     "iPhone 17, iOS 26.0.1 (ABC)", list(classes), list(reasons))
+
+    def test_the_first_line_is_the_verdict_and_the_second_the_executed_line_with_the_counts(self):
+        lines = self.lines()
+        self.assertEqual(lines[0], "iOS UI tests: FAILED")
+        self.assertEqual(lines[1], "Executed 4 tests, with 1 tests skipped and 1 failures (0 unexpected) in 120.000 (120.000) seconds")
+
+    def test_failures_skips_and_reasons_each_have_a_line_of_their_own(self):
+        lines = self.lines()
+        self.assertEqual(sum(line.startswith("FAILED ") for line in lines), 1)
+        self.assertIn("Skipped SearchUITests.testATermTypedWhole: Typing makes sound", lines)
+        self.assertIn("Reason: 1 test(s) failed", lines)
+
+    def test_the_minutes_include_the_simulators_set_up_and_say_how_long_that_took(self):
+        self.assertIn("Minutes: 3.0 (the simulator's set-up took 1.0)", self.lines())
+
+    def test_the_classes_are_named_or_every_class_is_said(self):
+        self.assertIn("Classes: every class", self.lines())
+        self.assertIn("Classes: ReaderUITests, SearchUITests", self.lines(classes=("ReaderUITests", "SearchUITests")))
+
+    def test_it_says_the_sound_was_allowed_and_by_whom(self):
+        self.assertTrue(any(line.startswith("Sound: allowed (TEXTMOUTH_UI_SOUND=1, set by this script alone") for line in self.lines()))
+
+
+class TheCommandTests(unittest.TestCase):
+    """The run is the committed scheme's test bundle, in the simulator by its id, with a limit on any one test."""
+
+    def command(self, classes=()):
+        """The command for a simulator and the given classes."""
+        return uitests.test_command("UDID-1", "build/dd", "build/out/result.xcresult", list(classes))
+
+    def test_a_request_repeats_each_test_only_with_a_sensible_number(self):
+        self.assertNotIn("-test-iterations", self.command())
+        for odd in (None, True, 1, 0, 101, "50", 50.0):
+            with self.subTest(odd=odd):
+                self.assertEqual(uitests.iterations_of({"test_iterations": odd}), 1)
+        self.assertEqual(uitests.iterations_of({}), 1)
+        self.assertEqual(uitests.iterations_of({"test_iterations": 50}), 50)
+        command = uitests.test_command("UDID-1", "build/dd", "build/out/result.xcresult", ["A"], iterations=50)
+        self.assertEqual(command[command.index("-test-iterations") + 1], "50")
+        self.assertNotIn("-retry-tests-on-failure", command)
+
+    def test_it_tests_without_building_in_the_simulator_by_id(self):
+        command = self.command()
+        self.assertEqual(command[:2], ["xcodebuild", "test-without-building"])
+        self.assertEqual(command[command.index("-destination") + 1], "id=UDID-1")
+        self.assertEqual(command[command.index("-scheme") + 1], "TextMouthiOS")
+        self.assertEqual(command[command.index("-derivedDataPath") + 1], "build/dd")
+
+    def test_it_runs_both_whole_bundles_or_only_the_classes_named_each_in_its_own_bundle(self):
+        # One xcodebuild run takes the unit tests and the interface tests, so its start-up is paid once.
+        self.assertEqual([a for a in self.command() if a.startswith("-only-testing")],
+                         ["-only-testing:TextMouthiOSTests", "-only-testing:TextMouthiOSUITests"])
+        self.assertEqual([a for a in self.command(["ReaderUITests", "SearchUITests"]) if a.startswith("-only-testing")],
+                         ["-only-testing:TextMouthiOSUITests/ReaderUITests", "-only-testing:TextMouthiOSUITests/SearchUITests"])
+        self.assertEqual([a for a in self.command(["IOSRuntimeTests", "ReaderUITests"]) if a.startswith("-only-testing")],
+                         ["-only-testing:TextMouthiOSTests/IOSRuntimeTests", "-only-testing:TextMouthiOSUITests/ReaderUITests"])
+
+    def test_a_method_is_named_under_its_class_in_its_bundle(self):
+        self.assertEqual([a for a in self.command(["ReaderUITests/testPlay", "IOSRuntimeTests/testA"]) if a.startswith("-only-testing")],
+                         ["-only-testing:TextMouthiOSUITests/ReaderUITests/testPlay",
+                          "-only-testing:TextMouthiOSTests/IOSRuntimeTests/testA"])
+
+    def test_one_test_has_a_time_limit(self):
+        command = self.command()
+        self.assertEqual(command[command.index("-test-timeouts-enabled") + 1], "YES")
+        self.assertEqual(command[command.index("-maximum-test-execution-time-allowance") + 1], str(uitests.TEST_SECONDS))
+
+    def test_the_tests_run_in_one_simulator_and_clones_only_when_more_workers_are_asked_for(self):
+        single = self.command()
+        self.assertEqual(single[single.index("-parallel-testing-enabled") + 1], "NO")
+        self.assertNotIn("-parallel-testing-worker-count", single)
+        with mock.patch.object(uitests, "PARALLEL_WORKERS", 2):
+            clones = self.command()
+        self.assertEqual(clones[clones.index("-parallel-testing-enabled") + 1], "YES")
+        self.assertEqual(clones[clones.index("-parallel-testing-worker-count") + 1], "2")
+
+    def test_the_tests_are_handed_the_sound_variable_without_its_prefix_by_xcodebuild(self):
+        self.assertEqual(uitests.RUNNER_SOUND_VARIABLE, "TEST_RUNNER_TEXTMOUTH_UI_SOUND")
+        self.assertEqual(uitests.test_environment()["TEST_RUNNER_TEXTMOUTH_UI_SOUND"], "1")
+
+    def test_the_scheme_the_command_names_is_committed_and_holds_the_interface_bundle(self):
+        scheme = ROOT / "TextMouth.xcodeproj" / "xcshareddata" / "xcschemes" / "TextMouthiOS.xcscheme"
+        self.assertIn("TextMouthiOSUITests", scheme.read_text())
+
+    def test_the_scheme_holds_both_bundles_and_tests_in_debug_which_holds_the_if_debug_unit_tests(self):
+        scheme = (ROOT / "TextMouth.xcodeproj" / "xcshareddata" / "xcschemes" / "TextMouthiOS.xcscheme").read_text()
+        self.assertIn('BuildableName = "TextMouthiOSTests.xctest"', scheme)
+        # The count of unit tests (ios_ui_tests.unit_counts) includes the ones inside `#if DEBUG`, which only a Debug
+        # build holds: the scheme's test action builds Debug.
+        test_action = scheme[scheme.index("<TestAction"):scheme.index("</TestAction>")]
+        self.assertIn('buildConfiguration = "Debug"', test_action)
+
+
+class TheSoundRuleTests(unittest.TestCase):
+    """Only the runner's script lets a test make sound, and every test that does skips without it."""
+
+    # The exact files that may use the variable's name in code: the script that sets it, its tests (which assert about it), and
+    # the one Swift file that reads it.
+    CODE_FILES = frozenset({
+        "Scripts/agents/run-ios-ui-tests.py", "Scripts/agents/tests/test_run_ios_ui_tests.py",
+        "Scripts/agents/tests/test_workflow.py", "TextMouthiOSUITests/TextMouthUITestCase.swift",
+    })
+    # The exact files that may name it in comments only: the shared workflow and the project file.
+    COMMENT_ONLY_FILES = frozenset({".github/workflows/tests.yml", "project.yml"})
+    # Where prose may name it: the documents.
+    DOCUMENT_PREFIXES = ("docs/", "Scripts/agents/briefs/")
+    DOCUMENT_FILES = frozenset({"AGENTS.md", "README.md", "ARCHITECTURE.md", "CLAUDE.md"})
+    # What a setter looks like in any file: the name (with or without the runner's prefix) followed by ":" or "=" (a YAML or
+    # scheme key, an environment assignment), or `setenv`/`export` beside it.
+    SETTER = re.compile(r"(?:TEST_RUNNER_)?TEXTMOUTH_UI_SOUND[\"']?\s*(?:[:=]|</key>|value=)|(?:setenv|export)\b[^\n]*TEXTMOUTH_UI_SOUND")
+
+    def offenders(self, files):
+        """The problems with `files` ({path: text}) for the rule that only the runner's script sets the variable: a file that
+        names it where it may not, a comment-only file that names it in code, and, in any file but the script's own and
+        the documents, a setter. Returns a list of sentences."""
+        problems = []
+        for name, content in sorted(files.items()):
+            if "TEXTMOUTH_UI_SOUND" not in content:
+                continue
+            if name == "Scripts/agents/run-ios-ui-tests.py":
+                continue
+            if name in self.DOCUMENT_FILES or name.startswith(self.DOCUMENT_PREFIXES):
+                continue
+            if self.SETTER.search(content) and name not in self.CODE_FILES:
+                problems.append(f"{name} sets the variable")
+            if name in self.COMMENT_ONLY_FILES:
+                code = [line for line in content.splitlines() if "TEXTMOUTH_UI_SOUND" in line and not line.lstrip().startswith("#")]
+                if code:
+                    problems.append(f"{name} names the variable outside a comment: {code[0].strip()}")
+            elif name not in self.CODE_FILES:
+                problems.append(f"{name} names the variable")
+        return problems
+
+    def tracked_texts(self):
+        """The text of every file git tracks that names the variable, {path: text}, found by `git grep -a` over every tracked
+        file (so a scheme, a test plan, a project file, a Makefile, the workflows, and the test data are all looked in)."""
+        import subprocess
+        found = subprocess.run(["git", "grep", "-l", "-a", "TEXTMOUTH_UI_SOUND"], cwd=ROOT, capture_output=True, text=True)
+        names = [name for name in found.stdout.splitlines() if name]
+        return {name: (ROOT / name).read_text(encoding="utf-8", errors="replace") for name in names if (ROOT / name).is_file()}
+
+    def test_no_tracked_file_names_or_sets_the_sound_variable_but_the_ones_allowed(self):
+        self.assertEqual(self.offenders(self.tracked_texts()), [])
+
+    def test_the_guard_catches_a_setter_wherever_one_would_go(self):
+        setters = {
+            "Makefile": "test:\n\tTEST_RUNNER_TEXTMOUTH_UI_SOUND=1 xcodebuild test\n",
+            "TextMouth.xcodeproj/xcshareddata/xcschemes/TextMouthiOS.xcscheme":
+                '<EnvironmentVariable key = "TEXTMOUTH_UI_SOUND" value = "1" isEnabled = "YES">\n',
+            "TextMouth.xcodeproj/project.pbxproj": "GCC_PREPROCESSOR_DEFINITIONS = TEXTMOUTH_UI_SOUND;\n",
+            "TextMouthiOS.xctestplan": '{"environmentVariableEntries": [{"key": "TEXTMOUTH_UI_SOUND", "value": "1"}]}\n',
+            "TestData/odd.txt": "export TEXTMOUTH_UI_SOUND=1\n",
+            ".github/workflows/check.yml": "    env:\n      TEXTMOUTH_UI_SOUND: 1\n",
+            "Scripts/agents/run-on-runner.py": 'environment["TEXTMOUTH_UI_SOUND"] = "1"\n',
+            "TextMouthiOSUITests/PlaybackUITests.swift": 'setenv("TEXTMOUTH_UI_SOUND", "1", 1)\n',
+        }
+        for name, content in setters.items():
+            with self.subTest(name=name):
+                self.assertTrue(self.offenders({name: content}), f"{name}: a setter went unnoticed")
+
+    def test_the_guard_lets_the_comments_and_documents_name_it_and_the_script_set_it(self):
+        allowed = {
+            "project.yml": "  # TEXTMOUTH_UI_SOUND is 1 on the runner\n",
+            ".github/workflows/tests.yml": "      # alone lets a test press Play (it sets TEXTMOUTH_UI_SOUND)\n",
+            "docs/developer/testing.md": "run only where `TEXTMOUTH_UI_SOUND=1`\n",
+            "AGENTS.md": "TEXTMOUTH_UI_SOUND=1 on the runner\n",
+            "Scripts/agents/run-ios-ui-tests.py": 'environment = {**os.environ, "TEST_RUNNER_TEXTMOUTH_UI_SOUND": "1"}\n',
+        }
+        self.assertEqual(self.offenders(allowed), [])
+
+    def test_the_guard_catches_the_name_in_code_of_a_comment_only_file(self):
+        self.assertTrue(self.offenders({"project.yml": "      TEXTMOUTH_UI_SOUND: \"1\"\n"}))
+        self.assertTrue(self.offenders({".github/workflows/tests.yml": "        run: echo TEXTMOUTH_UI_SOUND\n"}))
+
+    def test_the_workflow_never_sets_the_variable_and_runs_the_scripts_step(self):
+        workflow = (ROOT / ".github" / "workflows" / "tests.yml").read_text()
+        self.assertNotRegex(workflow, r"(?m)^\s*(TEST_RUNNER_)?TEXTMOUTH_UI_SOUND\s*:", "the workflow sets the variable itself")
+        self.assertNotRegex(workflow, r"export\s+(TEST_RUNNER_)?TEXTMOUTH_UI_SOUND")
+        self.assertIn("run-ios-ui-tests.py", workflow)
+
+    def test_the_script_sets_the_variable_only_for_the_test_command(self):
+        # Importing the script or building its command leaves this process's environment alone.
+        self.assertNotIn("TEST_RUNNER_TEXTMOUTH_UI_SOUND", os.environ)
+        self.assertNotIn("TEXTMOUTH_UI_SOUND", os.environ)
+        uitests.test_environment()
+        self.assertNotIn("TEST_RUNNER_TEXTMOUTH_UI_SOUND", os.environ)
+
+    def test_every_helper_that_makes_sound_asks_first_and_no_test_file_makes_sound_by_hand(self):
+        folder = ROOT / "TextMouthiOSUITests"
+        base = (folder / "TextMouthUITestCase.swift").read_text()
+        for helper in ("pressPlay", "pressPause", "startSleepTimer", "type"):
+            body = re.search(rf"func {helper}\([^{{]*\{{(.*?)\n    \}}\n", base, re.S)
+            self.assertIsNotNone(body, f"the helper {helper} is not in TextMouthUITestCase")
+            self.assertIn("try requireSound(", body.group(1).split("\n", 3)[1] + body.group(1).split("\n", 3)[2],
+                          f"{helper} does not ask requireSound first")
+        # No other file types or presses Play and Pause itself, or sets a timer: they go through the helpers.
+        for path in folder.glob("*UITests.swift"):
+            self.assertEqual(self.sound_by_hand(path.read_text()), [], f"{path.name} makes sound by hand")
+
+    def sound_by_hand(self, source):
+        """The places in a Swift test file's `source` that make sound without the helpers: a typeText, a tap of the Play or
+        Pause button (direct, or through a variable the button was put in), and a Sleep Timer choice outside startSleepTimer."""
+        lines = source.splitlines()
+        found = []
+        held = set()
+        for number, line in enumerate(lines, start=1):
+            stripped = line.strip()
+            if stripped.startswith("//"):
+                continue
+            assignment = re.search(r'(?:let|var)\s+(\w+)\s*=\s*[\w.]*buttons\[\s*"(?:Play|Pause)"\s*\]', line)
+            if assignment:
+                held.add(assignment.group(1))
+            if re.search(r"\.typeText\(", line):
+                found.append(f"{number}: typeText")
+            if re.search(r'buttons\[\s*"(?:Play|Pause)"\s*\]\s*(?:\.firstMatch)?\s*\.tap\(', line):
+                found.append(f"{number}: taps Play or Pause")
+            for name in held:
+                if re.search(rf"\b{name}\.tap\(", line):
+                    found.append(f"{number}: taps {name}, which holds the Play or Pause button")
+            if re.search(r'buttons\[\s*"(?:Set timer for|Stop at the end of)', line) and "startSleepTimer(" not in line:
+                found.append(f"{number}: presses a timer choice by hand")
+        return found
+
+    def test_the_by_hand_check_catches_a_button_held_in_a_variable_and_tapped(self):
+        cases = {
+            "held and tapped": 'let play = app.buttons["Play"]\n        XCTAssertTrue(play.exists)\n        play.tap()\n',
+            "direct": 'app.buttons["Pause"].tap()\n',
+            "first match": 'app.buttons["Play"].firstMatch.tap()\n',
+            "typing": 'field.typeText("x")\n',
+            "timer": 'app.buttons["Set timer for 10 minutes and start playing"].tap()\n',
+        }
+        for name, source in cases.items():
+            with self.subTest(name=name):
+                self.assertTrue(self.sound_by_hand(source), f"{name} went unnoticed")
+        # Looking at a button is not pressing it.
+        self.assertEqual(self.sound_by_hand('let play = app.buttons["Play"]\nXCTAssertEqual(play.label, "Play")\n'), [])
+
+
+class TheUnitTestsMakeNoSoundTests(unittest.TestCase):
+    """The unit tests run in the same simulator as the interface tests, with no sound variable of their own: they must
+    not play, speak, or record anything (the iPhone tests may make sound only where TEXTMOUTH_UI_SOUND allows it). The
+    rule covers every file the unit bundle compiles, wherever it lives: its own folder, and the Mac test files that
+    project.yml lists for it by path."""
+
+    # What would make sound or use a microphone: the one pattern the tests census reads as well (ios_ui_tests.SOUND_PATTERN;
+    # its comment says what it holds). None of the 19 unit tests of November 11, 2026 named any of them. A false red is
+    # the safe side.
+    SOUNDS = uitests.ios_ui_tests.SOUND_PATTERN
+
+    def sound_in(self, folder):
+        """The Swift files under `folder` (subfolders included) whose code names something in SOUNDS, as {file name: first
+        match}. Comments say "plays" in prose, so only code counts."""
+        return uitests.ios_ui_tests.sound_in_files(uitests.ios_ui_tests.swift_files(folder))
+
+    def test_no_unit_test_names_an_audio_framework_a_player_or_a_recorder(self):
+        """Every file the bundle compiles: its own folder's and the shared Mac files', named in project.yml."""
+        files = uitests.ios_ui_tests.unit_source_files(ROOT)
+        self.assertTrue(uitests.ios_ui_tests.swift_files(ROOT / "TextMouthiOSTests"), "the unit tests are not where the test looks")
+        self.assertEqual(uitests.ios_ui_tests.sound_in_files(files), {}, "a unit test names something that makes sound")
+
+    def test_every_file_the_unit_target_lists_by_path_is_a_file_that_exists_and_is_read(self):
+        """A path in project.yml that names no file is a mistake the check would otherwise not see."""
+        block = re.search(r"^  TextMouthiOSTests:\n(.*?)^    settings:", (ROOT / "project.yml").read_text(), re.M | re.S).group(1)
+        listed = re.findall(r"^      - (\S+\.swift)\s*$", block, re.M)
+        read = {str(path.relative_to(ROOT)) for path in uitests.ios_ui_tests.shared_files(ROOT)}
+        self.assertEqual(sorted(read), sorted(listed), "a listed file is missing from the tree")
+
+    def test_the_check_catches_what_it_is_for(self):
+        for source in ("import AVFoundation", "let p = AVAudioPlayer()", "reader.play()", "synth.speak(utterance)",
+                       "recorder.startRecording()", "model.togglePlay()", "model.playOrResume()", "model.playSelection()",
+                       "model.playAudioChapter(3)", "model.startPunchIn()", "let s = PhoneAudioSession()",
+                       "import Speech", "node.play(at: nil)", "player.play(at: time + 1)", "let m = ReaderViewModel()"):
+            self.assertIsNotNone(self.SOUNDS.search(source), source)
+        self.assertIsNone(self.SOUNDS.search("XCTAssertEqual(button.accessibilityLabel, \"Play\")"))
+
+    def test_a_wording_types_text_and_a_named_continuation_are_not_sound(self):
+        """The two allowances: a `…Wording` type's play… text and `continuation.resume()`; the same calls on anything else still count."""
+        for quiet in ("XCTAssertEqual(PhoneReaderWording.playHint(movingBy: .sentence), \"Moves back.\")",
+                      "let hint = ReaderWording.speakHint(for: unit)", "DispatchQueue.main.async { continuation.resume() }"):
+            self.assertIsNone(self.SOUNDS.search(quiet), quiet)
+        for loud in ("reader.playHint(movingBy: .sentence)", "playHint(movingBy: .sentence)", "Wordings.play(book)",
+                     "DispatchQueue.main.async { turn.resume() }"):
+            self.assertIsNotNone(self.SOUNDS.search(loud), loud)
+
+    # A stopped reader built the way PhoneTextFieldScalingTests builds one: the one helper the rule lets name ReaderViewModel.
+    HELPER = (
+        "final class SheetTests: XCTestCase {\n"
+        "    /// A stopped reader.\n"
+        "    private func makeReader() -> ReaderViewModel {\n"
+        "        let book = Book(title: \"Notes {braces}\", format: .txt)\n"
+        "        let reader = ReaderViewModel(book: book, libraryViewModel: LibraryViewModel(initializeServices: false))\n"
+        "        reader.isLoading = false\n"
+        "        return reader\n"
+        "    }\n"
+        "    func testA() { let reader = makeReader(); host(Sheet(reader: reader)) }\n"
+        "}\n"
+    )
+
+    def sound(self, source):
+        """What the scanner finds in the Swift `source`: the first match, or "" when it finds nothing."""
+        return uitests.ios_ui_tests.sound_in_source(source)
+
+    def test_the_reader_helper_may_name_ReaderViewModel_and_nothing_else_may(self):
+        """The allowance: ReaderViewModel inside `makeReader() -> ReaderViewModel` is let through (Q11); the real file passes."""
+        self.assertEqual(self.sound(self.HELPER), "")
+        real = (ROOT / "TextMouthiOSTests" / "PhoneTextFieldScalingTests.swift").read_text(encoding="utf-8")
+        self.assertIn("-> ReaderViewModel", real, "the file no longer has the helper this test stands for")
+        self.assertEqual(self.sound(real), "")
+
+    def test_the_allowance_does_not_reach_the_rest_of_the_file(self):
+        """The breaks: the type named anywhere outside the helper, in a second helper, or in a differently named one, is a false red."""
+        outside = self.HELPER.replace("    func testA()", "    func testB() { let other: ReaderViewModel? = nil }\n    func testA()")
+        self.assertEqual(self.sound(outside), "ReaderViewModel")
+        after_line = self.HELPER.replace("        return reader\n    }\n", "        return reader\n    } func other() -> ReaderViewModel { fatalError() }\n")
+        self.assertEqual(self.sound(after_line), "ReaderViewModel")
+        second = self.HELPER.replace("    func testA()", "    func makeReader() -> ReaderViewModel { fatalError() }\n    func testA()")
+        self.assertEqual(self.sound(second), "ReaderViewModel")
+        renamed = self.HELPER.replace("makeReader", "makeAnyModel")
+        self.assertEqual(self.sound(renamed), "ReaderViewModel")
+        self.assertEqual(self.sound("final class T: XCTestCase {\n    func make() -> ReaderViewModel { fatalError() }\n}\n"), "ReaderViewModel")
+        # A comment line says nothing, as before; a longer type name that starts with the name is still a false red.
+        self.assertEqual(self.sound(self.HELPER.replace("    func testA()", "    // ReaderViewModel in prose\n    func testA()")), "")
+        self.assertEqual(self.sound(self.HELPER.replace("reader.isLoading", "reader2 = ReaderViewModelCache()\n        reader.isLoading")), "ReaderViewModel")
+
+    def test_the_helper_must_still_make_no_sound(self):
+        """The break: a helper that plays, speaks, or resumes is read with the whole rule, whatever it is called."""
+        for call in ("reader.togglePlay()", "reader.playOrResume()", "reader.play()", "speak(text)", "resume()",
+                     "let engine = AudioEngine()", "import AVFoundation", "PhoneAppModel()"):
+            loud = self.HELPER.replace("        return reader\n", f"        {call}\n        return reader\n")
+            self.assertNotEqual(self.sound(loud), "", call)
+
+    def test_a_helper_whose_braces_never_close_gets_no_allowance(self):
+        """An unfinished helper hides nothing: the scanner reads all of it, ReaderViewModel included."""
+        open_ended = "final class T: XCTestCase {\n    func makeReader() -> ReaderViewModel {\n        return x\n"
+        self.assertEqual(self.sound(open_ended), "ReaderViewModel")
+
+    def test_a_unit_test_that_calls_togglePlay_fails_the_check_even_in_a_subfolder(self):
+        """The break: a scratch copy of the unit folder with one file that starts playback."""
+        with tempfile.TemporaryDirectory() as scratch:
+            folder = Path(scratch) / "TextMouthiOSTests"
+            (folder / "Deeper").mkdir(parents=True)
+            (folder / "Clean.swift").write_text("final class CleanTests: XCTestCase {\n    func testA() {}\n}\n")
+            self.assertEqual(self.sound_in(folder), {})
+            (folder / "Deeper" / "Loud.swift").write_text(
+                "final class LoudTests: XCTestCase {\n    func testA() { model.togglePlay() }\n}\n")
+            self.assertEqual(self.sound_in(folder), {"Loud.swift": "togglePlay"})
+
+    def test_a_shared_mac_file_that_makes_sound_fails_the_check_wherever_it_lives(self):
+        """The break: a scratch tree whose project.yml lists a Mac test file, outside the unit folder, that starts playback."""
+        with tempfile.TemporaryDirectory() as scratch:
+            root = Path(scratch)
+            (root / "TextMouthiOSTests").mkdir()
+            (root / "TextMouthProductionTests").mkdir()
+            (root / "TextMouthiOSTests" / "Own.swift").write_text("final class OwnTests: XCTestCase {\n    func testA() {}\n}\n")
+            (root / "TextMouthProductionTests" / "Shared.swift").write_text(
+                "final class SharedTests: XCTestCase {\n    func testA() { reader.playOrResume() }\n}\n")
+            (root / "project.yml").write_text(
+                "targets:\n  TextMouthiOSTests:\n    sources:\n      - TextMouthiOSTests\n"
+                "      - TextMouthProductionTests/Shared.swift\n    settings:\n      base:\n        X: y\n")
+            files = uitests.ios_ui_tests.unit_source_files(root)
+            self.assertEqual(sorted(path.name for path in files), ["Own.swift", "Shared.swift"])
+            self.assertEqual(uitests.ios_ui_tests.sound_in_files(files), {"Shared.swift": "playOrResume"})
+
+
+class SettingUpTheSimulatorTests(unittest.TestCase):
+    """ready_simulator with a stand-in for simctl: what it asks of the tool, in order, and what it does when a step fails."""
+
+    RUNTIME = {"identifier": "com.apple.CoreSimulator.SimRuntime.iOS-26-0", "version": "26.0.1", "isAvailable": True}
+
+    def run_setup(self, devices=None, runtimes=None, boot_status=0, create=("NEWUDID\n", 0)):
+        """Runs ready_simulator; returns (its answer, the simctl calls made, the log text)."""
+        calls = []
+        listing = {"runtimes": [self.RUNTIME] if runtimes is None else runtimes,
+                   "devices": devices if devices is not None else {self.RUNTIME["identifier"]: [{"name": "iPhone 17", "udid": "OLDUDID", "isAvailable": True}]}}
+
+        def fake_simctl(*args, timeout=0, tolerate_timeout=False):
+            """Answers simctl calls from the canned state."""
+            calls.append(args)
+            if args[0] == "create":
+                return mock.Mock(stdout=create[0], stderr="made" if create[1] == 0 else "no", returncode=create[1])
+            if args[0] == "bootstatus":
+                return mock.Mock(stdout="booted", stderr="" if boot_status == 0 else "failed", returncode=boot_status)
+            return mock.Mock(stdout="listing", stderr="", returncode=0)
+
+        def fake_json(*args):
+            """Answers `simctl list <what> -j`."""
+            return {"runtimes": listing["runtimes"]} if args[0] == "runtimes" else {"devices": listing["devices"]}
+
+        log = io.StringIO()
+        with mock.patch.object(uitests, "simctl", fake_simctl), mock.patch.object(uitests, "simctl_json", fake_json):
+            try:
+                answer = uitests.ready_simulator(log)
+            except uitests.SimulatorFailure as failure:
+                answer = failure
+        return answer, calls, log.getvalue()
+
+    def test_an_existing_iphone_17_is_booted_and_no_keyboard_setting_is_written(self):
+        (udid, sentence), calls, _ = self.run_setup()
+        self.assertEqual(udid, "OLDUDID")
+        self.assertIn("iPhone 17, iOS 26.0.1 (OLDUDID)", sentence)
+        self.assertNotIn("create", [call[0] for call in calls])
+        self.assertIn(("bootstatus", "OLDUDID", "-b"), calls)
+        self.assertNotIn("spawn", [call[0] for call in calls], "no `defaults write` goes into the simulator")
+
+    def test_with_no_iphone_17_one_is_made_on_the_runtime(self):
+        (udid, _), calls, _ = self.run_setup(devices={})
+        self.assertEqual(udid, "NEWUDID")
+        self.assertIn(("create", "TextMouth iPhone 17", uitests.DEVICE_TYPE, self.RUNTIME["identifier"]), calls)
+
+    def test_a_tolerated_timeout_is_answered_as_a_failed_call_and_an_untolerated_one_is_a_failure(self):
+        import subprocess
+        expired = subprocess.TimeoutExpired(["simctl"], 1)
+        with mock.patch.object(uitests.subprocess, "run", side_effect=expired):
+            answer = uitests.simctl("spawn", "U", timeout=1, tolerate_timeout=True)
+            self.assertEqual(answer.returncode, 124)
+            self.assertIn("it had printed nothing", answer.stderr)
+            with self.assertRaises(uitests.SimulatorFailure):
+                uitests.simctl("spawn", "U", timeout=1)
+
+    def test_a_boot_that_hangs_is_given_up_on_and_the_tests_get_a_new_device(self):
+        # Run 43005173856 and three before it: bootstatus stuck at "Waiting on BackBoard" for the whole 300 seconds.
+        calls = []
+        boots = []
+
+        def fake_simctl(*args, timeout=0, tolerate_timeout=False):
+            """The first device's boot runs out its time; the second's finishes; a new device has a new id."""
+            calls.append((args[0], timeout))
+            if args[0] == "bootstatus":
+                boots.append(args[1])
+                if len(boots) == 1:
+                    raise uitests.SimulatorFailure(f"simctl bootstatus did not finish in {timeout} seconds; it had printed: Waiting on BackBoard")
+            if args[0] == "create":
+                return mock.Mock(stdout="NEWUDID\n", stderr="", returncode=0)
+            return mock.Mock(stdout="", stderr="", returncode=0)
+
+        def fake_json(*args):
+            """One runtime, one device."""
+            if args[0] == "runtimes":
+                return {"runtimes": [self.RUNTIME]}
+            return {"devices": {self.RUNTIME["identifier"]: [{"name": "iPhone 17", "udid": "OLDUDID", "isAvailable": True}]}}
+
+        log = io.StringIO()
+        with mock.patch.object(uitests, "simctl", fake_simctl), mock.patch.object(uitests, "simctl_json", fake_json):
+            udid, sentence = uitests.ready_simulator(log)
+        self.assertEqual(udid, "NEWUDID")
+        self.assertIn("NEWUDID", sentence)
+        self.assertEqual(boots, ["OLDUDID", "NEWUDID"])
+        names = [name for name, _ in calls]
+        self.assertEqual(names[names.index("bootstatus"):names.index("bootstatus") + 4], ["bootstatus", "shutdown", "create", "bootstatus"])
+        self.assertEqual([timeout for name, timeout in calls if name == "bootstatus"], [uitests.FIRST_BOOT_SECONDS, uitests.BOOT_SECONDS])
+        self.assertIn("Waiting on BackBoard", log.getvalue())
+        self.assertNotIn("spawn", names, "no keyboard setting is written to the new device either")
+
+    def test_a_second_boot_that_hangs_too_is_a_failure(self):
+        def fake_simctl(*args, timeout=0, tolerate_timeout=False):
+            """Every boot runs out its time."""
+            if args[0] == "bootstatus":
+                raise uitests.SimulatorFailure(f"simctl bootstatus did not finish in {timeout} seconds; it had printed: Waiting on BackBoard")
+            if args[0] == "create":
+                return mock.Mock(stdout="NEWUDID\n", stderr="", returncode=0)
+            return mock.Mock(stdout="", stderr="", returncode=0)
+
+        def fake_json(*args):
+            """One runtime, one device."""
+            if args[0] == "runtimes":
+                return {"runtimes": [self.RUNTIME]}
+            return {"devices": {self.RUNTIME["identifier"]: [{"name": "iPhone 17", "udid": "OLDUDID", "isAvailable": True}]}}
+
+        with mock.patch.object(uitests, "simctl", fake_simctl), mock.patch.object(uitests, "simctl_json", fake_json):
+            with self.assertRaises(uitests.SimulatorFailure) as caught:
+                uitests.ready_simulator(io.StringIO())
+        self.assertIn("did not finish in 300 seconds", str(caught.exception))
+
+    def test_a_device_that_cannot_be_made_is_a_failure_that_says_so(self):
+        failure, _, _ = self.run_setup(devices={}, create=("", 1))
+        self.assertIsInstance(failure, uitests.SimulatorFailure)
+        self.assertIn("could not make an iPhone 17", str(failure))
+
+    def test_no_ios_runtime_is_a_failure(self):
+        failure, _, _ = self.run_setup(runtimes=[])
+        self.assertIsInstance(failure, uitests.SimulatorFailure)
+        self.assertIn("no iOS simulator runtime", str(failure))
+
+    def test_a_simulator_that_does_not_boot_is_a_failure_and_the_settings_are_not_written(self):
+        failure, calls, log = self.run_setup(boot_status=1)
+        self.assertIsInstance(failure, uitests.SimulatorFailure)
+        self.assertIn("did not boot", str(failure))
+        self.assertFalse(any(call[0] == "spawn" for call in calls))
+        self.assertIn("bootstatus", log)
+
+    def test_a_different_ios_version_than_the_wanted_one_is_said(self):
+        other = {**self.RUNTIME, "identifier": "com.apple.CoreSimulator.SimRuntime.iOS-26-2", "version": "26.2"}
+        (_, sentence), _, _ = self.run_setup(runtimes=[other], devices={other["identifier"]: [{"name": "iPhone 17", "udid": "X"}]})
+        self.assertIn("the wanted iOS 26.0 runtime was not there", sentence)
+
+
+class TheSearchTestsRulesTests(unittest.TestCase):
+    """Rules of the typed search tests that a break would otherwise slip past (review of 1f5f5f4a, finding 7)."""
+
+    def source(self):
+        """The text of the three files that wait for the sheet's status, by name: SearchUITests, LargeTextUITests, and
+        TextMouthUITestCase, which holds the sheet's shared helpers (waitForResults) that the first two both use."""
+        folder = ROOT / "TextMouthiOSUITests"
+        return {name: (folder / f"{name}.swift").read_text() for name in ("SearchUITests", "TextMouthUITestCase", "LargeTextUITests")}
+
+    def test_a_status_ending_in_matches_is_never_waited_for_without_the_results_heading_first(self):
+        # "No matches" ends with " matches", so waiting for that ending alone passes a search that found nothing.
+        files = self.source()
+        wait = 'waitForStatus(ending: [" matches", " match"]'
+        # The one inside waitForResults (in the shared base class), and the correction test's, which waits for the
+        # heading just before it; no other test, such as the large text one, waits for the status by itself.
+        self.assertEqual((files["TextMouthUITestCase"].count(wait), files["SearchUITests"].count(wait), files["LargeTextUITests"].count(wait)),
+                         (1, 1, 0), "a test waits for the ' matches' status without waitForResults")
+        shared = files["TextMouthUITestCase"]
+        shared = shared[shared.index("func waitForResults"):]
+        self.assertLess(shared.index('staticTexts["Search results"].waitForExistence'), shared.index(wait))
+        correction = files["SearchUITests"][files["SearchUITests"].index("func testACorrectionMadeWhileTypingIsSearchedFor"):]
+        self.assertLess(correction.index('staticTexts["Search results"].waitForExistence'), correction.index(wait))
+
+    def test_type_taps_the_field_only_when_the_keyboard_is_not_up(self):
+        base = (ROOT / "TextMouthiOSUITests" / "TextMouthUITestCase.swift").read_text()
+        body = base[base.index("func type("):]
+        body = body[:body.index("\n    }\n")]
+        self.assertIn("if !app.keyboards.firstMatch.exists {\n            field.tap()", body)
+
+
+class RunningTheScriptTests(unittest.TestCase):
+    """main() with a stand-in for simctl and for xcodebuild, in a throwaway repository."""
+
+    def setUp(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.root = Path(folder.name)
+        self.out = self.root / "out"
+        self.out.mkdir()
+        (self.root / ".github").mkdir()
+        (self.root / "TextMouthiOSUITests").mkdir()
+        (self.root / "TextMouthiOSUITests" / "ReaderUITests.swift").write_text("final class ReaderUITests: TextMouthUITestCase {}\n")
+        self.request({"full": True, "areas": ["all"]})
+        (self.out / "ios-summary.txt").write_text("iOS build: PASSED\nErrors in the app: 0 in 0 files\n")
+        # main() runs only on a GitHub runner, so these tests stand in for one.
+        runner = mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true"})
+        runner.start()
+        self.addCleanup(runner.stop)
+
+    def request(self, request):
+        """Writes the request file the script reads."""
+        (self.root / ".github" / "test-request.json").write_text(json.dumps(request))
+
+    def run_main(self, script="print('** TEST SUCCEEDED **')", ready=("UDID", "iPhone 17, iOS 26.0.1 (UDID)"), arguments=()):
+        """Runs main with the simulator ready (or failing, when `ready` is an exception) and the tests replaced by
+        `script` (Python source); returns (status, the summary text, the printed text)."""
+        fake = [sys.executable, "-c", script]
+        printed = io.StringIO()
+        simulator = mock.Mock(side_effect=ready) if isinstance(ready, Exception) else mock.Mock(return_value=ready)
+        # No real simctl ever runs here: the failure path lists the booted devices through it.
+        with mock.patch.object(uitests, "ROOT", self.root), mock.patch.object(uitests, "ready_simulator", simulator), \
+                mock.patch.object(uitests, "simctl", return_value=mock.Mock(stdout="== Devices ==\n")), \
+                mock.patch.object(uitests, "test_command", return_value=fake), contextlib.redirect_stdout(printed):
+            status = uitests.main(["--out", "out", *arguments])
+        return status, (self.out / "ios-ui-summary.txt").read_text(), printed.getvalue()
+
+    def test_only_githubs_own_mark_counts_as_a_runner(self):
+        self.assertTrue(uitests.on_github_runner({"GITHUB_ACTIONS": "true"}))
+        for environment in ({}, {"GITHUB_ACTIONS": ""}, {"GITHUB_ACTIONS": "false"}, {"GITHUB_ACTIONS": "TRUE"},
+                            {"GITHUB_ACTIONS": "1"}, {"CI": "true"}):
+            self.assertFalse(uitests.on_github_runner(environment), environment)
+
+    def test_anywhere_but_a_github_runner_it_refuses_before_reading_writing_or_starting_anything(self):
+        # The development Mac stays quiet: run there, the tests would boot a simulator and press Play aloud (the check
+        # of b374793e). The output folder is a new one, so that making it would show.
+        for value in (None, "false"):
+            with self.subTest(GITHUB_ACTIONS=value):
+                environment = {key: text for key, text in os.environ.items() if key != "GITHUB_ACTIONS"}
+                if value is not None:
+                    environment["GITHUB_ACTIONS"] = value
+                said = io.StringIO()
+                with mock.patch.dict(os.environ, environment, clear=True), mock.patch.object(uitests, "ROOT", self.root), \
+                        mock.patch.object(uitests, "ready_simulator", side_effect=AssertionError("no simulator may start")), \
+                        mock.patch.object(uitests, "run_tests", side_effect=AssertionError("no test may run")), \
+                        contextlib.redirect_stderr(said), contextlib.redirect_stdout(io.StringIO()):
+                    status = uitests.main(["--out", "fresh"])
+                self.assertEqual(status, 2)
+                self.assertIn("runs only on a GitHub Actions runner", said.getvalue())
+                self.assertFalse((self.root / "fresh").exists(), "no folder or file is written")
+
+    def test_passing_tests_write_a_passing_summary_and_exit_0(self):
+        script = ("print(\"Test Case '-[M.ReaderUITests testA]' passed (1.0 seconds).\"); print('** TEST SUCCEEDED **')")
+        status, summary, printed = self.run_main(script)
+        self.assertEqual(status, 0)
+        self.assertTrue(summary.startswith("iOS UI tests: PASSED\nExecuted 1 tests, with 0 tests skipped and 0 failures"))
+        self.assertIn("iOS UI tests: PASSED", printed)
+        self.assertIn("TEST SUCCEEDED", (self.out / "ios-ui.log").read_text())
+
+    def test_a_failed_test_is_named_in_the_summary_and_the_exit_status_is_1(self):
+        script = ("import sys\nprint('/x/ReaderUITests.swift:9: error: -[M.ReaderUITests testA] : XCTAssertEqual failed')\n"
+                  "print(\"Test Case '-[M.ReaderUITests testA]' failed (1.0 seconds).\")\nprint('** TEST FAILED **')\nsys.exit(65)")
+        status, summary, _ = self.run_main(script)
+        self.assertEqual(status, 1, "a failed interface test fails the iPhone job")
+        self.assertTrue(summary.startswith("iOS UI tests: FAILED"))
+        self.assertIn("FAILED ReaderUITests.testA (TextMouthiOSUITests) at /x/ReaderUITests.swift:9: XCTAssertEqual failed", summary)
+
+    def test_a_log_left_by_an_earlier_run_in_the_same_folder_is_not_read_as_this_runs(self):
+        # An old run's failed case and banner must not become this run's results (review of 1f5f5f4a, finding 11).
+        (self.out / "ios-ui.log").write_text("Test Case '-[M.ReaderUITests testOld]' failed (1.0 seconds).\n** TEST FAILED **\n")
+        script = "print(\"Test Case '-[M.ReaderUITests testA]' passed (1.0 seconds).\"); print('** TEST EXECUTE SUCCEEDED **')"
+        status, summary, _ = self.run_main(script)
+        self.assertEqual(status, 0, summary)
+        self.assertNotIn("testOld", summary)
+        self.assertNotIn("testOld", (self.out / "ios-ui.log").read_text())
+
+    def test_a_request_that_does_not_ask_writes_not_asked_and_starts_no_simulator(self):
+        self.request({"full": False, "areas": ["feeds"], "classes": ["FooTests"]})
+        status, summary, _ = self.run_main(ready=AssertionError("the simulator must not start"))
+        self.assertEqual(status, 0)
+        self.assertTrue(summary.startswith("iOS UI tests: NOT ASKED"))
+
+    def test_a_missing_request_asks_for_nothing(self):
+        (self.root / ".github" / "test-request.json").unlink()
+        status, summary, _ = self.run_main(ready=AssertionError("the simulator must not start"))
+        self.assertEqual((status, summary.splitlines()[0]), (0, "iOS UI tests: NOT ASKED"))
+
+    def test_a_build_that_did_not_pass_leaves_nothing_to_run_and_does_not_fail_the_job(self):
+        (self.out / "ios-summary.txt").write_text("iOS build: FAILED\nErrors in the app: 2 in 1 files\n")
+        status, summary, _ = self.run_main(ready=AssertionError("the simulator must not start"))
+        self.assertEqual(status, 0, "the build's failure is the build's result, not this one's")
+        self.assertTrue(summary.startswith("iOS UI tests: NOT RUN\nReason: the iPhone build did not pass"))
+
+    def test_a_simctl_call_that_runs_out_its_limit_says_what_it_had_printed(self):
+        import subprocess
+        expired = subprocess.TimeoutExpired(["simctl"], 1, output=b"Monitoring boot status for iPhone 17.\nStatus=Waiting on BackBoard\n")
+        with mock.patch.object(uitests.subprocess, "run", side_effect=expired):
+            with self.assertRaises(uitests.SimulatorFailure) as caught:
+                uitests.simctl("bootstatus", "U", timeout=1)
+        self.assertIn("did not finish in 1 seconds; it had printed: Monitoring boot status", str(caught.exception))
+        self.assertIn("Waiting on BackBoard", str(caught.exception))
+        silent = subprocess.TimeoutExpired(["simctl"], 1)
+        with mock.patch.object(uitests.subprocess, "run", side_effect=silent):
+            with self.assertRaises(uitests.SimulatorFailure) as caught:
+                uitests.simctl("bootstatus", "U", timeout=1)
+        self.assertIn("it had printed nothing", str(caught.exception))
+
+    def test_a_simulator_that_cannot_be_made_ready_fails_the_run_and_says_why(self):
+        status, summary, _ = self.run_main(ready=uitests.SimulatorFailure("the runner has no iOS simulator runtime"))
+        self.assertEqual(status, 1)
+        self.assertEqual(summary.splitlines()[0], "iOS UI tests: FAILED")
+        self.assertIn("Reason: the simulator could not be made ready: the runner has no iOS simulator runtime", summary)
+        self.assertIn("simulator set-up failed", (self.out / "ios-ui.log").read_text())
+
+    def test_tests_that_outlive_their_limit_are_stopped_and_fail(self):
+        status, summary, _ = self.run_main("import time; time.sleep(60)", arguments=("--limit-minutes", "0.01"))
+        self.assertEqual(status, 1)
+        self.assertIn("Reason: the run was stopped at its time limit", summary)
+
+    def test_a_set_up_that_leaves_the_step_too_little_time_fails_at_once_and_says_so(self):
+        with mock.patch.object(uitests, "STEP_BUDGET_MINUTES", 3):
+            status, summary, _ = self.run_main()
+        self.assertEqual(status, 1)
+        self.assertIn("Reason: the simulator's set-up took", summary)
+        self.assertIn("for the tests", summary)
+
+    def test_the_tests_limit_is_what_the_step_has_left_after_the_set_up_and_never_more_than_asked(self):
+        seen = []
+        with mock.patch.object(uitests, "run_tests", lambda command, log, limit: seen.append(limit) or (0, False)), \
+                mock.patch.object(uitests, "ready_simulator", return_value=("U", "sim")), \
+                mock.patch.object(uitests, "ROOT", self.root), contextlib.redirect_stdout(io.StringIO()):
+            uitests.main(["--out", "out"])
+            with mock.patch.object(uitests, "STEP_BUDGET_MINUTES", 20):
+                uitests.main(["--out", "out"])
+        self.assertEqual(seen[0], uitests.DEFAULT_LIMIT_MINUTES, "a step with room gives the whole asked limit")
+        self.assertAlmostEqual(seen[1], 20 - uitests.KILL_GRACE_SECONDS / 60, delta=0.1)
+
+    def add_unit_tests(self):
+        """Gives the throwaway repository a unit test folder with one class of two tests."""
+        (self.root / "TextMouthiOSTests").mkdir()
+        (self.root / "TextMouthiOSTests" / "IOSRuntimeTests.swift").write_text(
+            "final class IOSRuntimeTests: XCTestCase {\n    func testA() {}\n    func testB() {}\n}\n")
+
+    # Two unit tests and one interface test, passing, as the fake xcodebuild prints them.
+    BOTH_PASS = ("print(\"Test Case '-[TextMouthiOSTests.IOSRuntimeTests testA]' passed (0.1 seconds).\"); "
+                 "print(\"Test Case '-[TextMouthiOSTests.IOSRuntimeTests testB]' passed (0.1 seconds).\"); "
+                 "print(\"Test Case '-[TextMouthiOSUITests.ReaderUITests testA]' passed (1.0 seconds).\"); "
+                 "print('** TEST EXECUTE SUCCEEDED **')")
+
+    def test_a_full_suite_runs_both_bundles_in_one_command_and_counts_each(self):
+        self.add_unit_tests()
+        seen = []
+        real = uitests.test_command
+
+        def spy(udid, derived, bundle, classes, iterations=1):
+            """Records the classes the command is made for, and builds the real command."""
+            seen.append(real(udid, derived, bundle, classes, iterations))
+            return [sys.executable, "-c", self.BOTH_PASS]
+
+        with mock.patch.object(uitests, "ROOT", self.root), mock.patch.object(uitests, "ready_simulator", return_value=("U", "sim")), \
+                mock.patch.object(uitests, "test_command", spy), contextlib.redirect_stdout(io.StringIO()):
+            status = uitests.main(["--out", "out"])
+        summary = (self.out / "ios-ui-summary.txt").read_text()
+        self.assertEqual(status, 0, summary)
+        self.assertEqual(len(seen), 1, "one xcodebuild run for both bundles")
+        self.assertEqual([a for a in seen[0] if a.startswith("-only-testing")],
+                         ["-only-testing:TextMouthiOSTests", "-only-testing:TextMouthiOSUITests"])
+        self.assertIn("Executed 3 tests", summary)
+        self.assertIn("Unit tests (TextMouthiOSTests): 2 ran, 0 skipped, 0 failed", summary)
+        self.assertIn("Interface tests (TextMouthiOSUITests): 1 ran, 0 skipped, 0 failed", summary)
+
+    def test_a_failed_unit_test_turns_the_job_red_and_is_named_with_its_bundle(self):
+        self.add_unit_tests()
+        script = (self.BOTH_PASS.replace("testB]' passed", "testB]' failed").replace("SUCCEEDED", "FAILED")
+                  + "; import sys; sys.exit(65)")
+        status, summary, _ = self.run_main(script)
+        self.assertEqual(status, 1, "a failed unit test fails the iPhone job")
+        self.assertIn("FAILED IOSRuntimeTests.testB (TextMouthiOSTests) at (no location): failed", summary)
+        self.assertIn("Unit tests (TextMouthiOSTests): 2 ran, 0 skipped, 1 failed", summary)
+        self.assertIn("Interface tests (TextMouthiOSUITests): 1 ran, 0 skipped, 0 failed", summary)
+
+    def test_a_unit_test_that_never_reported_turns_the_job_red_though_xcodebuild_succeeded(self):
+        self.add_unit_tests()
+        script = "\n".join(part for part in self.BOTH_PASS.split("; ") if "testB" not in part)
+        status, summary, _ = self.run_main(script)
+        self.assertEqual(status, 1)
+        self.assertIn("Reason: 1 unit tests (TextMouthiOSTests) results came back, and the classes asked for hold 2", summary)
+
+    def test_a_request_naming_only_a_unit_class_runs_that_class_and_no_interface_test(self):
+        self.add_unit_tests()
+        self.request({"classes": ["IOSRuntimeTests"]})
+        seen = []
+        real = uitests.test_command
+
+        def spy(udid, derived, bundle, classes, iterations=1):
+            """Records the classes the command is made for, and builds the real command."""
+            seen.append(real(udid, derived, bundle, classes, iterations))
+            return [sys.executable, "-c", self.BOTH_PASS.split("; ")[0] + "; " + self.BOTH_PASS.split("; ")[1] + "; print('** TEST EXECUTE SUCCEEDED **')"]
+
+        with mock.patch.object(uitests, "ROOT", self.root), mock.patch.object(uitests, "ready_simulator", return_value=("U", "sim")), \
+                mock.patch.object(uitests, "test_command", spy), contextlib.redirect_stdout(io.StringIO()):
+            status = uitests.main(["--out", "out"])
+        summary = (self.out / "ios-ui-summary.txt").read_text()
+        self.assertEqual(status, 0, summary)
+        self.assertEqual([a for a in seen[0] if a.startswith("-only-testing")], ["-only-testing:TextMouthiOSTests/IOSRuntimeTests"])
+        self.assertIn("Interface tests (TextMouthiOSUITests): not asked", summary)
+        self.assertIn("Unit tests (TextMouthiOSTests): 2 ran, 0 skipped, 0 failed", summary)
+
+    def test_a_request_naming_classes_runs_only_those(self):
+        (self.root / "TextMouthiOSUITests" / "Other.swift").write_text("final class SearchUITests: TextMouthUITestCase {}\n")
+        self.request({"classes": ["SearchUITests"]})
+        seen = []
+        real = uitests.test_command
+
+        def spy(udid, derived, bundle, classes, iterations=1):
+            """Records the classes the command is made for."""
+            seen.append(classes)
+            return real(udid, derived, bundle, classes, iterations)
+
+        with mock.patch.object(uitests, "test_command", spy), mock.patch.object(uitests, "run_tests", return_value=(0, False)):
+            fake = io.StringIO()
+            with mock.patch.object(uitests, "ROOT", self.root), mock.patch.object(uitests, "ready_simulator", return_value=("U", "sim")), \
+                    contextlib.redirect_stdout(fake):
+                uitests.main(["--out", "out"])
+        self.assertEqual(seen, [["SearchUITests"]])
+
+
+class ShardedRunTests(unittest.TestCase):
+    """With --shard I --of N the job runs only its slice of the asked classes (the iPhone work split over several jobs).
+    It borrows the throwaway repository of RunningTheScriptTests without inheriting its tests."""
+
+    request = RunningTheScriptTests.request
+
+    def setUp(self):
+        RunningTheScriptTests.setUp(self)
+        # A second interface class, with 3 tests against ReaderUITests' 1 (a test method each), so the slices differ.
+        (self.root / "TextMouthiOSUITests" / "Reader.swift").write_text(
+            "final class ReaderUITests: TextMouthUITestCase {\n    func testA() {}\n}\n")
+        (self.root / "TextMouthiOSUITests" / "Search.swift").write_text(
+            "final class SearchUITests: TextMouthUITestCase {\n    func testA() {}\n    func testB() {}\n    func testC() {}\n}\n")
+
+    def classes_run_by(self, *arguments):
+        """The classes the test command was made for when main runs with `arguments`; also returns the summary."""
+        seen = []
+        real = uitests.test_command
+
+        def spy(udid, derived, bundle, classes, iterations=1):
+            """Records the classes the command is made for."""
+            seen.append(classes)
+            return real(udid, derived, bundle, classes, iterations)
+
+        with mock.patch.object(uitests, "test_command", spy), mock.patch.object(uitests, "run_tests", return_value=(0, False)), \
+                mock.patch.object(uitests, "ROOT", self.root), mock.patch.object(uitests, "ready_simulator", return_value=("U", "sim")), \
+                contextlib.redirect_stdout(io.StringIO()):
+            uitests.main(["--out", "out", *arguments])
+        return seen, (self.out / "ios-ui-summary.txt").read_text()
+
+    def test_the_slices_of_the_jobs_add_up_to_every_class_once(self):
+        first, _ = self.classes_run_by("--shard", "1", "--of", "2")
+        second, _ = self.classes_run_by("--shard", "2", "--of", "2")
+        self.assertEqual(sorted(first[0] + second[0]), ["ReaderUITests", "SearchUITests"])
+        self.assertEqual(len(first[0]), 1, "each job is dealt one of the two")
+
+    def test_a_job_with_a_slice_names_its_classes_even_when_the_slice_is_every_class(self):
+        # Two jobs of one class each: neither runs "both whole bundles" (which would run the other job's class too).
+        seen, summary = self.classes_run_by("--shard", "1", "--of", "2")
+        self.assertTrue(seen[0], "a sharded job always names its classes")
+        self.assertIn("Shard: 1 of 2", summary)
+
+    def test_a_job_dealt_no_class_runs_nothing_and_says_not_asked(self):
+        # Three jobs for two classes: the third is dealt nothing; no simulator starts for it.
+        seen, summary = self.classes_run_by("--shard", "3", "--of", "3")
+        self.assertEqual(seen, [])
+        self.assertTrue(summary.startswith("iOS UI tests: NOT ASKED"), summary)
+        self.assertIn("shard 3 of 3 was dealt no iPhone test class", summary)
+
+    def test_one_job_runs_everything_as_before(self):
+        seen, summary = self.classes_run_by()
+        self.assertEqual(seen, [[]], "no classes named: both whole bundles")
+        self.assertNotIn("Shard:", summary)
+
+    def test_a_shard_outside_the_count_is_refused(self):
+        with mock.patch.object(uitests, "ROOT", self.root), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(uitests.main(["--out", "out", "--shard", "3", "--of", "2"]), 2)
+
+
+if __name__ == "__main__":
+    unittest.main()

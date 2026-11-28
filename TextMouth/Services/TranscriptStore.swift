@@ -87,7 +87,7 @@ enum TranscriptStore {
         if let version = try? decoder.decode(LayoutProbe.self, from: bytes).version,
            version != Transcript.currentVersion {
             guard version > 0 else {
-                let reason = "version \(version) is not a layout any TextMouth writes"
+                let reason = "version \(version) is not a layout any TextMouth writes"  // l10n: no (a damage reason for the debug log, English by question 3)
                 preserveUnusable(url, bytes: bytes, because: reason)
                 return .unusable(reason)
             }
@@ -120,6 +120,27 @@ enum TranscriptStore {
         try decoder.decode(Transcript.self, from: bytes)
     }
 
+    // MARK: Book Information
+
+    /// The line Book Information's Transcript detail shows for `book`, or nil
+    /// when it shows none: a book that is not an audiobook, one without a
+    /// package of its own, and one without a transcript the sheet could name
+    /// (`TranscriptionWording.bookInfoLine(for:)`).
+    ///
+    /// The transcript is read on a background queue, as a long book's runs to
+    /// tens of megabytes, and never downloaded: one only in iCloud is told as
+    /// such. The Book Information sheets call it as they appear and show the
+    /// detail once it answers.
+    static func bookInfoLine(for book: Book) async -> String? {
+        guard book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return nil }
+        // The package's place is found here, on the caller's actor, so only
+        // a URL crosses to the background queue.
+        let directory = book.tmbDirectory
+        return await OffMainWork.run {
+            TranscriptionWording.bookInfoLine(for: read(from: directory))
+        }
+    }
+
     // MARK: Writing
 
     /// The bytes transcript.json holds for `transcript`.
@@ -149,7 +170,7 @@ enum TranscriptStore {
             because: reason,
             logging: logTag,
             in: .storage,
-            standIn: "the book shows no transcript text until it is transcribed again"
+            standIn: "the book shows no transcript text until it is transcribed again"  // l10n: no (written to the debug log)
         )
     }
 
@@ -159,21 +180,21 @@ enum TranscriptStore {
     /// hold book text (`DiagnosticLog`), so it is never used.
     static func describe(_ error: Error) -> String {
         guard let decodingError = error as? DecodingError else {
-            return "it could not be decoded"
+            return "it could not be decoded"  // l10n: no (a damage reason for the debug log, English by question 3)
         }
         switch decodingError {
         case .typeMismatch(_, let context):
-            return "a value at \(path(of: context)) has the wrong type"
+            return "a value at \(path(of: context)) has the wrong type"  // l10n: no (a damage reason for the debug log, English by question 3)
         case .valueNotFound(_, let context):
-            return "a value at \(path(of: context)) is missing"
+            return "a value at \(path(of: context)) is missing"  // l10n: no (a damage reason for the debug log, English by question 3)
         case .keyNotFound(let key, let context):
-            return "\(path(of: context, appending: key)) is missing"
+            return "\(path(of: context, appending: key)) is missing"  // l10n: no (a damage reason for the debug log, English by question 3)
         case .dataCorrupted(let context):
             return context.codingPath.isEmpty
-                ? "it is not valid JSON"
-                : "the value at \(path(of: context)) is not usable"
+                ? "it is not valid JSON"  // l10n: no (a damage reason for the debug log, English by question 3)
+                : "the value at \(path(of: context)) is not usable"  // l10n: no (a damage reason for the debug log, English by question 3)
         @unknown default:
-            return "it could not be decoded"
+            return "it could not be decoded"  // l10n: no (a damage reason for the debug log, English by question 3)
         }
     }
 
@@ -182,7 +203,7 @@ enum TranscriptStore {
     /// for an empty path.
     private static func path(of context: DecodingError.Context, appending key: CodingKey? = nil) -> String {
         let keys = context.codingPath + (key.map { [$0] } ?? [])
-        guard !keys.isEmpty else { return "the top" }
+        guard !keys.isEmpty else { return "the top" }  // l10n: no (a damage reason for the debug log, English by question 3)
         return keys.reduce("") { spelled, key in
             if let index = key.intValue {
                 return spelled + "[\(index)]"

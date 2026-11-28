@@ -315,10 +315,28 @@ enum DirectSpeechFadePlanner {
     }
 }
 
-/// Owns access to AVSpeechSynthesizer.write(), which is effectively a shared
-/// macOS resource even when callers use different synthesizer instances.
-/// Current-chapter and look-ahead renders must therefore never overlap, and
-/// neither must the one-word renders that load a voice ahead of Play.
+/// Puts the reader's renders through AVSpeechSynthesizer.write() one at a
+/// time: the current chapter's, the look-ahead's, and the one-word renders
+/// that load a voice ahead of Play. Taking turns keeps the look-ahead from
+/// competing with the chapter Play waits for, and lets a render that went
+/// stale, or is too long, be refused before it starts.
+///
+/// Overlapping writes don't change what each one writes. Measured on
+/// November 7, 2026: two and three writes at once, in one voice (Samantha)
+/// and in two (Samantha and the Eloquence voice Eddy), each wrote the very
+/// samples it wrote alone, digest for digest; the outside review saw the
+/// same in Flo. So the speech export (FMT43), whose writes run for hours,
+/// writes beside the reader's renders, through synthesizers of its own, and
+/// never waits here.
+///
+/// Not measured: a write beside the reader speaking aloud in direct mode.
+/// On March 23, 2026 (62fc142e) a background write of a very long chapter
+/// made direct mode's speak() loop back to text it had already spoken at a
+/// chunk's change, about 30 seconds in, which is why a text over
+/// `maximumTextLength` is never rendered; and on July 12 (5ca5535f) this
+/// comment called write() a shared resource whose calls must never overlap.
+/// Whether an export's writes bring that looping back is still open, as are
+/// premium and neural voices.
 ///
 /// It holds its serial queue and, under a lock, the voices it has warmed up,
 /// so the compiler checks that it is `Sendable`; state added later needs a
@@ -336,9 +354,46 @@ final class SpeechRenderCoordinator: Sendable {
     /// voice as the empty string; read and changed only under this lock.
     private let warmedVoices = OSAllocatedUnfairLock<Set<String>>(initialState: [])
 
+    #if os(iOS)
+    /// Whether a look-ahead render may start now, held under its own lock.
+    /// True unless the iPhone's life cycle (Slice 6) sets a check of its own:
+    /// the thermal state and the memory left.
+    private let renderPermission = OSAllocatedUnfairLock<@Sendable () -> Bool>(initialState: { true })
+
+    /// Whether the next chapter may be rendered ahead now
+    /// (`renderPermission`), asked by the reader's look-ahead as each render
+    /// falls due, the lead before the current chapter's end
+    /// (`ReaderViewModel.startLookAheadRenderIfDue()`), not when the chapter
+    /// is chosen: a render refused goes on waiting and is asked again. The
+    /// chapter being read is never held off: a chapter not rendered plays on
+    /// directly, and its next chapter starts the ordinary way.
+    var mayRenderAhead: @Sendable () -> Bool {
+        get { renderPermission.withLock { $0 } }
+        set { renderPermission.withLock { $0 = newValue } }
+    }
+
+    /// Whether `voice` is left out of rendering: a Personal Voice, which
+    /// `write` can't take. One report says "Cannot use
+    /// AVSpeechSynthesizerBufferCallback with Personal Voices, defaulting to
+    /// output channel" (thread 736148): a render or a warm-up would be heard.
+    static func leavesOutOfRendering(_ voice: AVSpeechSynthesisVoice?) -> Bool {
+        voice?.voiceTraits.contains(.isPersonalVoice) == true
+    }
+
+    /// Forgets which voices were warmed up, after the system's media services
+    /// were reset and every voice it had loaded went with them.
+    func forgetWarmedVoices() {
+        warmedVoices.withLock { $0.removeAll() }
+    }
+    #endif
+
     /// Load `voice` into the system synthesizer ahead of the first Play, by
     /// rendering one word with it and dropping the audio (PERF03).
     func warmUp(_ voice: AVSpeechSynthesisVoice?) {
+        #if os(iOS)
+        // A Personal Voice's warm-up word would be spoken aloud.
+        guard !Self.leavesOutOfRendering(voice) else { return }
+        #endif
         warmUp(voice) { voice, finished in
             VoiceWarmUp.writeOneWord(in: voice, finished: finished)
         }
@@ -390,6 +445,13 @@ final class SpeechRenderCoordinator: Sendable {
         shouldStart: @escaping @MainActor @Sendable () -> Bool,
         completion: @escaping @MainActor @Sendable (Bool) -> Void
     ) {
+        #if os(iOS)
+        guard !Self.leavesOutOfRendering(request.voice) else {
+            DiagnosticLog.trace(.playback, "RENDER_SKIP: a Personal Voice is never rendered")
+            DispatchQueue.main.async { completion(false) }
+            return
+        }
+        #endif
         enqueue(
             textLength: request.text.utf16Length,
             shouldStart: shouldStart,
@@ -480,23 +542,40 @@ enum VoiceWarmUp {
     /// audio, and call `finished` exactly once, from any thread: true when
     /// the synthesizer delivered its last buffer, false when `timeout`
     /// passed first.
+    ///
+    /// - Parameter makeWriter: Makes the synthesizer that writes: the Mac's
+    ///   own, the same the engine's renders and the speech export use
+    ///   (`AVSpeechBufferWriter`), unless a test gives a scripted one.
     @MainActor
-    static func writeOneWord(in voice: AVSpeechSynthesisVoice?, finished: @escaping @Sendable (Bool) -> Void) {
+    static func writeOneWord(
+        in voice: AVSpeechSynthesisVoice?,
+        makeWriter: () -> any SpeechBufferWriting = { AVSpeechBufferWriter() },
+        finished: @escaping @Sendable (Bool) -> Void
+    ) {
         let report = reportingOnce(finished)
-        let synthesizer = AVSpeechSynthesizer()
+        let writer = makeWriter()
         let utterance = AVSpeechUtterance(string: word)
         utterance.voice = voice
         utterance.prefersAssistiveTechnologySettings = false
-        synthesizer.write(utterance, toBufferCallback: lastBufferReporter(keepingAlive: synthesizer, report: report))
+        // The writer is kept alive by the callback until the last buffer;
+        // the finish and the cancel are not waited for, as before: the
+        // timeout covers a voice that never answers.
+        writer.start(
+            utterance,
+            onBuffer: lastBufferReporter(keepingAlive: writer, report: report),
+            onFinish: {},
+            onCancel: {}
+        )
         DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeout) {
             report(false)
         }
     }
 
     /// The buffer callback of a warm-up's write: once the synthesizer
-    /// delivers its last buffer, the empty one that ends its output, it
-    /// reports the warm-up finished through `report`, and it holds
-    /// `synthesizer` until then, so the synthesizer lives to deliver it.
+    /// delivers its empty buffer, which for the one word is the end of its
+    /// output, it reports the warm-up finished through `report`, and it
+    /// holds `synthesizer`, the writer or the synthesizer, until then, so
+    /// that it lives to deliver it.
     ///
     /// The callback is made here, outside the main actor, so that it is not
     /// isolated to it (board #732). The synthesizer calls it on a thread of
@@ -508,9 +587,9 @@ enum VoiceWarmUp {
     /// makes safe on any thread (`reportingOnce`), and the synthesizer it
     /// keeps alive, so it may run on any thread.
     nonisolated static func lastBufferReporter(
-        keepingAlive synthesizer: AVSpeechSynthesizer,
+        keepingAlive synthesizer: AnyObject,
         report: @escaping @Sendable (Bool) -> Void
-    ) -> AVSpeechSynthesizer.BufferCallback {
+    ) -> (AVAudioBuffer) -> Void {
         { buffer in
             guard let pcm = buffer as? AVAudioPCMBuffer, pcm.frameLength == 0 else { return }
             withExtendedLifetime(synthesizer) {
@@ -548,12 +627,15 @@ protocol SpeechWatchdogTimer: AnyObject {
 /// common modes, so that it ticks while a menu is open too.
 final class RunLoopWatchdogTimer: SpeechWatchdogTimer {
     /// The timer ticking.
-    private let timer: Timer
+    let timer: Timer
 
     /// Starts calling `tick` every `interval` seconds on the main run loop.
     /// Made on the main thread, as the speech service makes it.
     init(interval: TimeInterval, tick: @escaping @Sendable () -> Void) {
         let timer = Timer(timeInterval: interval, repeats: true) { _ in tick() }
+        // A watchdog's recovery may come a tenth of its interval later;
+        // that lets macOS coalesce its wake-up with other work.
+        TimerCoalescing.loosen(timer)
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
     }
@@ -598,9 +680,17 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     var audioEngine: AudioEngineService {
         if let madeAudioEngine { return madeAudioEngine }
         let engine = AudioEngineService()
+        // Built here, while direct speech speaks, and not at the first seek
+        // or resume onto the engine, where the listener would wait for it.
+        engine.prepareGraph()
         engine.onPlaybackFinished = { [weak self] in
             self?.handleEngineFinished()
         }
+        #if os(iOS)
+        engine.onConfigurationChange = { [weak self] in
+            self?.engineConfigurationChanged()
+        }
+        #endif
         madeAudioEngine = engine
         return engine
     }
@@ -654,8 +744,26 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     @Published var isSpeaking = false
     @Published var isPaused = false
-    @Published var currentWordRange: NSRange?
-    @Published var currentVoice: AVSpeechSynthesisVoice?
+    /// The word being spoken, in the text. Not published: nothing observes it
+    /// (the reader takes each word from `onWordSpoken`), and publishing it
+    /// announced a change of the service 3 to 5 times a second for nothing.
+    var currentWordRange: NSRange?
+    /// The voice speech is made in. Choosing another one, from any source
+    /// (the global setting, the book's own, a reset), reaches speech that is
+    /// being heard from rendered audio once the main queue's turn ends
+    /// (`settleVoiceChange()`), since that audio was made in the old voice
+    /// and plays on in it otherwise (B29).
+    @Published var currentVoice: AVSpeechSynthesisVoice? {
+        didSet {
+            // The same voice assigned again (the reader applies the settings
+            // each time one changes) is no change.
+            guard oldValue?.identifier != currentVoice?.identifier else { return }
+            scheduleVoiceChangeCheck()
+        }
+    }
+    /// Whether a voice was chosen since the main queue last turned, and
+    /// `settleVoiceChange()` is queued to act on it.
+    private var voiceChangeCheckIsScheduled = false
     @Published var wordsPerMinute: Double = 200 {
         didSet {
             // This is a reader's effective speed. Only SettingsViewModel may
@@ -707,12 +815,20 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// previous voice when a voice was chosen part-way through the text, or
     /// from another text when a render finished after it was abandoned.
     /// Speech then carries on directly in the current voice. Rendered audio
-    /// already playing keeps playing until its text ends, since switching
-    /// mid-playback is never seamless.
+    /// already playing or paused when another voice is chosen is left for
+    /// direct speech in the new voice (`leaveRenderedAudioOfAnotherVoice()`,
+    /// B29), the one direction a switch may go while speech is heard.
     private var renderedAudioMatchesSpeech: Bool {
+        renderedAudioMatches(text: currentText)
+    }
+
+    /// Whether the engine holds audio rendered from exactly `text`, in the
+    /// voice chosen now. The one test behind `renderedAudioMatchesSpeech` and
+    /// `speak(_:)`'s decision to keep a chapter's render (audit C9).
+    private func renderedAudioMatches(text: String) -> Bool {
         // Most direct speech has no rendered audio yet; skip hashing the text.
         guard let rendered = madeAudioEngine?.renderedSignature else { return false }
-        return rendered == SpeechRenderSignature(text: currentText, voiceIdentifier: currentVoice?.identifier)
+        return rendered == SpeechRenderSignature(text: text, voiceIdentifier: currentVoice?.identifier)
     }
 
     /// In direct mode, the character offset into currentText where the trimmed utterance starts.
@@ -869,8 +985,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         /// What the utterance did, as the log line says it.
         var whatItDid: String {
             switch self {
-            case .neverStarted: return "never started"
-            case .wentIdle: return "went idle"
+            case .neverStarted: return "never started" // l10n: no (written to the debug log)
+            case .wentIdle: return "went idle" // l10n: no (written to the debug log)
             }
         }
         /// How many recoveries the watchdog made at the place first.
@@ -883,25 +999,40 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         /// What the old synthesizer did, for `replaceDirectSynthesizer(after:)`.
         var replacementReason: String {
             switch self {
-            case .neverStarted: return "the live utterance never started"
-            case .wentIdle: return "the live utterance went idle"
+            case .neverStarted: return "the live utterance never started" // l10n: no (written to the debug log)
+            case .wentIdle: return "the live utterance went idle" // l10n: no (written to the debug log)
             }
         }
     }
     /// Timer to poll playback position from audio engine
     private var positionTimer: Timer?
 
-    /// Generation counter for in-flight position-tracking dispatches. The
-    /// poll timer runs every 100 ms, captures the current offset on main,
-    /// hops to a background queue to extract the current word, then hops
-    /// back to main to publish via `currentWordRange` / `onWordSpoken`.
-    /// A seek that happens between the offset capture and the final main-
-    /// queue publish would otherwise cause the stale offset to overwrite
-    /// the now-correct one. Each tick captures the generation at the
-    /// start; the publish guard drops the result if the generation moved.
-    /// Bumped by `startPositionTracking`, `stopPositionTracking`, and any
-    /// path that seeks (`seek(toCharOffset:)`).
-    private var positionGeneration: Int = 0
+    #if os(iOS)
+    /// Tells when direct speech has gone silent while the synthesizer says it
+    /// speaks (`PhoneAudioWordWatchdog`), ticked by the playback watchdog.
+    private var wordWatchdog = PhoneAudioWordWatchdog(tickInterval: SpeechService.directWatchdogInterval)
+    /// Counts the engine's restarts after a configuration change, so that only
+    /// the latest one runs.
+    private var engineRestartToken = 0
+    /// When the direct utterance speaking now started to be timed, and how many
+    /// words it has reported since, for the first run's pace line (F35).
+    private var directPace: (startedAt: Date, words: Int)?
+    #endif
+
+    /// Generation counter for the position timer's ticks. The timer runs
+    /// every 100 ms and publishes the engine's offset in its own turn on
+    /// the main thread. A seek bumps the generation, so that a timer
+    /// started before it, which would put the stale offset over the
+    /// now-correct one, publishes nothing more; each tick carries the
+    /// generation its timer started in, and the publish guard drops it if
+    /// the generation moved. Bumped by `startPositionTracking`,
+    /// `stopPositionTracking`, and any path that seeks
+    /// (`seek(toCharOffset:)`).
+    private(set) var positionGeneration: Int = 0
+    /// The offset the position timer last published, nil before its first,
+    /// so a tick at an offset that did not move publishes nothing
+    /// (`publishRenderedPosition(_:generation:)`).
+    private var lastPublishedPositionOffset: Int?
 
     private var settingsCancellables = Set<AnyCancellable>()
 
@@ -1008,12 +1139,22 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// or to play the next chapter without delay. Does NOT switch mid-playback to avoid
     /// audible glitches — the engine is used on the next natural break (seek, pause, chapter end).
     func speak(_ text: String, fromCharOffset charOffset: Int = 0) {
+        #if os(iOS)
+        // Before the lines below discard rendered audio: on the iPhone a Play
+        // whose chapter is rendered already starts on it, so nothing switches.
+        if startOnFinishedRender(of: text, from: charOffset) { return }
+        #endif
         stop()
+        // Rendered audio of this very text in this very voice (a Play after
+        // a Stop, or a return to a chapter) is kept, and not rendered again
+        // (audit C9). Speech still starts directly, as always; a seek or a
+        // resume finds the audio ready.
+        let keepsRender = renderedAudioMatches(text: text)
         // `AudioEngineService.stop()` deliberately preserves a completed
         // buffer for ordinary pause/resume flows. This call begins unrelated
         // text, so keeping that buffer would let seek/resume play audio from
         // the previous chapter when the new text is too large to render.
-        if madeAudioEngine?.discardRenderedAudio() == true {
+        if !keepsRender, madeAudioEngine?.discardRenderedAudio() == true {
             transitionLog(.trace, "RENDER_DISCARD: removed previous text's rendered audio before starting new direct speech")
         }
         currentText = text
@@ -1027,6 +1168,11 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
         // Start direct mode immediately for zero-latency playback
         speakDirect(text, fromCharOffset: charOffset)
+
+        if keepsRender {
+            transitionLog(.trace, "RENDER_KEPT: the engine already holds this text's rendered audio in this voice; no new render")
+            return
+        }
 
         // Skip background render for very large texts. The concurrent
         // AVSpeechSynthesizer.write() competes with the direct-mode
@@ -1067,6 +1213,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// so the first word comes quickly; each later chunk is queued as the
     /// one before it starts (`queueNextDirectChunk()`).
     private func speakDirect(_ text: String, fromCharOffset charOffset: Int) {
+        #if os(iOS)
+        // The word watchdog waits for this play's first word (F19).
+        wordWatchdog.playStarted()
+        #endif
         usingDirectMode = true
         let chunk = DirectSpeechChunk.starting(
             at: charOffset,
@@ -1213,6 +1363,14 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         )
         guard shouldRecover else {
             directPlaybackWatchdogIdleChecks = 0
+            #if os(iOS)
+            // The synthesizer says it speaks, or is paused while the app
+            // plays: the word watchdog decides whether anything is heard.
+            if wordsHaveStalled() {
+                stopDirectPlaybackWatchdog()
+                recoverFromIdleDirectSynthesizer(watchedUtteranceID: watchedUtteranceID)
+            }
+            #endif
             return
         }
 
@@ -1255,6 +1413,12 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// timeout to start, the place's stall count goes, and the playback
     /// watchdog takes over from the start watchdog.
     private func directUtteranceStarted(_ utterance: AVSpeechUtterance) {
+        #if os(iOS)
+        wordWatchdog.utteranceStarted()
+        if directPace == nil {
+            directPace = (startedAt: Date(), words: 0)
+        }
+        #endif
         directSynthHasStarted = true
         startStallRecoveries = nil
         startDirectPlaybackWatchdog(for: utterance)
@@ -1331,11 +1495,32 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         }
         idleRecoveries = WatchdogRecoveries(place: safeOffset, count: recoveriesHere + 1)
 
+        #if os(iOS)
+        // The word watchdog's stall: the synthesizer says it speaks, and has
+        // reported no word for its limit. A synthesizer stalled so may never
+        // speak again, as one that refused may not, so a fresh one takes its
+        // place first.
+        let isWordStall = directSynth.isSpeaking || directSynth.isPaused
+        if isWordStall {
+            replaceDirectSynthesizer(after: "no word was reported while it said it spoke") // l10n: no (written to the debug log)
+        }
+        #endif
+
         if renderedAudioMatchesSpeech {
             transitionLog(.event, "DIRECT_WATCHDOG_RECOVERY: synthesizer idle without usable didFinish; switching to rendered audio at offset=\(safeOffset) chunkEnd=\(directModeChunkEnd)")
             switchToRenderedAudioOrSpeakDirectly(at: safeOffset, failureTag: "DIRECT_WATCHDOG_ENGINE_FAILED")
             return
         }
+
+        #if os(iOS)
+        // Nothing of the chunk after the last reported word was heard, so
+        // speech goes on from that word, never from the chunk's end.
+        if isWordStall {
+            transitionLog(.event, "DIRECT_WORD_WATCHDOG_RECOVERY: restarting direct speech at offset=\(safeOffset) chunkEnd=\(directModeChunkEnd)")
+            speakDirect(currentText, fromCharOffset: safeOffset)
+            return
+        }
+        #endif
 
         // A final word callback near the expected chunk boundary means the
         // chunk almost certainly played to completion. Continuing at the exact
@@ -1391,7 +1576,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
             "DIRECT_START_WATCHDOG_RECOVERY: utterance at offset=\(place) chunkEnd=\(directModeChunkEnd) never started; "
                 + "going on at offset=\(offset), recovery \(recoveriesHere + 1) of \(Self.directStartWatchdogRecoveriesPerPlace) there"
         )
-        replaceDirectSynthesizer(after: "the live utterance never started")
+        replaceDirectSynthesizer(after: "the live utterance never started") // l10n: no (written to the debug log)
         if renderedAudioMatchesSpeech {
             switchToRenderedAudioOrSpeakDirectly(at: offset, failureTag: "DIRECT_START_WATCHDOG_ENGINE_FAILED")
         } else {
@@ -1404,7 +1589,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// (`pauseAfterStalls(at:because:)`): "Speech paused", as the reader shows
     /// it, Paused, with Play to go on from there (REV11; it once said
     /// "Speech stopped").
-    nonisolated static let voiceDidNotStartAnnouncement = "Speech paused: the voice did not start. Press Play to try again."
+    nonisolated static var voiceDidNotStartAnnouncement: String {
+        // Translators: Announcement when the voice did not start a passage, even on fresh synthesizers, so speech paused there. Play is the name of a button.
+        InterfaceText.line("speechService.voiceDidNotStartAnnouncement", "Speech paused: the voice did not start. Press Play to try again.")
+    }
 
     /// Stop speech at `offset` as a pause, the cursor kept there, once a
     /// watchdog's recoveries at the place have all ended in the same stall
@@ -1452,7 +1640,10 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// has no reader to tell (`onSpeechRefused`); a reader tells the
     /// listener itself (`SpeechRefusalWording.announcement`). Play speaks on
     /// from there.
-    nonisolated static let engineRefusedAnnouncement = "Speech stopped: the Mac's speech engine refused this text."
+    nonisolated static var engineRefusedAnnouncement: String {
+        // Translators: Announcement when the Mac's speech engine refused a text twice and speech ended where it was, in a window with no report sheet to say so.
+        InterfaceText.line("speechService.engineRefusedAnnouncement", "Speech stopped: the Mac's speech engine refused this text.")
+    }
 
     /// Speak again after the system cancelled the live utterance on its own
     /// (`DIRECT_CANCEL_UNEXPECTED`), as it does when the speech engine
@@ -1624,7 +1815,7 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// while a fresh instance spoke it at once). `reason`, which the log
     /// line gives, says what the old one did: by default, that the system
     /// cancelled the live utterance.
-    private func replaceDirectSynthesizer(after reason: String = "the system cancelled the live utterance") {
+    private func replaceDirectSynthesizer(after reason: String = "the system cancelled the live utterance") { // l10n: no (written to the debug log)
         stopDirectSynthesizer()
         directSynth.delegate = nil
         directSynth = AVSpeechSynthesizer()
@@ -1699,6 +1890,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// system delivered a different number of didFinish events than we
     /// expected. Identity comparison can't desync.
     private func stopDirectSynthesizer() {
+        #if os(iOS)
+        directPace = nil
+        #endif
         stopDirectWatchdogs()
         liveDirectUtterance = nil
         // Stopping the synthesizer drops the chunk queued behind the live
@@ -1856,9 +2050,12 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     /// Restore normal-volume direct speech when a running fade is cancelled.
-    /// Rendered playback only needs its mixer volume restored.
+    /// Rendered playback only needs its mixer volume restored, and leaves
+    /// for direct speech now if another voice was chosen while the fade held
+    /// it (`leaveRenderedAudioOfAnotherVoice()`, which waits out a fade).
     func cancelSleepTimerFade() {
         madeAudioEngine?.restoreVolume()
+        leaveRenderedAudioOfAnotherVoice()
         guard isDirectSleepFadeActive else { return }
 
         let offset = max(
@@ -1890,6 +2087,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     func pause() {
         guard isSpeaking && !isPaused else { return }
+        #if os(iOS)
+        directPace = nil
+        #endif
         if stopDirectSleepFadePreservingPosition() {
             // The helper stopped the fade queue and retained direct mode so a
             // later resume recreates normal-volume speech at this cursor.
@@ -1957,6 +2157,9 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     @discardableResult
     func resume() -> Bool {
         guard isPaused else { return false }
+        // A voice chosen in this turn leaves paused audio of the old voice
+        // first, so the policy below never resumes it.
+        settleVoiceChange()
 
         let offset = Self.resumeOffset(
             reportedWord: currentWordRange,
@@ -2138,6 +2341,112 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         transitionLog(.trace, "PRE_RENDERED_START: playing chapter (\(text.utf16Length) UTF-16 units) from offset \(charOffset)")
     }
 
+    /// Moves speech off rendered audio made in a voice other than the
+    /// current one, when the voice was chosen while that audio was playing or
+    /// paused (B29): the engine plays what it was given, so the old voice
+    /// would otherwise be heard to the end of the text, and a paused play
+    /// would resume in it (`SpeechResumePolicy`: "a paused engine resumes
+    /// its own audio"). On the iPhone a Play starts on rendered audio, so
+    /// this was the way speech was usually heard there.
+    ///
+    /// Moving to direct speech is the direction allowed while speech is
+    /// heard, never the reverse (`feedback_playback_architecture`):
+    ///   - paused: nothing is heard, so the place is kept and Play restarts
+    ///     directly from it, in the new voice (`pendingDirectSeekOffset`);
+    ///   - playing: direct speech starts at the word the engine had reached.
+    ///
+    /// The engine's offset is an estimate that spreads the audio evenly over
+    /// the text (`AudioEngineService.frameMap`), so it can fall inside a
+    /// word or on the space before one: the place is taken to that word's
+    /// start (`wordStart(around:in:)`), and the new voice says the word
+    /// whole, never its second half nor the word before again.
+    ///
+    /// It does nothing when speech is direct already (the next chunk takes
+    /// the voice), when the audio is of the new voice, or while a sleep
+    /// fade holds the mixer down, which direct speech would not follow: a
+    /// fade cancelled leaves then (`cancelSleepTimerFade()`), and a fade run
+    /// out pauses with the engine stopped, so Play speaks in the new voice.
+    /// It runs once the main queue's turn ends (`settleVoiceChange()`), not
+    /// at each choice.
+    private func leaveRenderedAudioOfAnotherVoice() {
+        guard isSpeaking,
+              !usingDirectMode,
+              let engine = madeAudioEngine,
+              engine.hasRenderedAudio,
+              !renderedAudioMatchesSpeech,
+              engine.intendedVolume >= 1 else { return }
+
+        // The engine knows its place while it plays or is paused. Stopped, as
+        // over a change of hardware format on the iPhone until it plays on
+        // (`engineConfigurationChanged()`), it knows only where its last play
+        // began, and the place last published is the one heard.
+        let heard = engine.isPlaying || engine.isPaused
+            ? engine.currentCharOffset()
+            : currentWordRange?.location ?? engine.currentCharOffset()
+        let offset = Self.wordStart(around: heard, in: currentText)
+        transitionLog(.event, "VOICE_CHANGED_ON_ENGINE: leaving audio rendered in another voice at offset=\(offset) paused=\(isPaused)")
+        // Drop in-flight position reports of the audio being left, then the
+        // audio itself, so no seek or resume can find it again.
+        positionGeneration += 1
+        stopPositionTracking()
+        engine.discardRenderedAudio()
+        currentWordRange = NSRange(location: offset, length: 0)
+        usingDirectMode = true
+        if isPaused {
+            pendingDirectSeekOffset = offset
+        } else {
+            speakDirect(currentText, fromCharOffset: offset)
+        }
+    }
+
+    /// The start of the word an estimated `offset` of `text` stands for: on
+    /// white space, the word after it, since the engine's estimate falls a
+    /// unit short of a word's start as often as on it (rounding frames down);
+    /// inside a word, that word's start (`ReaderViewModel.snappedWordStart`).
+    /// White space at the text's end gives the end.
+    nonisolated static func wordStart(around offset: Int, in text: String) -> Int {
+        let length = text.utf16Length
+        var place = max(0, min(offset, length))
+        guard place < length else { return length }
+        var index = text.index(atUTF16Offset: place)
+        while index < text.endIndex && text[index].isWhitespace {
+            index = text.index(after: index)
+        }
+        place = text.utf16Offset(of: index)
+        return ReaderViewModel.snappedWordStart(in: text, at: place)
+    }
+
+    /// Queues `settleVoiceChange()` for the end of the main queue's turn,
+    /// once however many voices are chosen in it.
+    ///
+    /// A voice is often chosen and then chosen back in one turn: a change in
+    /// Settings posts `speechSettingsChanged`, `reloadSettings()` gives
+    /// speech the global voice, and the reader then gives a book with a
+    /// voice of its own that voice again (`applyLocalSpeechOverrides()`),
+    /// at each change in Settings, a speed step too. Acting at the first
+    /// choice left the book's rendered audio for direct speech in the global
+    /// voice, the wrong one, until the next chunk.
+    private func scheduleVoiceChangeCheck() {
+        guard !voiceChangeCheckIsScheduled else { return }
+        voiceChangeCheckIsScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            self?.settleVoiceChange()
+        }
+    }
+
+    /// Acts on a voice chosen since the main queue last turned, if any
+    /// (`leaveRenderedAudioOfAnotherVoice()`), with the voice chosen last:
+    /// queued by the choice (`scheduleVoiceChangeCheck()`), and called by a
+    /// resume before it decides how to go on, so that a Play in the same
+    /// turn as the choice never resumes audio of the old voice. Internal so
+    /// that tests settle a choice without turning the main run loop, which
+    /// would let the system synthesizer be heard.
+    func settleVoiceChange() {
+        guard voiceChangeCheckIsScheduled else { return }
+        voiceChangeCheckIsScheduled = false
+        leaveRenderedAudioOfAnotherVoice()
+    }
+
     // MARK: - Seeking
 
     /// Seek to a character offset within the current text.
@@ -2205,8 +2514,14 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
 
     /// User-facing pitch label shared by reader and global settings screens.
     nonisolated static func pitchLabel(_ pitch: Double) -> String {
-        if abs(pitch - 1.0) < 0.05 { return "Normal (1.0x)" }
-        return String(format: "%.1fx", pitch)
+        if abs(pitch - 1.0) < 0.05 {
+            // Translators: The voice pitch when it is the normal one, as the pitch sliders say it. 1.0x means the voice's own pitch, unchanged.
+            return InterfaceText.line("speechService.pitchLabel.normal", "Normal (1.0x)")
+        }
+        // The multiplier with one decimal, then its "x": a pitch that is not the normal one.
+        let multiplier = String(format: "%.1f", pitch)
+        // Translators: The voice pitch as a multiplier of the voice's own, as the pitch sliders say it, such as "1.2x". %@ is the multiplier with one decimal.
+        return InterfaceText.line("speechService.pitchLabel.value", "\(multiplier)x")
     }
 
     // MARK: - Position Tracking
@@ -2218,65 +2533,82 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         return madeAudioEngine?.currentCharOffset() ?? 0
     }
 
-    /// Background queue for position tracking string operations.
-    /// String.index(offsetBy:) is O(n) for Swift strings — running
-    /// it on the main thread every 100ms with large chapter texts
-    /// (30K+ chars) causes UI freezes. The word extraction happens
-    /// here; only the final result is dispatched to main.
-    private static let positionQueue = DispatchQueue(
-        label: "com.textmouth.positionTracking",
-        qos: .userInteractive
-    )
+    /// How far past its time the position timer may fire: 20 ms of its
+    /// 100 ms, which lets macOS coalesce its wake-up with other work and
+    /// moves a word's highlight no more than a frame.
+    static let positionTimerTolerance: TimeInterval = 0.02
+
+    /// The word that starts at UTF-16 `offset` of `text`, through the next
+    /// white space; empty for an offset outside the text or on white space,
+    /// where no word is spoken. Ran on a background queue until November
+    /// 13, 2026, when its cost fell to the word's length: a string's
+    /// UTF-16 index is a constant-time lookup once its first use has made
+    /// the string's lookup table (`warmPositionLookup(in:)`).
+    nonisolated static func wordStarting(at offset: Int, in text: String) -> String {
+        guard offset >= 0, offset < text.utf16Length else { return "" }
+        let start = text.index(atUTF16Offset: offset)
+        var end = start
+        while end < text.endIndex && !text[end].isWhitespace {
+            end = text.index(after: end)
+        }
+        return String(text[start..<end])
+    }
+
+    /// Makes `text`'s UTF-16 lookup table off the main thread, so that the
+    /// first position tick, which runs on it, does not pay for the walk over
+    /// a long chapter's text. A text of ASCII needs none.
+    private static func warmPositionLookup(in text: String) {
+        DispatchQueue.global(qos: .utility).async {
+            _ = text.index(atUTF16Offset: text.utf16Length / 2)
+        }
+    }
+
+    /// Publishes the position `offset` that the audio engine reports, as
+    /// the position timer does on each tick, on the main thread: the word
+    /// range, and the word there to `onWordSpoken` when there is one. Only
+    /// a position that moved since the last published one is published: a
+    /// paused or still engine reports the same offset every tick, and
+    /// publishing it again changed nothing and woke the reader for it.
+    ///
+    /// - Parameters:
+    ///   - offset: The engine's character offset.
+    ///   - generation: The position generation the timer started in; a seek
+    ///     or a stop since then drops the position (`shouldPublishPosition`).
+    /// - Returns: Whether the position was published.
+    @discardableResult
+    func publishRenderedPosition(_ offset: Int, generation: Int) -> Bool {
+        guard Self.shouldPublishPosition(capturedGeneration: generation, currentGeneration: positionGeneration),
+              offset != lastPublishedPositionOffset else { return false }
+        lastPublishedPositionOffset = offset
+        let range = NSRange(location: offset, length: 1)
+        currentWordRange = range
+        let word = Self.wordStarting(at: offset, in: currentText)
+        if !word.isEmpty {
+            onWordSpoken?(range, word)
+        }
+        return true
+    }
 
     private func startPositionTracking() {
         // stopPositionTracking() invalidates the previous timer AND bumps
-        // the generation, so any in-flight dispatch from the old timer is
-        // dropped before the new timer starts. Capture the post-bump
-        // generation for the new timer's ticks.
+        // the generation, so a tick of the old timer is dropped before the
+        // new timer starts. Capture the post-bump generation for the new
+        // timer's ticks.
         stopPositionTracking()
         let myGeneration = positionGeneration
+        // The new timer's first position is always published.
+        lastPublishedPositionOffset = nil
+        Self.warmPositionLookup(in: currentText)
         let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
+            // The timer runs on the main run loop, and publishes from its own
+            // turn, with no hop to another queue and back.
             guard let self = self, !self.usingDirectMode, let engine = self.madeAudioEngine,
                   engine.isPlaying || engine.isPaused else { return }
             // currentCharOffset() reads the audio node's render time,
             // which is safe from the main thread (the timer's thread)
-            let offset = engine.currentCharOffset()
-            let range = NSRange(location: offset, length: 1)
-            // Capture the text for background processing. The text
-            // doesn't change during playback so this reference is safe.
-            let text = self.currentText
-            let publish: @MainActor @Sendable (String) -> Void = { [weak self] word in
-                guard let self else { return }
-                guard Self.shouldPublishPosition(
-                    capturedGeneration: myGeneration,
-                    currentGeneration: self.positionGeneration
-                ) else { return }
-                self.currentWordRange = range
-                if !word.isEmpty {
-                    self.onWordSpoken?(range, word)
-                }
-            }
-
-            // Move the O(n) string indexing off the main thread.
-            // String.index(startIndex, offsetBy:) iterates through
-            // Unicode scalars from the start — expensive for large texts.
-            Self.positionQueue.async {
-                let word: String
-                if offset >= 0 && offset < text.utf16Length {
-                    let idx = text.index(atUTF16Offset: offset)
-                    var end = idx
-                    while end < text.endIndex && !text[end].isWhitespace {
-                        end = text.index(after: end)
-                    }
-                    word = String(text[idx..<end])
-                } else {
-                    word = ""
-                }
-                // Drop the publish if the position generation moved while
-                // extraction ran; the main-actor closure owns that check.
-                DispatchQueue.main.async { publish(word) }
-            }
+            self.publishRenderedPosition(engine.currentCharOffset(), generation: myGeneration)
         }
+        timer.tolerance = Self.positionTimerTolerance
         RunLoop.main.add(timer, forMode: .common)
         positionTimer = timer
     }
@@ -2325,6 +2657,152 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         return 0.5
     }
 
+    #if os(iOS)
+    // MARK: - The iPhone
+
+    /// Starts Play on rendered audio of exactly this speech, `text` in the
+    /// current voice, from `offset`, when the engine holds it finished
+    /// (`renderedAudioMatchesSpeech`): the spec's "start on the engine, so
+    /// nothing switches at all". Starting is a natural break, so the user's
+    /// rule holds. Should the engine not start, speech goes on directly from
+    /// `offset`, the rendered audio kept for the next break.
+    ///
+    /// - Returns: Whether speech started here; false leaves everything as it
+    ///   was, for `speak` to go on as on the Mac.
+    private func startOnFinishedRender(of text: String, from offset: Int) -> Bool {
+        guard madeAudioEngine?.hasRenderedAudio == true else { return false }
+        let previousText = currentText
+        currentText = text
+        guard renderedAudioMatchesSpeech else {
+            currentText = previousText
+            return false
+        }
+        // The engine's stop keeps its rendered audio (`AudioEngineService.stop()`).
+        stop()
+        isSpeaking = true
+        isPaused = false
+        transitionLog(.trace, "PLAY_ON_RENDERED: rendered audio of this speech is ready; starting on it at offset=\(offset)")
+        guard switchToRenderedAudio(at: offset) else {
+            transitionLog(.event, "PLAY_ON_RENDERED_FAILED: rendered audio did not start; speaking directly at offset=\(offset)")
+            audioEngine.stop()
+            speakDirect(text, fromCharOffset: offset)
+            return true
+        }
+        return true
+    }
+
+    /// One tick of the word watchdog (`PhoneAudioWordWatchdog`): whether direct
+    /// speech should be heard and has reported no word for its limit. Disarmed
+    /// while the system has taken the audio away (F19).
+    private func wordsHaveStalled() -> Bool {
+        let isInterrupted = MainActor.assumeIsolated { PhoneAudioSession.shared.isInterrupted }
+        let stalled = wordWatchdog.tick(
+            isExpectedToSpeak: isSpeaking && !isPaused && usingDirectMode && !isDirectSleepFadeActive && !isInterrupted,
+            voiceIdentifier: currentVoice?.identifier,
+            wordsPerMinute: wordsPerMinute
+        )
+        if stalled {
+            transitionLog(
+                .event,
+                "DIRECT_WORD_WATCHDOG: no word reported for "
+                    + "\(Int(PhoneAudioWordWatchdog.silenceLimit(wordsPerMinute: wordsPerMinute))) s "
+                    + "while the synthesizer said it spoke; offset=\(currentWordRange?.location ?? directModeBaseOffset)"
+            )
+        }
+        return stalled
+    }
+
+    /// Logs the pace the chunk that just finished was spoken at, measured from
+    /// its start to its end, against the speed asked for (F35). Numbers only.
+    private func logDirectPace() {
+        guard let pace = directPace else { return }
+        directPace = nil
+        let line = PhoneAudioPace.description(
+            words: pace.words,
+            seconds: Date().timeIntervalSince(pace.startedAt),
+            expectedWordsPerMinute: wordsPerMinute
+        )
+        transitionLog(.event, "DIRECT_PACE: \(line) voice=\(currentVoice?.identifier ?? "default")")
+    }
+
+    /// A cancel the app didn't ask for, of the live utterance or a sleep fade's
+    /// segment, while the system has taken the audio away
+    /// (`PhoneAudioSession.isInterrupted`): an interruption or a media reset
+    /// did it, and the engine refused nothing. Speech holds its place, paused,
+    /// on a fresh synthesizer, and Play speaks on from there
+    /// (`pendingDirectSeekOffset`); no retry is spent, nothing is strictly
+    /// guarded, and no refusal is announced.
+    ///
+    /// - Returns: Whether the cancel was the interruption's, and is handled.
+    private func keepsPlaceForInterruption(_ cancelled: ReportedUtterance) -> Bool {
+        let isFadeSegment = isDirectSleepFadeActive && directFadeOffsets[cancelled.id] != nil
+        let isLiveUtterance = usingDirectMode && isSpeaking
+            && Self.isLiveDirectUtterance(cancelled.utterance, liveUtterance: liveDirectUtterance)
+        guard isFadeSegment || isLiveUtterance,
+              MainActor.assumeIsolated({ PhoneAudioSession.shared.isInterrupted }) else { return false }
+        let place = retryOffset(from: directModeBaseOffset, to: directModeChunkEnd)
+        transitionLog(.event, "DIRECT_CANCEL_INTERRUPTED: live utterance cancelled during an audio interruption at offset=\(place); speech holds its place")
+        replaceDirectSynthesizer(after: "an audio interruption cancelled the live utterance") // l10n: no (written to the debug log)
+        pendingDirectSeekOffset = place
+        if !isPaused {
+            isPaused = true
+            stopPositionTracking()
+        }
+        // The cursor stays where speech stopped, for the reader too.
+        let range = NSRange(location: place, length: 0)
+        currentWordRange = range
+        onWordSpoken?(range, "")
+        return true
+    }
+
+    /// On the main queue: the speech engine stopped itself over a change of
+    /// hardware format (`AudioEngineService.onConfigurationChange`), as AirPods
+    /// coming or going make it. Nothing is heard, so it is a natural break: the
+    /// engine is stopped at its place, which holds, and rendered audio playing
+    /// plays on from there a moment later, once the route change that may come
+    /// with it has had its turn (`PhoneAudioEventPolicy.engineRestartDelay`).
+    /// Paused, the next resume starts the engine afresh at the place.
+    private func engineConfigurationChanged() {
+        guard !usingDirectMode, isSpeaking, let engine = madeAudioEngine else { return }
+        var policy = PhoneAudioEventPolicy()
+        let response = policy.respond(to: .engineConfigurationChanged, bookCountsAsPlaying: !isPaused)
+        // The position poll's last word is the place last heard.
+        let place = max(0, min(currentWordRange?.location ?? engine.currentCharOffset(), currentText.utf16Length))
+        engine.stop()
+        stopPositionTracking()
+        currentWordRange = NSRange(location: place, length: 0)
+        transitionLog(.event, "ENGINE_CONFIGURATION_CHANGED: offset=\(place) response=\(response)")
+        guard response == .restartFromPlace else { return }
+        engineRestartToken += 1
+        let token = engineRestartToken
+        DispatchQueue.main.asyncAfter(deadline: .now() + PhoneAudioEventPolicy.engineRestartDelay) { [weak self] in
+            self?.restartEngineAfterConfigurationChange(token: token)
+        }
+    }
+
+    /// Plays rendered audio on from the place after a configuration change,
+    /// unless speech paused, stopped, or moved to another backend meanwhile,
+    /// or a later change took over (`engineRestartToken`). A seek meanwhile
+    /// moved the place, which is where it plays on from.
+    private func restartEngineAfterConfigurationChange(token: Int) {
+        guard token == engineRestartToken, isSpeaking, !isPaused, !usingDirectMode else {
+            transitionLog(.trace, "ENGINE_CONFIGURATION_RESTART_SKIPPED: playback changed before the restart")
+            return
+        }
+        let offset = currentWordRange?.location ?? 0
+        transitionLog(.event, "ENGINE_CONFIGURATION_RESTART: rendered audio plays on at offset=\(offset)")
+        switchToRenderedAudioOrSpeakDirectly(at: offset, failureTag: "ENGINE_CONFIGURATION_RESTART_FAILED")
+    }
+
+    /// Readies speech for the iPhone's session to be let go, while it isn't
+    /// playing: the engine, paused or done, stops running, so no audio runs
+    /// as the session deactivates (the engineer's review, F8).
+    func pauseEngineForSessionDeactivation() {
+        guard !(isSpeaking && !isPaused) else { return }
+        madeAudioEngine?.pauseEngine()
+    }
+    #endif
+
     // MARK: - Test Support
 
     /// Makes `utterance` the live direct utterance, as `speakDirect` does
@@ -2339,6 +2817,13 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
         usingDirectMode = true
         directModeBaseOffset = baseOffset
         liveDirectUtterance = utterance
+    }
+
+    /// Sets the text being spoken, as speech preparation does, so hosted
+    /// tests can publish rendered positions (`publishRenderedPosition`) in a
+    /// text of their own without rendering any speech.
+    func _setTextForTesting(_ text: String) {
+        currentText = text
     }
 
     /// Takes every utterance direct speech would hand the synthesizer, in
@@ -2479,6 +2964,10 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             baseOffset = fadeOffset
         } else if Self.isLiveDirectUtterance(spoken.utterance, liveUtterance: liveDirectUtterance) {
             baseOffset = directModeBaseOffset
+            #if os(iOS)
+            wordWatchdog.wordReported(voiceIdentifier: currentVoice?.identifier)
+            directPace?.words += 1
+            #endif
             // A word of the live utterance shows that it started, even had
             // its start not been reported: the playback watchdog takes over,
             // so the start watchdog never speaks again what is being heard.
@@ -2640,6 +3129,9 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
             }
 
             self.transitionLog(.trace, "DIRECT_FINISH_ACCEPTED: offset=\(self.directModeBaseOffset) chunkEnd=\(self.directModeChunkEnd) chunked=\(self.directModeChunked)")
+            #if os(iOS)
+            self.logDirectPace()
+            #endif
             self.stopDirectWatchdogs()
 
             // This utterance has finished naturally — clear the marker so
@@ -2689,6 +3181,9 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
         let cancelled = ReportedUtterance(utterance: utterance)
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
+            #if os(iOS)
+            if self.keepsPlaceForInterruption(cancelled) { return }
+            #endif
             // Every stop of the app's lets go of the fade's segments before
             // it stops the synthesizer, so a segment the fade still holds
             // was cancelled by the system: refused.
@@ -2709,7 +3204,7 @@ extension SpeechService: AVSpeechSynthesizerDelegate {
                 // Read before logging, so the line says what the synthesizer reports now.
                 let synthesizerIsSpeaking = self.directSynth.isSpeaking
                 let synthesizerIsPaused = self.directSynth.isPaused
-                let appState = self.isPaused ? "was paused" : "expected playback"
+                let appState = self.isPaused ? "was paused" : "expected playback" // l10n: no (written to the debug log)
                 self.transitionLog(.event, "DIRECT_CANCEL_UNEXPECTED: live utterance cancelled while app \(appState); watchdog armed=\(self.directPlaybackWatchdogTimer != nil) synthSpeaking=\(synthesizerIsSpeaking) synthPaused=\(synthesizerIsPaused)")
                 if self.isPaused {
                     self.retryCancelledDirectUtteranceAtResume(cancelled.utterance)

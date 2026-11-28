@@ -65,9 +65,7 @@ extension ReaderViewModel {
         nameFileAfterCurrentChapter()
         // This reader's sleep timer for the end of the heading waits for
         // the heading after the cursor in the new arrangement.
-        if sleepTimerService.waitsForHeadingEnd(ownedBy: readerID) {
-            sleepTimerNextHeading = headingAfterCursor
-        }
+        refreshSleepTimerHeading()
         savePosition()
         refreshPlaybackUI(forceVisibleTextRefresh: true)
     }

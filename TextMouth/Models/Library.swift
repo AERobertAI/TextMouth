@@ -254,13 +254,13 @@ struct KeptRowPackages: Equatable, Sendable {
 ///
 /// Its `==` is the one Swift synthesizes, which compares every stored field
 /// (`books`, `folders`, `folderSortSettings`, `readingList`, `feedShelf`,
-/// and `unreadableRows`), each with its own synthesized `==`; a field added
+/// `unreadableRows`, and `unknownKeys`), each with its own `==`; a field added
 /// later is compared too, or the build fails until it can be. Work that runs
 /// off the main actor and then publishes a library it made from a snapshot
 /// (`LibraryViewModel.library(after:current:)` and
 /// `library(afterMoving:from:current:)`) asks this whether anything changed
 /// meanwhile, so no change to any part is undone.
-struct Library: Codable, Equatable {
+struct Library: Codable, Equatable, KeepsUnknownKeys {
     /// The rows of the library model's books: every book of the library's
     /// own, and, while TextMouth runs, the rows of feed items whose files
     /// are here (FR11), which the library's lists and counts leave out
@@ -282,6 +282,13 @@ struct Library: Codable, Equatable {
     /// every save, and are never shown or counted. A library that replaces
     /// the one loaded carries these over.
     var unreadableRows: [UnreadableLibraryRow]
+    /// The top-level sections of library.json that this TextMouth does not
+    /// know (V04, `UnknownKeys`): what a later TextMouth keeps beside the
+    /// books, folders, sort settings, and reading list, written back at
+    /// every save exactly as it was. None in a library made here. A library
+    /// that replaces the one loaded carries these over, as it carries
+    /// `unreadableRows`.
+    var unknownKeys = UnknownKeys()
 
     /// How many rows are kept unshown in all: those of library.json and
     /// those of the feeds' indexes (`FeedShelf.unreadableRows`).
@@ -333,9 +340,27 @@ struct Library: Codable, Equatable {
 
     /// The keys of library.json. The feed shelf has none: it is never
     /// written there.
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case books, folders, folderSortSettings, readingList
     }
+
+    /// The names of library.json's sections that this version knows. Not
+    /// private: the salvage of an index that cannot be read as a whole
+    /// keeps every other section too (`SalvagedLibraryArrangement`).
+    static let knownKeyNames = CodingKeys.names
+
+    /// What library.json holds, for the scan that says whether the file can
+    /// hold unknown keys (`StoredKeyScan`): its sections, and of them the
+    /// rows, the folders, and the reading list, which keep unknown keys.
+    /// The sort settings keep none, and are not looked into.
+    static let keySchema = StoredKeySchema(
+        names: knownKeyNames,
+        objects: [
+            CodingKeys.books.stringValue: Book.keySchema,
+            CodingKeys.folders.stringValue: BookFolder.keySchema,
+            CodingKeys.readingList.stringValue: ReadingList.keySchema,
+        ]
+    )
 
     /// Backward-compatible decoding: folderSortSettings may be absent in
     /// older library.json files, and the reading list in any written before
@@ -354,10 +379,16 @@ struct Library: Codable, Equatable {
         let decoded = try UnreadableLibraryRow.decodeRows(from: &rows)
         books = decoded.books.map { $0.placedInLibraryFolder() }
         unreadableRows = decoded.unreadable
-        folders = try container.decode([BookFolder].self, forKey: .folders)
+        // Each folder and the reading list with the keys it does not know
+        // (V04). A folder's sort setting keeps none: a change of sort makes
+        // the setting anew (`LibrarySortState.setting`).
+        folders = try container.decode([WithUnknownKeys<BookFolder>].self, forKey: .folders).map(\.value)
         folderSortSettings = try container.decodeIfPresent([String: FolderSortSetting].self, forKey: .folderSortSettings) ?? [:]
-        readingList = (try? container.decodeIfPresent(ReadingList.self, forKey: .readingList)) ?? ReadingList()
+        readingList = (try? container.decodeIfPresent(WithUnknownKeys<ReadingList>.self, forKey: .readingList))?.value
+            ?? ReadingList()
         feedShelf = FeedShelf()
+        // Every other section is kept as it is, to be written back (V04).
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
     }
 
     /// Writes the library as library.json holds it: the books of the
@@ -368,6 +399,9 @@ struct Library: Codable, Equatable {
     /// Rebuild Library Index, and the data-directory move) encodes a library
     /// this way, so none can.
     func encode(to encoder: Encoder) throws {
+        // The sections this version does not know first, so one of its own
+        // always wins (V04); nothing at all for a library without any.
+        try unknownKeys.write(to: encoder)
         var container = encoder.container(keyedBy: CodingKeys.self)
         // The books, then the rows kept as they were read (V03). Without any
         // kept row this writes exactly what encoding the array wrote.
@@ -378,9 +412,9 @@ struct Library: Codable, Equatable {
         for row in unreadableRows {
             try rows.encode(row.json)
         }
-        try container.encode(folders, forKey: .folders)
+        try container.encode(folders.map(WithUnknownKeys.init), forKey: .folders)
         try container.encode(folderSortSettings, forKey: .folderSortSettings)
-        try container.encode(readingList, forKey: .readingList)
+        try container.encode(WithUnknownKeys(readingList), forKey: .readingList)
     }
 
     // MARK: - Books and Feed Items (FR11)
@@ -505,9 +539,18 @@ struct Library: Codable, Equatable {
     /// it moves as opened at the user's first launch, for good, and Recently
     /// Opened, the Last Opened sort, and Speak Info's "Last opened" would
     /// all have said so (REV14).
+    ///
+    /// A reader saves a place it makes anew each time, at every opening,
+    /// closing, quit, and checkpoint, moved or not. When `position` is the
+    /// place the row already holds, it takes the keys of that place that
+    /// this TextMouth does not know, and its anchor takes the stored
+    /// anchor's when its words are the same (V04,
+    /// `ReadingPosition.keepingUnknownKeys(ofSamePlaceIn:)`): opening a book
+    /// must not drop what a later TextMouth noted about a place that has
+    /// not moved. A place that moved starts with none.
     mutating func updateReadingPosition(bookID: UUID, position: ReadingPosition, markingOpened: Bool = true) {
         guard let index = books.firstIndex(where: { $0.id == bookID }) else { return }
-        books[index].readingPosition = position
+        books[index].readingPosition = position.keepingUnknownKeys(ofSamePlaceIn: books[index].readingPosition)
         if markingOpened {
             books[index].lastOpened = Date()
         }
@@ -827,7 +870,7 @@ struct Library: Codable, Equatable {
         var duplicateIDs: Set<UUID> = []
         // Where each surviving row is, so a duplicate can give it its options.
         var survivorIndices: [String: Int] = [:]
-        let visitOrder = folders.indices.sorted { (folders[$0].depth, $0) < (folders[$1].depth, $1) }
+        let visitOrder = folders.indices.sortedStably { (folders[$0].depth, $0) < (folders[$1].depth, $1) }
         for index in visitOrder {
             let folder = folders[index]
             let parentPath = Self.resolve(folder.parentPath, against: survivors, equivalence: equivalence)
@@ -889,7 +932,7 @@ struct Library: Codable, Equatable {
                 respelled.append((key, survivingKey, setting))
             }
         }
-        let byLibraryOrder = respelled.sorted {
+        let byLibraryOrder = respelled.sortedStably {
             (originalPositions[$0.originalKey] ?? Int.max, $0.originalKey)
                 < (originalPositions[$1.originalKey] ?? Int.max, $1.originalKey)
         }
@@ -928,7 +971,7 @@ struct Library: Codable, Equatable {
         let equivalence = subtree.equivalence
         let travelling = folders.enumerated()
             .filter { $0.element.id != vacatedID && subtree.contains($0.element.fullPath) }
-            .sorted { ($0.element.depth, $0.offset) < ($1.element.depth, $1.offset) }
+            .sortedStably { ($0.element.depth, $0.offset) < ($1.element.depth, $1.offset) }
             .map(\.element)
         var departingIDs = Set(travelling.map(\.id))
         if let vacatedID { departingIDs.insert(vacatedID) }
@@ -1071,7 +1114,7 @@ struct Library: Codable, Equatable {
     }
 
     func subfolders(of parentPath: String) -> [BookFolder] {
-        folders.filter { $0.parentPath == parentPath }.sorted { $0.name < $1.name }
+        folders.filter { $0.parentPath == parentPath }.sortedStably { $0.name < $1.name }
     }
 
     func bookByHash(_ hash: String) -> Book? {

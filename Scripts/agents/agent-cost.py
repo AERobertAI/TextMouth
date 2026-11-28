@@ -23,6 +23,13 @@ import glob
 import json
 import os
 import sys
+from pathlib import Path
+
+# Importing a sibling module must leave no __pycache__ folder in the repository (set before the import below).
+sys.dont_write_bytecode = True
+# repo_paths.py is beside this script; python3 -I leaves its folder out of sys.path.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import repo_paths  # noqa: E402  (imported by path, after sys.path is set)
 
 # Price ratios relative to a plain input token (Opus 5.5).
 WEIGHTS = {"inp": 1.0, "cw5": 1.25, "cw1h": 2.0, "cr": 0.05, "out": 5.0}
@@ -37,7 +44,7 @@ MODEL_PRICES = {"claude-opus": 1.0, "claude-sonnet": 0.5}
 # Units in one point of the weekly limit (the October 10 report's fit).
 UNITS_PER_WEEKLY_POINT = 6.2e6
 # Where Claude Code keeps this project's sessions.
-PROJECT = os.path.expanduser("~/.claude/projects/-Users-roberteggleston-programming-ai-claude-swift-TextMouth")
+PROJECT = str(repo_paths.claude_project_dir())
 
 
 def transcript_path(ref):
@@ -168,4 +175,5 @@ def main():
         print("%s: effort recorded on its calls: %s; models: %s" % (label, row["effort"], row["models"]))
 
 
-main()
+if __name__ == "__main__":
+    main()

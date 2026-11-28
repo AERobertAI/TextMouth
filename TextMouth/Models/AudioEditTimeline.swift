@@ -82,6 +82,32 @@ struct AudioEditTimeline: Equatable, Sendable {
         normalizeChapters()
     }
 
+    /// FMT43's spoken chapters, each rendered into a file of its own in a
+    /// scratch folder, joined into one: `files` played whole, one after
+    /// another, each a stretch of `.processed` sound by its plain name in
+    /// that folder, `frames` long at `sampleRate`, with a chapter marker at
+    /// the start of each file that has a title. A file of no frames (or
+    /// fewer) has no sound to mark, so it is left out, its marker with it,
+    /// rather than leaving that marker on the next file's first frame. The
+    /// markers are then put in order as every timeline's are.
+    init(sampleRate: Double, joining files: [(name: String, frames: Int64, title: String?)]) {
+        var segments: [Segment] = []
+        var chapters: [Chapter] = []
+        // Where the next file starts: the frames of every file before it.
+        var start: Int64 = 0
+        for file in files where file.frames > 0 {
+            if let title = file.title {
+                chapters.append(Chapter(frame: start, title: title))
+            }
+            segments.append(Segment(source: .processed(file.name), sourceStart: 0, length: file.frames))
+            start += file.frames
+        }
+        self.sampleRate = sampleRate
+        self.segments = segments
+        self.chapters = chapters
+        normalizeChapters()
+    }
+
     /// A timeline of exactly `segments`, without markers: a stretch handed
     /// to a processor (`excerpt(_:)`).
     private init(sampleRate: Double, segments: [Segment]) {
@@ -197,7 +223,7 @@ struct AudioEditTimeline: Equatable, Sendable {
             try move(range, to: to)
         case .insertSilence(let at, let duration):
             let place = try point(at)
-            guard duration.isFinite, duration > 0 else { throw invalid("Silence has to last longer than no time at all.") }
+            guard duration.isFinite, duration > 0 else { throw invalid("Silence must be longer than zero.") }
             guard duration <= Self.longestInsertion else { throw invalid("Silence can last at most a day.") }
             let frames = frame(at: duration)
             guard frames > 0 else { throw invalid("Silence has to last at least one sample.") }
@@ -394,7 +420,7 @@ struct AudioEditTimeline: Equatable, Sendable {
     private mutating func normalizeChapters() {
         let end = length
         let ordered = chapters.enumerated()
-            .sorted { ($0.element.frame, $0.offset) < ($1.element.frame, $1.offset) }
+            .sortedStably { ($0.element.frame, $0.offset) < ($1.element.frame, $1.offset) }
             .map(\.element)
         var kept: [Chapter] = []
         for chapter in ordered where chapter.frame >= 0 && chapter.frame < end {

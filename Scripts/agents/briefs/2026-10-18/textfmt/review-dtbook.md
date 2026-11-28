@@ -6,7 +6,7 @@ Slug `textfmt-rvdtbook`, branch `textfmt/rvdtbook` from `team/textfmt`. Read `Sc
 
 `DAISYParser.findDTBookXML(in:provider:)` (DAISYParser.swift, around 575-588, reached through `detectVersion` from `makeFileProvider` around 434) decodes only the first 500 bytes as UTF-8 and looks for "dtbook", and it skips any file named `metadata.xml`. So a DTBook in UTF-16, in Latin-1 or with CJK or Cyrillic head text, or with a long leading comment, is refused after `XMLDocumentSniffer` already said it is a DTBook. Make the sniffer's answer the one test: `XMLDocumentSniffer.rootKind(of:)` on the file's first `scanLength` bytes (read only that much where the provider allows; otherwise the bytes it read), the same sniff everywhere, never a second string search. Keep the `metadata.xml` and `.ncx` skips only if a test shows they are needed; a DTBook named metadata.xml is still a DTBook.
 
-The reviewers' four variants are in `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/8d971e15-7103-46cf-b45e-5c4d099f2f74/scratchpad/review-textfmt-b/dtbooks/` (commented, latin1, russian, utf16) with their generator `make_dtbooks.py` beside them. Build the four in the test from code (adapt the generator's content into Swift), never reading the scratchpad from a test; each imports as `.daisy` with its title and its words.
+The reviewers' four variants are in `<session folder>/scratchpad/review-textfmt-b/dtbooks/` (commented, latin1, russian, utf16) with their generator `make_dtbooks.py` beside them. Build the four in the test from code (adapt the generator's content into Swift), never reading the scratchpad from a test; each imports as `.daisy` with its title and its words.
 
 ## 2. A blank DTBook imports as an empty book (item 13)
 

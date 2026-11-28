@@ -95,16 +95,18 @@ extension LibraryViewModel {
         access: MaintenanceFileAccess = .live,
         then completion: (@MainActor @Sendable (TextAnchorBackfillOutcome) -> Void)? = nil
     ) {
-        let candidates = library.books.filter { !$0.tmbDirectoryName.isEmpty && $0.placesWithoutAnchors > 0 }
+        let candidates = library.books.filter { !$0.tmbDirectoryName.isEmpty && $0.placesWithoutAnchors > 0 && !$0.isPasswordProtected }
         guard !candidates.isEmpty else {
             completion?(TextAnchorBackfillOutcome())
             return
         }
         // A book a reader has open gives its places their words as it loads.
-        let open = openBookIDs
+        let open = openBookIDsNow
         let readable = candidates.filter { !open.contains($0.id) }
         let openCount = candidates.count - readable.count
-        DispatchQueue.global(qos: .utility).async {
+        // Weak here too: a strong capture would hold the library until the
+        // pass ends, though the closure below is written for its going.
+        DispatchQueue.global(qos: .utility).async { [weak self] in
             let boundary = StorageBoundary.shared
             var captures: [UUID: CapturedPlaceAnchors] = [:]
             var outcome = TextAnchorBackfillOutcome(waiting: openCount)
@@ -177,7 +179,7 @@ extension LibraryViewModel {
         counted read: TextAnchorBackfillOutcome
     ) -> TextAnchorBackfillOutcome {
         var outcome = read
-        let openedMeanwhile = Set(captures.keys).intersection(openBookIDs)
+        let openedMeanwhile = Set(captures.keys).intersection(openBookIDsNow)
         outcome.waiting += openedMeanwhile.count
         let adopted = adoptCapturedAnchors(captures, skipping: openedMeanwhile)
         outcome.books = adopted.count

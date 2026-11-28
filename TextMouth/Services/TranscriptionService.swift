@@ -3,9 +3,17 @@ import Foundation
 
 // MARK: - Errors
 
+/// An error that words itself in English for the debug log, whatever language
+/// the interface speaks (FR34): the log never holds localized text, so a log
+/// line writes `logDescription` where the screen shows `errorDescription`.
+protocol LogDescribing: Error {
+    /// The error in English, never quoting the book's text or naming a path.
+    var logDescription: String { get }
+}
+
 /// Why a transcription could not run or did not finish, in words a listener
 /// understands, the same on screen, in VoiceOver, and in braille.
-enum TranscriptionError: LocalizedError, Equatable {
+enum TranscriptionError: LocalizedError, LogDescribing, Equatable {
     /// The system is older than macOS 26, which transcription needs.
     case needsNewerSystem
     /// The system is new enough, but this Mac cannot run the speech model.
@@ -40,36 +48,70 @@ enum TranscriptionError: LocalizedError, Equatable {
 
     /// Why an audio file that the system cannot open or decode cannot be
     /// read, worded as playback words a damaged file.
-    static let unreadableAudioReason = "it is damaged, unreadable, or not an audio file"
+    static let unreadableAudioReason = "it is damaged, unreadable, or not an audio file"  // l10n: no (a reason inside a translated sentence, question 3; also in the log)
 
     var errorDescription: String? {
         switch self {
         case .needsNewerSystem:
-            return "Transcription needs macOS 26 or later."
+            // Translators: Error shown when transcription is tried on a Mac whose system is too old.
+            return InterfaceText.line("transcriptionError.needsNewerSystem", "Transcription needs macOS 26 or later.")
         case .unavailableOnThisMac:
-            return "This Mac can't run the speech model that transcription uses."
+            // Translators: Error shown when transcription is tried on a Mac whose hardware cannot run the speech model.
+            return InterfaceText.line("transcriptionError.unavailableOnThisMac", "This Mac can't run the speech model that transcription uses.")
         case .unsupportedLanguage(let language):
-            return "Transcription doesn't support \(language)."
+            // Translators: Error shown when the chosen transcription language cannot be transcribed. %@ is the language's name.
+            return InterfaceText.line("transcriptionError.unsupportedLanguage", "Transcription doesn't support \(language).")
         case .modelNotInstalled(let language):
-            return "The speech model for \(language) isn't on this Mac yet. It needs to be downloaded first."
+            // Translators: Error shown when transcription is tried before the language's speech model is downloaded. %@ is the language's name.
+            return InterfaceText.line("transcriptionError.modelNotInstalled", "The speech model for \(language) isn't on this Mac yet. Download it first.")
         case .busy(let title):
-            return "TextMouth is already transcribing \(title). Try again when that finishes."
+            // Translators: Error shown when a transcription is started while another runs. %@ is the title of the audiobook being transcribed.
+            return InterfaceText.line("transcriptionError.busy", "TextMouth is already transcribing \(title). Try again when that finishes.")
         case .notAnAudiobook:
-            return "Only audiobooks can be transcribed."
+            // Translators: Error shown when transcription is tried for a book that is not an audiobook.
+            return InterfaceText.line("transcriptionError.notAnAudiobook", "Only audiobooks can be transcribed.")
         case .noAudio:
-            return "This audiobook has no audio to transcribe."
+            // Translators: Error shown when transcription is tried for an audiobook with no audio file.
+            return InterfaceText.line("transcriptionError.noAudio", "This audiobook has no audio to transcribe.")
         case .fileInCloud(let file):
-            return "“\(file)” is only in the cloud. Download the book, then transcribe it."
+            // Translators: Error shown when an audio file has not been downloaded from the cloud drive. %@ is the audio file's name.
+            return InterfaceText.line("transcriptionError.fileInCloud", "“\(file)” is only in the cloud. Download the book, then transcribe it.")
         case .unreadableFile(let file, let reason):
-            return "“\(file)” couldn't be read: \(reason)."
+            // Translators: Error shown when an audio file cannot be read. %1$@ is the audio file's name; %2$@ is the reason, a short phrase in English.
+            return InterfaceText.line("transcriptionError.unreadableFile", "“\(file)” couldn't be read: \(reason).")
         case .cancelled:
-            return "Transcription was cancelled."
+            // Translators: What VoiceOver hears, and the Transcribe Audio sheet shows, when the user cancels a transcription.
+            return InterfaceText.line("transcriptionError.cancelled", "Transcription was cancelled.")
         case .recognitionFailed(let reason):
-            return "Transcription stopped: \(reason)."
+            // Translators: Error shown when the speech recognizer failed. %@ is the reason, a short phrase in English.
+            return InterfaceText.line("transcriptionError.recognitionFailed", "Transcription stopped: \(reason).")
         case .audioChanged(let reason):
-            return "The book's audio changed while it was being transcribed: \(reason). Transcribe it again."
+            // Translators: Error shown when the book's audio files changed during a transcription, so the transcript was not saved. %@ is the reason, a short phrase in English.
+            return InterfaceText.line("transcriptionError.audioChanged", "The book's audio changed while it was being transcribed: \(reason). Transcribe it again.")
         case .bookRemoved:
-            return "The book left the library while it was being transcribed, so its transcript wasn't saved."
+            // Translators: Error shown when the book was removed from the library during a transcription.
+            return InterfaceText.line("transcriptionError.bookRemoved", "The book left the library during transcription, so its transcript wasn't saved.")
+        }
+    }
+
+    /// What the debug log writes for this error: English, whatever language
+    /// the interface speaks, so no log line holds localized text. The
+    /// reasons it carries are English already.
+    var logDescription: String {
+        switch self {
+        case .needsNewerSystem: return "Transcription needs macOS 26 or later."  // l10n: no (debug log)
+        case .unavailableOnThisMac: return "This Mac can't run the speech model that transcription uses."  // l10n: no (debug log)
+        case .unsupportedLanguage: return "Transcription doesn't support the language."  // l10n: no (debug log)
+        case .modelNotInstalled: return "The speech model for the language isn't on this Mac yet."  // l10n: no (debug log)
+        case .busy: return "Another transcription is running."  // l10n: no (debug log)
+        case .notAnAudiobook: return "Only audiobooks can be transcribed."  // l10n: no (debug log)
+        case .noAudio: return "This audiobook has no audio to transcribe."  // l10n: no (debug log)
+        case .fileInCloud(let file): return "“\(file)” is only in the cloud."  // l10n: no (debug log)
+        case .unreadableFile(let file, let reason): return "“\(file)” couldn't be read: \(reason)."  // l10n: no (debug log)
+        case .cancelled: return "Transcription was cancelled."  // l10n: no (debug log)
+        case .recognitionFailed(let reason): return "Transcription stopped: \(reason)."  // l10n: no (debug log)
+        case .audioChanged(let reason): return "The book's audio changed while it was being transcribed: \(reason)."  // l10n: no (debug log)
+        case .bookRemoved: return "The book left the library while it was being transcribed."  // l10n: no (debug log)
         }
     }
 }

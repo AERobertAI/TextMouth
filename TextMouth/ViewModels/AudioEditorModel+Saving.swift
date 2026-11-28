@@ -30,10 +30,23 @@ enum AudioEditorPolicyChoice: String, CaseIterable, Identifiable, Sendable {
 
 extension AudioRenderFormat {
     /// Whether a file in this format keeps chapter markers: an MPEG-4
-    /// file's chapter track, or an MP3's ID3 chapter frames (`MP3Tag`);
-    /// WAVE, AIFF, and CAF have no place for them.
+    /// file's chapter track, an MP3's ID3 chapter frames (`MP3Tag`), and a
+    /// WAVE, AIFF, or CAF file's markers (FMT11, `AudioMarkerList`), which
+    /// the renderer writes once the audio is. Every format the editor writes
+    /// keeps them; the warning that a file leaves them out
+    /// (`AudioEditorWording.chaptersLeftOut`) stays for a format that would
+    /// not.
     var holdsChapterMarkers: Bool {
-        isMPEG4 || self == .mp3
+        isMPEG4 || self == .mp3 || isPCM
+    }
+
+    /// Whether a book whose file is saved in this format keeps its chapter
+    /// markers as its chapters: as `holdsChapterMarkers`, except a CAF
+    /// file's markers, which a save writes but TextMouth never reads back as
+    /// a book's chapters (`FileChapterReaders` reads WAVE and AIFF markers
+    /// alone), so a save in place of a CAF book still warns.
+    var keepsBookChapters: Bool {
+        holdsChapterMarkers && self != .pcmCAF
     }
 }
 
@@ -77,8 +90,9 @@ extension AudioEditorModel {
         stopPlayingForEdit()
         let format = await readSaveFormat()
         let detail = AudioEditorWording.savingDetail(duration, format: format.map(AudioEditorWording.formatName))
-            + chapterWarning(for: format)
+            + chapterWarning(for: format, savingInPlace: true)
         let fileBefore = session.audioFile
+        let markerCount = chapters.count
         progress = AudioEditorProgress(title: AudioEditorWording.savingTitle, detail: detail, fraction: 0)
         sheet = .progress
         announce(detail)
@@ -90,7 +104,8 @@ extension AudioEditorModel {
             await loadPreview()
             // A file written in a format of another extension has a new name.
             let renamed = outcome.audioFile == fileBefore ? nil : (outcome.audioFile as NSString).lastPathComponent
-            announce(AudioEditorWording.saved(outcome.duration, renamedTo: renamed))
+            announce(AudioEditorWording.saved(outcome.duration, renamedTo: renamed)
+                + markersLeftOut(outcome.chapterMarkersLeftOut, count: markerCount))
             return true
         } catch {
             DiagnosticLog.event(.storage, "AUDIO_EDITOR: \(bookTitle): the edits couldn't be saved (\(AudioEditorLauncher.describe(error)))")
@@ -111,17 +126,33 @@ extension AudioEditorModel {
     }
 
     /// The sentence, after a space, saying the chapter markers are left out
-    /// of a file in `format`, which has no place for them; empty when there
-    /// are none, or the format keeps them, or it isn't known.
-    func chapterWarning(for format: AudioRenderFormat?) -> String {
-        guard let format, !chapters.isEmpty, !format.holdsChapterMarkers else { return "" }
-        return " " + AudioEditorWording.chaptersLeftOut(chapters.count, format: AudioEditorWording.formatName(format))
+    /// of a file in `format`, which has no place for them, or, `savingInPlace`
+    /// a CAF book, that the book will not read them back
+    /// (`AudioRenderFormat.keepsBookChapters`); empty when there are none,
+    /// or the file keeps them, or the format isn't known.
+    func chapterWarning(for format: AudioRenderFormat?, savingInPlace: Bool = false) -> String {
+        guard let format, !chapters.isEmpty else { return "" }
+        let name = AudioEditorWording.formatName(format)
+        if !format.holdsChapterMarkers {
+            return " " + AudioEditorWording.chaptersLeftOut(chapters.count, format: name)
+        }
+        guard savingInPlace, !format.keepsBookChapters else { return "" }
+        return " " + AudioEditorWording.chaptersNotReadBack(chapters.count, format: name)
+    }
+
+    /// The sentence, after a space, saying a file was written without its
+    /// `count` chapter markers, when `leftOut` (FMT11); empty otherwise.
+    func markersLeftOut(_ leftOut: Bool, count: Int) -> String {
+        guard leftOut, count > 0 else { return "" }
+        return " " + AudioEditorWording.chapterMarkersNotWritten(count)
     }
 
     // MARK: Exporting
 
     /// Exports the edited audio, saved or not, to a new file at `url` in
-    /// `format`, the book's own file left as it is; says the result.
+    /// `format`, the book's own file left as it is; says the result. With
+    /// `exportsLabels`, the chapter markers and the markers go beside it as
+    /// an Audacity label file (FMT06, `exportLabels(beside:)`).
     func export(as format: AudioExportFormat, to url: URL) async {
         guard beginWork() else { return }
         defer { isWorking = false }
@@ -136,14 +167,67 @@ extension AudioEditorModel {
         announce(detail)
         defer { endProgress() }
         do {
-            try await session.export(to: url, as: format, progress: progressReporter())
+            let outcome = try await session.export(to: url, as: format, progress: progressReporter())
             endProgress()
-            announce(AudioEditorWording.exported(file: url.lastPathComponent))
+            announce(exportLabelsIfAsked(beside: url) + markersLeftOut(outcome.chapterMarkersLeftOut, count: chapters.count))
         } catch {
             DiagnosticLog.event(.storage, "AUDIO_EDITOR: \(bookTitle): the audio couldn't be exported (\(AudioEditorLauncher.describe(error)))")
             endProgress()
             announce(AudioEditorWording.exportFailed(error.localizedDescription))
         }
+    }
+
+    // MARK: Labels Beside an Export (FMT06)
+
+    /// What an export says once its audio at `url` is written: that alone;
+    /// or, with `exportsLabels`, with the label file written beside it, or
+    /// why it could not be, or that there was no marker to write.
+    private func exportLabelsIfAsked(beside url: URL) -> String {
+        let exported = url.lastPathComponent
+        guard exportsLabels else { return AudioEditorWording.exported(file: exported) }
+        guard !labelEntries.isEmpty else { return AudioEditorWording.exportedWithoutLabels(file: exported) }
+        do {
+            let labels = try exportLabels(beside: url)
+            return AudioEditorWording.exported(file: exported, labels: labels.lastPathComponent)
+        } catch {
+            DiagnosticLog.event(.storage, "AUDIO_EDITOR: \(bookTitle): the labels couldn't be exported (\(AudioEditorLauncher.describe(error)))")
+            return AudioEditorWording.exported(file: exported, labelsFailed: error.localizedDescription)
+        }
+    }
+
+    /// The labels the editor's places make, in time order: each chapter
+    /// marker titled by its title, and each marker by its name, or "Marker
+    /// N" without one, as the list numbers it; each a point.
+    var labelEntries: [AudacityLabels.Label] {
+        let chapterLabels = chapters.map { AudacityLabels.Label(start: $0.start, end: $0.start, text: $0.title) }
+        let markerLabels = orderedMarkers.map { marker in
+            AudacityLabels.Label(
+                start: marker.time,
+                end: marker.time,
+                text: marker.name.nonBlank ?? AudioEditorWording.markerName(number(of: marker), named: "")
+            )
+        }
+        return (chapterLabels + markerLabels).sortedStably { $0.start < $1.start }
+    }
+
+    /// Writes `labelEntries` as an Audacity label file beside the exported
+    /// audio at `url`, under its stem with .txt, or, when a file has that
+    /// name, "<stem> 2.txt" and on, so no file is ever replaced; Audacity
+    /// imports it as a label track beside the audio (File, Import, Labels).
+    /// - Returns: the label file.
+    /// - Throws: the file system's error.
+    @discardableResult
+    func exportLabels(beside url: URL) throws -> URL {
+        let folder = url.deletingLastPathComponent()
+        let stem = url.deletingPathExtension().lastPathComponent
+        var number = 1
+        var labels = folder.appendingPathComponent("\(stem).\(AudacityLabels.fileExtension)")
+        while FileManager.default.fileExists(atPath: labels.path) {
+            number += 1
+            labels = folder.appendingPathComponent("\(stem) \(number).\(AudacityLabels.fileExtension)")
+        }
+        try Data(AudacityLabels.text(of: labelEntries).utf8).write(to: labels, options: .withoutOverwriting)
+        return labels
     }
 
     /// The name an export offers its file: the book's title, and the

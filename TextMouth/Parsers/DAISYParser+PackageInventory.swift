@@ -22,6 +22,9 @@ extension DAISYParser {
     /// a package file (`.opf`) or a navigation file (`ncc.html`).
     static func isPackageEntryName(_ name: String) -> Bool {
         (name as NSString).pathExtension.lowercased() == "opf" || isNCCFileName(name)
+            // An NLS BARD braille book's package, which has the form of a
+            // DAISY 3 package, stands for its book the same way (FMT56).
+            || BardBraillePackage.isPackageName(name)
     }
 
     /// Whether `url` names a file that stands for a DAISY book: its package
@@ -53,9 +56,17 @@ extension DAISYParser {
 
         let entryNames = names
             .filter { !$0.hasPrefix(".") && isPackageEntryName($0) && isFile($0) }
-            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+            .sortedStably { $0.localizedStandardCompare($1) == .orderedAscending }
         let books = entryNames.first(where: isNCCFileName).map { [$0] } ?? entryNames
         return books.map { directory.appendingPathComponent($0) }
+    }
+
+    /// Whether `path`, a path inside an archive or a package folder, is
+    /// hidden: a part of it begins with a dot (the `._book.opf` copies macOS
+    /// leaves in archives are one), or it lies in the `__MACOSX` folder macOS
+    /// adds to the archives it makes. Such a path is never a book's.
+    static func isHiddenPackagePath(_ path: String) -> Bool {
+        path.split(separator: "/").contains { $0.hasPrefix(".") || $0 == "__MACOSX" }
     }
 
     /// The folders of an archive, whose files `paths` lists, that hold a
@@ -68,7 +79,7 @@ extension DAISYParser {
             let components = path.split(separator: "/").map(String.init)
             guard let name = components.last,
                   isPackageEntryName(name),
-                  !components.contains(where: { $0.hasPrefix(".") || $0 == "__MACOSX" }) else { continue }
+                  !isHiddenPackagePath(path) else { continue }
             folders.insert(components.dropLast().joined(separator: "/"))
         }
         return folders
@@ -106,13 +117,18 @@ final class EntryFirstFileProvider: DAISYFileProvider {
     func readFile(at path: String) throws -> Data {
         try inner.readFile(at: path)
     }
+
+    /// The size of the file at `path`, as `inner` gives it.
+    func byteCount(of path: String) -> Int64? {
+        inner.byteCount(of: path)
+    }
 }
 
 // MARK: - Package Errors
 
 /// Why a DAISY book kept as loose files cannot be imported with its files
 /// (TODO I02).
-enum DAISYPackageError: LocalizedError, Equatable {
+enum DAISYPackageError: LocalizedError, LogDescribing, Equatable {
     /// A file of the book refers to `reference`, which lies outside the
     /// book's folder, or is a symbolic link leading out of it. `file` is the
     /// referring file's path inside the folder.
@@ -127,13 +143,37 @@ enum DAISYPackageError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case let .referenceOutsidePackage(reference, file):
-            return "The file “\(file)” in this DAISY book refers to “\(reference)”, which is outside the book's "
-                + "folder. Only files inside the folder can be imported."
+            return SentenceWording.joined([
+                // Translators: First sentence of why a DAISY book kept as loose files could not be imported: one of its files refers to a file outside the book's folder. %1$@ is the referring file's path inside the folder and %2$@ the reference, as the file writes it.
+                InterfaceText.line("daisyPackageError.referenceOutsidePackage.refers", "The file “\(file)” in this DAISY book refers to “\(reference)”, outside the book's folder."),
+                // Translators: Last sentence of why a DAISY book kept as loose files could not be imported: the rule about files outside its folder.
+                InterfaceText.line("daisyPackageError.referenceOutsidePackageFix", "Only files inside the folder can be imported."),
+            ])
         case .notAPackage:
-            return "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level."
+            // Translators: Why a folder could not be imported as a DAISY book: it holds no navigation file (ncc.html) and no package file (.opf) at its top level. ncc.html and .opf are file names and stay as they are.
+            return InterfaceText.line("daisyPackageError.notAPackage", "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level.")
         case .severalPackages(let names):
-            return "The folder holds \(names.count) DAISY books (\(names.joined(separator: ", "))). "
-                + "Import each book's .opf file on its own."
+            return SentenceWording.joined([
+                // Translators: First sentence of why a folder could not be imported as one DAISY book: its top level holds several books' package files. %lld is how many books, always two or more, and %@ their file names, separated by commas.
+                InterfaceText.line("daisyPackageError.severalPackages.folder", "The folder holds \(number: names.count) DAISY books (\(names.joined(separator: ", ")))."),
+                // Translators: Last sentence of why a folder of several DAISY books could not be imported as one: what to do. .opf is a file extension and stays as it is.
+                InterfaceText.line("daisyPackageError.severalPackages.import", "Import each book's .opf file on its own."),
+            ])
+        }
+    }
+
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34).
+    var logDescription: String {
+        switch self {
+        case let .referenceOutsidePackage(reference, file):
+            return "The file “\(file)” in this DAISY book refers to “\(reference)”, which is outside the book's " // l10n: no (debug log)
+                + "folder. Only files inside the folder can be imported." // l10n: no (debug log)
+        case .notAPackage:
+            return "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level." // l10n: no (debug log)
+        case .severalPackages(let names):
+            return "The folder holds \(names.count) DAISY books (\(names.joined(separator: ", "))). " // l10n: no (debug log)
+                + "Import each book's .opf file on its own." // l10n: no (debug log)
         }
     }
 }
@@ -192,8 +232,8 @@ struct DAISYPackageInventory {
     private init(root: URL, entryPath: String, files: [File], missingPaths: [String], wholeFolderReason: String?) {
         self.root = root
         self.entryPath = entryPath
-        self.files = files.sorted { Self.pathPrecedes($0.path, $1.path) }
-        self.missingPaths = missingPaths.sorted { Self.pathPrecedes($0, $1) }
+        self.files = files.sortedStably { Self.pathPrecedes($0.path, $1.path) }
+        self.missingPaths = missingPaths.sortedStably { Self.pathPrecedes($0, $1) }
         self.wholeFolderReason = wholeFolderReason
     }
 
@@ -305,10 +345,21 @@ struct DAISYPackageInventory {
     /// it as it was: reading every audio file of a long book would take
     /// minutes.
     func contentHash() throws -> String {
-        var text = try FileImportService.md5Hash(of: files.first { $0.path == entryPath }?.source ?? entryURL)
+        let entryDigest = try FileImportService.md5Hash(of: files.first { $0.path == entryPath }?.source ?? entryURL)
+        return Self.contentHash(entryDigest: entryDigest, files: files.map { (path: $0.path, size: Int64($0.size)) })
+    }
+
+    /// The checksum of a package whose entry file has the MD5 digest
+    /// `entryDigest` and whose files, the entry file included, are `files`
+    /// (each a path inside the book's folder and a size), as `contentHash()`
+    /// describes it. The one place the checksum is made, so a ZIP of a BARD
+    /// braille book (`BardBraillePackage.contentHash()`) is known by the
+    /// checksum its folder has (FMT56).
+    static func contentHash(entryDigest: String, files: [(path: String, size: Int64)]) -> String {
+        var text = entryDigest
         let ordered = files
             .map { (path: $0.path.precomposedStringWithCanonicalMapping, size: $0.size) }
-            .sorted { Self.pathPrecedes($0.path, $1.path) }
+            .sortedStably { Self.pathPrecedes($0.path, $1.path) }
         for file in ordered {
             text += "\u{0}\(file.path)\u{0}\(file.size)"
         }
@@ -399,7 +450,7 @@ struct DAISYPackageInventory {
     /// Whether `first` comes before `second` in the code-point order of
     /// their Unicode NFC forms, the one order a book's files are listed and
     /// hashed in wherever they lie.
-    private static func pathPrecedes(_ first: String, _ second: String) -> Bool {
+    static func pathPrecedes(_ first: String, _ second: String) -> Bool {
         first.precomposedStringWithCanonicalMapping.utf8
             .lexicographicallyPrecedes(second.precomposedStringWithCanonicalMapping.utf8)
     }
@@ -423,15 +474,22 @@ struct DAISYPackageInventory {
         do {
             package = try DAISYOPFParser(data: data, file: entryPath).parse()
         } catch {
+            // A damaged BARD package is refused as it is, with the parser's
+            // own error: its volumes are named by the package alone, so no
+            // other file of its folder could stand in (FMT56).
+            if BardBraillePackage.isPackageName(entryPath) { throw error }
             return error.localizedDescription
         }
         // With no DTBook in its manifest, the reader searches the whole
         // folder for one (`DAISYParser.extractMarkdown`), so the copy must
         // hold everything that search would see.
-        guard package.manifest.values.contains(where: { $0.mediaType.contains("dtbook") }) else {
-            return "the manifest of “\(entryPath)” lists no DTBook content file"
+        // A BARD braille book's package lists BRF volumes, no DTBook, and the
+        // reader reads those and nothing else (`BardBraillePackage`, FMT56).
+        guard BardBraillePackage.isPackageName(entryPath)
+                || package.manifest.values.contains(where: { $0.mediaType.contains("dtbook") }) else {
+            return "the manifest of “\(entryPath)” lists no DTBook content file" // l10n: no (a parser's damage reason)
         }
-        for href in package.manifest.values.map(\.href).sorted() {
+        for href in package.manifest.values.map(\.href).sortedStably() {
             try collector.add(href, in: entryPath)
         }
         return nil
@@ -454,7 +512,7 @@ struct DAISYPackageInventory {
             // Read as the reader reads it first, so a copy cut short counts
             // as damaged here as well.
             _ = try DAISY202NCCParser(html: html, file: entryPath).parse()
-            navigation = try SwiftSoup.parse(html)
+            navigation = try MarkupGuard.parse(html)
         } catch {
             return error.localizedDescription
         }
@@ -502,7 +560,7 @@ struct DAISYPackageInventory {
             let textData = try Data(contentsOf: text)
             let document: SwiftSoup.Document
             do {
-                document = try SwiftSoup.parse(decodedText(textData))
+                document = try MarkupGuard.parse(decodedText(textData))
             } catch {
                 return error.localizedDescription
             }

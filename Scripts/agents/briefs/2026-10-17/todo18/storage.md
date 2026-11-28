@@ -49,7 +49,7 @@ Commit 2: `Record a move's staged copy and sweep what an interrupted move left` 
 
 ## Tests to run
 
-Run with `BBS_AGENT=todo18-storage python3 Scripts/test/run-area.py <ClassNames>` (see `-h`; its build folder is then `/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-todo18-storage`).
+Run with `BBS_AGENT=todo18-storage python3 Scripts/test/run-area.py <ClassNames>` (see `-h`; its build folder is then `$TMPDIR/TextMouth-DerivedData-todo18-storage`).
 1. After commit 1: `ImportStagingTests`, `StagedImportTests` (run, never edit), `ZIPImportTests`, `LogContentPolicyTests`.
 2. After commit 2: `MigrationStagingLeftoversTests`, `DataDirectoryMigrationTests`, `DataDirectoryMoveTests`, `DataDirectoryCopyTests`, `DataDirectoryMoveProgressTests`, `StorageGenerationMoveTests` (load-sensitive: a failure is rerun alone and reported with both results), `UncheckedConcurrencyPolicyTests`, `LogContentPolicyTests`.
 3. The drill, for real: `BBS_AGENT=todo18-storage Scripts/test/storage-drill.sh`, after commit 1 and again after commit 3; run it a third time at the end to show it repeats and that no `TMDrill-` image is left attached. Report its lines.

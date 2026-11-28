@@ -3,14 +3,33 @@ import Combine
 import ZIPFoundation
 
 enum LibrarySortField: String, CaseIterable, Codable {
-    case title = "Title"
-    case author = "Author"
-    case dateAdded = "Date Added"
-    case lastOpened = "Last Opened"
-    case fileSize = "File Size"
-    case manual = "Manual Order"
+    case title = "Title" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case author = "Author" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case dateAdded = "Date Added" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case lastOpened = "Last Opened" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case fileSize = "File Size" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case manual = "Manual Order" // l10n: no (stored id: config.json keeps it; `title` is shown)
 
-    var accessibilityLabel: String { rawValue }
+    /// The field's name as the interface shows and speaks it. The raw value
+    /// is what config.json keeps.
+    var title: String {
+        switch self {
+        // Translators: Name of a way to sort the books: by the title. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.
+        case .title: return InterfaceText.line("common.title", "Title")
+        // Translators: Name of a way to sort the books: by the author. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.
+        case .author: return InterfaceText.line("common.author", "Author")
+        // Translators: Name of a way to sort the books: by the date the book was added. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.
+        case .dateAdded: return InterfaceText.line("common.dateAdded", "Date Added")
+        // Translators: Name of a way to sort the books: by the date the book was last opened. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.
+        case .lastOpened: return InterfaceText.line("common.lastOpened", "Last Opened")
+        // Translators: Name of a way to sort the books: by the size of the book's file. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.
+        case .fileSize: return InterfaceText.line("librarySortField.title.fileSize", "File Size")
+        // Translators: Name of a way to sort the books: by the order the user arranges by hand, with no direction. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.
+        case .manual: return InterfaceText.line("librarySortField.title.manual", "Manual Order")
+        }
+    }
+
+    var accessibilityLabel: String { title }
 }
 
 /// The views of the library a Library window shows, as its View picker
@@ -20,26 +39,26 @@ enum LibrarySortField: String, CaseIterable, Codable {
 /// replaced No Folder, which listed the root's books; Folders still lists
 /// those at the root. Recently Opened was called Recent until FR13.
 enum LibraryCategory: String, CaseIterable, Codable {
-    case folders = "Folders"
-    case allItems = "All Items"
+    case folders = "Folders" // l10n: no (stored id: config.json keeps the view's name as written; built-in view names stay English)
+    case allItems = "All Items" // l10n: no (stored id: config.json keeps the view's name as written; built-in view names stay English)
     /// Every book never opened, from every folder, and the feeds with items
     /// not yet played.
-    case unopened = "Unopened"
+    case unopened = "Unopened" // l10n: no (stored id: config.json keeps the view's name as written; built-in view names stay English)
     /// The books opened last, newest first, and of each feed's episodes
     /// and articles the one opened last (FR11): named for what it lists,
     /// as the listener asked on October 9, 2026 (FR13).
-    case recent = "Recently Opened"
+    case recent = "Recently Opened" // l10n: no (stored id: config.json keeps the view's name as written; built-in view names stay English)
     /// The reading list (FR09): books from any folder, in the order the
     /// user arranges, which no sort changes.
-    case readingList = "Reading List"
+    case readingList = "Reading List" // l10n: no (stored id: config.json keeps the view's name as written; built-in view names stay English)
 
     /// What the category Unopened replaced was called. A category saved
     /// under that name reads as Unopened.
-    static let formerNoFolderName = "No Folder"
+    static let formerNoFolderName = "No Folder" // l10n: no (stored id: a name an older library saved)
     /// What Recently Opened was called until FR13. A category saved under
     /// that name reads as Recently Opened, and is saved under its new name
     /// from then on; its sort is kept under the same key (`__recent__`).
-    static let formerRecentName = "Recent"
+    static let formerRecentName = "Recent" // l10n: no (stored id: a name an older library saved)
     /// The key that category's sort was saved under. It is read as the
     /// Unopened sort until one is chosen at Unopened (`Library.sortSetting(at:)`)
     /// and never written, and no folder can take it as a name.
@@ -99,7 +118,7 @@ enum LibraryCategory: String, CaseIterable, Codable {
         guard let category = LibraryCategory(savedName: name) else {
             throw DecodingError.dataCorrupted(DecodingError.Context(
                 codingPath: decoder.codingPath,
-                debugDescription: "No library category is named \(name)."
+                debugDescription: "No library category is named \(name)." // l10n: no (damage reason: stays English, question 3)
             ))
         }
         self = category
@@ -118,6 +137,10 @@ final class LibraryViewModel: ObservableObject {
         didSet {
             listCache.libraryDidChange(from: oldValue, to: library)
             bookUpdates.libraryDidChange(library)
+            // The sync's recorder compares the library with what it last
+            // recorded, a moment after the last change; inert until a sync
+            // folder is set up (FR43).
+            SyncCenter.shared.libraryDidChange()
         }
     }
     /// The lists Library windows show, each derived once and kept until a
@@ -126,6 +149,13 @@ final class LibraryViewModel: ObservableObject {
     let listCache = LibraryListCache()
     /// Tells open readers when the library changes or moves their book.
     let bookUpdates = LibraryBookUpdates()
+    /// Keeps the cloud notes saying whether sync is on (`observeSyncStatus()`, FR43).
+    var syncStatusSubscription: AnyCancellable?
+    /// The name of the device that wrote the winning value of a sync key in the
+    /// last merge (`SyncCenter.deviceName(forKey:)`); a test gives its own.
+    var syncDeviceName: @MainActor (SyncKey) -> String? = { SyncCenter.shared.deviceName(forKey: $0) }
+    /// Keeps the books kept on all devices current (`observeSyncStatus()`, FR43).
+    var syncKeptSubscription: AnyCancellable?
     /// The reading list (FR09), as the library holds it: its books in
     /// reading order and its options. Changed only through the functions in
     /// LibraryViewModel+ReadingList, each of which saves the index.
@@ -147,6 +177,11 @@ final class LibraryViewModel: ObservableObject {
     /// may be saved short of it (P07); a book counted once stays counted,
     /// even when read again. Tests give their own.
     var finishedBookIDs: @MainActor () -> Set<UUID> = { ReadingStatsService.shared.stats.finishedBookIDs }
+    /// The cloud commands that keep the reading list's books on this Mac in
+    /// a cloud library (`observeReadingListKeeping()`,
+    /// `setKeepsReadingListBooks(_:)`); tests give their own, over their
+    /// own kept books and cloud states.
+    var cloudCommands: LibraryCloudCommands = .shared
     /// Where readers are between checkpoints (TODO PERF11), which the rows
     /// and the summary bar show: `updateLiveReadingPosition` reports there
     /// instead of changing the library, so a playing reader no longer
@@ -176,10 +211,22 @@ final class LibraryViewModel: ObservableObject {
             audioEditActivity.setOpenInReaders(openBookIDs)
         }
     }
+    /// How many readers are open for each book, from `registerOpenBook` to
+    /// `unregisterOpenBook`: a book stays in `openBookIDs` until its last reader
+    /// closes, since two windows may show one book.
+    var openReaderCounts: [UUID: Int] = [:]
+    /// The books whose registration changed since `openBookIDs` last
+    /// followed: it is published on the main queue's next turn, never while
+    /// a reader is built inside SwiftUI's update (B22). Empty when none waits.
+    var openBookIDsToPublish: Set<UUID> = []
     /// Which books' audio is in use in a way an original must stay for:
     /// open in a reader (mirrored from `openBookIDs`), or being edited or
     /// rendered (FR04, `AudioOriginalSweep`).
     let audioEditActivity = AudioEditActivity()
+    /// The books whose downloads a synced library is taking off this
+    /// device now (FR46), which the editors, an export, a transcription,
+    /// and a sync's removal wait for.
+    let booksBeingFreed = BooksBeingFreed()
     /// The books being edited with Edit Text, whose feed downloads the
     /// feeds' rules leave for their next pass (`feedBooksInUse`): the app's
     /// sessions, unless a test gives the model sessions of its own.
@@ -197,6 +244,10 @@ final class LibraryViewModel: ObservableObject {
     /// changes it; each Library window's question sheet shows its current
     /// question (`ImportDecisionPresenter`).
     @Published var importDecisions = ImportDecisionQueue()
+
+    /// The question about protected books being added, while one waits for
+    /// its answer (FR41, `ImportPasswordRequest`); each Library window shows it as a sheet.
+    @Published var importPasswordRequest: ImportPasswordRequest?
 
     /// Book removal confirmation (supports single or multi-book removal)
     @Published var showRemoveBookDialog = false
@@ -246,8 +297,9 @@ final class LibraryViewModel: ObservableObject {
     /// The re-reads in another encoding under way, app-wide, which a quit
     /// waits for (`TextRereads`): the app's, unless a test gives its own.
     var textRereads: TextRereads = .shared
-    /// The books whose text is being read again in another encoding or with
-    /// other braille file characters, from the moment the listener confirms
+    /// The books whose text is being read again in another encoding, with
+    /// other braille file characters, or with another braille code, or whose
+    /// copy Replace Existing is replacing, from the moment the listener confirms
     /// until the library row has the new reading
     /// (`readTextAgain(bookID:choosing:access:)`, encodingchoice and
     /// braillecodes), kept in
@@ -325,6 +377,65 @@ final class LibraryViewModel: ObservableObject {
     private(set) var availableDataDirectory: DataDirectoryLocation?
     /// The reason last announced to VoiceOver, so each is announced once.
     private(set) var announcedUnavailability: DataDirectoryUnavailability?
+    /// The files the last check named as only in the cloud, which the fetch
+    /// reads next (`LibraryFileFetch`); empty when the check named none.
+    var pendingLibraryFiles: [URL] = []
+    /// The data directory, by its standardized path, that the listener chose
+    /// to open without its index, which did not arrive beside its identity
+    /// file in a cloud location (risk 5,
+    /// `openLibraryWithoutTheAwaitedFile()`), for the rest of this session;
+    /// nil until then. The check of any other folder still waits.
+    var libraryIndexWaitWaivedFor: String?
+    /// The data directory, by its standardized path, that the listener chose
+    /// to open without its identity file, which did not arrive beside its
+    /// index in a cloud location, on a Mac that knows no identity for it
+    /// (`LibraryFileAwaited.identityNotKnown`), for the rest of this
+    /// session; nil until then.
+    var libraryIdentityWaitWaivedFor: String?
+    /// Writes the identity file the listener chose to restore, with the
+    /// identity this Mac expects, into the data directory at the first
+    /// argument, and returns the identity it holds then
+    /// (`openLibraryWithoutTheAwaitedFile()`). `LibraryIdentity.adopt` unless
+    /// a test stands for a file that is only a placeholder.
+    var libraryIdentityAdopter: (URL, UUID) throws -> LibraryIdentity = { root, id in
+        try LibraryIdentity.adopt(in: root, identifiedAs: id).identity
+    }
+    /// The fetch of those files while one runs (LibraryViewModel+LibraryFetch);
+    /// nil otherwise, so a second never starts beside it.
+    var libraryFetchTask: Task<Void, Never>?
+    /// Names the running fetch: a fetch whose token is no longer this one's
+    /// drops its results.
+    var libraryFetchToken: UUID?
+    /// The data directory's path the running fetch works for.
+    var libraryFetchRoot: String?
+    /// The standardized paths of the files whose fetch reads were started
+    /// and have not returned, including those of a fetch that gave up on a
+    /// stuck read: none is read again meanwhile, so no threads pile up.
+    var libraryFilesBeingRead: Set<String> = []
+    /// The slots that cap the fetch reads in flight, for the library's
+    /// fetch and the launch files alike.
+    let libraryFetchReadSlots = LibraryFetchReadSlots()
+    /// Whether the user chose another library: this process is about to be
+    /// replaced, so nothing opens in it, and the Library window says which
+    /// book it was asked to open that will not be. Cleared if TextMouth can't
+    /// open again.
+    @Published var librarySwitchPending = false
+    /// The waits before the retries of a fetch whose reads fail or bring
+    /// nothing: a sync service that isn't up yet just after a restart often
+    /// is within half a minute.
+    var libraryFetchRetryDelays = LibraryViewModel.defaultLibraryFetchRetryDelays
+    /// How long a fetch waits for its reads before it shows the failure.
+    var libraryFetchStallLimit: Duration = BookCloudStorageService.defaultStallLimit
+    /// Whether this Mac is online, which a stalled fetch's log line says.
+    var libraryFetchReachability: NetworkReachability = .system
+    /// The Library window that last announced the Library Not Available
+    /// screen, which then announces that the library is available, since
+    /// an announcement needs a window to come from.
+    weak var unavailabilityWindow: PlatformWindow?
+    /// What the services that read the library's small launch files are told
+    /// when each has been fetched from the cloud (`fetchLaunchFilesInBackground`):
+    /// the app's services, unless a test passes recorders.
+    var launchFileTakeUp = LibraryLaunchFileTakeUp.app
 
     /// The feed engine whose feeds' items this library lists in their feeds'
     /// folders (FR11): the app's (`FeedCenter.shared`) while nil, or the one
@@ -335,6 +446,27 @@ final class LibraryViewModel: ObservableObject {
     /// engine's counts and states find rows through
     /// (`feedItemRows(of:)`, `feedBook(withID:)`).
     let feedItemRowLookup = FeedItemRowLookup()
+
+    /// How many readers rest on each book they read from the reading list
+    /// and have finished: a book so held does not leave the list when it is
+    /// finished, but when its readers have moved on or closed
+    /// (`holdFinishedBookOnReadingList(_:)`). Not published: no view shows it.
+    var readingListHoldCounts: [UUID: Int] = [:]
+    /// Finished books the reading list is to drop (`ReadingList.removesFinished`)
+    /// that a reader holds, which leave the list when the last hold is
+    /// released (`releaseFinishedBookFromReadingList(_:)`).
+    var finishedBooksAwaitingRelease: Set<UUID> = []
+    /// Tells the readers that the book it carries was just marked played by
+    /// hand (a feed item's Mark Played or Mark All Played) while the list
+    /// drops finished books: a reader that reads it from the list then rests
+    /// on it, as at a book's end (`holdFinishedBookOnReadingList()`). Sent
+    /// synchronously, so the holds are made before the list decides.
+    let bookMarkedPlayedByHand = PassthroughSubject<UUID, Never>()
+    /// Tells the readers that a sync merge gave a book another reading state
+    /// (FR43): an open reader at rest moves to the place and says so; a
+    /// playing one plays on, and its next checkpoint wins. Sent
+    /// synchronously, after the merge's rows are in the library.
+    let syncedReadingStates = PassthroughSubject<SyncedReadingState, Never>()
 
     /// Combine subscriptions shared across extension files
     var cancellables = Set<AnyCancellable>()
@@ -371,15 +503,20 @@ final class LibraryViewModel: ObservableObject {
     /// recordings' original takes whose time is up and of the audio
     /// editor's caches a crash left, the observers, and the background
     /// maintenance, after which the finished books are put at their ends
-    /// once (`moveFinishedBooksToTheirEndsOnce`, TODO P07). It runs once: at
-    /// launch, or on the Try Again that first finds the library.
+    /// once (`moveFinishedBooksToTheirEndsOnce`, TODO P07) and Search
+    /// Library's texts are prepared in the background
+    /// (`startupMaintenanceDidEnd()`). It runs once: at launch, or on the Try
+    /// Again that first finds the library.
     func startLibrary() {
         guard !hasStartedLibrary else { return }
         hasStartedLibrary = true
 
         // Ensure directory structure exists on first launch
         try? TextMouthPaths.ensureDirectoryStructure()
-        recordLibraryIdentity()
+        // Whether the library had an index before this startup gave it an
+        // identity: one that had none is new (`saveIndexOfNewLibrary(...)`).
+        let hadIndex = FileManager.default.fileExists(atPath: TextMouthPaths.libraryIndexFile.path)
+        let madeIdentity = recordLibraryIdentity()
         // Clear what ZIP imports interrupted by a crash left extracted.
         removeLeftoverArchiveExtractions()
         // Clear the reading texts this Mac kept that went unused for a day,
@@ -389,6 +526,13 @@ final class LibraryViewModel: ObservableObject {
         // Load the index and run the startup repair; an unreadable index
         // enters recovery with a provisional library and saves nothing.
         loadLibraryIndex()
+        saveIndexOfNewLibrary(madeIdentity: madeIdentity, hadIndex: hadIndex)
+        // Each package's plain copy a crash left while a password was being
+        // removed goes, and every book's file is looked at for a password,
+        // so the rows say "Locked" (FR41). Both go through the library's
+        // books, so they wait for the index: before it, the library has none.
+        sweepPasswordRemovalLeftovers()
+        lookForProtectedBooks()
         setupDataDirectoryChangeHandler()
         // Delete the originals of recordings and edited audiobooks whose
         // time is up, off the main thread, downloading nothing (FR04).
@@ -396,6 +540,10 @@ final class LibraryViewModel: ObservableObject {
         // Clear what the audio editor left in this Mac's caches when
         // TextMouth last ended with editors open, off the main thread.
         removeStaleAudioEditCachesInBackground()
+        // A book finished leaves the reading list when it says to.
+        observeFinishedBooks()
+        // The reading list's books are kept on this Mac in a cloud library.
+        observeReadingListKeeping()
         // The import overlay follows the import queue (FR10).
         observeImportActivity()
         // Speak Import Progress, from any window (FR10).
@@ -403,14 +551,50 @@ final class LibraryViewModel: ObservableObject {
         // Speak Download Progress, from any window (FR10's feed half).
         observeDownloadProgressRequests()
         // Once the rows are measured, the books Books Finished counts at
-        // 100 percent are put at their ends, once (TODO P07).
+        // 100 percent are put at their ends, once (TODO P07), and then
+        // Search Library's texts are prepared in the background.
         updateContentCachesAndStatistics { [weak self] in
-            self?.moveFinishedBooksToTheirEndsOnce()
+            self?.moveFinishedBooksToTheirEndsOnce { [weak self] in
+                self?.startupMaintenanceDidEnd()
+            }
         }
         // The podcast and article feeds start in the background (FR03).
         startFeeds()
         // In a library another Mac can open, say this Mac has it open.
         dataDirectoryEnvironment.sessionLease?.begin()
+        // In a cloud library, the other small files it opens with that are
+        // only in the cloud come down now, without holding anything back.
+        fetchLaunchFilesInBackground()
+        // The person's own interface lines are read now, on a background queue (a file only in the cloud is read once
+        // the fetch above brings it), and followed from here on (FR39). Nothing here writes the file.
+        // Not in a process hosting tests, where the shared service would follow every test's data folder and could change
+        // the lines every later test reads; the tests of the service start their own.
+        if !TextMouthRuntime.current.isHostedTest {
+            InterfaceTextOverrides.shared.start()
+        }
+        // In a cloud library, a conflict copy a sync service set aside of
+        // the index or a record is reported, once (Phase 0, compare0).
+        reportConflictCopiesInBackground()
+        // With a sync folder set up, the library syncs now, as install begins
+        // the launch's sync itself (FR43); with none, it does nothing.
+        SyncCenter.shared.install(host: self, dataDirectory: TextMouthPaths.root)
+        observeSyncStatus()
+    }
+
+    /// What follows the startup maintenance, once every pass that rebuilds
+    /// books' texts has ended: Search Library's texts are prepared in the
+    /// background from now on (`LibrarySearchPreparation`), from the
+    /// library's searchable books as they are at each pass, a data-directory
+    /// move holding the preparation back while it lasts. `preparation` is
+    /// the app's unless a test gives its own; the app's prepares nothing in
+    /// a process hosting tests.
+    func startupMaintenanceDidEnd(preparation: LibrarySearchPreparation = .shared) {
+        preparation.libraryIsReady(
+            books: { [weak self] in
+                self.map { LibrarySearchModel.searchableBooks(in: $0.library) } ?? []
+            },
+            moves: $dataDirectoryMove.map { $0 != nil }.eraseToAnyPublisher()
+        )
     }
 
     // MARK: - Book Update Helpers
@@ -465,23 +649,49 @@ struct DataDirectoryEnvironment {
     /// (`LibrarySessionLease`), held while the library is open; nil holds
     /// none.
     var sessionLease: LibrarySessionLease?
+    /// Reads one file or folder of the library that is only in the cloud, so
+    /// it comes to this Mac; nil fetches nothing, and the library then waits
+    /// for Try Again as before.
+    var libraryFetch: LibraryFileFetch?
 
-    /// An environment of a test's own, holding no session lease unless it
-    /// passes one.
-    init(preferences: UserDefaults, volumeNotifications: NotificationCenter, sessionLease: LibrarySessionLease? = nil) {
+    /// An environment of a test's own, holding no session lease and fetching
+    /// nothing unless it passes them.
+    init(
+        preferences: UserDefaults,
+        volumeNotifications: NotificationCenter,
+        sessionLease: LibrarySessionLease? = nil,
+        libraryFetch: LibraryFileFetch? = nil
+    ) {
         self.preferences = preferences
         self.volumeNotifications = volumeNotifications
         self.sessionLease = sessionLease
+        self.libraryFetch = libraryFetch
     }
 
     /// The app's: this process's preferences, the shared workspace, and the
     /// shared session lease.
     @MainActor static var app: DataDirectoryEnvironment {
+        #if os(macOS)
         DataDirectoryEnvironment(
             preferences: TextMouthRuntime.current.preferences,
             volumeNotifications: NSWorkspace.shared.notificationCenter,
-            sessionLease: .shared
+            sessionLease: .shared,
+            libraryFetch: LibraryFileFetcher.app
         )
+        #else
+        // iOS has no workspace to announce unmounted volumes (phase 0): the
+        // default center stands in, and nothing posts the unmount names to it.
+        // A phone's library is in its own container, never shared with
+        // another device and never in a cloud drive, so it holds no session
+        // lease, whose repeating timer would run for nothing, and fetches
+        // nothing from a cloud (the engineering review's F30).
+        DataDirectoryEnvironment(
+            preferences: TextMouthRuntime.current.preferences,
+            volumeNotifications: .default,
+            sessionLease: nil,
+            libraryFetch: nil
+        )
+        #endif
     }
 }
 
@@ -492,16 +702,30 @@ extension LibraryViewModel {
     /// Checks the data directory and makes what it finds the model's state:
     /// the gate that lets writers in or keeps them out, the reason the
     /// Library windows show, and, when the bookmark found the library under
-    /// another path, the data directory itself. Returns whether the library
-    /// is available.
+    /// another path, the data directory itself. Files only in the cloud start
+    /// the library's fetch of them (LibraryViewModel+LibraryFetch), which
+    /// runs this check again after each pass and ends when the library is
+    /// available, so the check cancels a fetch the files have outrun.
+    /// Returns whether the library is available.
     @discardableResult
     func checkDataDirectory() -> Bool {
         let preferences = dataDirectoryEnvironment.preferences
         let root = TextMouthPaths.root
-        let outcome = DataDirectoryCheck.of(root: root, preferences: preferences)
-            .run(itemStatus: CloudServices.itemStatus)
+        // While a fetch runs it reads the files itself, so the check asks
+        // the sync service for nothing.
+        let itemStatus: any CloudItemStatusProviding = libraryFetchTask == nil
+            ? CloudServices.itemStatus
+            : WithoutDownloadRequests(base: CloudServices.itemStatus)
+        var check = DataDirectoryCheck.of(root: root, preferences: preferences)
+        // The listener's choice to open this folder without its index (risk 5).
+        check.opensWithoutItsIndex = libraryIndexWaitWaivedFor == root.standardizedFileURL.path
+        check.opensWithoutItsIdentity = libraryIdentityWaitWaivedFor == root.standardizedFileURL.path
+        let (outcome, pending) = check.runNamingPending(itemStatus: itemStatus)
+        pendingLibraryFiles = pending
         switch outcome {
         case .available(_, let relocated):
+            // Files that arrived end any fetch still waiting on them.
+            cancelLibraryFetch()
             if let relocated {
                 useRelocatedDataDirectory(relocated, foundFor: root)
             }
@@ -519,7 +743,11 @@ extension LibraryViewModel {
             return true
         case .unavailable(let reason):
             DataDirectoryGate.close(root)
-            noteDataDirectoryUnavailable(reason)
+            // Files only in the cloud are fetched, and the fetch says so
+            // on the screen; any other reason is shown as it is.
+            if !beginLibraryFetch(for: reason) {
+                noteDataDirectoryUnavailable(reason)
+            }
             return false
         }
     }
@@ -552,11 +780,16 @@ extension LibraryViewModel {
     /// directory without a bookmark, chosen before bookmarks came in, gets
     /// one. A failure is logged and changes nothing: the next opening tries
     /// again.
-    func recordLibraryIdentity() {
+    ///
+    /// - Returns: Whether the library was given a new identity now.
+    @discardableResult
+    func recordLibraryIdentity() -> Bool {
         let root = TextMouthPaths.root
         let preferences = dataDirectoryEnvironment.preferences
+        var madeIdentity = false
         do {
             let adopted = try LibraryIdentity.adopt(in: root)
+            madeIdentity = adopted.isNew
             if adopted.isNew {
                 DiagnosticLog.event(
                     .storage,
@@ -575,6 +808,24 @@ extension LibraryViewModel {
         if !TextMouthPaths.isDefaultLocation(root), DataDirectoryPreferences.bookmark.read(from: preferences) == nil {
             DataDirectoryPreferences.bookmark.write(DataDirectoryPreferences.makeBookmark(of: root), to: preferences)
         }
+        return madeIdentity
+    }
+
+    /// Saves the index of a library that has just been made, once it is
+    /// loaded, so that library.json is beside the identity file from the
+    /// start (risk 5 of the local-first research). An empty library writes
+    /// no index until something changes, so its next launch, in a cloud
+    /// folder, would wait about 50 seconds for an index that was never
+    /// written and then say it hadn't arrived. A library that had an index
+    /// before it was given an identity, as one from before identities has,
+    /// or whose index is being recovered, is left as it is.
+    ///
+    /// - Parameters:
+    ///   - madeIdentity: Whether this startup gave the library its identity.
+    ///   - hadIndex: Whether library.json was there before this startup.
+    func saveIndexOfNewLibrary(madeIdentity: Bool, hadIndex: Bool) {
+        guard madeIdentity, !hadIndex, indexRecovery == nil else { return }
+        LibraryPersistenceService.saveAndWait(library)
     }
 
     // MARK: Try Again
@@ -593,20 +844,32 @@ extension LibraryViewModel {
         guard checkDataDirectory() else {
             if let reason = dataDirectoryUnavailability {
                 announcedUnavailability = reason
-                VoiceOverAnnouncer.announce("The library is still not available. \(reason.explanation)")
+                VoiceOverAnnouncer.announce(LibraryViewModelWording.stillNotAvailable(reason.explanation))
             }
             return false
         }
+        openLibraryAfterDataDirectoryReturned()
+        return true
+    }
+
+    /// Opens the library once a check has found it (the check has already
+    /// opened the gate and cleared the reason): the whole startup when it
+    /// was unavailable at launch, or, after it was lost while TextMouth ran,
+    /// a fresh read of library.json, then the lease again. Services that
+    /// left their files unread are told to read them, and VoiceOver hears
+    /// that the library is available. Try Again and the fetch of the
+    /// library's files (LibraryViewModel+LibraryFetch) both end here.
+    func openLibraryAfterDataDirectoryReturned() {
         if hasStartedLibrary {
             reloadLibraryAfterDataDirectoryReturned()
             dataDirectoryEnvironment.sessionLease?.begin()
+            fetchLaunchFilesInBackground()
         } else {
             startLibrary()
         }
         announcedUnavailability = nil
         NotificationCenter.default.post(name: .dataDirectoryDidBecomeAvailable, object: nil)
-        VoiceOverAnnouncer.announce("The library is available.")
-        return true
+        VoiceOverAnnouncer.announce(LibraryViewModelWording.available, from: unavailabilityWindow)
     }
 
     // MARK: The Library Not Available Screen
@@ -614,16 +877,17 @@ extension LibraryViewModel {
     /// Tells VoiceOver why the library can't be used, once for each reason,
     /// however many Library windows show the screen (FR02). The screen asks
     /// for this once VoiceOver has moved to the reason.
-    func announceDataDirectoryUnavailability(from window: NSWindow? = nil) {
+    func announceDataDirectoryUnavailability(from window: PlatformWindow? = nil) {
         guard let reason = dataDirectoryUnavailability, reason != announcedUnavailability else { return }
         announcedUnavailability = reason
+        unavailabilityWindow = window ?? unavailabilityWindow
         VoiceOverAnnouncer.announce(DataDirectoryUnavailableText.announcement(for: reason), from: window)
     }
 
     /// Refuses an app-wide action that needs the library while it can't be
     /// used (FR02), such as a book opened from Finder: the Library Not
     /// Available screen shows `refusal`, and VoiceOver hears it.
-    func refuseWhileDataDirectoryUnavailable(_ refusal: String, from window: NSWindow? = nil) {
+    func refuseWhileDataDirectoryUnavailable(_ refusal: String, from window: PlatformWindow? = nil) {
         dataDirectoryRefusalNotice = refusal
         VoiceOverAnnouncer.announce(refusal, from: window)
     }
@@ -634,11 +898,13 @@ extension LibraryViewModel {
     /// TextMouth runs: an unmounted volume, and a write that found the
     /// folder gone (`LibraryPersistenceService`).
     func observeDataDirectoryLoss() {
+        #if os(macOS)
         dataDirectoryEnvironment.volumeNotifications.publisher(for: NSWorkspace.didUnmountNotification)
             .compactMap { $0.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL }
             .receive(on: DispatchQueue.main)
             .sink { [weak self] volume in self?.volumeDidUnmount(volume) }
             .store(in: &cancellables)
+        #endif
         NotificationCenter.default.publisher(for: .dataDirectoryWriteFoundFolderMissing)
             .compactMap { $0.userInfo?[DataDirectoryEvents.rootKey] as? String }
             .receive(on: DispatchQueue.main)
@@ -674,7 +940,7 @@ extension LibraryViewModel {
         guard hasStartedLibrary, dataDirectoryUnavailability == nil, let available = availableDataDirectory else {
             return
         }
-        if let root, URL(fileURLWithPath: root).standardizedFileURL.path != available.named.path {
+        if let root, URL(fileURLWithPath: root, isDirectory: true).standardizedFileURL.path != available.named.path {
             return
         }
         guard !checkDataDirectory() else { return }
@@ -687,4 +953,128 @@ extension LibraryViewModel {
 
 extension Notification.Name {
     static let openBookWindow = Notification.Name("openBookWindow")
+}
+
+// MARK: - Wording
+
+/// What the library's view model says that no other wording enum owns: what
+/// VoiceOver hears as the library comes back (FR34).
+enum LibraryViewModelWording {
+    /// What VoiceOver hears when Try Again finds the library still missing:
+    /// "The library is still not available. <why>".
+    static func stillNotAvailable(_ explanation: String) -> String {
+        // Translators: VoiceOver announcement when Try Again on the Library Not Available screen finds the library still missing. %@ is the sentence that says why it is not available.
+        InterfaceText.line("libraryViewModel.stillNotAvailable", "The library is still not available. \(explanation)")
+    }
+
+    /// What VoiceOver hears when the library is found again.
+    static var available: String {
+        // Translators: VoiceOver announcement when the library, which had been missing, is found again.
+        InterfaceText.line("libraryViewModel.available", "The library is available.")
+    }
+
+    // MARK: Failure contexts
+
+    /// What begins the error alert's message when a library operation fails:
+    /// `OperationOutcome.failure(_:_:)` writes "<context>: <reason>".
+
+    /// The context of a folder that could not be created.
+    static var couldNotCreateFolder: String {
+        // Translators: Start of the error message when a new folder could not be created. The reason follows it after a colon.
+        InterfaceText.line("libraryViewModel.couldNotCreateFolder", "Could not create folder")
+    }
+
+    /// The context of books that could not be moved to a folder.
+    static var couldNotMoveBooks: String {
+        // Translators: Start of the error message when books could not be moved to a folder. The reason follows it after a colon.
+        InterfaceText.line("libraryViewModel.couldNotMoveBooks", "Could not move books")
+    }
+
+    /// The context of a duplicate's new copy that could not be discarded.
+    static var couldNotDiscardDuplicateImport: String {
+        // Translators: Start of the error message when the new copy of a duplicate book could not be discarded. The reason follows it after a colon.
+        InterfaceText.line("libraryViewModel.couldNotDiscardDuplicateImport", "Could not discard duplicate import")
+    }
+
+    /// The context of a replacement that could not go ahead.
+    static var couldNotReplaceDuplicate: String {
+        // Translators: Start of the error message when Replace Existing could not put the new copy in place of the library's copy. The reason follows it after a colon.
+        InterfaceText.line("libraryViewModel.couldNotReplaceDuplicate", "Could not replace duplicate")
+    }
+
+    /// The context of the books of an imported ZIP archive that could not be filed in their new folder.
+    static var couldNotOrganizeImportedZIPBooks: String {
+        // Translators: Start of the error message when the books of an imported ZIP archive could not be moved into the folder made for them. The reason follows it after a colon.
+        InterfaceText.line("libraryViewModel.organizeZipFailed", "Could not organize imported ZIP books")
+    }
+
+    /// The context of a folder that could not be deleted with its contents moved out.
+    static func couldNotDeleteFolderAndMoveContents(_ name: String) -> String {
+        // Translators: Start of the error message when a folder could not be deleted and its contents moved to its parent. %@ is the folder's name. The reason follows it after a colon.
+        InterfaceText.line("libraryViewModel.deleteFolderFailed", "Could not delete \"\(name)\" and move its contents")
+    }
+
+    /// The context of a folder's contents that could not be relocated.
+    static var couldNotRelocateFolderContents: String {
+        // Translators: Start of the error message when the books of a deleted folder could not be moved to their new place. The reason follows it after a colon.
+        InterfaceText.line("libraryViewModel.couldNotRelocateFolderContents", "Could not relocate folder contents")
+    }
+
+    /// What the alert says when a folder to remove has an invalid or changed library path.
+    static var couldNotRemoveFolderPathInvalid: String {
+        // Translators: Error message when a folder cannot be removed because its place in the library is not valid any more, or it moved.
+        InterfaceText.line("libraryViewModel.couldNotRemoveFolderPathInvalid", "Could not remove folder: its library path is invalid or has changed.")
+    }
+
+    /// The context of a refused move of the folder named `name`.
+    static func couldNotMoveNamedFolder(_ name: String) -> String {
+        // Translators: Start of the error message when a folder was refused a move. %@ is the folder's name. The reason follows it after a colon.
+        InterfaceText.line("libraryViewModel.couldNotMoveNamedFolder", "Could not move \"\(name)\"")
+    }
+
+    /// The context of a folder move that failed after the library accepted it.
+    static var couldNotMoveFolder: String {
+        // Translators: Start of the error message when moving a folder failed on disk, and everything was put back. The reason follows it after a colon.
+        InterfaceText.line("libraryViewModel.couldNotMoveFolder", "Could not move folder")
+    }
+
+    /// The context of a refused rename of the folder named `name`.
+    static func couldNotRenameNamedFolder(_ name: String) -> String {
+        // Translators: Start of the error message when a folder was refused a new name. %@ is the folder's current name. The reason follows it after a colon.
+        InterfaceText.line("libraryViewModel.couldNotRenameNamedFolder", "Could not rename \"\(name)\"")
+    }
+
+    /// The context of a folder rename that failed after the library accepted it.
+    static var couldNotRenameFolder: String {
+        // Translators: Start of the error message when renaming a folder failed on disk, and everything was put back. The reason follows it after a colon.
+        InterfaceText.line("libraryViewModel.couldNotRenameFolder", "Could not rename folder")
+    }
+
+    /// The reason a move is refused when a destination folder's path is not a safe library path.
+    static var invalidDestinationFolderPath: String {
+        // Translators: Error shown when books or folders cannot be moved because the destination folder's path is not a valid place in the library.
+        InterfaceText.line("libraryViewModel.invalidDestinationFolderPath", "A destination folder path is invalid.")
+    }
+
+    // MARK: Remove from Library Only
+
+    /// The heading of the books Remove from Library Only kept, which the
+    /// error alert lists one a line under it. `count` is how many.
+    static func removalRefusedHeading(count: Int) -> String {
+        count == 1
+            // Translators: Heading of the error alert's list when Remove from Library Only could not mark one book's package, so it stays in the library. The book's title and the reason follow on the next line.
+            ? InterfaceText.line("common.thisBookCouldNotBeRemoved", "This book could not be removed from the library and remains in it:")
+            // Translators: Heading of the error alert's list when Remove from Library Only could not mark the packages of several books, so they stay in the library. Each book's title and the reason follow on their own lines.
+            : InterfaceText.line("common.theseBooksCouldNotBeRemoved", "These books could not be removed from the library and remain in it:")
+    }
+
+    /// The heading of the books Remove from Library Only removed but whose
+    /// bookInfo.json file stays.
+    static func removalRecordLeftHeading(count: Int) -> String {
+        count == 1
+            // Translators: Heading of the error alert's list when Remove from Library Only removed one book but could not delete the bookInfo.json file in its package. bookInfo.json is a file name. The book's title and the reason follow on the next line.
+            ? InterfaceText.line("libraryViewModel.removalRecordLeftHeading.stays", "This book was removed from the library, but its bookInfo.json file could not be deleted. It stays out of the library:")
+            // Translators: Heading of the error alert's list when Remove from Library Only removed several books but could not delete the bookInfo.json files in their packages. bookInfo.json is a file name. Each book's title and the reason follow on their own lines.
+            : InterfaceText.line("libraryViewModel.removalRecordLeftHeading.these", "These books were removed from the library, but their bookInfo.json files could not be deleted. They stay out of the library:")
+    }
 }

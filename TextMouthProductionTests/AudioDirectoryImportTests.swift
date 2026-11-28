@@ -68,6 +68,49 @@ final class AudioDirectoryImportTests: XCTestCase {
         XCTAssertTrue(parsed.content.chapters.allSatisfy { !$0.text.isEmpty })
     }
 
+    /// A book folder that is itself a symbolic link is read as the folder it
+    /// leads to, once, with the links inside it still passed over: the scan
+    /// found its tracks, and the book parses from the link as from the folder.
+    /// A link that leads nowhere is still refused, not read as empty.
+    func testABookFolderThatIsASymbolicLinkIsReadAsTheFolderItLeadsTo() async throws {
+        let base = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: base) }
+        let real = base.appendingPathComponent("Real", isDirectory: true)
+        for name in ["Disc 1/Track.wav", "Disc 2/Track.wav"] {
+            try AudioTestFixtures.writeSilence(to: real.appendingPathComponent(name))
+        }
+        // A link inside the folder, which stays passed over.
+        try FileManager.default.createSymbolicLink(
+            at: real.appendingPathComponent("link.wav"),
+            withDestinationURL: real.appendingPathComponent("Disc 1/Track.wav")
+        )
+        let link = base.appendingPathComponent("Linked")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: real)
+
+        let expected = ["Disc 1/Track.wav", "Disc 2/Track.wav"]
+        XCTAssertEqual(
+            try AudioBookParser.trackPaths(in: real, scan: .importing), expected,
+            "the folder itself reads wrong, so the fixture is not what this test thinks"
+        )
+        for scan in [AudioBookParser.TrackScan.importing, .package] {
+            XCTAssertEqual(
+                try AudioBookParser.trackPaths(in: link, scan: scan), expected,
+                "the folder's tracks through its link, \(scan)"
+            )
+        }
+        let parsed = try await AudioBookParser.parseDirectory(url: link)
+        XCTAssertEqual(parsed.content.chapters.count, 2, "chapters of the book read through the link")
+        XCTAssertEqual(
+            parsed.filePaths.map { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path },
+            expected.map { real.appendingPathComponent($0).resolvingSymlinksInPath().path }
+        )
+
+        // A link to nothing is no folder: refused, as an unreadable folder is.
+        let dangling = base.appendingPathComponent("Dangling")
+        try FileManager.default.createSymbolicLink(at: dangling, withDestinationURL: base.appendingPathComponent("Gone"))
+        XCTAssertThrowsError(try AudioBookParser.audioFiles(in: dangling), "a link to nothing was read")
+    }
+
     /// A repeated manifest entry must not repeat a chapter, and identical
     /// basenames in separate directories must not select the wrong disc.
     func testManifestOrdersRelativePathsOnceAndPreservesTitles() async throws {
@@ -309,6 +352,195 @@ final class AudioDirectoryImportTests: XCTestCase {
 
         XCTAssertEqual(parsed.content.chapters.map(\.title), ["Opening", "Closing"])
         XCTAssertEqual(parsed.segments?.map(\.file), ["Lectures/a.wav", "Lectures/a.wav"])
+    }
+
+    // MARK: - Free Space
+
+    /// A folder of tracks is checked against the disk's free space before
+    /// any track is copied, as an archive is: with less free than the
+    /// tracks need plus the reserve the import keeps, the import is refused
+    /// in the words of a full disk, nothing is left in the library, and the
+    /// folder is untouched; with room, the same folder imports. Both the
+    /// tracks' size alone and the reserve alone are enough to refuse.
+    func testAFolderOfTracksIsRefusedBeforeCopyingWhenTheDiskLacksRoom() throws {
+        let sandbox = try LibraryIndexSandbox.capture()
+        let libraryFolder = "Audio Space \(UUID().uuidString.prefix(8))"
+        addTeardownBlock {
+            sandbox.restore()
+            try? FileManager.default.removeItem(at: TextMouthPaths.libraryDir.appendingPathComponent(libraryFolder, isDirectory: true))
+        }
+        let directory = temporaryDirectory()
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("Two Tracks")
+        try AudioTestFixtures.writeSilence(to: source.appendingPathComponent("one.wav"), duration: 1)
+        try AudioTestFixtures.writeSilence(to: source.appendingPathComponent("two.wav"), duration: 1)
+        let trackBytes = try ["one.wav", "two.wav"].reduce(Int64(0)) { total, name in
+            total + Int64(try XCTUnwrap(source.appendingPathComponent(name).resourceValues(forKeys: [.fileSizeKey]).fileSize))
+        }
+        let before = try Set(FileManager.default.contentsOfDirectory(atPath: source.path))
+        // The package is built in this Mac's Import Staging folder, not in
+        // the library folder, so a package left there would go unseen below.
+        let stagedBefore = try stagedImportPackages()
+        let refusal = "Copying it into the library failed: There isn’t enough free space on the disk."
+
+        // Less free than the tracks need, no reserve; then exactly the
+        // tracks' size free but a reserve to keep.
+        let tooLittle = Self.limits(reserve: 0, freeSpace: trackBytes - 1)
+        let reserveEatsIt = Self.limits(reserve: 1, freeSpace: trackBytes)
+        for (label, limits) in [("tracks alone", tooLittle), ("reserve", reserveEatsIt)] {
+            XCTAssertThrowsError(
+                try ArchiveLimits.$current.withValue(limits) {
+                    try FileImportService.importAudioFolderWithReport(from: source, toFolder: libraryFolder)
+                },
+                label
+            ) { error in
+                let failure = error as? ImportFailure
+                XCTAssertEqual(failure?.step, .copying, label)
+                XCTAssertEqual(failure?.reason, refusal, label)
+            }
+            let entries = (try? FileManager.default.contentsOfDirectory(
+                atPath: TextMouthPaths.libraryDir.appendingPathComponent(libraryFolder).path
+            )) ?? []
+            XCTAssertEqual(entries, [], "\(label): nothing may stay published")
+            XCTAssertEqual(
+                try stagedImportPackages().subtracting(stagedBefore), [],
+                "\(label): no staged package may be left"
+            )
+            XCTAssertEqual(try Set(FileManager.default.contentsOfDirectory(atPath: source.path)), before, label)
+        }
+
+        // Room for the tracks and the reserve: the same folder imports.
+        let roomy = Self.limits(reserve: 1, freeSpace: trackBytes + 1)
+        let imported = try ArchiveLimits.$current.withValue(roomy) {
+            try FileImportService.importAudioFolderWithReport(from: source, toFolder: libraryFolder)
+        }
+        XCTAssertEqual(imported.book.format, .audio)
+    }
+
+    /// The disk is asked before the first track is copied, not after: with
+    /// a second track the copy cannot read, a disk lacking room is refused
+    /// in the words of a full disk, not with the second track's permission
+    /// error, and not a byte has been copied; with room, the same tracks
+    /// fail on the second one, so the first was copied and the refusal above
+    /// was the disk's own.
+    func testTheDiskIsAskedBeforeTheFirstTrackIsCopied() throws {
+        let directory = temporaryDirectory()
+        let first = directory.appendingPathComponent("one.wav")
+        let unreadable = directory.appendingPathComponent("two.wav")
+        let destination = directory.appendingPathComponent("Copies", isDirectory: true)
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        try AudioTestFixtures.writeSilence(to: first, duration: 1)
+        try AudioTestFixtures.writeSilence(to: unreadable, duration: 1)
+        // The second block runs first (teardown blocks run last in, first
+        // out), so the file can be removed with its folder.
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        addTeardownBlock { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: unreadable.path) }
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: unreadable.path)
+        try XCTSkipIf(
+            FileManager.default.isReadableFile(atPath: unreadable.path),
+            "this process reads files whatever their permissions"
+        )
+        let tracks = [(path: "one.wav", source: first), (path: "two.wav", source: unreadable)]
+        let trackBytes = try tracks.reduce(Int64(0)) { total, track in
+            total + Int64(try XCTUnwrap(track.source.resourceValues(forKeys: [.fileSizeKey]).fileSize))
+        }
+
+        XCTAssertThrowsError(
+            try ArchiveLimits.$current.withValue(Self.limits(reserve: 0, freeSpace: trackBytes - 1)) {
+                try FileImportService.copyTracks(tracks, into: destination)
+            }
+        ) { error in
+            XCTAssertEqual((error as? CocoaError)?.code, .fileWriteOutOfSpace)
+        }
+        XCTAssertEqual(
+            try FileManager.default.contentsOfDirectory(atPath: destination.path), [],
+            "nothing may be copied before the refusal"
+        )
+
+        XCTAssertThrowsError(
+            try ArchiveLimits.$current.withValue(Self.limits(reserve: 0, freeSpace: trackBytes)) {
+                try FileImportService.copyTracks(tracks, into: destination)
+            }
+        ) { error in
+            XCTAssertNotEqual((error as? CocoaError)?.code, .fileWriteOutOfSpace, "with room, the second track's own error")
+        }
+        XCTAssertTrue(try FileManager.default.contentsOfDirectory(atPath: destination.path).contains("one.wav"))
+    }
+
+    /// A track the copy will clone (`ArchiveLimits.copyIsClone`: it comes
+    /// from the same APFS volume as the package) costs almost no space, so
+    /// the free-space check counts it as empty: a folder bigger than the
+    /// free space is not refused when it is cloned, is refused when it is
+    /// copied whole (another volume), and is refused for the tracks that
+    /// are copied whole when only some are cloned.
+    func testATrackTheCopyClonesIsNotCountedAgainstTheFreeSpace() throws {
+        let directory = temporaryDirectory()
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        let cloned = directory.appendingPathComponent("cloned.wav")
+        let copied = directory.appendingPathComponent("copied.wav")
+        try AudioTestFixtures.writeSilence(to: cloned, duration: 1)
+        try AudioTestFixtures.writeSilence(to: copied, duration: 1)
+        let size = Int64(try XCTUnwrap(copied.resourceValues(forKeys: [.fileSizeKey]).fileSize))
+        let tracks = [(path: "cloned.wav", source: cloned), (path: "copied.wav", source: copied)]
+        // Each attempt copies into a folder of its own, so none meets another's.
+        var attempt = 0
+        func destination() -> URL {
+            attempt += 1
+            return directory.appendingPathComponent("Copies \(attempt)", isDirectory: true)
+        }
+
+        // Room for one track and no more.
+        var limits = Self.limits(reserve: 0, freeSpace: size)
+        limits.copyIsClone = { source, _ in source == cloned }
+        XCTAssertNoThrow(try ArchiveLimits.$current.withValue(limits) {
+            try FileImportService.copyTracks(tracks, into: destination())
+        }, "one track cloned, one copied: the copied one fits")
+
+        limits.copyIsClone = { _, _ in true }
+        limits.freeSpace = { _ in 0 }
+        XCTAssertNoThrow(try ArchiveLimits.$current.withValue(limits) {
+            try FileImportService.copyTracks(tracks, into: destination())
+        }, "both cloned: a disk with nothing free still takes them")
+
+        // Another volume: the same tracks are copied whole.
+        limits.copyIsClone = { _, _ in false }
+        limits.freeSpace = { _ in size }
+        XCTAssertThrowsError(try ArchiveLimits.$current.withValue(limits) {
+            try FileImportService.copyTracks(tracks, into: destination())
+        }, "both copied whole: two tracks do not fit in room for one") { error in
+            XCTAssertEqual((error as? CocoaError)?.code, .fileWriteOutOfSpace)
+        }
+    }
+
+    /// The rule the import really uses (`ArchiveLimits.standard.copyIsClone`):
+    /// a file and a folder on one volume are a clone exactly when that
+    /// volume supports cloning, and a file that is not there is judged by
+    /// its folder. Another volume cannot be had on every machine this runs
+    /// on, so that half of the rule is the injected test above.
+    func testTheStandardRuleCallsACopyOnTheSameCloningVolumeAClone() throws {
+        let directory = temporaryDirectory()
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("track.wav")
+        let destination = directory.appendingPathComponent("Copies", isDirectory: true)
+        try AudioTestFixtures.writeSilence(to: source, duration: 1)
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        let supportsCloning = try destination.resourceValues(forKeys: [.volumeSupportsFileCloningKey]).volumeSupportsFileCloning == true
+
+        XCTAssertEqual(ArchiveLimits.standard.copyIsClone(source, destination), supportsCloning)
+        try XCTSkipUnless(supportsCloning, "the temporary folder's volume does not clone files")
+        XCTAssertTrue(ArchiveLimits.standard.copyIsClone(source, destination))
+    }
+
+    /// Limits that change nothing but the disk: the standard ones, with
+    /// `reserve` bytes to keep and `freeSpace` bytes free on every disk, and
+    /// every copy a full one (not a clone), whatever volume the test
+    /// machine's folders are on.
+    static func limits(reserve: Int64, freeSpace: Int64) -> ArchiveLimits {
+        var limits = ArchiveLimits.standard
+        limits.freeSpaceReserve = reserve
+        limits.freeSpace = { _ in freeSpace }
+        limits.copyIsClone = { _, _ in false }
+        return limits
     }
 
     /// Every fixture lives under a unique temporary directory.

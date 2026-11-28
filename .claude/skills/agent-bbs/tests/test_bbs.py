@@ -1593,8 +1593,8 @@ class SkillDocumentTests(BoardTestCase):
         for step in (
             "bbs register NAME --role",
             "bbs inbox NAME --unread",
-            "before every build, before every commit, and before your final report",
-            "--tag build",
+            "before every train request, before every commit, and before your final report",
+            "build-train.py request --agent NAME",
             "--tag commit",
             "--tag finding --file",
             "--tag question",

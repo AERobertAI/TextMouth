@@ -1,0 +1,17 @@
+<!-- page: 1 -->
+
+Test for tested outline numbers\.
+
+1. This is 1
+2. This is 2\.
+   
+   1. This is 2\.1
+   2. This is 2\.2
+   3. This is 2\.3
+3. This is 3
+4. This is 4
+   
+   1. This is 4\.1
+   2. This is 4\.2
+
+End of Doc\.

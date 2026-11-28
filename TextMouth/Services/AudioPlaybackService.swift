@@ -447,19 +447,29 @@ enum AudioSpeed {
     /// Spoken equivalent of `visibleLabel(for:)` for VoiceOver and braille,
     /// e.g. "1.25 times speed". A bare "1.25x" is read ambiguously.
     static func spokenLabel(for speed: Double) -> String {
-        "\(formattedNumber(normalized(speed))) times speed"
+        let number = formattedNumber(normalized(speed))
+        // Translators: What VoiceOver and braille say for the playback speed of an audiobook, such as "1.25 times speed". %@ is the speed's number, such as 1.25.
+        return InterfaceText.line("audioSpeed.spokenLabel", "\(number) times speed")
     }
 
     /// Accessibility label for a button that moves the speed by `step`,
     /// e.g. "Increase audio speed by 0.1 times".
     static func stepButtonLabel(increasing: Bool, by step: Double) -> String {
-        "\(increasing ? "Increase" : "Decrease") audio speed by \(formattedNumber(step)) times"
+        let number = formattedNumber(step)
+        if increasing {
+            // Translators: Accessibility label of the button that raises the audio speed. %@ is the size of one step, such as 0.1.
+            return InterfaceText.line("audioSpeed.stepButtonLabel.increase", "Increase audio speed by \(number) times")
+        }
+        // Translators: Accessibility label of the button that lowers the audio speed. %@ is the size of one step, such as 0.1.
+        return InterfaceText.line("audioSpeed.stepButtonLabel.decrease", "Decrease audio speed by \(number) times")
     }
 
     /// Accessibility hint for an adjustable control that moves in steps of
     /// `step`, e.g. "Changes the speed in steps of 0.05 times".
     static func stepHint(_ step: Double) -> String {
-        "Changes the speed in steps of \(formattedNumber(step)) times"
+        let number = formattedNumber(step)
+        // Translators: Accessibility hint of the audio speed control that adjusts in steps. %@ is the size of one step, such as 0.05.
+        return InterfaceText.line("audioSpeed.stepHint", "Changes the speed in steps of \(number) times")
     }
 }
 
@@ -512,11 +522,70 @@ struct AudioPlaybackFailure: Error, Equatable, Sendable {
 
     /// What happened to the file, as a clause that can end a longer
     /// sentence: "the file 03.mp3 is missing".
-    var problem: String { "the file \(fileName) \(predicate)" }
+    var problem: String {
+        let name = fileName
+        switch reason {
+        case .fileMissing:
+            // Translators: A clause that ends a longer sentence about an audio file that cannot play: the file is not there. %@ is the file's name, such as 03.mp3.
+            return InterfaceText.line("audioPlaybackFailure.problem.fileMissing", "the file \(name) is missing")
+        case .fileUnreadable:
+            // Translators: A clause that ends a longer sentence about an audio file that cannot play: it cannot be read as audio. %@ is the file's name, such as 03.mp3.
+            return InterfaceText.line("audioPlaybackFailure.problem.fileUnreadable", "the file \(name) is damaged, unreadable, or not an audio file")
+        case .failedDuringPlayback:
+            // Translators: A clause that ends a longer sentence about an audio file that cannot play: it failed while playing. %@ is the file's name, such as 03.mp3.
+            return InterfaceText.line("audioPlaybackFailure.problem.failedPartway", "the file \(name) failed partway through")
+        case .stalled:
+            // Translators: A clause that ends a longer sentence about an audio file that cannot play: the disk was too slow. %@ is the file's name, such as 03.mp3.
+            return InterfaceText.line("audioPlaybackFailure.problem.stalled", "the file \(name) could not be read quickly enough")
+        case .stoppedResponding:
+            // Translators: A clause that ends a longer sentence about an audio file that cannot play: playback stopped responding. %@ is the file's name, such as 03.mp3.
+            return InterfaceText.line("audioPlaybackFailure.problem.stoppedResponding", "the file \(name) stopped responding")
+        case .memoryRunaway:
+            // Translators: A clause that ends a longer sentence about an audio file that cannot play: TextMouth stopped it to protect the Mac. %@ is the file's name, such as 03.mp3.
+            return InterfaceText.line("audioPlaybackFailure.problem.memoryRunaway", "the file \(name) was stopped because TextMouth's memory grew too large")
+        }
+    }
+
+    /// The problem as a sentence in English whatever the interface language,
+    /// for the debug log, which stays English: "The file 03.mp3 is missing."
+    var logMessage: String {
+        let what: String
+        switch reason {
+        case .fileMissing: what = "is missing" // l10n: no (debug log)
+        case .fileUnreadable: what = "is damaged, unreadable, or not an audio file" // l10n: no (debug log)
+        case .failedDuringPlayback: what = "failed partway through" // l10n: no (debug log)
+        case .stalled: what = "could not be read quickly enough" // l10n: no (debug log)
+        case .stoppedResponding: what = "stopped responding" // l10n: no (debug log)
+        case .memoryRunaway: what = "was stopped because TextMouth's memory grew too large" // l10n: no (debug log)
+        }
+        return "The file \(fileName) \(what)." // l10n: no (debug log)
+    }
 
     /// The problem as a sentence of its own, to show or speak:
     /// "The file 03.mp3 is missing."
-    var message: String { "The file \(fileName) \(predicate)." }
+    var message: String {
+        let name = fileName
+        switch reason {
+        case .fileMissing:
+            // Translators: A sentence telling an audio file is not there. %@ is the file's name, such as 03.mp3.
+            return InterfaceText.line("audioPlaybackFailure.message.fileMissing", "The file \(name) is missing.")
+        case .fileUnreadable:
+            // Translators: A sentence telling an audio file cannot be read as audio. %@ is the file's name, such as 03.mp3.
+            return InterfaceText.line("audioPlaybackFailure.message.fileUnreadable", "The file \(name) is damaged, unreadable, or not an audio file.")
+        case .failedDuringPlayback:
+            // Translators: A sentence telling an audio file failed while playing. %@ is the file's name, such as 03.mp3.
+            return InterfaceText.line("audioPlaybackFailure.message.failedPartway", "The file \(name) failed partway through.")
+        case .stalled:
+            // Translators: A sentence telling an audio file could not be read fast enough to play. %@ is the file's name, such as 03.mp3.
+            return InterfaceText.line("audioPlaybackFailure.message.stalled", "The file \(name) could not be read quickly enough.")
+        case .stoppedResponding:
+            // Translators: A sentence telling playback of an audio file stopped responding. %@ is the file's name, such as 03.mp3.
+            return InterfaceText.line("audioPlaybackFailure.message.stoppedResponding", "The file \(name) stopped responding.")
+        case .memoryRunaway:
+            // Translators: A sentence telling TextMouth stopped an audio file to protect the Mac. %@ is the file's name, such as 03.mp3.
+            return InterfaceText.line("audioPlaybackFailure.message.memoryRunaway", "The file \(name) was stopped because TextMouth's memory grew too large.")
+        }
+    }
 
     /// The reason for an error AVFoundation raised while opening or playing
     /// a file.
@@ -535,24 +604,6 @@ struct AudioPlaybackFailure: Error, Equatable, Sendable {
         itemBecameReady: Bool
     ) -> Reason {
         fileProblem ?? (itemBecameReady ? .failedDuringPlayback : .fileUnreadable)
-    }
-
-    /// What happened, following "the file 03.mp3".
-    private var predicate: String {
-        switch reason {
-        case .fileMissing:
-            return "is missing"
-        case .fileUnreadable:
-            return "is damaged, unreadable, or not an audio file"
-        case .failedDuringPlayback:
-            return "failed partway through"
-        case .stalled:
-            return "could not be read quickly enough"
-        case .stoppedResponding:
-            return "stopped responding"
-        case .memoryRunaway:
-            return "was stopped because TextMouth's memory grew too large"
-        }
     }
 }
 
@@ -1640,9 +1691,16 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
     /// Everything is read through AVFoundation's asynchronous loading API
     /// (TODO Q06): a marker whose title cannot be read is named "Chapter",
     /// and a file whose markers cannot be loaded has none.
-    /// When AVFoundation finds no chapters in an MPEG-4 file (M4A, M4B, MP4,
-    /// M4V, MOV), the file's Nero `chpl` atom is read by hand instead
-    /// (`NeroChapterReader`), since some audiobook tools write only that.
+    /// When AVFoundation finds no chapters, the list the file's kind keeps
+    /// is read by hand instead (`FileChapterReaders`): an MPEG-4 file's (M4A,
+    /// M4B, MP4, M4V, MOV) Nero `chpl` atom (`NeroChapterReader`), since some
+    /// audiobook tools write only that, a FLAC file's cue sheet
+    /// (`FLACCueSheetReader`, FMT24), since a CD rip's track list can be
+    /// kept there alone, and a WAVE or AIFF file's markers
+    /// (`AudioMarkerList`, FMT17), which audio editors and Broadcast Wave
+    /// recorders write; the last two with the sound before their first
+    /// place titled as the book is, and none when they make one chapter
+    /// (`FileChapterReaders.placedChapters`).
     static func extractChapters(from url: URL) async -> [(title: String, startTime: TimeInterval, duration: TimeInterval)] {
         // An Ogg file never reaches AVFoundation's probing (see `metadataAsset`).
         guard let asset = metadataAsset(for: url) else { return [] }
@@ -1657,15 +1715,20 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
                                                               filteredByIdentifier: .commonIdentifierTitle)
                 // A title that fails to load counts as missing, as the
                 // synchronous stringValue this replaces returned nil.
-                let title = (try? await titleItems.first?.load(.stringValue)) ?? "Chapter"
+                let title = (try? await titleItems.first?.load(.stringValue)) ?? "Chapter" // l10n: no (stored: it becomes the chapter's title in the book's files)
                 let start = CMTimeGetSeconds(group.timeRange.start)
                 let dur = CMTimeGetSeconds(group.timeRange.duration)
                 chapters.append((title: title, startTime: start.isFinite ? start : 0, duration: dur.isFinite ? dur : 0))
             }
-            // No chapter track: try the Nero chapter list of an MPEG-4 file.
-            if chapters.isEmpty, NeroChapterReader.mayHoldChapterList(url) {
+            // No chapters AVFoundation reads: try the list the file's kind
+            // keeps, read by hand, the sound before its first place titled
+            // as the book is (`AudioBookParser.bookTitle`).
+            if chapters.isEmpty {
                 let length = CMTimeGetSeconds((try? await asset.load(.duration)) ?? .zero)
-                return NeroChapterReader.bookChapters(from: NeroChapterReader.read(at: url), fileDuration: length)
+                let listed = await FileChapterReaders.bookChapters(of: url, lasting: length) {
+                    AudioBookParser.bookTitle(metadataTitle: await extractMetadata(from: url).title, of: url)
+                }
+                if let listed { return listed }
             }
             return chapters
         } catch {
@@ -1683,14 +1746,20 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
 
     /// Extract comprehensive metadata from an audio file including album, genre, year, and duration.
     /// Returns an AudioMetadata struct with all available fields populated.
-    static func extractFullMetadata(from url: URL) async -> AudioMetadata {
+    /// A file only FFmpeg reads (FMT31) is asked of TextMouth's FFmpeg helper
+    /// with `ffmpeg` (FMT50), which the import reads on its own thread
+    /// (`FFmpegAudioConverter.tool`).
+    static func extractFullMetadata(from url: URL, ffmpeg: FFmpegAudioConverter.Tool = .bundled) async -> AudioMetadata {
         var result = AudioMetadata()
 
         // Set the file format from the extension
         result.fileFormat = url.pathExtension.uppercased()
 
         // An Ogg file is never opened by AVFoundation (see `metadataAsset`):
-        // its tags and length are read from its own bytes.
+        // its tags and length are read from its own bytes. Nor is a file
+        // only FFmpeg reads, whose tags the FFmpeg helper reads in a watched
+        // child, choosing among artist, author, and album artist as the
+        // report says (`FFmpegReport.bookTags(in:)`).
         guard let asset = metadataAsset(for: url) else {
             if let header = OggHeaderReader.read(at: url) {
                 result.title = header.tags.title
@@ -1699,6 +1768,13 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
                 result.genre = header.tags.genre
                 result.year = header.tags.date
                 result.duration = durationString(header.duration)
+            } else if let probed = await FFmpegAudioConverter.tags(of: url, using: ffmpeg) {
+                result.title = probed.tags.title
+                result.artist = probed.tags.artist
+                result.album = probed.tags.album
+                result.genre = probed.tags.genre
+                result.year = probed.tags.date
+                result.duration = probed.duration.map(durationString) ?? ""
             }
             return result
         }

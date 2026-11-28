@@ -238,45 +238,100 @@ extension RepeatedSymbolsSettingsView {
 
 extension RepeatedSymbolsSettingsView {
     /// The group's heading.
-    nonisolated static let title = "Repeated Symbols"
+    nonisolated static var title: String {
+        // Translators: Heading of the group in Settings, Text that sets how the voice reads one symbol written several times in a row, such as a line of asterisks.
+        InterfaceText.line("repeatedSymbolsSettingsView.title", "Repeated Symbols")
+    }
     /// The style picker's visible caption.
-    nonisolated static let styleCaption = "Style:"
+    nonisolated static var styleCaption: String {
+        // Translators: Caption beside the pop-up button that chooses how the voice reads a run of one symbol, in Settings, Text, Repeated Symbols.
+        InterfaceText.line("repeatedSymbolsSettingsView.styleCaption", "Style:")
+    }
     /// The style picker's spoken label.
-    nonisolated static let styleLabel = "Repeated symbol style"
+    nonisolated static var styleLabel: String {
+        // Translators: VoiceOver label of the pop-up button that chooses how the voice reads a run of one symbol.
+        InterfaceText.line("repeatedSymbolsSettingsView.styleLabel", "Repeated symbol style")
+    }
     /// The style picker's spoken hint.
-    nonisolated static let styleHint = "Choose how the voice reads one symbol written several times in a row, such as a line of asterisks"
+    nonisolated static var styleHint: String {
+        // Translators: VoiceOver hint of the pop-up button that chooses how the voice reads a run of one symbol.
+        InterfaceText.line("repeatedSymbolsSettingsView.styleHint", "How the voice reads a symbol written several times in a row")
+    }
     /// The threshold field and stepper's label, shown beside them too.
-    nonisolated static let thresholdLabel = "Collapse runs of at least"
+    nonisolated static var thresholdLabel: String {
+        // Translators: Label of the field and stepper that set the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols. The number of symbols and the word symbols follow it.
+        InterfaceText.line("repeatedSymbolsSettingsView.thresholdLabel", "Collapse runs of at least")
+    }
     /// The unit shown after the stepper.
-    nonisolated static let thresholdUnit = "symbols"
+    nonisolated static var thresholdUnit: String {
+        // Translators: The unit shown after the field and stepper that set the length from which a run of one symbol is collapsed, such as "Collapse runs of at least 4 symbols".
+        InterfaceText.line("repeatedSymbolsSettingsView.thresholdUnit", "symbols")
+    }
     /// The threshold field's spoken hint.
-    nonisolated static let thresholdFieldHint = "A number from 2 to 99. A run with at least this many symbols is read as a count or left out, as the style says."
+    nonisolated static var thresholdFieldHint: String {
+        // Translators: VoiceOver hint of the field that sets the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols.
+        InterfaceText.line("repeatedSymbolsSettingsView.thresholdFieldHint", "A number from 2 to 99")
+    }
     /// The threshold stepper's spoken hint.
-    nonisolated static let thresholdStepperHint = "Raises or lowers the number of symbols by one, from 2 to 99"
+    nonisolated static var thresholdStepperHint: String {
+        // Translators: VoiceOver hint of the stepper that sets the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols.
+        InterfaceText.line("repeatedSymbolsSettingsView.thresholdStepperHint", "Changes the number by one, from 2 to 99")
+    }
     /// The Never collapse checkbox's label.
-    nonisolated static let neverCollapseLabel = "Never collapse: read every symbol"
+    nonisolated static var neverCollapseLabel: String {
+        // Translators: Label of the checkbox in Settings, Text, Repeated Symbols that makes the voice read every symbol of a run, whatever the style.
+        InterfaceText.line("repeatedSymbolsSettingsView.neverCollapseLabel", "Never collapse: read every symbol")
+    }
     /// The Never collapse checkbox's spoken hint.
-    nonisolated static let neverCollapseHint = "When checked, every run is read symbol by symbol, whatever the style"
+    nonisolated static var neverCollapseHint: String {
+        // Translators: VoiceOver hint of the Never collapse checkbox in Settings, Text, Repeated Symbols.
+        InterfaceText.line("repeatedSymbolsSettingsView.neverCollapseHint", "Overrides the style")
+    }
     /// The symbols field's visible caption.
-    nonisolated static let symbolsCaption = "Symbols:"
+    nonisolated static var symbolsCaption: String {
+        // Translators: Caption beside the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols.
+        InterfaceText.line("repeatedSymbolsSettingsView.symbolsCaption", "Symbols:")
+    }
     /// The symbols field's spoken label.
-    nonisolated static let symbolsLabel = "Symbols that form runs"
+    nonisolated static var symbolsLabel: String {
+        // Translators: VoiceOver label of the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols.
+        InterfaceText.line("repeatedSymbolsSettingsView.symbolsLabel", "Symbols that form runs")
+    }
     /// The symbols field's tooltip and spoken hint: what its characters mean.
-    nonisolated static let symbolsHint = "Each character listed can form a run. Spaces are ignored, a symbol listed twice counts once, and letters and digits never form runs."
+    nonisolated static var symbolsHint: String {
+        // Translators: Tooltip and VoiceOver hint of the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols.
+        InterfaceText.line("repeatedSymbolsSettingsView.symbolsHint", "Each character listed can form a run. Spaces are ignored, and letters and digits never form runs.")
+    }
     /// The reset button's title.
-    nonisolated static let resetTitle = "Reset to Default"
+    nonisolated static var resetTitle: String {
+        // Translators: Title of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols.
+        InterfaceText.line("common.resetToDefault", "Reset to Default")
+    }
     /// The reset button's spoken label.
-    nonisolated static let resetLabel = "Reset symbols to default"
+    nonisolated static var resetLabel: String {
+        // Translators: VoiceOver label of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols.
+        InterfaceText.line("repeatedSymbolsSettingsView.resetLabel", "Reset symbols to default")
+    }
     /// The reset button's spoken hint.
-    nonisolated static let resetHint = "Restores the standard list: asterisks, hyphens, equals signs, and the other ASCII symbols, with bullets, dashes, the ellipsis, and box-drawing lines"
+    nonisolated static var resetHint: String {
+        // Translators: VoiceOver hint of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols.
+        InterfaceText.line("repeatedSymbolsSettingsView.resetHint", "Restores the standard list: the ASCII symbols, bullets, dashes, the ellipsis, and box-drawing lines")
+    }
     /// What VoiceOver says once the list is reset.
-    nonisolated static let resetAnnouncement = "Symbols reset to the default list"
+    nonisolated static var resetAnnouncement: String {
+        // Translators: Announcement after the list of symbols that can form a run was restored to the standard one.
+        InterfaceText.line("repeatedSymbolsSettingsView.resetAnnouncement", "Symbols reset to the default list")
+    }
     /// The caption under the group's controls.
-    nonisolated static let explanation = "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Runs are rewritten before the rules above, in speech only: the screen and braille keep every symbol."
+    nonisolated static var explanation: String {
+        // Translators: Caption under the controls of Settings, Text, Repeated Symbols that explains what a run is and that only speech changes.
+        InterfaceText.line("repeatedSymbolsSettingsView.explanation", "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol.")
+    }
 
     /// The stepper's spoken value for `threshold`, such as "4 symbols".
     nonisolated static func thresholdValue(_ threshold: Int) -> String {
-        "\(threshold) symbols"
+        // Translators: VoiceOver value of the stepper that sets the length from which a run of one symbol is collapsed. %lld is the number of symbols.
+        InterfaceText.line("repeatedSymbolsSettingsView.thresholdValue", "\(number: threshold) symbols")
     }
 }
 
@@ -284,9 +339,15 @@ extension RepeatedSymbolStyle {
     /// The style's short name.
     var title: String {
         switch self {
-        case .repeatEach: return "Repeat each symbol"
-        case .sayCount: return "Say how many"
-        case .leaveOut: return "Leave out"
+        case .repeatEach:
+            // Translators: A style of reading a run of one symbol: the voice says every symbol of it.
+            return InterfaceText.line("repeatedSymbolStyle.title.repeatEach", "Repeat each symbol")
+        case .sayCount:
+            // Translators: A style of reading a run of one symbol: the voice says how many symbols the run holds, such as 7 asterisks.
+            return InterfaceText.line("repeatedSymbolStyle.title.sayCount", "Say how many")
+        case .leaveOut:
+            // Translators: A style of reading a run of one symbol: the voice leaves the run out and pauses in its place.
+            return InterfaceText.line("repeatedSymbolStyle.title.leaveOut", "Leave out")
         }
     }
 
@@ -295,16 +356,21 @@ extension RepeatedSymbolStyle {
     /// count". While Never collapse is checked (-1), the collapsing styles
     /// say they are off.
     func optionTitle(threshold: Int) -> String {
+        let name = title
         switch self {
         case .repeatEach:
-            return "\(title): every symbol is read as written"
+            // Translators: A choice of the pop-up button that sets how a run of one symbol is read. %@ is the name of the style, Repeat each symbol.
+            return InterfaceText.line("repeatedSymbolStyle.optionTitle.repeatEach", "\(name): every symbol is read as written")
         case .sayCount where RepeatedSymbolsSettingsView.neverCollapses(threshold),
              .leaveOut where RepeatedSymbolsSettingsView.neverCollapses(threshold):
-            return "\(title): off while Never collapse is checked"
+            // Translators: A choice of the pop-up button that sets how a run of one symbol is read, while the Never collapse checkbox is checked. %@ is the name of the style, Say how many or Leave out. Never collapse is the name of the checkbox.
+            return InterfaceText.line("repeatedSymbolStyle.sayCount.collapse", "\(name): off while Never collapse is checked")
         case .sayCount:
-            return "\(title): runs of \(threshold) or more are read as a count"
+            // Translators: A choice of the pop-up button that sets how a run of one symbol is read. %1$@ is the name of the style, Say how many; %2$lld is the length from which a run is collapsed.
+            return InterfaceText.line("repeatedSymbolStyle.optionTitle.sayCount.runs", "\(name): runs of \(number: threshold) or more are read as a count")
         case .leaveOut:
-            return "\(title): runs of \(threshold) or more are skipped, with a pause"
+            // Translators: A choice of the pop-up button that sets how a run of one symbol is read. %1$@ is the name of the style, Leave out; %2$lld is the length from which a run is collapsed.
+            return InterfaceText.line("repeatedSymbolStyle.optionTitle.leaveOut", "\(name): runs of \(number: threshold) or more are skipped, with a pause")
         }
     }
 }

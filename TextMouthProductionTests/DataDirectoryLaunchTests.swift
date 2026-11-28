@@ -75,6 +75,43 @@ final class DataDirectoryLaunchTests: XCTestCase {
         XCTAssertEqual(DataDirectoryPreferences.expectedIdentity.read(from: fixture.preferences), identity.id)
     }
 
+    /// A new, empty library, given its identity as it starts, saves its
+    /// index beside it, so its next launch in a cloud folder opens at once
+    /// instead of waiting for a library.json that was never written. A
+    /// library that had an index before it was given an identity keeps that
+    /// index as it was.
+    func testANewLibrarySavesItsEmptyIndexWithItsIdentity() throws {
+        let fixture = try LibraryFixture(test: self, label: "NewLibrary", marked: false)
+        let index = fixture.root.appendingPathComponent("library.json")
+        let cloud = FakeCloudItemStatusProvider()
+        cloud.setLocation(.cloud(.googleDrive), of: fixture.root)
+        installCloudItemStatus(cloud)
+        let older = try Data(contentsOf: index)
+
+        // From before identities: its index stays as it was.
+        let old = LibraryViewModel(initializeServices: false, dataDirectoryEnvironment: fixture.environment)
+        let oldMadeIdentity = old.recordLibraryIdentity()
+        old.loadLibraryIndex()
+        old.saveIndexOfNewLibrary(madeIdentity: oldMadeIdentity, hadIndex: true)
+        XCTAssertTrue(oldMadeIdentity)
+        XCTAssertEqual(try Data(contentsOf: index), older, "an existing index was written over")
+
+        // New: no index, no identity, then its next launch opens without waiting.
+        try FileManager.default.removeItem(at: index)
+        try FileManager.default.removeItem(at: LibraryIdentity.markerURL(in: fixture.root))
+        let model = LibraryViewModel(initializeServices: false, dataDirectoryEnvironment: fixture.environment)
+        let madeIdentity = model.recordLibraryIdentity()
+        model.loadLibraryIndex()
+        model.saveIndexOfNewLibrary(madeIdentity: madeIdentity, hadIndex: false)
+
+        XCTAssertTrue(madeIdentity)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: index.path), "the new library's index was not saved")
+        let check = DataDirectoryCheck.of(root: fixture.root, preferences: fixture.preferences)
+        let (outcome, pending) = check.runNamingPending(itemStatus: cloud)
+        XCTAssertEqual(pending, [], "the next launch would wait for a file")
+        guard case .available = outcome else { return XCTFail("the next launch found \(outcome)") }
+    }
+
     /// A library renamed since it was chosen is opened where its bookmark
     /// found it: the data directory moves there and the stored path follows.
     func testARenamedLibraryIsOpenedWhereItsBookmarkFoundIt() throws {
@@ -185,7 +222,7 @@ final class DataDirectoryLaunchTests: XCTestCase {
 /// drive is, and brought back. Taking it away copies it aside and removes
 /// it, rather than moving it, since a bookmark follows a moved folder.
 @MainActor
-private struct LibraryFixture {
+struct LibraryFixture {
     /// The folder row every fixture library holds.
     static let folderName = "Sea Charts"
 
@@ -255,8 +292,9 @@ private struct LibraryFixture {
         return try decoder.decode(Library.self, from: Data(contentsOf: root.appendingPathComponent("library.json")))
     }
 
-    /// Writes `library` as `root`'s library.json.
-    private static func write(_ library: Library, to root: URL) throws {
+    /// Writes `library` as `root`'s library.json: the fixture's own index,
+    /// or one a test lays out with books before the library starts.
+    static func write(_ library: Library, to root: URL) throws {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         try encoder.encode(library).write(to: root.appendingPathComponent("library.json"), options: .atomic)

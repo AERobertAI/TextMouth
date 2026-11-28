@@ -13,7 +13,7 @@ final class TextExtractionProgress: ObservableObject {
     /// What the overlay's count counts, after the books done of the total,
     /// agreeing with the total: "3 of 60 books extracted", "0 of 1 book
     /// extracted" (REV13; it said "0 of 1 books extracted").
-    nonisolated static let itemNoun = CountWording.Noun(singular: "book extracted", plural: "books extracted")
+    nonisolated static let itemNoun = CountWording.Noun(singular: "book extracted", plural: "books extracted") // l10n: no (inside ProgressOverlay's English count until the library's views convert)
 
     /// Whether a batch runs. A second batch is refused while one does.
     @Published private(set) var isExtracting = false

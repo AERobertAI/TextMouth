@@ -31,7 +31,7 @@ struct PersistenceFailureBanner: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.orange.opacity(0.15))
             .accessibilityElement(children: .contain)
-            .accessibilityLabel("Storage problems")
+            .accessibilityLabel(PersistenceFailureBannerRowView.bannerLabel)
         }
     }
 }
@@ -55,10 +55,10 @@ struct PersistenceFailureBannerRowView: View {
                 .accessibilityAddTraits(.isStaticText)
             Spacer(minLength: 8)
             if row.canRetry {
-                Button("Retry", action: onRetry)
+                Button(Self.retryTitle, action: onRetry)
                     .accessibilityLabel(row.subsystem.retryLabel)
             }
-            Button("Dismiss", action: onDismiss)
+            Button(Self.dismissTitle, action: onDismiss)
                 .accessibilityLabel(row.subsystem.dismissLabel)
                 .accessibilityHint(Self.dismissHint)
         }
@@ -66,6 +66,30 @@ struct PersistenceFailureBannerRowView: View {
 
     /// What VoiceOver adds after a pause on Dismiss: that dismissing saves
     /// nothing, and when the notice comes back.
-    static let dismissHint = "Hides this notice without saving anything. "
-        + "It appears again if the problem returns after it clears."
+    static var dismissHint: String {
+        SentenceWording.joined([
+            // Translators: First sentence of the VoiceOver hint of the failure banner's Dismiss button.
+            InterfaceText.line("persistenceFailureBannerRowView.hidesNotice", "Hides this notice without saving anything."),
+            // Translators: Last sentence of the VoiceOver hint of the failure banner's Dismiss button.
+            InterfaceText.line("persistenceFailureBannerRowView.returnsIfProblem", "It appears again if the problem returns after it clears."),
+        ])
+    }
+
+    /// The banner's VoiceOver label.
+    static var bannerLabel: String {
+        // Translators: VoiceOver label of the banner at the top of the library that lists problems saving or removing files.
+        InterfaceText.line("persistenceFailureBannerRowView.bannerLabel", "Storage problems")
+    }
+
+    /// The Retry button's title.
+    static var retryTitle: String {
+        // Translators: Button on a failure notice that tries to save again.
+        InterfaceText.line("common.retry", "Retry")
+    }
+
+    /// The Dismiss button's title.
+    static var dismissTitle: String {
+        // Translators: Button on a failure notice that hides it.
+        InterfaceText.line("persistenceFailureBannerRowView.dismissTitle", "Dismiss")
+    }
 }

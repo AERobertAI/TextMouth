@@ -67,6 +67,10 @@ fastlane/test_output
 # The documentation's pages (README.md and ARCHITECTURE.md index them)
 !docs/**/*.md
 !docs/getting-started.txt
+# The interface-string IDs that may never be given again (FR39)
+!/Scripts/l10n/retired-ids.txt
+# The issue files (Issues/README.md says what they hold)
+!/Issues/*.md
 
 # Claude Code
 .claude/
@@ -92,8 +96,13 @@ featureExp/
 
 # Questions for the user and their answers, kept on this Mac only (AGENTS.md)
 /humanQuestions/
+/humanReports/
 # Files the user hands to the agents (test manifests and the like), kept on this Mac only
 /HumanFiles/
 
 # Local app icon source archives
 /text_mouth_icon_v*.zip
+
+# Python bytecode, which the tools write when run without -B
+__pycache__/
+*.pyc

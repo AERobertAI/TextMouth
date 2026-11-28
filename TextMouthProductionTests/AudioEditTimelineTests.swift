@@ -112,7 +112,7 @@ final class AudioEditTimelineTests: XCTestCase {
             (.move(AudioTimeRange(start: 2, end: 6), to: 4), "The place to move to is inside the range being moved."),
             (.move(AudioTimeRange(start: 2, end: 6), to: 6), "The audio is already at that place."),
             (.insertSilence(at: 31, duration: 1), "That time is after the end of the audio, at 30 seconds."),
-            (.insertSilence(at: 3, duration: 0), "Silence has to last longer than no time at all."),
+            (.insertSilence(at: 3, duration: 0), "Silence must be longer than zero."),
             (.setChapter(at: 30, title: "End"), "A chapter marker can't be at the very end of the audio."),
             (.setChapter(at: 3, title: "  "), "A chapter marker needs a title."),
             (.removeChapter(at: 12), "There's no chapter marker at 12 seconds."),

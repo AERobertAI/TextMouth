@@ -7,33 +7,50 @@ import Foundation
 enum LibraryFolderSettingsWording {
 
     /// The button's title in a feed's folder.
-    static let feedButtonTitle = "Feed Settings"
+    static var feedButtonTitle: String {
+        // Translators: Title of the Library toolbar button, in the folder of a feed, that opens the feed's settings.
+        InterfaceText.line("libraryFolderSettings.feedButtonTitle", "Feed Settings")
+    }
 
     /// The button's title in a plain folder.
-    static let folderButtonTitle = "Folder Settings"
+    static var folderButtonTitle: String {
+        // Translators: Title of the Library toolbar button, in a plain folder, that opens the folder's settings.
+        InterfaceText.line("common.folderSettings", "Folder Settings")
+    }
 
     /// What VoiceOver calls the button in the folder of the feed `title`.
     static func feedLabel(title: String) -> String {
-        "Feed settings for \(title)"
+        // Translators: Spoken label of the Library toolbar button, in the folder of a feed, that opens the feed's settings. %@ is the feed's title.
+        InterfaceText.line("libraryFolderSettings.feedLabel", "Feed settings for \(title)")
     }
 
     /// What VoiceOver calls the button in the plain folder `name`.
     static func folderLabel(name: String) -> String {
-        "Folder settings for \(name)"
+        // Translators: Spoken label of the Library toolbar button, in a plain folder, that opens the folder's settings. %@ is the folder's name.
+        InterfaceText.line("libraryFolderSettings.folderLabel", "Folder settings for \(name)")
     }
 
     /// What VoiceOver says the button does, in a feed's folder.
-    static let feedHint = "Opens the settings of this feed: where its downloads go, what it lists and downloads, and what happens when an episode ends"
+    static var feedHint: String {
+        // Translators: Hint of the Library toolbar button, in the folder of a feed, that opens the feed's settings.
+        InterfaceText.line("libraryFolderSettings.feedHint", "Opens the feed's settings: where its downloads go, what it lists and downloads, and what happens when an episode ends")
+    }
 
     /// What VoiceOver says the button does, in a plain folder.
-    static let folderHint = "Opens the settings of this folder: what it holds, and what happens when one of its books ends"
+    static var folderHint: String {
+        // Translators: Hint of the Library toolbar button, in a plain folder, that opens the folder's settings.
+        InterfaceText.line("libraryFolderSettings.folderHint", "Opens the folder's settings: what it holds, and what happens when one of its books ends")
+    }
 
     /// The symbol both buttons draw.
     static let systemImage = "slider.horizontal.3"
 
     /// Said when the Folder or Feed Settings shortcut is pressed where the
     /// window shows no folder: the top level, or a category but Folders.
-    static let nothingToOpen = "Open a folder first to see its settings"
+    static var nothingToOpen: String {
+        // Translators: VoiceOver announcement when the Folder Settings shortcut is pressed where the window shows no folder, at the top level or in a view other than Folders.
+        InterfaceText.line("libraryFolderSettings.nothingToOpen", "Open a folder first to see its settings")
+    }
 }
 
 /// What the Library toolbar's settings button opens (FR19): the settings of

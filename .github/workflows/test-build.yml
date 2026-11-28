@@ -1,0 +1,36 @@
+# Builds TextMouth and runs the hosted tests a request names, on GitHub's
+# macOS runners instead of the development Mac, and builds the iPhone app too.
+#
+# It runs only for a push to the branch TestBuild, which the orchestrator's
+# build train (Scripts/agents/build-train.py --remote) and full suite
+# (Scripts/agents/run_suite.py --remote) push with --force: a commit of the
+# tree to test, plus the request file .github/test-request.json, which says what
+# to run (areas, test classes, or the full suite) and in how many parallel jobs.
+# Nothing runs for a pull request or a fork, so no outsider's code ever runs
+# here, and no job holds a secret or may do more than read the repository.
+#
+# The jobs themselves are in tests.yml (plan, the test shards, the iPhone build, and the join), which
+# check.yml, the reproducibility gate, calls too: the repository has one way to run its suite on GitHub.
+# This file adds what only a push to TestBuild needs.
+name: Test build
+
+on:
+  push:
+    branches: [TestBuild]
+
+# The jobs only read the repository.
+permissions:
+  contents: read
+
+# One run at a time on TestBuild: a newer push cancels the run before it, whose
+# train then sees it cancelled and keeps its requests for the next train. The Mac's
+# senders do not push while a run is on the branch (github_run.py waits for it), so this
+# is the safety net and not the way runs take turns.
+concurrency:
+  group: test-build
+  cancel-in-progress: true
+
+jobs:
+  run:
+    name: tests
+    uses: ./.github/workflows/tests.yml

@@ -1,0 +1,16 @@
+# TextMouth document golden, format 2
+file: doc__libreoffice-fdo77844.doc
+macOS: 26.3
+format: doc
+title: libreoffice-fdo77844
+author: Luke Deller
+chapters: 1
+words: 170
+text length: 930
+text checksum: 3d58fa1eb5fafa97
+first 300: This is the main content.\n\nThe “Header” style has a thick double red line top border, but this should not be shown on this page as there is no header enabled in this section.\n\nThere is a “first page header” which is not shown because the “different first page header” option was switched off. The pre
+last 300: this page.\n\nThis is the second page of section 2. The double red line should be on this page too, though its header is blank, because of headers being enabled in this section by the presence of the first-page header.\n\nThis is section 3. It has no headers and the page should have no lines at the top.
+page: 1 | 0:0 | This is the main content
+page: 2 | 0:420 | This page is in section 
+page: 3 | 0:642 | This is the second page 
+page: 4 | 0:848 | This is section 3. It ha

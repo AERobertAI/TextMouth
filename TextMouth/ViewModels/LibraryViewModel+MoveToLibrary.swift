@@ -20,13 +20,17 @@ enum MoveToLibraryError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .nothingToMove:
-            return "Only an episode or article downloaded in its feed can move into the library."
+            // Translators: Why Move to Library did nothing: none of the chosen items is an episode or article downloaded in its feed. Follows "Could not move to the library: ".
+            return InterfaceText.line("moveToLibraryError.nothingToMove", "Only an episode or article downloaded in its feed can move into the library.")
         case .folderMissing:
-            return "The folder chosen is no longer in the library. Choose another folder."
+            // Translators: Why Move to Library did nothing: the folder chosen was removed from the library. Follows "Could not move to the library: ".
+            return InterfaceText.line("moveToLibraryError.folderMissing", "The folder chosen is no longer in the library. Choose another folder.")
         case .libraryUnavailable:
-            return "The library can't move books now. Try again once it is available."
+            // Translators: Why Move to Library did nothing: the library's index is being recovered or the data directory is away or moving. Follows "Could not move to the library: ".
+            return InterfaceText.line("moveToLibraryError.libraryUnavailable", "The library can't move books now. Try again once it is available.")
         case .recordNotSaved:
-            return "TextMouth couldn't save the feed's list of its items, so nothing moved."
+            // Translators: Why Move to Library did nothing: the feed's record could not be saved. Follows "Could not move to the library: ".
+            return InterfaceText.line("moveToLibraryError.recordNotSaved", "TextMouth couldn't save the feed's list of its items, so nothing moved.")
         }
     }
 }
@@ -46,7 +50,10 @@ extension LibraryViewModel {
 
     /// The context of every failure's words: "Could not move to the
     /// library: …".
-    static let moveToLibraryFailureContext = "Could not move to the library"
+    static var moveToLibraryFailureContext: String {
+        // Translators: Starts every failure of Move to Library, followed by a colon and the reason. Has no full stop.
+        InterfaceText.line("libraryViewModel.moveToLibraryFailureContext", "Could not move to the library")
+    }
 
     /// The books of `books` Move to Library… can move, each once, in their
     /// order, as the library holds them now: feed items whose files are here,
@@ -155,6 +162,9 @@ extension LibraryViewModel {
         defer { bookUpdates.packagesDidMove(movingIDs) }
 
         let root = TextMouthPaths.root
+        // When the books became the library's own, which each record notes
+        // (risk 4).
+        let movedAt = Date()
         var moved: [Book] = []
         // Each row whose package stayed, with why, for the words of a move
         // that moved only some (REV13 feeds 5).
@@ -162,7 +172,7 @@ extension LibraryViewModel {
         var failure: (any Error)?
         for row in rows {
             do {
-                moved.append(try Self.moveIntoTheLibrary(row, folderPath: path, root: root))
+                moved.append(try Self.moveIntoTheLibrary(row, folderPath: path, root: root, notingMoveToLibraryAt: movedAt))
             } catch {
                 failure = failure ?? error
                 stayed.append((title: row.title, reason: error.localizedDescription))
@@ -220,18 +230,27 @@ extension LibraryViewModel {
     /// gone (`returnDownloads(ofFeed:toFolderID:removingWith:)`): the inverse
     /// of `moveIntoItsFeed(_:link:root:)`. A package an earlier launch moved
     /// before it stopped is found in the library folder and not moved again.
+    /// Move to Library… passes its time as `movedToLibrary`, which the record
+    /// notes (`BookMetadata.movedToLibrary`), so no stale record of the feed
+    /// can take the book back into it at a later launch (risk 4); the
+    /// return of a gone feed's downloads passes nil.
     /// - Throws: `FeedItemMoveError.packageNotManaged` for a row that is no
     ///   feed item's or names no package the library manages, before anything
     ///   on disk is touched, or the errors of `relocatePackage(of:as:root:)`,
     ///   which puts the package back when its record could not be written.
-    nonisolated static func moveIntoTheLibrary(_ row: Book, folderPath: String, root: URL) throws -> Book {
+    nonisolated static func moveIntoTheLibrary(
+        _ row: Book,
+        folderPath: String,
+        root: URL,
+        notingMoveToLibraryAt movedToLibrary: Date? = nil
+    ) throws -> Book {
         var book = row
         book.feedLink = nil
         book.folderPath = folderPath
         guard row.isFeedItem, FileImportService.namesManagedPackage(book) else {
             throw FeedItemMoveError.packageNotManaged
         }
-        return try relocatePackage(of: row, as: book, root: root)
+        return try relocatePackage(of: row, as: book, root: root, notingMoveToLibraryAt: movedToLibrary)
     }
 
     // MARK: The Items' States

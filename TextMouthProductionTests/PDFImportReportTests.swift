@@ -87,7 +87,7 @@ final class PDFImportReportTests: XCTestCase {
     /// books with pages that could not be read, after the books missing
     /// chapters, each with its report's sentence.
     func testZIPSummaryListsPDFsWithUnreadPagesApartFromBooksMissingChapters() {
-        let twoOfNine = "OCR could not run on 2 of 9 pages, so text that appears only in their images is missing: "
+        let twoOfNine = "OCR could not run on 2 of 9 pages, so text found only in their images is missing: "
             + "pages 4 and 5 (text recognition is not available)."
         let result = ZipImportResult(
             books: [
@@ -190,7 +190,7 @@ final class PDFImportReportTests: XCTestCase {
     /// What OCR being unavailable leaves missing from the one-page PDF with
     /// a captioned picture.
     private static let unreadPictureProblem =
-        "OCR could not run on the PDF's only page, so text that appears only in its images is missing: "
+        "OCR could not run on the PDF's only page, so text found only in its images is missing: "
             + "page 1 (text recognition is not available)."
 
     /// The warning an import of that PDF gives.

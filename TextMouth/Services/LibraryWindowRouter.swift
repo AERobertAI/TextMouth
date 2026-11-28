@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 
 /// Routes each app-wide action to the one window that should take it
@@ -33,7 +37,7 @@ final class LibraryWindowRouter: ObservableObject {
     /// The current time: the system clock, unless a test controls it.
     private let now: @MainActor () -> Date
     /// The window receiving keystrokes now.
-    private let currentKeyWindow: @MainActor () -> NSWindow?
+    private let currentKeyWindow: @MainActor () -> PlatformWindow?
     /// Runs the router's later work: handing waiting actions to a Library
     /// window that has registered, and asking for a Library window.
     private let schedule: Scheduler
@@ -46,7 +50,7 @@ final class LibraryWindowRouter: ObservableObject {
     /// application's key window, and the main queue; a test passes its own.
     init(
         now: @escaping @MainActor () -> Date = { Date() },
-        keyWindow: @escaping @MainActor () -> NSWindow? = { NSApp.keyWindow },
+        keyWindow: @escaping @MainActor () -> PlatformWindow? = { PlatformApplication.keyWindow },
         schedule: @escaping Scheduler = LibraryWindowRouter.scheduleOnMainQueue
     ) {
         self.now = now
@@ -60,10 +64,10 @@ final class LibraryWindowRouter: ObservableObject {
     /// Weak storage avoids extending an `NSWindow`'s lifetime after SwiftUI
     /// closes its scene.
     private final class LibraryWindowEntry {
-        weak var window: NSWindow?
+        weak var window: PlatformWindow?
         var perform: @MainActor (GlobalAction) -> Void
 
-        init(window: NSWindow, perform: @escaping @MainActor (GlobalAction) -> Void) {
+        init(window: PlatformWindow, perform: @escaping @MainActor (GlobalAction) -> Void) {
             self.window = window
             self.perform = perform
         }
@@ -74,7 +78,7 @@ final class LibraryWindowRouter: ObservableObject {
 
     /// The registered Library windows still open, in the order they
     /// registered.
-    var registeredLibraryWindows: [NSWindow] {
+    var registeredLibraryWindows: [PlatformWindow] {
         pruneClosedWindows()
         return libraryWindowEntries.compactMap(\.window)
     }
@@ -93,7 +97,7 @@ final class LibraryWindowRouter: ObservableObject {
     /// then. SwiftUI can build a Library window for a book opened from Finder
     /// and discard it within the same turn, and that window must not take
     /// the waiting actions with it.
-    func register(_ window: NSWindow, perform: @escaping @MainActor (GlobalAction) -> Void) {
+    func register(_ window: PlatformWindow, perform: @escaping @MainActor (GlobalAction) -> Void) {
         pruneClosedWindows()
         if let entry = libraryWindowEntries.first(where: { $0.window === window }) {
             entry.perform = perform
@@ -111,16 +115,16 @@ final class LibraryWindowRouter: ObservableObject {
     }
 
     /// Removes a Library window when its SwiftUI scene disappears.
-    func unregister(_ window: NSWindow) {
+    func unregister(_ window: PlatformWindow) {
         libraryWindowEntries.removeAll { $0.window == nil || $0.window === window }
     }
 
     /// Pure selection core used by production routing and deterministic tests.
     /// A key window only wins when it is itself one of the Library candidates.
     static func selectedWindow(
-        from libraryWindows: [NSWindow],
-        keyWindow: NSWindow?
-    ) -> NSWindow? {
+        from libraryWindows: [PlatformWindow],
+        keyWindow: PlatformWindow?
+    ) -> PlatformWindow? {
         if let keyWindow,
            libraryWindows.contains(where: { $0 === keyWindow }) {
             return keyWindow
@@ -139,10 +143,10 @@ final class LibraryWindowRouter: ObservableObject {
     /// An open reader window, and the action that opens a reader window
     /// from it.
     private final class ReaderWindowOpener {
-        weak var window: NSWindow?
+        weak var window: PlatformWindow?
         let openReader: (UUID) -> Void
 
-        init(window: NSWindow, openReader: @escaping (UUID) -> Void) {
+        init(window: PlatformWindow, openReader: @escaping (UUID) -> Void) {
             self.window = window
             self.openReader = openReader
         }
@@ -153,7 +157,7 @@ final class LibraryWindowRouter: ObservableObject {
 
     /// The registered reader windows still open, in the order they
     /// registered.
-    var registeredReaderWindows: [NSWindow] {
+    var registeredReaderWindows: [PlatformWindow] {
         pruneClosedWindows()
         return readerWindowOpeners.compactMap(\.window)
     }
@@ -164,13 +168,13 @@ final class LibraryWindowRouter: ObservableObject {
     /// SwiftUI gives `openWindow` only to views; the app and its delegate
     /// have none of their own. While no Library window is open, the router
     /// opens a book's reader through one of these instead.
-    func registerReaderWindow(_ window: NSWindow, openReader: @escaping (UUID) -> Void) {
+    func registerReaderWindow(_ window: PlatformWindow, openReader: @escaping (UUID) -> Void) {
         unregisterReaderWindow(window)
         readerWindowOpeners.append(ReaderWindowOpener(window: window, openReader: openReader))
     }
 
     /// Removes a reader window when its SwiftUI scene disappears.
-    func unregisterReaderWindow(_ window: NSWindow) {
+    func unregisterReaderWindow(_ window: PlatformWindow) {
         readerWindowOpeners.removeAll { $0.window == nil || $0.window === window }
     }
 
@@ -178,9 +182,9 @@ final class LibraryWindowRouter: ObservableObject {
     /// key window when it is one of `readerWindows`, otherwise the one
     /// registered most recently, the last of them.
     static func selectedReaderWindow(
-        from readerWindows: [NSWindow],
-        keyWindow: NSWindow?
-    ) -> NSWindow? {
+        from readerWindows: [PlatformWindow],
+        keyWindow: PlatformWindow?
+    ) -> PlatformWindow? {
         if let keyWindow,
            readerWindows.contains(where: { $0 === keyWindow }) {
             return keyWindow
@@ -215,9 +219,9 @@ final class LibraryWindowRouter: ObservableObject {
     ///     registered.
     static func handler(
         for action: GlobalAction,
-        keyWindow: NSWindow?,
-        registeredLibraryWindows: [NSWindow],
-        readerWindows: [NSWindow]
+        keyWindow: PlatformWindow?,
+        registeredLibraryWindows: [PlatformWindow],
+        readerWindows: [PlatformWindow]
     ) -> GlobalActionHandler {
         if let library = selectedWindow(from: registeredLibraryWindows, keyWindow: keyWindow) {
             return .libraryWindow(library)
@@ -577,10 +581,10 @@ struct PendingGlobalActions {
 /// `NSObject` gives them.
 enum GlobalActionHandler: Equatable {
     /// This registered Library window takes the action.
-    case libraryWindow(NSWindow)
+    case libraryWindow(PlatformWindow)
     /// This registered reader window opens the book's reader through the
     /// action it lent the router. Only for an action that opens a reader.
-    case readerWindow(NSWindow)
+    case readerWindow(PlatformWindow)
     /// No open window can take the action: a Library window opens first,
     /// and takes the action once it has registered.
     case newLibraryWindow

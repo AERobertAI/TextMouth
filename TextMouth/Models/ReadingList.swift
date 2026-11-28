@@ -13,7 +13,7 @@ import Foundation
 /// moved, and holds each book at most once. It is saved in library.json
 /// with the rest of the index (`Library.readingList`); a book removed from
 /// the library leaves it (`Library.removeBook(id:)`).
-struct ReadingList: Codable, Equatable, Sendable {
+struct ReadingList: Codable, Equatable, Sendable, KeepsUnknownKeysBesideSynthesizedCoding {
 
     // MARK: Options
 
@@ -34,12 +34,19 @@ struct ReadingList: Codable, Equatable, Sendable {
 
         /// The option's name, as the options bar's picker shows and speaks
         /// it. Saved under its raw value, never under these words, so the
-        /// words can change without losing anyone's choice.
+        /// words can change without losing anyone's choice, and localized
+        /// (FR35).
         var title: String {
             switch self {
-            case .playBookBelow: return "Play the book below"
-            case .playBookAbove: return "Play the book above"
-            case .stop: return "Stop"
+            case .playBookBelow:
+                // Translators: A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book below it in the list.
+                return InterfaceText.line("common.playTheBookBelow", "Play the book below")
+            case .playBookAbove:
+                // Translators: A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book above it in the list.
+                return InterfaceText.line("common.playTheBookAbove", "Play the book above")
+            case .stop:
+                // Translators: A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.
+                return InterfaceText.line("common.stop", "Stop")
             }
         }
 
@@ -60,6 +67,11 @@ struct ReadingList: Codable, Equatable, Sendable {
         case up
         /// Toward the end of the list: the book below.
         case down
+
+        /// The other way: down for up, up for down.
+        var opposite: Direction {
+            self == .up ? .down : .up
+        }
 
         /// The step through the list's positions: -1 up, +1 down.
         var step: Int {
@@ -89,14 +101,44 @@ struct ReadingList: Codable, Equatable, Sendable {
     var continuation: Continuation
     /// Whether continuing passes over the books already finished.
     var skipsFinished: Bool
+    /// Whether a book on the list leaves it as soon as it is finished
+    /// (the user, November 13, 2026: "there really should be an option in
+    /// the reading list screen to remove books as you finish them from the
+    /// list"). Off by default, and for a list saved before the option
+    /// existed; it acts on books finished from the moment it is turned on,
+    /// and takes off none already finished.
+    var removesFinished: Bool
+    /// The keys of the list in library.json that this TextMouth does not
+    /// know (V04, `UnknownKeys`), as an option a later TextMouth adds is,
+    /// written back as they were; none in a list made here. It is not one
+    /// of the coding keys below, so the list's own coding passes it over:
+    /// `Library` reads and writes them beside the list's fields
+    /// (`WithUnknownKeys`).
+    var unknownKeys = UnknownKeys()
+
+    /// Whether `name` is a key of the stored list that this version knows
+    /// (`KeepsUnknownKeysBesideSynthesizedCoding`).
+    static func isCodingKey(_ name: String) -> Bool {
+        CodingKeys(stringValue: name) != nil
+    }
+
+    /// What the stored list holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(isKnown: { ReadingList.isStoredKey($0) })
 
     /// A list of `bookIDs`, in that order and each kept once, with the
-    /// given options: by default empty, continuing to the book below and
-    /// skipping finished books.
-    init(bookIDs: [UUID] = [], continuation: Continuation = .playBookBelow, skipsFinished: Bool = true) {
+    /// given options: by default empty, continuing to the book below,
+    /// skipping finished books, and keeping them on the list.
+    init(
+        bookIDs: [UUID] = [],
+        continuation: Continuation = .playBookBelow,
+        skipsFinished: Bool = true,
+        removesFinished: Bool = false
+    ) {
         self.bookIDs = Self.firstOccurrences(of: bookIDs)
         self.continuation = continuation
         self.skipsFinished = skipsFinished
+        self.removesFinished = removesFinished
     }
 
     // MARK: Membership
@@ -200,9 +242,14 @@ struct ReadingList: Codable, Equatable, Sendable {
 
     // MARK: Coding
 
-    /// The keys of the list in library.json.
+    /// The keys of the list in library.json. A TextMouth older than
+    /// `removesFinished` reads a list with that key all the same: it names
+    /// only the keys it knows and ignores the rest, and so loses the option
+    /// (reads as off) should it save the list. From V04 on a TextMouth
+    /// keeps the keys it does not know (`unknownKeys`), so that one keeps
+    /// such an option through its saves.
     private enum CodingKeys: String, CodingKey {
-        case bookIDs, continuation, skipsFinished
+        case bookIDs, continuation, skipsFinished, removesFinished
     }
 
     /// Reads a saved list, leniently, so the list can never make the whole
@@ -229,6 +276,8 @@ struct ReadingList: Codable, Equatable, Sendable {
         bookIDs = Self.firstOccurrences(of: ids)
         continuation = (try? container.decodeIfPresent(Continuation.self, forKey: .continuation)) ?? .playBookBelow
         skipsFinished = (try? container.decodeIfPresent(Bool.self, forKey: .skipsFinished)) ?? true
+        // A list saved before the option existed has no key, and reads as off.
+        removesFinished = (try? container.decodeIfPresent(Bool.self, forKey: .removesFinished)) ?? false
     }
 
     /// An entry of the saved list that is read only to step over it.

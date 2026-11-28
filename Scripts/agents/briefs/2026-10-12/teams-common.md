@@ -2,7 +2,7 @@
 
 The user asked on October 12 for "some agents to work on the next todos and pollishing, trying out a sub sub orcistrater pattern where tasks are broken down even smaller... advanced deligating basically", with "the subsubagents" as "high Sonnet agents to see if that can save some cost". This file is the pattern. It stands in for AGENTS.md: do not read AGENTS.md, README.md, ARCHITECTURE.md, AGENT-NOTES, or more of the TODO than your charter names.
 
-Repository: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`, TextMouth, a native macOS text-to-speech and audiobook player. `main` is at e91580b0 or later; its suite counts **5957 tests, 64 skipped, 0 failures**, with no Swift warnings.
+Repository: `<main checkout>`, TextMouth, a native macOS text-to-speech and audiobook player. `main` is at e91580b0 or later; its suite counts **5957 tests, 64 skipped, 0 failures**, with no Swift warnings.
 
 ## Roles
 - **The orchestrator** (the main session, Opus; `orchestrator` on the board) launches team leads, merges each team branch into main after a green suite, records it in the TODO, and keeps the documents.
@@ -90,7 +90,7 @@ Use this command, with your slug, your test classes, and a log file in the sessi
   - the reader-sheet redraw count in `ViewsAndWindowsReaderSheetTests`
   - `FeedDownloadTests.testADownloadThatStopsPartwayGoesOnFromWhereItStopped`
   - the audiobook-open benchmark, and the performance baselines
-- **The build folder's path.** The worktree guard refuses `${TMPDIR}` in leads' and workers' commands alike, so write the folder's literal path: `/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-<slug>`.
+- **The build folder's path.** The worktree guard refuses `${TMPDIR}` in leads' and workers' commands alike, so write the folder's literal path: `$TMPDIR/TextMouth-DerivedData-<slug>`.
 - **Removing a build folder.** First `/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "<folder>/Build/Products/Debug/TextMouth.app"`, then `rm -rf "<folder>"`.
 
 ## Usage

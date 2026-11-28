@@ -16,8 +16,16 @@ import json
 import subprocess
 import sys
 import time
+from pathlib import Path
 
-SCRIPT = "/Users/roberteggleston/.claude/skills/claude-usage-left/scripts/claude_usage.py"
+# Importing a sibling module must leave no __pycache__ folder in the repository (set before the import below).
+sys.dont_write_bytecode = True
+# repo_paths.py is beside this script; python3 -I leaves its folder out of sys.path.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import repo_paths  # noqa: E402  (imported by path, after sys.path is set)
+
+# The claude-usage-left skill's script, in the home folder of whoever runs this.
+SCRIPT = str(repo_paths.claude_usage_script())
 
 
 def counted_windows():
@@ -42,8 +50,10 @@ def main():
         if low:
             for w in low:
                 print(f"USAGE ALERT: {w['summary']}", flush=True)
+            # A window can report no figure; the alert must still end cleanly.
             for w in windows:
-                print(f"  {w['name']}: {w['left_pct']:.0f}% LEFT, resets in {w['reset_in_human']}", flush=True)
+                if w.get("left_pct") is not None:
+                    print(f"  {w['name']}: {w['left_pct']:.0f}% LEFT, resets in {w['reset_in_human']}", flush=True)
             return 0
         time.sleep(minutes * 60)
 

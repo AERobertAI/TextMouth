@@ -187,6 +187,28 @@ final class PlaceSnapshotRecoveryTests: CloudMaintenanceTestCase {
         XCTAssertEqual(logLineCount("PLACES_RECOVERED:"), linesBefore, "a copy of a book not in the library was counted")
     }
 
+    /// The pass does not keep the library alive: a library released while
+    /// the pass reads, off the main thread, is gone at once, and the pass
+    /// still ends (FU12: its closure held the library strongly).
+    @MainActor
+    func testTheRecoveryPassDoesNotHoldTheLibrary() async throws {
+        let fixture = try makeBookInAnOlderText(title: "Released \(UUID().uuidString)")
+        try stopAfterRebuilding([fixture.book])
+        var model: LibraryViewModel? = makeModel(with: [fixture.book])
+        weak var watched = model
+        let held = HeldFileAccess()
+        let ended = expectation(description: "The pass ended")
+        model?.finishLeftoverPlaceMoves(access: held.access) { ended.fulfill() }
+        XCTAssertTrue(held.waitUntilHeld(), "the pass never reached the book's text")
+
+        model = nil
+        let released = eventually(within: 5) { watched == nil }
+        held.release()
+        await fulfillment(of: [ended], timeout: 20)
+
+        XCTAssertTrue(released, "the pass kept the library alive")
+    }
+
     /// A book a reader has open, one an Edit Text session holds, and one
     /// whose text is only in the cloud keep their copies and places for a
     /// later launch; once the hold ends, the book is closed, and the files

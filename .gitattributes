@@ -1,0 +1,17 @@
+# Issue files merge by their parts: the header field by field, the description as git
+# would, and each comment whole (`issuelib.py merge-driver`, which `make
+# issues-merge-driver` defines once in the repository's config). Where it is not
+# defined, git merges them as text, with conflict markers (Issues/README.md).
+/Issues/*.md merge=issuefile
+# The folder's README is plain text, merged as git merges any.
+/Issues/README.md merge
+
+# String Catalogs merge by key, language, and plural form (`l10n.py merge-driver`, which `make
+# l10n-merge-driver` defines once in the repository's config). Where it is not defined, git merges them
+# as text, and two branches that add neighbouring strings conflict.
+*.xcstrings merge=xcstrings
+
+# The test areas list merges as a union: two branches that add classes to the same area keep both sides'
+# lines instead of conflicting, so a train can merge them together (the sync branches of November 25, 2026
+# were left out of shared trains for it). A class removed on one side and kept on the other merges as text.
+/Scripts/test/areas.conf merge=union

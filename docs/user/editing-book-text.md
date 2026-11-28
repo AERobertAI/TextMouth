@@ -1,17 +1,126 @@
 # Editing a book's text
+<!-- id: editing-book-text; keys: Edit Text, content.md, Markdown editor, edit a book's text; src: TextMouth/Services/BookTextEditing.swift, TextMouth/Models/BookTextEditWording.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
-- Edit Text in Default Editor, in a reader's Book menu or the context menu of a text book or a transcribed audiobook, a feed's episode included but not a feed's article, opens the book's text in the app this Mac opens Markdown files with, or in TextEdit when there is none; Edit Text With… asks which app. The first time, TextMouth explains what happens, with Continue and Cancel; it explains once on each Mac.
-- The text is Markdown: the book's text cache, content.md. Each line beginning with <!-- chapter: starts a chapter; keep those lines. The book's own file is never changed.
-- A line such as `<!-- page: 12 -->` marks where page 12 of a book with pages begins (see [Reader windows](reader-windows.md)). The label is the page's name as the book gives it, such as 12, xii, or A-3, and the line adds no words and is never spoken. It stands on a line of its own between two blocks, or, where a page begins in the middle of a paragraph, inside the paragraph, between two words. A marker that comes to start a line that holds words, as when you delete the text before it or join two lines, still begins its page, and the words after it on the line are still read; so are the words after a chapter line on its line, which are the chapter's first line. Deleting a page's line deletes that page: Next Page, Go to Page…, and the "Page 12 of 300" on the status row no longer know it. Changing the label renames the page, and a line of the same form on a line of its own between two blocks starts a page there.
-- When you save, TextMouth takes the change within a moment, or when you switch back to it. The book's chapters, headings, and word counts follow it, and an open reader shows the new text with its cursor at the same words, as near as it can find them, speaking on from there if it was speaking. VoiceOver says "Text updated" once TextMouth is in front. For an episode in its feed, the first edit of a session also says where the transcript stays (see [Transcribing an audiobook](transcribing.md)).
-- Edit Text stops for a book that leaves the library meanwhile, as when it is removed or a feed episode's download is deleted. VoiceOver says, once, "Text not updated: Moby-Dick was removed, or its download deleted, so Edit Text has stopped for it.", so that you are not left saving into an editor nothing listens to. A save made after that isn't taken; for an episode, see [Podcasts and article feeds](feeds.md). Edit Text stops for a book that Replace Existing replaced too, in words of its own (see [Adding books](adding-books.md)).
-- Edit Text stops for a book whose file TextMouth reads again in another encoding, from the Text Encoding pop-up in Book Information (see [The Library window](library-window.md)), since the new reading replaces the text being edited. Your edit is kept beside it as a copy, in the book's package as content.md.edited- followed by the date and time. The confirmation says so beforehand, in "Edit Text stops for this book; choose Edit Text again to edit the new reading.", and once the book is read again VoiceOver says where the copy was kept, then "Edit Text has stopped for Moby-Dick, since its file was read again. Choose Edit Text again to edit the new text." Choose Edit Text again to edit the new text. A re-read that is refused changes nothing, and your session goes on, so your later saves are still taken.
-- While TextMouth reads a book again in another encoding, Edit Text in Default Editor and Edit Text With… open nothing and begin no session, and VoiceOver says "TextMouth is reading “Moby-Dick” again in another encoding. Try again when that finishes." Redo Text Extraction waits in the same words while any book is read again, and Replace Existing while its book is (see [Settings](settings.md) and [Adding books](adding-books.md)).
-- A save that isn't UTF-8 text, that leaves no chapter with anything in it, or that the book's record can't take now, isn't taken. VoiceOver says why, and that your edited text was also kept in the book's package as content.md.edited- followed by the date and time. Nothing replaces your edit meanwhile: the book keeps the text it had, and opening it shows why in place of the book until you save text TextMouth can take, when that window opens the book with it.
-- When the book's own file has changed too, your edit isn't taken either, and is kept the same way; the book's text is read from that file again the next time the book opens.
-- While your edit session lasts, Redo Text Extraction leaves a book whose edit wasn't taken as it is, and keeps a copy of other text it replaces, saying where. Storage settings then say how many books it left, as in "Done. 1 book whose edited text can't be used yet was skipped."
-- A text book's edit saved while TextMouth was closed, or while no Edit Text session was open for the book, is found at TextMouth's next launch, or when its library next opens. It is then taken as the book's text, as Edit Text takes one but without an announcement, when it is UTF-8 text with a chapter in it and the book's own file hasn't changed. Otherwise it is kept in the book's package as content.md.edited- followed by the date and time, and the text is read from the book's own file again. Whatever else reads a book's text from its own file again, such as opening the book before TextMouth has found the edit, or Redo Text Extraction, first keeps text in content.md that TextMouth didn't write or take the same way, and leaves the book as it is when no copy can be kept. An edit TextMouth took stays the book's text after it quits, and TextMouth's automatic reads of the book's file again, such as one after a new version of TextMouth reads the book's format better, leave it as it is, logging TEXT_EDIT_KEPT in the debug log. Only Redo Text Extraction and a choice in a book's Text Encoding pop-up read the text from the book's own file again over such an edit, and each first keeps a copy of the text it replaces in the book's package as content.md.edited- followed by the date and time, which TextMouth leaves for you to delete. Bookmarks keep their chapter and position, so an edit earlier in a chapter can shift the words they point at.
-- A transcribed audiobook's text, its transcript's, is edited the same way, and an open reader shows the edited text as the book plays on. A save is taken into the transcript itself, transcript.json, so the edit stays the book's text: each sentence keeps its time in the audio, a sentence whose words you changed no longer has each word's timing, and one whose every word you deleted is gone. An edit that changes the number of chapters, which must stay one for each of the audio's, or an edit of a book whose audio changed since it was transcribed, isn't taken, and is kept beside content.md as above; meanwhile the book plays without its text. A chapter's heading comes from the audio, and words typed into a chapter the transcript heard no speech in have no sentence to be kept in, so an edit that renames, removes, or adds a heading, or that adds words to such a chapter, isn't taken either, and is kept the same way. VoiceOver says which, as in "Text not updated: the edited transcript of Moby-Dick changes a chapter's heading, which comes from its audio. Put the heading back as it was and save again; until then, the book keeps the text it had." and "Text not updated: the edited transcript of Moby-Dick adds words to a chapter the transcript heard no speech in, where they can't be kept. Remove them and save again; until then, the book keeps the text it had.", each followed by where the copy was kept. When the transcript changed too, as when the book was transcribed again on another Mac, the edit isn't taken either, and is kept the same way; the book's text is written from that transcript again the next time the book opens. An edit saved while TextMouth is closed, or outside Edit Text, is replaced the next time the book opens by the text written from the transcript, after TextMouth keeps it beside content.md. An audiobook without a transcript has no text to edit: transcribe it first.
-- A transcript's text has a backslash only where TextMouth's reader needs one: before a quotation mark or an apostrophe, before a hyphen or a period that has another next to it, and before the characters Markdown itself reads, such as *, [, ], `, |, ~, <, an underscore outside a word, and the first character of a paragraph that would begin a heading, a list, a quote, or a numbered item. A comma, colon, semicolon, question mark, exclamation mark, or single period stands as it was heard. Keep the backslashes where they are: without them the reader would turn a quotation mark into a curly one and three periods into an ellipsis. Each transcribed book's text is written again, once, the first time the book opens in the version that began writing it this way.
+## Opening a book's text in your editor
+<!-- id: book-text-opening-editor; keys: Edit Text in Default Editor, Edit Text With…, TextEdit, Continue and Cancel, context menu; src: TextMouth/Platform/macOS/Services/BookTextEditor.swift, TextMouth/Platform/macOS/Services/PackageFileEditing.swift, TextMouth/Models/BookTextEditWording.swift, TextMouth/ViewModels/LibraryViewModel+TextEdits.swift -->
+
+Edit Text in Default Editor, in a reader's Book menu or the context menu of a text book or a transcribed audiobook, a feed's episode included but not a feed's article, opens the book's text in the app this Mac opens Markdown files with, or in TextEdit when there is none.
+Edit Text With… asks which app.
+The first time, TextMouth explains what happens, with Continue and Cancel; it explains once on each Mac.
+
+## The text is Markdown
+<!-- id: book-text-is-markdown; keys: chapter lines, <!-- chapter:, text cache, original file untouched; src: TextMouth/Services/MarkdownCacheService.swift, TextMouth/Models/TextEditingKeys.swift -->
+
+The text is Markdown: the book's text cache, content.md.
+Each line beginning with <!-- chapter: starts a chapter; keep those lines.
+The book's own file is never changed.
+
+## Page markers
+<!-- id: book-text-page-markers; keys: <!-- page:, page label, Go to Page, Page navigation unit, roman numerals; src: TextMouth/Parsers/MarkdownPageMarker.swift, TextMouth/Parsers/MarkdownParser.swift -->
+
+A line such as `<!-- page: 12 -->` marks where page 12 of a book with pages begins (see [Reader windows](reader-pages.md)).
+The label is the page's name as the book gives it, such as 12, xii, or A-3, without a leading word "Page" (a label written "Page 12" names page 12), and the line adds no words and is never spoken.
+It stands on a line of its own between two blocks, or, where a page begins in the middle of a paragraph, inside the paragraph, between two words.
+A marker that comes to start a line that holds words, as when you delete the text before it or join two lines, still begins its page, and the words after it on the line are still read; so are the words after a chapter line on its line, which are the chapter's first line.
+Deleting a page's line deletes that page: the Page navigation unit, Go to Page…, and the "Page 12 of 300" on the status row no longer know it.
+Changing the label renames the page, and a line of the same form on a line of its own between two blocks starts a page there.
+
+## When you save
+<!-- id: book-text-when-you-save; keys: Text updated, reader refresh, cursor kept, episode transcript, word counts; src: TextMouth/Services/BookTextEditing.swift, TextMouth/ViewModels/ReaderViewModel+EditedText.swift, TextMouth/Models/BookTextEditWording.swift -->
+
+When you save, TextMouth takes the change within a moment, or when you switch back to it.
+The book's chapters, headings, and word counts follow it, and an open reader shows the new text with its cursor at the same words, as near as it can find them, speaking on from there if it was speaking.
+VoiceOver says "Text updated" once TextMouth is in front.
+For an episode in its feed, the first edit of a session also says where the transcript stays (see [Transcribing an audiobook](transcribing.md)).
+
+## When Edit Text stops for a removed book
+<!-- id: book-text-stops-removed; keys: Text not updated, book removed, download deleted, Replace Existing; src: TextMouth/Services/BookTextEditing.swift, TextMouth/Models/BookTextEditWording.swift, TextMouth/ViewModels/LibraryViewModel+TextEdits.swift -->
+
+Edit Text stops for a book that leaves the library meanwhile, as when it is removed or a feed episode's download is deleted.
+VoiceOver says, once, "Text not updated: Moby-Dick was removed, or its download deleted, so Edit Text has stopped for it.", so that you are not left saving into an editor nothing listens to.
+A save made after that isn't taken; for an episode, see [Podcasts and article feeds](feed-commands.md).
+Edit Text stops for a book that Replace Existing replaced too, in words of its own (see [Adding books](duplicate-books.md)).
+
+## When a re-read in another encoding stops Edit Text
+<!-- id: book-text-stops-reread; keys: Text Encoding pop-up, Book Information, content.md.edited, encoding re-read; src: TextMouth/Services/BookTextEditing.swift, TextMouth/Models/BookTextEditWording.swift, TextMouth/ViewModels/LibraryViewModel+TextEdits.swift, TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift -->
+
+Edit Text stops for a book whose file TextMouth reads again in another encoding, from the Text Encoding pop-up in Book Information (see [The Library window](book-information.md)), since the new reading replaces the text being edited.
+Your edit is kept beside it as a copy, in the book's package as content.md.edited- followed by the date and time.
+The confirmation says so beforehand, in "Edit Text stops for this book; choose Edit Text again to edit the new reading.", and once the book is read again VoiceOver says where the copy was kept, then "Edit Text has stopped for Moby-Dick, since its file was read again.
+Choose Edit Text again to edit the new text."
+Choose Edit Text again to edit the new text.
+A re-read that is refused changes nothing, and your session goes on, so your later saves are still taken.
+
+## Waiting while a book is read again
+<!-- id: book-text-waits-reread; keys: reading again in another encoding, Try again when that finishes, Redo Text Extraction; src: TextMouth/Models/BookTextEditWording.swift, TextMouth/ViewModels/LibraryViewModel+TextEdits.swift -->
+
+While TextMouth reads a book again in another encoding, Edit Text in Default Editor and Edit Text With… open nothing and begin no session, and VoiceOver says "TextMouth is reading “Moby-Dick” again in another encoding.
+Try again when that finishes."
+Redo Text Extraction waits in the same words while any book is read again, and Replace Existing while its book is (see [Settings](settings-storage.md) and [Adding books](duplicate-books.md)).
+
+## A save TextMouth can't take
+<!-- id: book-text-save-refused; keys: not UTF-8, no chapter, kept copy, edit not taken; src: TextMouth/Services/BookTextEditing.swift, TextMouth/Models/BookTextEditWording.swift -->
+
+A save that isn't UTF-8 text, that leaves no chapter with anything in it, that nests a chapter too deeply (below), or that the book's record can't take now, isn't taken.
+VoiceOver says why, and that your edited text was also kept in the book's package as content.md.edited- followed by the date and time.
+Nothing replaces your edit meanwhile: the book keeps the text it had, and opening it shows why in place of the book until you save text TextMouth can take, when that window opens the book with it.
+
+A chapter that nests quotes, lists, or emphasis more than 128 levels deep is a save TextMouth can't take, since an export can't write it.
+No real book comes near it: the deepest nests 12 levels.
+VoiceOver names the chapter by its number: "Text not updated: chapter 2 of the edited text of Deep Notes nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't read safely.
+Flatten it and save again, or undo the change; the book keeps its old text until then."
+A text with no chapter markers says "the edited text of Deep Notes" instead, and the book's own sentence, in place of the book, says "its chapter 2 nests".
+The count includes the lines of a code block, and counts every two columns of indentation as a level, so a code line of 129 ">" marks, or of 258 spaces before "- ", is refused too.
+A book whose text was that deep before, as an earlier TextMouth let it in, opens and reads as it always did, but each save that leaves the chapter as it was is refused until it is flattened, and an export of its text is refused too ([Exporting books](exporting-books.md)).
+
+## When the book's own file has changed
+<!-- id: book-text-file-changed; keys: book's file changed, read again at next open; src: TextMouth/Services/BookTextEditing.swift, TextMouth/Models/BookTextEditWording.swift -->
+
+When the book's own file has changed too, your edit isn't taken either, and is kept the same way; the book's text is read from that file again the next time the book opens.
+
+## Redo Text Extraction during an edit
+<!-- id: book-text-redo-extraction; keys: Done. 1 book whose edited text can't be used yet was skipped, Storage settings, skipped books; src: TextMouth/Services/BookTextEditing.swift, TextMouth/Models/BookTextEditWording.swift -->
+
+While your edit session lasts, Redo Text Extraction leaves a book whose edit wasn't taken as it is, and keeps a copy of other text it replaces, saying where.
+Storage settings then say how many books it left, as in "Done.
+1 book whose edited text can't be used yet was skipped."
+
+## An edit saved outside a session
+<!-- id: book-text-outside-session; keys: TEXT_EDIT_KEPT, found at launch, edit while TextMouth closed, kept copy, debug log; src: TextMouth/Services/BookTextEditing.swift, TextMouth/ViewModels/LibraryViewModel+Migration.swift, TextMouth/Services/MarkdownCacheService.swift, TextMouth/Models/TextEditingKeys.swift -->
+
+A text book's edit saved while TextMouth was closed, or while no Edit Text session was open for the book, is found at TextMouth's next launch, or when its library next opens.
+It is then taken as the book's text, as Edit Text takes one but without an announcement, when it is UTF-8 text with a chapter in it and the book's own file hasn't changed.
+Otherwise it is kept in the book's package as content.md.edited- followed by the date and time, and the text is read from the book's own file again.
+Whatever else reads a book's text from its own file again, such as opening the book before TextMouth has found the edit, or Redo Text Extraction, first keeps text in content.md that TextMouth didn't write or take the same way, and leaves the book as it is when no copy can be kept.
+An edit TextMouth took stays the book's text after it quits, and TextMouth's automatic reads of the book's file again, such as one after a new version of TextMouth reads the book's format better, leave it as it is, logging TEXT_EDIT_KEPT in the debug log.
+Only Redo Text Extraction and a choice in a book's Text Encoding pop-up read the text from the book's own file again over such an edit.
+Each first keeps a copy of the text it replaces in the book's package as content.md.edited- followed by the date and time, which TextMouth leaves for you to delete.
+Bookmarks keep their chapter and position, so an edit earlier in a chapter can shift the words they point at.
+
+## Editing a transcribed audiobook's text
+<!-- id: book-text-transcript; keys: transcript.json, sentence timing, chapter heading from audio, Retranscribe Audio…, edited transcript; src: TextMouth/Services/TranscriptEdit.swift, TextMouth/Services/TranscriptEditAlignment.swift, TextMouth/Services/TranscriptTextLoader.swift, TextMouth/Models/BookTextEditWording.swift -->
+
+A transcribed audiobook's text, its transcript's, is edited the same way, and an open reader shows the edited text as the book plays on.
+A save is taken into the transcript itself, transcript.json, so the edit stays the book's text: each sentence keeps its time in the audio, a sentence whose words you changed no longer has each word's timing, and one whose every word you deleted is gone.
+An edit that changes the number of chapters, which must stay one for each of the audio's, or an edit of a book whose audio changed since it was transcribed, isn't taken, and is kept beside content.md as above; meanwhile the book plays without its text.
+A chapter's heading comes from the audio, and words typed into a chapter the transcript heard no speech in have no sentence to be kept in, so an edit that renames, removes, or adds a heading, or that adds words to such a chapter, isn't taken either, and is kept the same way.
+VoiceOver says which, as in "Text not updated: the edited transcript of Moby-Dick changes a chapter's heading, which comes from its audio.
+Put it back and save again; the book keeps its old text until then." and "Text not updated: the edited transcript of Moby-Dick adds words to a chapter with no speech, where they can't be kept.
+Remove them and save again; the book keeps its old text until then.", each followed by where the copy was kept.
+When the transcript changed too, as when the book was transcribed again on another Mac, the edit isn't taken either, and is kept the same way; the book's text is written from that transcript again the next time the book opens.
+An edit saved while TextMouth is closed, or outside Edit Text, is replaced the next time the book opens by the text written from the transcript, after TextMouth keeps it beside content.md.
+An audiobook without a transcript has no text to edit: transcribe it first.
+
+## Backslashes in a transcript's text
+<!-- id: book-text-transcript-backslashes; keys: escape, curly quote, ellipsis, Markdown characters; src: TextMouth/Services/TranscriptTextBuilder.swift -->
+
+A transcript's text has a backslash only where TextMouth's reader needs one:
+
+- Before a quotation mark or an apostrophe.
+- Before a hyphen or a period that has another next to it.
+- Before the characters Markdown itself reads, such as *, [, ], `, |, ~, <, an underscore outside a word, and the first character of a paragraph that would begin a heading, a list, a quote, or a numbered item.
+
+A comma, colon, semicolon, question mark, exclamation mark, or single period stands as it was heard.
+Keep the backslashes where they are: without them the reader would turn a quotation mark into a curly one and three periods into an ellipsis.

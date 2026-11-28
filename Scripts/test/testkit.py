@@ -18,13 +18,23 @@ import difflib
 import os
 import re
 import shlex
+import sys
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
+# Importing a sibling module must leave no __pycache__ folder in the repository (set before the import below).
+sys.dont_write_bytecode = True
+# The reader of a retried test's tries lives beside the agents' scripts; this folder's scripts run
+# with `python3 -I`, which leaves their own folder out of the path, so it is added by location.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "agents"))
+import test_tries  # noqa: E402
+
 # The folder of hosted test sources, the project and scheme, and the wrapper
 # that holds one of the machine's three build slots (all relative to the root).
 TESTS_FOLDER = "TextMouthProductionTests"
+# The iPhone unit bundle's folder: `hosted_test_classes` reads it too, with `folder_name`.
+IOS_TESTS_FOLDER = "TextMouthiOSTests"
 TEST_TARGET = "TextMouthProductionTests"
 PROJECT = "TextMouth.xcodeproj"
 SCHEME = "TextMouth"
@@ -71,12 +81,14 @@ class HostedClass:
         return self.test_count > 0
 
 
-# A top-level declaration starts in column 0, with any modifiers before the
-# keyword: `final class X: Y {`, `private final class X {`, `extension X {`.
-# The name may be dotted (`extension LogWriter.Environment`). The text after
-# the name up to `{` is kept so a class's superclass can be read.
+# A top-level declaration starts in column 0, with any attributes and modifiers
+# before the keyword: `final class X: Y {`, `@MainActor final class X: Y {`,
+# `private final class X {`, `extension X {`. The name may be dotted
+# (`extension LogWriter.Environment`). The text after the name up to `{` is
+# kept so a class's superclass can be read.
 _DECLARATION = re.compile(
-    r"^(?:(?:private|fileprivate|internal|public|open|final)\s+)*"
+    r"^(?:@\w+(?:\([^)]*\))?\s+)*"
+    r"(?:(?:private|fileprivate|internal|public|open|final|nonisolated)\s+)*"
     r"(class|extension|struct|enum|actor|protocol)\s+([A-Za-z_][\w.]*)(.*)$")
 # A test: a method indented exactly one level (4 spaces) with no parameters.
 _TEST_METHOD = re.compile(
@@ -84,13 +96,15 @@ _TEST_METHOD = re.compile(
     r"func\s+test\w*\s*\(\s*\)")
 
 
-def hosted_test_classes(root: Path) -> Dict[str, HostedClass]:
-    """Scans TextMouthProductionTests/*.swift and returns {class name: HostedClass}.
+def hosted_test_classes(root: Path, folder_name: str = TESTS_FOLDER) -> Dict[str, HostedClass]:
+    """Scans TextMouthProductionTests/*.swift (or the folder `folder_name`, such as the iPhone bundle's) and returns
+    {class name: HostedClass}.
 
     This is a line scanner, not a Swift parser, and it has limits:
-      * a scope opens at a column-0 `class`/`extension` line and closes at the
-        next column-0 declaration or column-0 `}`; test methods must be
-        indented exactly 4 spaces (as everywhere in this repository);
+      * a scope opens at a column-0 `class`/`extension` line (attributes may
+        come first on the line) and closes at the next column-0 declaration
+        or column-0 `}`; test methods must be indented exactly 4 spaces (as
+        everywhere in this repository);
       * a test is `func test...()` with no parameters, as XCTest requires;
         a method hidden in a `#if` is counted as if it were compiled;
       * the superclass is the first word after the colon on the declaration
@@ -101,7 +115,7 @@ def hosted_test_classes(root: Path) -> Dict[str, HostedClass]:
     """
     declared: Dict[str, Tuple[str, int, Optional[str]]] = {}  # name -> path, line, superclass
     own_tests: Dict[str, int] = {}
-    folder = root / TESTS_FOLDER
+    folder = root / folder_name
     for source in sorted(folder.glob("*.swift")):
         relative = str(source.relative_to(root))
         current: Optional[str] = None
@@ -109,9 +123,13 @@ def hosted_test_classes(root: Path) -> Dict[str, HostedClass]:
             if text.startswith("}"):
                 current = None
                 continue
-            # Blank, indented, comment, attribute and compiler-directive lines
-            # never start or end a scope; any other column-0 line does.
-            if text[:1] not in ("", " ", "\t", "/", "@", "#"):
+            # Blank, indented, comment and compiler-directive lines never start
+            # or end a scope. An attribute line starts one when its declaration
+            # follows on the line (`@MainActor final class X: Y {`: run-area.py
+            # once refused such a class, and train 1125-2059 ran no Mac test);
+            # an attribute alone on its line leaves the scope as it is. Any
+            # other column-0 line starts or ends one.
+            if text[:1] not in ("", " ", "\t", "/", "#"):
                 match = _DECLARATION.match(text)
                 if match:
                     kind, name, rest = match.groups()
@@ -121,7 +139,7 @@ def hosted_test_classes(root: Path) -> Dict[str, HostedClass]:
                     if kind == "class" and name not in declared:
                         superclass = re.match(r"\s*:\s*([A-Za-z_][\w.]*)", rest)
                         declared[name] = (relative, number, superclass.group(1) if superclass else None)
-                else:
+                elif not text.startswith("@"):
                     current = None
                 continue
             if current and _TEST_METHOD.match(text):
@@ -166,8 +184,10 @@ def parse_areas(path) -> List[Area]:
     Format: `#` starts a comment (a whole line, or after a name); `[name] one-line
     description` starts an area (name: lowercase letters, digits and hyphens);
     every other non-blank line is one test class name belonging to the last
-    area. A class may be listed in two areas, but not twice in one. A malformed
-    line raises AreasError naming the line number.
+    area. A class may be listed in two areas; listed twice in one, it counts once,
+    since two branches that add the same class merge both lines (areas.conf merges
+    as a union, .gitattributes). A malformed line raises AreasError naming the line
+    number.
     """
     areas: List[Tuple[str, str, List[str]]] = []
     for number, raw in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), 1):
@@ -195,7 +215,8 @@ def parse_areas(path) -> List[Area]:
         if not areas:
             raise AreasError(f"{where}: class '{name}' comes before any [area] line")
         if name in areas[-1][2]:
-            raise AreasError(f"{where}: class '{name}' is listed twice in area '{areas[-1][0]}'")
+            # A repeat in one area: two branches each added it, and the union merge kept both lines. It means what one does.
+            continue
         areas[-1][2].append(name)
     return [Area(name, description, tuple(classes)) for name, description, classes in areas]
 
@@ -219,15 +240,65 @@ def area_classes(areas: Sequence[Area], name: str) -> Optional[List[str]]:
     return None
 
 
-def resolve_names(names: Sequence[str], areas: Sequence[Area],
-                  classes: Dict[str, HostedClass], classes_only: bool = False) -> List[str]:
-    """Turns area and class NAMEs into one ordered list of class names without repeats.
+# A test method's name as XCTest runs it: `test` and then word characters.
+_METHOD_NAME = re.compile(r"^test\w*$")
 
-    classes_only is for --classes, where an area name is refused. An unknown
-    name raises UnknownName with the closest matches in its message.
+
+def split_method(name: str) -> Tuple[str, Optional[str]]:
+    """Splits a NAME of the form `Class/testMethod` into (class, method); a plain NAME gives (name, None)."""
+    cls, slash, method = name.partition("/")
+    return (cls, method) if slash else (name, None)
+
+
+def declared_methods(root: Path, hosted: HostedClass) -> List[str]:
+    """The names of the `func testX()` methods written in the file of `hosted`, in file order."""
+    text = (root / hosted.path).read_text(encoding="utf-8", errors="replace")
+    return re.findall(r"^\s*(?:@\w+\s+)*(?:(?:private|fileprivate|override)\s+)*func\s+(test\w*)\s*\(\s*\)",
+                      text, flags=re.MULTILINE)
+
+
+def _resolve_method(name: str, cls: str, method: str, root: Optional[Path],
+                    classes: Dict[str, HostedClass]) -> str:
+    """Checks `Class/testMethod` and returns it, or raises UnknownName with the closest names.
+
+    The class must be a runnable hosted class and the method a `func testX()`
+    declared in the class's own file. Without a `root` the files cannot be read, so the
+    method is refused too, never taken on trust.
+    """
+    if cls not in classes:
+        close = difflib.get_close_matches(cls, list(classes), n=5, cutoff=0.6)
+        hint = f"; closest: {', '.join(close)}" if close else ""
+        raise UnknownName(f"no class named '{cls}' in '{name}'{hint}")
+    if not classes[cls].runnable:
+        raise UnknownName(f"'{cls}' is a helper class with no tests")
+    if not _METHOD_NAME.match(method):
+        raise UnknownName(f"'{method}' in '{name}' is not a test method name (they start with 'test')")
+    if root is None:
+        raise UnknownName(f"cannot check '{name}': no repository root given")
+    known = declared_methods(root, classes[cls])
+    if method not in known:
+        close = difflib.get_close_matches(method, known, n=5, cutoff=0.6)
+        hint = f"; closest: {', '.join(f'{cls}/{m}' for m in close)}" if close else ""
+        raise UnknownName(f"no test method '{method}' in {cls}{hint}")
+    return name
+
+
+def resolve_names(names: Sequence[str], areas: Sequence[Area],
+                  classes: Dict[str, HostedClass], classes_only: bool = False,
+                  root: Optional[Path] = None) -> List[str]:
+    """Turns area, class, and `Class/testMethod` NAMEs into one ordered list without repeats.
+
+    classes_only is for --classes, where an area name is refused (a method is fine). An
+    unknown name raises UnknownName with the closest matches in its message. A method
+    needs `root` (to read its class's file). A method whose class is also in the result,
+    by name or through an area, is dropped: the class runs once, with all its methods.
     """
     result: List[str] = []
     for name in names:
+        cls, method = split_method(name)
+        if method is not None:
+            result.append(_resolve_method(name, cls, method, root, classes))
+            continue
         members = None if classes_only else area_classes(areas, name)
         if members is not None and name == ALL_AREA:
             # `all` must really be all: a class no area lists yet (a new one)
@@ -245,7 +316,13 @@ def resolve_names(names: Sequence[str], areas: Sequence[Area],
             kind = "class" if classes_only else "area or class"
             hint = f"; closest: {', '.join(close)}" if close else ""
             raise UnknownName(f"no {kind} named '{name}'{hint}")
-    return _dedupe(result)
+    return drop_covered_methods(_dedupe(result))
+
+
+def drop_covered_methods(names: Sequence[str]) -> List[str]:
+    """Drops each `Class/method` whose whole `Class` is also in `names`, keeping the order."""
+    whole = {n for n in names if "/" not in n}
+    return [n for n in names if "/" not in n or split_method(n)[0] not in whole]
 
 
 # ---------------------------------------------------------------------------
@@ -253,7 +330,7 @@ def resolve_names(names: Sequence[str], areas: Sequence[Area],
 # ---------------------------------------------------------------------------
 
 def build_command(root: Path, classes: Sequence[str], derived_data: str, jobs: int = 4,
-                  use_slot: bool = True, action: str = "test") -> List[str]:
+                  use_slot: bool = True, action: str = "test", extra: Sequence[str] = ()) -> List[str]:
     """The argv of one xcodebuild run of all `classes`, behind the slot wrapper.
 
     `action` is xcodebuild's own: "test" (the default), or "build-for-testing"
@@ -262,7 +339,10 @@ def build_command(root: Path, classes: Sequence[str], derived_data: str, jobs: i
     One invocation carries every class as its own -only-testing: argument, so
     several areas launch the test host once (each launch leaves about 23 MB in
     a system cache). Run it from the repository root. The wrapper is left out
-    when use_slot is false.
+    when use_slot is false. `extra` is more xcodebuild arguments, put before the
+    classes (the GitHub runner passes its test time limits this way). xcodebuild
+    refuses an option given twice, so an `extra` that carries
+    `-parallel-testing-enabled` takes the place of the default `NO`.
     """
     command = [str(root / SLOT_WRAPPER)] if use_slot else []
     command += [
@@ -270,12 +350,13 @@ def build_command(root: Path, classes: Sequence[str], derived_data: str, jobs: i
         "-project", PROJECT,
         "-scheme", SCHEME,
         "-destination", "platform=macOS",
-        "-parallel-testing-enabled", "NO",
+        *([] if "-parallel-testing-enabled" in extra else ["-parallel-testing-enabled", "NO"]),
         "-jobs", str(jobs),
         "CODE_SIGNING_ALLOWED=NO",
         "COMPILER_INDEX_STORE_ENABLE=NO",
         "-derivedDataPath", derived_data,
     ]
+    command += list(extra)
     command += [f"-only-testing:{TEST_TARGET}/{name}" for name in classes]
     return command
 
@@ -300,6 +381,7 @@ class Summary:
     errors: Tuple[Tuple[str, str, str], ...] = ()   # (file, line, message); file may be ""
     warnings: Tuple[Tuple[str, str, str], ...] = ()
     crash: Optional[str] = None
+    retried: Tuple[str, ...] = ()              # "RETRIED Class.test passed on try 2 of 3", one per test
     succeeded: bool = False                    # "** TEST SUCCEEDED **" (or "TEST EXECUTE SUCCEEDED") seen
     tail: Tuple[str, ...] = ()                 # last log lines, shown when nothing else explains a failure
     log_path: Optional[str] = None             # set by the caller
@@ -315,9 +397,13 @@ class Summary:
 _EXECUTED = re.compile(r"^\s*(Executed (\d+) tests?, with (?:\d+ tests? skipped and )?(\d+) failures?.*)$")
 # "/path/File.swift:123: error: -[TextMouthProductionTests.FooTests testBar] : message"
 _TEST_ERROR = re.compile(r"^(.+?\.swift):(\d+): error: -\[(?:[\w.]+\.)?(\w+) (\w+)\] : (.*)$")
-_TEST_FAILED = re.compile(r"^Test Case '-\[(?:[\w.]+\.)?(\w+) (\w+)\]' failed")
+# Found with .search, anywhere in the line: another process's log text can land in front of a result (train 1122-0353 had
+# CoreAudio's message cut in two by a result line), and a failed result with text before it would otherwise name no test.
+_TEST_FAILED = re.compile(r"Test Case '-\[(?:[\w.]+\.)?(\w+) (\w+)\]' failed")
 _COMPILE_ERROR = re.compile(r"^(/.+?\.swift):(\d+):\d+: error: (.*)$")
-_BARE_ERROR = re.compile(r"^(?:[\w+.-]+: )?(?:fatal )?error: (.*)$")
+# A printed NSError ("error: Error Domain=...") is not one: interleaved output from two processes can leave such a
+# line starting at "error:".
+_BARE_ERROR = re.compile(r"^(?:[\w+.-]+: )?(?:fatal )?error: (?!Error Domain=)(.*)$")
 _WARNING = re.compile(r"^(/.+?\.swift):(\d+):\d+: warning: (.*)$")
 _CRASH = re.compile(r"crashed|Restarting after unexpected exit, crash, or test timeout")
 # The build wrapper copies the agent's unread board messages into the log
@@ -336,6 +422,14 @@ def _in_repository(path: str, root: Path) -> bool:
     """True for a source file of this repository (not a package or DerivedData)."""
     roots = {str(root), os.path.realpath(root)}
     return any(path.startswith(r + "/") for r in roots) and not any(p in path for p in _FOREIGN_PATH)
+
+
+def _executed_without_tries(line: str, tests: int, skipped: int, failures: int) -> str:
+    """`line` (an Executed line) with the counts of the tests' final outcomes in place of xcodebuild's, which
+    count every try of a retried test; its times are kept."""
+    seconds = re.search(r" in [\d.]+ \([\d.]+\) seconds", line)
+    return (f"Executed {tests} tests, with {skipped} tests skipped and {failures} failures (0 unexpected)"
+            + (seconds.group(0) if seconds else ""))
 
 
 def summarize_log(text: str, root: Path) -> Summary:
@@ -381,7 +475,7 @@ def summarize_log(text: str, root: Path) -> Summary:
             if key not in failed_order:
                 failed_order.append(key)
             continue
-        match = _TEST_FAILED.match(line)
+        match = _TEST_FAILED.search(line)
         if match:
             key = f"{match.group(1)}.{match.group(2)}"
             if key not in failed_order:
@@ -405,9 +499,19 @@ def summarize_log(text: str, root: Path) -> Summary:
                 and not line.startswith(("Test Case ", "Test Suite ", _WRAPPER_PREFIX)) \
                 and ".swift:" not in line:
             crash = line.strip()[:240]
+    retried: Tuple[str, ...] = ()
+    if test_tries.has_retries(text):
+        # A run that retries: its Executed line counts every try, so the tests' last results are read instead.
+        found = test_tries.outcomes(text)
+        retried = tuple(test_tries.retried_line(o) for o in test_tries.retried(found))
+        failed_order = [name for name, o in found.items() if o.result == "failed"]
+        if found and executed_line is not None:
+            executed, failures = len(found), len(failed_order)
+            skipped = test_tries.counts(found)[1]
+            executed_line = _executed_without_tries(executed_line, executed, skipped, failures)
     failed_tests = tuple((key,) + test_errors.get(key, ("", "", "")) for key in failed_order)
     return Summary(
-        executed_line=executed_line, executed=executed, failures=failures,
+        executed_line=executed_line, executed=executed, failures=failures, retried=retried,
         failed_tests=failed_tests, errors=tuple(errors), warnings=tuple(warnings),
         crash=crash, succeeded=succeeded,
         tail=tuple(l.strip() for l in lines if l.strip())[-3:])
@@ -426,6 +530,8 @@ def format_summary(summary: Summary) -> List[str]:
     for test, file, number, message in summary.failed_tests:
         where = f" at {file}:{number}: {message}" if file else ""
         out.append(f"FAILED {test}{where}")
+    # A test that passed on a later try stays visible, though it does not fail the run.
+    out.extend(summary.retried)
     for file, number, message in summary.errors[:MAX_ERRORS_SHOWN]:
         out.append(f"ERROR {file}:{number}: {message}" if file else f"ERROR {message}")
     if len(summary.errors) > MAX_ERRORS_SHOWN:

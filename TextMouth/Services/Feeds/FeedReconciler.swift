@@ -232,7 +232,7 @@ enum FeedReconciler {
         isSerial: Bool,
         keepingRecordsOf keptRecords: Set<FeedItem.ID> = []
     ) -> [FeedItem] {
-        let ordered = candidates.sorted { isNewer($0, than: $1, positions: positions, isSerial: isSerial) }
+        let ordered = candidates.sortedStably { isNewer($0, than: $1, positions: positions, isSerial: isSerial) }
         var kept: [FeedItem] = []
         var listedKept = 0
         for item in ordered {

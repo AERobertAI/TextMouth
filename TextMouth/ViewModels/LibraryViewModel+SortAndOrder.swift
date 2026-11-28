@@ -20,7 +20,11 @@ enum ManualBookOrder {
         /// the reading list: "Moved Bestiary above Almanac", or "Moved
         /// Almanac below Bestiary".
         var announcement: String {
-            "Moved \(movedTitle) \(direction < 0 ? "above" : "below") \(adjacentTitle)"
+            direction < 0
+                // Translators: VoiceOver announcement after a book moved up past another in a manual order. %1$@ is the moved book's title. %2$@ is the title of the book it moved above.
+                ? InterfaceText.line("moveResult.announcement.above", "Moved \(movedTitle) above \(adjacentTitle)")
+                // Translators: VoiceOver announcement after a book moved down past another in a manual order. %1$@ is the moved book's title. %2$@ is the title of the book it moved below.
+                : InterfaceText.line("moveResult.announcement.below", "Moved \(movedTitle) below \(adjacentTitle)")
         }
 
         /// What VoiceOver says of a move made with a row's Move Up or Move
@@ -28,39 +32,103 @@ enum ManualBookOrder {
         /// counted from 1 at the top, "Dune, 3 of 12", short enough to hear
         /// after each of many moves in a row.
         var placeAnnouncement: String {
-            "\(movedTitle), \(newIndex + 1) of \(count)"
+            // Translators: VoiceOver announcement after a book moved one place in an order the user arranges. %1$@ is the book's title. %2$lld is its new place, counted from 1. %3$lld is how many books the order holds.
+            InterfaceText.line("common.valueCountOfCount", "\(movedTitle), \(number: newIndex + 1) of \(number: count)")
         }
     }
 
-    /// What VoiceOver says when a row's Move Up or Move Down VoiceOver
-    /// action finds the book `title` can no longer move that way (-1 up,
-    /// +1 down), as when the list changed after the row offered the action:
-    /// "Dune can't move up." The action is offered only where the book can
-    /// move, so this is said only after such a change.
+    /// What VoiceOver says when a book `title` cannot move that way (-1 up,
+    /// +1 down): "Dune can't move up." A row's Move Up or Move Down
+    /// VoiceOver action is offered only where the book can move, so it says
+    /// this only after the list changed; Move Book Up and Move Book Down
+    /// from the menu and the keyboard say it when the book is at an edge
+    /// (`LibraryViewModel.moveSelection`).
     static func cannotMoveAnnouncement(_ title: String, direction: Int) -> String {
-        "\(title) can't move \(direction < 0 ? "up" : "down")."
+        direction < 0
+            // Translators: VoiceOver announcement when a book is at the top of a manual order and cannot move up. %@ is the book's title.
+            ? InterfaceText.line("manualBookOrder.cannotMoveAnnouncement.cantUp", "\(title) can't move up.")
+            // Translators: VoiceOver announcement when a book is at the bottom of a manual order and cannot move down. %@ is the book's title.
+            : InterfaceText.line("manualBookOrder.cannotMoveAnnouncement.down", "\(title) can't move down.")
+    }
+
+    /// What VoiceOver says when Move Book Up or Move Book Down is used
+    /// where the list shows no order the user arranges, and the way to set
+    /// it right, which differs by view. A folder in Folders that is not
+    /// sorted by Manual Order is one Sort menu choice away from it. Every
+    /// other view (All Items, Unopened, Recently Opened, Feeds, and the
+    /// listener's own) mixes the books of many folders, offers no Manual
+    /// Order, and cannot be put in one, so it sends the listener to a folder
+    /// or the Reading List instead.
+    static func noArrangedOrderAnnouncement(at location: LibraryLocation) -> String {
+        if location.view.kind == .folders {
+            let manual = LibrarySortField.manual.title
+            return SentenceWording.joined([
+                // Translators: First sentence of the announcement when Move Book Up or Move Book Down is used in a folder that is not in manual order. %@ is the name of the Manual Order sort.
+                InterfaceText.line("manualBookOrder.noArrangedOrder.sorted", "Books can be moved only in a folder sorted by \(manual), and this folder is not."),
+                // Translators: Second sentence of the announcement when Move Book Up or Move Book Down is used in a folder that is not in manual order. %@ is the name of the Manual Order sort, a choice in the Sort menu.
+                InterfaceText.line("manualBookOrder.noArrangedOrder.choose", "Choose \(manual) in the Sort menu, then try again."),
+            ])
+        }
+        // Translators: VoiceOver announcement when Move Book Up or Move Book Down is used in a view that mixes books from many folders. Folders and Reading List are names of views in the View menu.
+        return InterfaceText.line("manualBookOrder.noArrangedOrder.folders", "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.")
+    }
+
+    /// What VoiceOver says when Move Book Up or Move Book Down is used on a
+    /// feed's item in a folder, where it has no place in the order the user
+    /// arranges. In the Reading List it moves like any book.
+    static func feedItemCannotMoveAnnouncement(_ title: String) -> String {
+        // Translators: VoiceOver announcement when Move Book Up or Move Book Down is used on an episode or article of a feed in a folder. %@ is its title.
+        InterfaceText.line("manualBookOrder.feedItemCannotMoveAnnouncement", "\(title) is an item of a feed, and a feed's items can't be moved.")
+    }
+
+    /// What VoiceOver says when Move Book Up or Move Book Down is used with
+    /// no book selected.
+    static var noBookToMoveAnnouncement: String {
+        // Translators: VoiceOver announcement when Move Book Up or Move Book Down is used with no book selected.
+        InterfaceText.line("manualBookOrder.noBookToMoveAnnouncement", "No book is selected. Select the book to move, then try again.")
+    }
+
+    /// What VoiceOver says when Move Book Up or Move Book Down is used with
+    /// several books selected, since a move shifts one book one place.
+    static var severalBooksToMoveAnnouncement: String {
+        // Translators: VoiceOver announcement when Move Book Up or Move Book Down is used with several books selected.
+        InterfaceText.line("manualBookOrder.severalBooksToMoveAnnouncement", "A move shifts one book at a time, and several are selected. Select one book, then try again.")
+    }
+
+    /// What the announcement calls a book it has no title for.
+    static var theBook: String {
+        // Translators: How an announcement names a book whose title is not known, as in "The book can't move up."
+        InterfaceText.line("manualBookOrder.theBook", "The book")
     }
 
     /// The books in `folderPath`, in the folder's manual order exactly as
-    /// the list shows it: by manual position, then title, then book ID
-    /// (`LibraryBookSorter`). Moving a book up or down, dragging, and
-    /// Continue to Next Book all follow this one order.
-    static func orderedBooks(in library: Library, folderPath: String) -> [Book] {
+    /// the list shows it: by manual position, then title, read as
+    /// `articles` says, then book ID (`LibraryBookSorter`). Moving a book up
+    /// or down, dragging, and Continue to Next Book all follow this one
+    /// order.
+    static func orderedBooks(in library: Library, folderPath: String, articles: LeadingArticles = .partOfTitle) -> [Book] {
         LibraryBookSorter.sorted(
             library.booksInFolder(folderPath),
             by: .manual,
-            ascending: true
+            ascending: true,
+            articles: articles
         )
     }
 
+    /// Moves the book `bookID` one place up (-1) or down (+1) in the manual
+    /// order of `folderPath`, as the list shows it with titles read as
+    /// `articles` says, and numbers the folder's books in the new order.
+    /// Returns what VoiceOver says of the move, or nil when the book can't
+    /// move that way.
     @discardableResult
     static func move(
         library: inout Library,
         bookID: UUID,
         direction: Int,
-        folderPath: String
+        folderPath: String,
+        articles: LeadingArticles = .partOfTitle
     ) -> MoveResult? {
-        var books = orderedBooks(in: library, folderPath: folderPath)
+        var books = orderedBooks(in: library, folderPath: folderPath, articles: articles)
         guard let currentIndex = books.firstIndex(where: { $0.id == bookID }) else { return nil }
         let newIndex = currentIndex + direction
         guard books.indices.contains(newIndex) else { return nil }
@@ -79,17 +147,18 @@ enum ManualBookOrder {
 
     /// Moves the books at `source` to `destination` in the folder's manual
     /// order, as a drag in the list does. The offsets are positions in
-    /// `orderedBooks(in:folderPath:)`, which is the order the list shows
-    /// while it shows the folder in manual order. Returns false, changing
-    /// nothing, when an offset is outside the folder.
+    /// `orderedBooks(in:folderPath:articles:)`, which is the order the list
+    /// shows while it shows the folder in manual order. Returns false,
+    /// changing nothing, when an offset is outside the folder.
     @discardableResult
     static func reorder(
         library: inout Library,
         folderPath: String,
         from source: IndexSet,
-        to destination: Int
+        to destination: Int,
+        articles: LeadingArticles = .partOfTitle
     ) -> Bool {
-        var books = orderedBooks(in: library, folderPath: folderPath)
+        var books = orderedBooks(in: library, folderPath: folderPath, articles: articles)
         guard !source.isEmpty,
               source.allSatisfy({ books.indices.contains($0) }),
               (0...books.count).contains(destination) else { return false }
@@ -112,13 +181,17 @@ enum ManualBookOrder {
         }
     }
 
+    /// Whether the book `bookID` can move one place up (-1) or down (+1) in
+    /// the manual order of `folderPath`, as the list shows it with titles
+    /// read as `articles` says.
     static func canMove(
         in library: Library,
         bookID: UUID,
         direction: Int,
-        folderPath: String
+        folderPath: String,
+        articles: LeadingArticles = .partOfTitle
     ) -> Bool {
-        let books = orderedBooks(in: library, folderPath: folderPath)
+        let books = orderedBooks(in: library, folderPath: folderPath, articles: articles)
         guard let currentIndex = books.firstIndex(where: { $0.id == bookID }) else { return false }
         return books.indices.contains(currentIndex + direction)
     }
@@ -175,7 +248,7 @@ extension LibraryViewModel {
         if let feedID = book.feedLink?.feedID {
             return feedItemBooksBeyond(book, of: feedID, going: direction)
         }
-        let folderBooks = ManualBookOrder.orderedBooks(in: library, folderPath: book.folderPath)
+        let folderBooks = ManualBookOrder.orderedBooks(in: library, folderPath: book.folderPath, articles: leadingArticles)
         let beyond = ListNeighbors.beyond(book.id, going: direction, in: folderBooks.map(\.id)) ?? []
         // Each book is found by its ID in the order already in hand.
         let booksByID = Dictionary(folderBooks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -203,6 +276,44 @@ extension LibraryViewModel {
     }
 
     // MARK: - Sorting a Location
+
+    /// What a title's leading article does in this library's lists: the
+    /// Library tab's Leading articles setting (`LeadingArticles`), read
+    /// from the app's preferences store, where the settings model writes it,
+    /// each time it is asked, so every list, Move Book Up and Move Book
+    /// Down, a drag, and Continue to Next Book follow a change at once.
+    /// The iPhone has no row for the setting and its rows show titles as
+    /// written, so its lists keep titles as written whatever is stored.
+    var leadingArticles: LeadingArticles {
+        #if os(iOS)
+        return .partOfTitle
+        #else
+        return LeadingArticles.preference.read(from: TextMouthRuntime.current.preferences)
+        #endif
+    }
+
+    /// The title `book`'s row shows in place of its own under `articles`,
+    /// nil while titles are shown as written: worked out once for each title
+    /// and kept (`LibraryListCache.rowTitle(of:articles:)`), since a Library
+    /// window draws its rows and its Books rotor again as a book plays.
+    func rowTitle(of book: Book, articles: LeadingArticles) -> String? {
+        listCache.rowTitle(of: book, articles: articles)
+    }
+
+    /// The Books rotor's entries for `books`, a list's books in its order:
+    /// each book's title as its row shows it, "Hobbit, The" while sorting
+    /// passes over articles (`rowTitle(of:articles:)`), and otherwise the
+    /// title as written. The window's rotor and its tests both read them.
+    func booksRotorEntries(of books: [Book], articles: LeadingArticles) -> [BookRotorEntry] {
+        books.map { BookRotorEntry(label: rowTitle(of: $0, articles: articles) ?? $0.title, id: $0.id) }
+    }
+
+    /// The rows of `books`, a list's books in its order, as letter
+    /// navigation reaches them, their titles folded once and kept until the
+    /// list changes (`LibraryListCache.typedRows(of:)`).
+    func typedRows(of books: [Book]) -> [TypedRow<UUID>] {
+        listCache.typedRows(of: books)
+    }
 
     /// The sort `location` shows, restored from the setting saved for it.
     /// Showing a sort never saves it (TODO A06).
@@ -256,7 +367,7 @@ extension LibraryViewModel {
     /// manual order as the list shows it. Saves the new order at once.
     func reorderBooksInFolder(folderPath: String, from source: IndexSet, to destination: Int) {
         let before = manualPositions(in: folderPath)
-        if ManualBookOrder.reorder(library: &library, folderPath: folderPath, from: source, to: destination) {
+        if ManualBookOrder.reorder(library: &library, folderPath: folderPath, from: source, to: destination, articles: leadingArticles) {
             saveManualOrder(in: folderPath, changedFrom: before)
         }
     }
@@ -274,7 +385,8 @@ extension LibraryViewModel {
             library: &library,
             bookID: bookID,
             direction: direction,
-            folderPath: folderPath
+            folderPath: folderPath,
+            articles: leadingArticles
         )
         if result != nil {
             saveManualOrder(in: folderPath, changedFrom: before)
@@ -288,7 +400,8 @@ extension LibraryViewModel {
             in: library,
             bookID: bookID,
             direction: direction,
-            folderPath: folderPath
+            folderPath: folderPath,
+            articles: leadingArticles
         )
     }
 
@@ -310,6 +423,45 @@ extension LibraryViewModel {
             guard let way = ReadingList.Direction(step: direction) else { return nil }
             return moveInReadingList(bookID: bookID, direction: way)
         }
+    }
+
+    /// Moves the one book in `selection` one place up (-1) or down (+1) in
+    /// the order the window shows at `location` under `sort`, as Move Book
+    /// Up and Move Book Down do from the Library menu and the keyboard and
+    /// as a row's context menu does, and returns what VoiceOver should say.
+    /// A command that cannot act never stays silent, since nothing on the
+    /// screen tells a listener it did nothing: the returned sentence says
+    /// why, whether there is no order to arrange here, no book or several
+    /// are selected, the book is a feed's item, or it is at the edge.
+    ///
+    /// - Parameters:
+    ///   - selection: The IDs of the books selected, never of folders or
+    ///     other rows.
+    ///   - direction: -1 for up, +1 for down.
+    ///   - location: Where the window is.
+    ///   - sort: The sort the window shows there.
+    func moveSelection(
+        _ selection: Set<UUID>,
+        direction: Int,
+        at location: LibraryLocation,
+        sortedBy sort: LibrarySortState
+    ) -> String {
+        guard let target = location.reorderTarget(sortedBy: sort) else {
+            return ManualBookOrder.noArrangedOrderAnnouncement(at: location)
+        }
+        guard let bookID = selection.first else { return ManualBookOrder.noBookToMoveAnnouncement }
+        guard selection.count == 1 else { return ManualBookOrder.severalBooksToMoveAnnouncement }
+        let book = bookByID(bookID)
+        // A feed's item has no place in a folder's manual order, but the
+        // Reading List holds episodes and articles and orders them, as a
+        // row's own Move Up and Move Down do: only a folder refuses it.
+        if case .folder = target, let book, book.isFeedItem {
+            return ManualBookOrder.feedItemCannotMoveAnnouncement(book.title)
+        }
+        if let result = moveBook(bookID, direction: direction, in: target) {
+            return result.announcement
+        }
+        return ManualBookOrder.cannotMoveAnnouncement(book?.title ?? ManualBookOrder.theBook, direction: direction)
     }
 
     /// Moves the books at `source` to `destination` in `target`, as a drag

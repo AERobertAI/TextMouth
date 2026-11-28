@@ -48,44 +48,48 @@ struct LibraryIndexReadFailure {
     /// VoiceOver and a braille display render naturally, not bracket notation.
     static func plainLanguageReason(for error: Error, byteCount: Int?) -> String {
         if byteCount == 0 {
-            return "The file is empty."
+            return "The file is empty." // l10n: no (damage reason inside a file, question 3)
         }
         if let decodingError = error as? DecodingError {
             return reason(for: decodingError)
         }
         switch (error as? CocoaError)?.code {
         case .fileReadNoPermission?:
-            return "TextMouth does not have permission to read the file."
+            // Translators: Why the library index could not be loaded: macOS refused TextMouth permission to read it.
+            return InterfaceText.line("libraryIndexReadFailure.fileReadNoPermission", "TextMouth does not have permission to read the file.")
         case .fileReadNoSuchFile?:
-            return "The file disappeared while TextMouth was reading it."
+            // Translators: Why the library index could not be loaded: the file vanished during the read.
+            return InterfaceText.line("libraryIndexReadFailure.fileReadNoSuchFile", "The file disappeared while TextMouth was reading it.")
         default:
-            return "The file could not be read. \(error.localizedDescription)"
+            // Translators: Why the library index could not be loaded: a read error. %@ is the system's own description of the error.
+            return InterfaceText.line("libraryIndexReadFailure.other", "The file could not be read. \(error.localizedDescription)")
         }
     }
 
     /// Plain-language reasons for each way decoding can fail.
     private static func reason(for error: DecodingError) -> String {
         switch error {
+        // What is wrong inside a file stays in English, whatever language the interface speaks (question 3).
         case .dataCorrupted(let context) where context.codingPath.isEmpty:
-            return "The file is damaged or incomplete, so it is not valid JSON."
+            return "The file is damaged or incomplete, so it is not valid JSON." // l10n: no (damage reason inside a file, question 3)
         case .dataCorrupted(let context):
-            return "The file contains a value this version of TextMouth does not recognize, "
-                + "at \(spokenLocation(context.codingPath)). "
-                + "A newer version of TextMouth may have saved it."
+            return "The file contains a value this version of TextMouth does not recognize, " // l10n: no (damage reason inside a file, question 3)
+                + "at \(spokenLocation(context.codingPath)). " // l10n: no (damage reason inside a file, question 3)
+                + "A newer version of TextMouth may have saved it." // l10n: no (damage reason inside a file, question 3)
         case .keyNotFound(let key, let context):
-            return "The file is missing required information, at \(spokenLocation(context.codingPath + [key]))."
+            return "The file is missing required information, at \(spokenLocation(context.codingPath + [key]))." // l10n: no (damage reason inside a file, question 3)
         case .typeMismatch(_, let context), .valueNotFound(_, let context):
-            return "The file contains information in an unexpected form, at \(spokenLocation(context.codingPath))."
+            return "The file contains information in an unexpected form, at \(spokenLocation(context.codingPath))." // l10n: no (damage reason inside a file, question 3)
         @unknown default:
-            return "The file could not be decoded."
+            return "The file could not be decoded." // l10n: no (damage reason inside a file, question 3)
         }
     }
 
     /// "books, item 3, format" for the coding path `books[2].format`.
     private static func spokenLocation(_ codingPath: [CodingKey]) -> String {
-        guard !codingPath.isEmpty else { return "the top level of the file" }
+        guard !codingPath.isEmpty else { return "the top level of the file" } // l10n: no (damage reason inside a file, question 3)
         return codingPath
-            .map { key in key.intValue.map { "item \($0 + 1)" } ?? key.stringValue }
+            .map { key in key.intValue.map { "item \($0 + 1)" } ?? key.stringValue } // l10n: no (damage reason inside a file, question 3)
             .joined(separator: ", ")
     }
 }
@@ -106,15 +110,20 @@ enum LibraryIndexRecoveryError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .indexUnreadable:
-            return "The library index can't be read. Choose Try Again or Rebuild Library Index "
-                + "in the Library window first."
+            // Translators: Why a command that acts on the library index was refused: the index can't be read yet. Try Again and Rebuild Library Index are button names in the Library window.
+            return InterfaceText.line("libraryIndexRecoveryError.indexUnreadable", "The library index can't be read. Choose Try Again or Rebuild Library Index in the Library window first.")
         case .couldNotPreserve(let url):
-            return "TextMouth could not save a copy of \(url.path), so it left that file unchanged. "
-                + "Make sure its folder can be written to, then try again."
+            return SentenceWording.joined([
+                // Translators: First sentence of why Rebuild Library Index replaced nothing. %@ is the file's path.
+                InterfaceText.line("libraryIndexRecoveryError.couldNotPreserve", "TextMouth could not save a copy of \(url.path), so it left that file unchanged."),
+                // Translators: Last sentence of why Rebuild Library Index replaced nothing: what to do.
+                InterfaceText.line("libraryIndexRecoveryError.couldNotPreserveFix", "Make sure its folder can be written to, then try again."),
+            ])
         case .indexReadableAgain:
             // Said after "The library index was not rebuilt." (the recovery
             // sheet's outcome), so it names the index once.
-            return "It can be read again now. Choose Try Again to use it."
+            // Translators: Why Rebuild Library Index replaced nothing: the library index can be read again. It follows the sentence "The library index was not rebuilt.", so "It" is the index. Try Again is a button name.
+            return InterfaceText.line("libraryIndexRecoveryError.indexReadableAgain", "It can be read again now. Choose Try Again to use it.")
         }
     }
 }

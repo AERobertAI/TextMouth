@@ -129,7 +129,8 @@ enum AudioFilterRunner {
         guard frequency < sampleRate / 2 else {
             throw AudioFilterError.badValue(
                 filter: filterName(parameters.kind), option: "frequency", value: String(frequency),
-                expected: "give a frequency below half the audio's sample rate, \(Int(sampleRate / 2)) Hz"
+                // Translators: What a frequency option of a filter accepts, said at the end of a refusal such as "The highpass filter's frequency can't be “x”: <this>." Written without its full stop. %@ is half the audio's sample rate, in hertz, written without digit grouping.
+                expected: InterfaceText.line("audioFilterRunner.coefficients.frequency", "give a frequency below half the audio's sample rate, \(String(Int(sampleRate / 2))) Hz")
             )
         }
         let w0 = 2 * Double.pi * frequency / sampleRate
@@ -169,7 +170,8 @@ enum AudioFilterRunner {
         guard normalized.isFinite else {
             throw AudioFilterError.badValue(
                 filter: filterName(parameters.kind), option: "width", value: AudioBuiltInFilter.written(parameters.width),
-                expected: "give a narrower width, since this one makes no usable filter at \(AudioBuiltInFilter.written(frequency)) Hz"
+                // Translators: What a width option of a filter accepts, said at the end of a refusal such as "The equalizer filter's width can't be “x”: <this>." Written without its full stop. %@ is the filter's frequency in hertz, already written.
+                expected: InterfaceText.line("audioFilterRunner.coefficients.narrower", "give a narrower width, since this one makes no usable filter at \(AudioBuiltInFilter.written(frequency)) Hz")
             )
         }
         return normalized
@@ -305,9 +307,9 @@ enum AudioFilterRunner {
             case .insufficientDataFromInputNode, .cannotDoInCurrentContext:
                 continue
             case .error:
-                throw AudioEditError.renderFailed("the tempo change stopped")
+                throw AudioEditError.renderFailed("the tempo change stopped") // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed))
             @unknown default:
-                throw AudioEditError.renderFailed("the tempo change stopped")
+                throw AudioEditError.renderFailed("the tempo change stopped") // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed))
             }
         }
     }

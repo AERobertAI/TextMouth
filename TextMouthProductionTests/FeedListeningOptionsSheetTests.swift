@@ -204,16 +204,25 @@ final class FeedListeningOptionsSheetTests: XCTestCase {
             onDone: {}
         )
         try withHostedView(sheet, size: hostSize, until: {
-            self.descendants(of: $0, as: NSPopUpButton.self).count == 3
+            self.descendants(of: $0, as: NSPopUpButton.self).count == 4
                 && feedCheckboxes(in: $0).count == 5
         }, body)
     }
 
-    /// The pop-up buttons of Feed Info that are When an episode ends: the
-    /// one whose first choice is "Use the global setting".
+    /// The pop-up button of Feed Info that is When an episode ends: the
+    /// one of four choices whose first is "Use the global setting" (Open the
+    /// next episode in has three).
     private func endPopUp(in hosting: NSView) -> NSPopUpButton? {
         descendants(of: hosting, as: NSPopUpButton.self).first {
-            $0.itemTitles.first?.hasPrefix("Use the global setting (") == true
+            $0.itemTitles.count == 4 && $0.itemTitles.first?.hasPrefix("Use the global setting (") == true
+        }
+    }
+
+    /// The pop-up button of Feed Info that is Open the next episode in: the
+    /// one of three choices whose first is "Use the global setting".
+    private func windowPopUp(in hosting: NSView) -> NSPopUpButton? {
+        descendants(of: hosting, as: NSPopUpButton.self).first {
+            $0.itemTitles.count == 3 && $0.itemTitles.first?.hasPrefix("Use the global setting (") == true
         }
     }
 
@@ -241,6 +250,37 @@ final class FeedListeningOptionsSheetTests: XCTestCase {
             XCTAssertEqual(checkboxes.count, 5)
             XCTAssertEqual(checkboxes.dropFirst(3).map(\.state), [.on, .on], "Skip finished and Download the next are on by default")
             XCTAssertEqual(checkboxes.dropFirst(3).map(\.isEnabled), [true, true])
+        }
+    }
+
+    /// Feed Info draws Open the next episode in with its three choices, the
+    /// first naming the global one; it is available while the feed's episodes
+    /// go on and dimmed, with its hint saying so, while they do not (0.2.5).
+    func testTheWindowPopUpIsDimmedWhileEpisodesDoNotGoOn() async throws {
+        let subscribed = try await subscribe(label: "FeedListeningWindow")
+        let model = makeModel(subscribed, defaults: makeDefaults("Window", behavior: .continueNext))
+        XCTAssertNil(model.nextEpisodeWindow)
+        XCTAssertEqual(model.globalNextBookWindow, .thisWindow)
+
+        withFeedInfo(model, subscribed) { hosting in
+            let popUp = windowPopUp(in: hosting)
+            XCTAssertEqual(popUp?.itemTitles, ["Use the global setting (This Window)", "This Window", "A New Window"])
+            XCTAssertEqual(popUp?.isEnabled, true)
+        }
+
+        model.nextEpisodeWindow = .newWindow
+        XCTAssertEqual(subscribed.record?.feed.listeningOptions, ListeningOptions(nextBookWindow: .newWindow))
+        model.episodeEnd = .stop
+        withFeedInfo(model, subscribed) { hosting in
+            let popUp = windowPopUp(in: hosting)
+            XCTAssertEqual(popUp?.titleOfSelectedItem, "A New Window", "the choice is kept while dimmed")
+            XCTAssertEqual(popUp?.isEnabled, false)
+            if hostedWindowsExposeAccessibility() {
+                let picker = accessibleControls(in: hosting).first {
+                    $0.role == .popUpButton && $0.label == "Open the next episode in"
+                }
+                XCTAssertEqual(picker?.hint, NextBookWindowWording.hint(.episode, enabled: false))
+            }
         }
     }
 

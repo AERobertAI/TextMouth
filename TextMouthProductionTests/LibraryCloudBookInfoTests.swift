@@ -172,6 +172,50 @@ final class LibraryCloudBookInfoTests: XCTestCase {
         XCTAssertEqual(calls.onMainThread, [false, false, false])
     }
 
+    /// A tag read that never returns does not hold the sheet for good: after
+    /// the time limit Book Info shows the metadata the library keeps, as
+    /// for a book in the cloud but without the note of a download. A later
+    /// look at the same file does not start a second read, which would pile
+    /// a stuck read on the first.
+    func testAudioTagReadThatNeverReturnsGivesTheStoredMetadata() async throws {
+        let calls = ReadLog()
+        let reader = LibraryBookInfoReader(
+            isDataless: { _ in false },
+            readEPUBMetadata: { _ in epubFileMetadata },
+            readAudioMetadata: { _ in
+                calls.note("readAudio")
+                // Stuck until it is cancelled, which the limit does.
+                try? await Task.sleep(for: .seconds(20))
+                return AudioMetadata(title: "Late Title", album: "Late Album")
+            },
+            audioTagsTimeLimit: .milliseconds(300),
+            abandonedReads: AsyncBridge.AbandonedReads()
+        )
+        let book = try inAPackage(audioBook())
+
+        let started = ContinuousClock.now
+        let info = await reader.info(for: book)
+        let elapsed = ContinuousClock.now - started
+
+        guard case .audio(let metadata, let isCloudOnly) = info else {
+            return XCTFail("expected the audio editor, got \(info)")
+        }
+        XCTAssertFalse(isCloudOnly, "the file is here, so the sheet does not promise a download")
+        XCTAssertEqual(metadata.title, "Bleak House", "the library's metadata, not the late tags")
+        XCTAssertEqual(metadata.album, "Serial Edition")
+        XCTAssertEqual(metadata.fileFormat, "M4B")
+        XCTAssertEqual(metadata.duration, "1:02:03")
+        XCTAssertLessThan(elapsed, .seconds(10), "the sheet waited on the stuck read")
+
+        let again = await reader.info(for: book)
+        guard case .audio(let secondMetadata, _) = again else {
+            return XCTFail("expected the audio editor, got \(again)")
+        }
+        XCTAssertEqual(secondMetadata.title, "Bleak House")
+        XCTAssertEqual(secondMetadata.album, "Serial Edition")
+        XCTAssertEqual(calls.names, ["readAudio"], "a file whose read was abandoned was read again")
+    }
+
     /// An audiobook only in the cloud is not read: Book Info shows the
     /// library's names, its measured length, and its file's type.
     func testCloudOnlyAudiobookShowsTheLibrarysMetadataWithoutReading() async throws {

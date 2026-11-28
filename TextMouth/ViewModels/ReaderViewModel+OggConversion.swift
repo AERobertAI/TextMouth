@@ -1,17 +1,28 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 /// What a reader says when it will not play a book's Ogg audio (B06).
 enum ReaderOggWording {
     /// What Play says while the book's audio is being converted.
-    static let beingConverted = "This book's audio is being converted from Ogg to AAC. It plays once the conversion ends."
+    static var beingConverted: String {
+        // Translators: What Play says while the book's Ogg audio is being converted to AAC.
+        InterfaceText.line("readerOgg.beingConverted", "This book's audio is being converted from Ogg to AAC. It plays when that ends.")
+    }
     /// What Play says for a book whose conversion failed at this launch: it
     /// is not tried again before the next one.
-    static let conversionFailed = "This book's audio could not be converted from Ogg to AAC. "
-        + "TextMouth tries again the next time it starts."
+    static var conversionFailed: String {
+        // Translators: What Play says for a book whose Ogg audio failed to convert at this launch.
+        InterfaceText.line("readerOgg.conversionFailed", "This book's audio could not be converted from Ogg to AAC. TextMouth tries again the next time it starts.")
+    }
     /// What Play says for a book found still in Ogg, whose conversion it
     /// starts.
-    static let needsConverting = "This book's audio needs converting from Ogg to AAC before it plays. "
-        + "TextMouth is converting it now, and it plays once the conversion ends."
+    static var needsConverting: String {
+        // Translators: What Play says for a book found still in Ogg, whose conversion TextMouth starts.
+        InterfaceText.line("readerOgg.needsConverting", "This book's audio needs converting from Ogg to AAC. TextMouth is converting it now, and it plays when that ends.")
+    }
 }
 
 // MARK: - Ogg Audio Never Played (B06)

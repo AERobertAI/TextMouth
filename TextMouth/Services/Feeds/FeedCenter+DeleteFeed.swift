@@ -90,12 +90,18 @@ extension FeedCenter {
     ///
     /// An item the listener moved into the library (Move to Library…) is a
     /// book of the library's own, which stays.
+    /// - Parameter leavingLibraryFolder: true for a deletion another device
+    ///   made (FR56), which skips step 5: that device chose the folder's fate
+    ///   by what it held there, and the folder's own sync keys carry the
+    ///   choice, so this device's reading, which may lack a book not arrived
+    ///   yet, never removes a folder that device kept. The outcome then says
+    ///   `.none`.
     /// - Returns: What deleting did, for the words the listener hears; nil
     ///   for a feed TextMouth has no record of, or one being deleted already.
     /// - Throws: `FeedDeleteError`, the feed then staying with what was not
     ///   deleted.
     @discardableResult
-    func deleteFeed(_ feedID: UUID) async throws(FeedDeleteError) -> FeedDeleteOutcome? {
+    func deleteFeed(_ feedID: UUID, leavingLibraryFolder: Bool = false) async throws(FeedDeleteError) -> FeedDeleteOutcome? {
         guard store.record(of: feedID) != nil, let library, !downloads.isClosed(feedID) else { return nil }
         if let inUse = downloadInUse(of: feedID, in: library) {
             throw inUse
@@ -140,7 +146,7 @@ extension FeedCenter {
             let stayed = removal.failures.map { "\($0.row.title): \($0.error.localizedDescription)" }
             DiagnosticLog.event(
                 .feeds,
-                "FEED_DELETE_STOPPED: \(feed.title): \(CountWording.phrase(stayed.count, singular: "package", plural: "packages")) "
+                "FEED_DELETE_STOPPED: \(feed.title): \(CountWording.phrase(stayed.count, singular: "package", plural: "packages")) " // l10n: no (debug log text, which stays English)
                     + "could not be deleted, so the feed stays with \(stayed.count == 1 ? "it" : "them")"
             )
             throw .filesStayed(stayed)
@@ -156,8 +162,8 @@ extension FeedCenter {
         downloads.reopenFeed(feedID)
         rulePauses[feedID] = nil
 
-        // 5. Its library folder, when nothing else is in it.
-        let folder = await library.removeFolderOfDeletedFeed(feed.folderID)
+        // 5. Its library folder, when nothing else is in it, unless the folder's fate is another device's.
+        let folder = leavingLibraryFolder ? FeedFolderFate.none : await library.removeFolderOfDeletedFeed(feed.folderID)
         let outcome = FeedDeleteOutcome(
             title: feed.title,
             deletedDownloads: removal.removed.filter { !$0.wasOnShelf }.count,
@@ -178,7 +184,7 @@ extension FeedCenter {
         guard !inUse.isEmpty else { return nil }
         for row in library.everyRow(ofFeed: feedID) where inUse.contains(row.id) {
             guard let use = library.feedBookUse(of: row.id) else { continue }
-            DiagnosticLog.event(.feeds, "FEED_DELETE_REFUSED: \(row.title): it \(use.clause); nothing was deleted")
+            DiagnosticLog.event(.feeds, "FEED_DELETE_REFUSED: \(row.title): it \(use.logName); nothing was deleted")
             return .downloadInUse(title: row.title, use: use)
         }
         return nil
@@ -206,15 +212,15 @@ extension FeedCenter {
 
     /// What deleting a feed did, as its debug log line says it.
     private static func deletionNote(_ outcome: FeedDeleteOutcome) -> String {
-        let downloads = CountWording.phrase(outcome.deletedDownloads, singular: "download", plural: "downloads")
-        let kept = CountWording.phrase(outcome.deletedKeptPlaces, singular: "package", plural: "packages")
+        let downloads = CountWording.phrase(outcome.deletedDownloads, singular: "download", plural: "downloads") // l10n: no (debug log text, which stays English)
+        let kept = CountWording.phrase(outcome.deletedKeptPlaces, singular: "package", plural: "packages") // l10n: no (debug log text, which stays English)
         let folder: String
         switch outcome.folder {
-        case .deleted: folder = "its library folder deleted"
-        case .stays: folder = "its library folder stays, holding more"
-        case .notDeleted: folder = "its library folder could not be deleted"
-        case .none: folder = "it had no library folder"
+        case .deleted: folder = "its library folder deleted" // l10n: no (debug log text, which stays English)
+        case .stays: folder = "its library folder stays, holding more" // l10n: no (debug log text, which stays English)
+        case .notDeleted: folder = "its library folder could not be deleted" // l10n: no (debug log text, which stays English)
+        case .none: folder = "it had no library folder" // l10n: no (debug log text, which stays English)
         }
-        return "\(downloads) and \(kept) kept for removed downloads deleted; \(folder)"
+        return "\(downloads) and \(kept) kept for removed downloads deleted; \(folder)" // l10n: no (debug log text, which stays English)
     }
 }

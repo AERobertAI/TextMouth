@@ -87,7 +87,7 @@ final class FinishedBookModelTests: XCTestCase {
         )
         XCTAssertEqual(
             SleepTimerView.endOfBookHint(for: .stopAndPlayStartsOver),
-            "This book already stops playing at its end, since Continue to Next Book is off; the timer stops it there too."
+            "Plays the book; it stops at its end anyway."
         )
     }
 

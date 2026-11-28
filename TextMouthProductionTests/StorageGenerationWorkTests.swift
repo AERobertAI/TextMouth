@@ -88,11 +88,19 @@ final class StorageGenerationWorkTests: XCTestCase {
     }
 
     /// The deletion of feed items' downloaded files is a kind of work a move
-    /// names in its own words, and the last kind, so a move names every
-    /// older kind first.
-    func testRemovingFeedDownloadsIsTheLastKindAndHasItsOwnWording() {
+    /// names in its own words, after every older kind.
+    func testRemovingFeedDownloadsHasItsOwnWording() {
         XCTAssertEqual(StorageWork.removingFeedDownloads.waitingMessage, "Waiting for feed downloads to be deleted...")
-        XCTAssertEqual(StorageWork.allCases.last, .removingFeedDownloads)
+        XCTAssertEqual(StorageWork.allCases.suffix(2).first, .removingFeedDownloads)
+    }
+
+    /// The removal of a synced book's download (FR46) is a kind of work a
+    /// move names in its own words, and the last kind, so a move names every
+    /// older kind first.
+    func testRemovingSyncedDownloadsIsTheLastKindAndHasItsOwnWording() {
+        XCTAssertEqual(StorageWork.removingSyncedDownloads.waitingMessage, "Waiting for a book's download to be removed...")
+        XCTAssertEqual(StorageWork.removingSyncedDownloads.logWaitingMessage, "Waiting for a book's download to be removed...")
+        XCTAssertEqual(StorageWork.allCases.last, .removingSyncedDownloads)
     }
 
     /// Work started while a move holds work says so, waits until the hold
@@ -190,6 +198,60 @@ final class StorageGenerationWorkTests: XCTestCase {
         }
     }
 
+    /// A wait for the release returns at once while nothing holds the work,
+    /// and otherwise only once the operation holding it lets it go: each
+    /// caller waiting then goes on, however many wait. Every wait here has a
+    /// limit, so one that never ends fails the test instead of hanging it.
+    func testAWaitForTheReleaseEndsOnlyWhenTheHoldIsReleased() async throws {
+        let boundary = try makeBoundary()
+        await boundary.waitForRelease(after: boundary.releases)
+
+        let hold = try makeHold(on: boundary, for: .movingBooksBetweenFolders)
+        let seen = boundary.releases
+        let released = Tally()
+        for _ in 0..<3 {
+            Task { @MainActor in
+                await boundary.waitForRelease(after: seen)
+                released.count += 1
+            }
+        }
+        // Only the release resumes a waiter, so however many turns pass,
+        // none has gone on before it.
+        for _ in 0..<20 {
+            await Task.yield()
+        }
+        XCTAssertEqual(released.count, 0, "a wait for the release ended while the work was held")
+
+        hold.release()
+        let allWent = await eventually { released.count == 3 }
+        XCTAssertTrue(allWent, "\(released.count) of 3 waiters went on after the release")
+        XCTAssertNil(boundary.heldFor)
+    }
+
+    /// A release counted before a wait begins is not missed, though another
+    /// operation holds the work by the time the wait begins: the wait
+    /// returns at once, for its caller to see the new hold for itself, as a
+    /// retry kept for the first operation does. It used to wait for the
+    /// second operation, and say the first one's words meanwhile.
+    func testAWaitSeesAReleaseThatCameBeforeItBegan() async throws {
+        let boundary = try makeBoundary()
+        let first = try makeHold(on: boundary, for: .movingBooksBetweenFolders)
+        let seen = boundary.releases
+        // In one turn of the main actor, before the wait below begins.
+        first.release()
+        _ = try makeHold(on: boundary, for: .rebuildingDirectory)
+        let ended = Tally()
+
+        Task { @MainActor in
+            await boundary.waitForRelease(after: seen)
+            ended.count += 1
+        }
+
+        let sawTheRelease = await eventually { ended.count == 1 }
+        XCTAssertTrue(sawTheRelease, "the wait missed the release that came before it began")
+        XCTAssertEqual(boundary.heldFor, .rebuildingDirectory)
+    }
+
     // MARK: - The Import Queue
 
     /// A move waits for the import under way to finish and holds the import
@@ -245,11 +307,9 @@ final class StorageGenerationWorkTests: XCTestCase {
         return hold
     }
 
-    /// A gate a background thread waits at until the test signals it,
-    /// opened when the test ends so no thread is left waiting.
-    private func makeGate() -> DispatchSemaphore {
-        let gate = DispatchSemaphore(value: 0)
-        addTeardownBlock { gate.signal() }
-        return gate
+    /// A count kept on the main actor, which tasks there add to.
+    @MainActor
+    private final class Tally {
+        var count = 0
     }
 }

@@ -3,7 +3,7 @@
 Read `teams-common.md` beside this file first: it is the pattern, the rules, and the report format, and it stands in for AGENTS.md. You are the lead, `fixes-lead`, on branch `team/fixes30`, made from local `main` by name (`git checkout -b team/fixes30 main`; your worktree may start on an older commit, and an older branch called `team/fixes` exists, so use the new name).
 
 ## What
-The user asked tonight to work through "any remaining todos and unfinished work that doesn't require me". A read-only triage agent checked every open item of the TODO against tonight's `main` and grouped the buildable ones into batches of disjoint files: `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/oct30/triage-report.md` (358 KB: read only the line ranges below). Section 2.2 starts at line 643 with a paragraph every batch shares; read it first.
+The user asked tonight to work through "any remaining todos and unfinished work that doesn't require me". A read-only triage agent checked every open item of the TODO against tonight's `main` and grouped the buildable ones into batches of disjoint files: `<main checkout>/build/orchestrator/oct30/triage-report.md` (358 KB: read only the line ranges below). Section 2.2 starts at line 643 with a paragraph every batch shares; read it first.
 
 Work these batches, in this order, one task (one worker) per batch, as far as the night allows:
 1. **Batch A** (lines 647-693): manifest edits keep the listener's titles and places.

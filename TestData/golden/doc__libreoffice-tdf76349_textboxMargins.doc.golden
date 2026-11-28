@@ -1,0 +1,13 @@
+# TextMouth document golden, format 2
+file: doc__libreoffice-tdf76349_textboxMargins.doc
+macOS: 26.3
+format: doc
+title: libreoffice-tdf76349_textboxMargins
+author: JLAutoBuild
+chapters: 1
+words: 3
+text length: 20
+text checksum: 7a1f3e43d882cfba
+first 300: Textbox with margins
+last 300: Textbox with margins
+page: 1 | 0:0 | Textbox with margins

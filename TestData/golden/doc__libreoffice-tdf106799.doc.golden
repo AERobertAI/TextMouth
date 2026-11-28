@@ -1,0 +1,13 @@
+# TextMouth document golden, format 2
+file: doc__libreoffice-tdf106799.doc
+macOS: 26.3
+format: doc
+title: libreoffice-tdf106799
+author: Unknown
+chapters: 1
+words: 6
+text length: 16
+text checksum: 7311fc56af8654a3
+first 300: 1\n\n2\n\n3\n\n4\n\n5\n\n6
+last 300: 1\n\n2\n\n3\n\n4\n\n5\n\n6
+page: 1 | 0:0 | 1\n\n2\n\n3\n\n4\n\n5\n\n6

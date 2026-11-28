@@ -1,0 +1,24 @@
+# The files of liblouis's tables/ that the Mac app's BrailleTables.pack holds (FR40): the 20 files the app bundled before the
+# pack, the four English tables (UEB and EBAE, uncontracted and contracted), everything they include, and the display tables
+# TextMouth reads braille files with (en-us-brf.dis, de-eurobrl6.dis, de-eurobrl6u.dis). The Mac reads VoiceOver's own tables
+# for every other language. braille_tables.py fails when a listed file includes one that is not listed.
+braille-patterns.cti
+de-eurobrl6.dis
+de-eurobrl6u.dis
+en-chardefs.cti
+en-ueb-chardefs.uti
+en-ueb-g1.ctb
+en-ueb-g2.ctb
+en-ueb-math.ctb
+en-us-brf.dis
+en-us-compbrl.uti
+en-us-emphasis.uti
+en-us-g1.ctb
+en-us-g2.ctb
+en_US.tbl
+latinLetterDef6Dots.uti
+latinUppercaseComp6.uti
+litdigits6Dots.uti
+loweredDigits6Dots.uti
+spaces.uti
+text_nabcc.dis

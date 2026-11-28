@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Foundation
 
 // MARK: - Running the Feed Commands (FR03)
@@ -12,7 +16,7 @@ struct FeedCommandContext {
     /// The library the window shows.
     let library: LibraryViewModel
     /// The window the command was chosen in, once known.
-    let window: NSWindow?
+    let window: PlatformWindow?
 }
 
 extension FeedCenter {
@@ -377,7 +381,9 @@ extension LibraryFeedsPresenter {
     /// - Returns: The refresh, which tests await.
     @discardableResult
     func refreshAll(in context: FeedCommandContext) -> Task<Void, Never> {
-        Task {
+        // Weak at both closures: a strong capture in the Task would hold the
+        // runner until the refresh ends.
+        Task { [weak self] in
             await context.center.refreshAllSaying { [weak self] message in
                 self?.announce(message, context.window)
             }

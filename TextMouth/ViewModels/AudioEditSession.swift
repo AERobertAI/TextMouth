@@ -113,6 +113,9 @@ final class AudioEditSession: ObservableObject {
         in library: LibraryViewModel,
         startingOver: Bool = false
     ) async throws -> AudioEditSession {
+        // A removal of the book's download whose last look has said yes ends first (FR46), so the session never reads
+        // audio that is going; it then opens the book as it is.
+        await library.booksBeingFreed.waitUntilFreed([bookID])
         guard let book = library.bookByID(bookID), book.format.isAudio, !book.tmbDirectoryName.isEmpty else {
             throw AudioEditError.bookNotInLibrary
         }
@@ -249,7 +252,8 @@ final class AudioEditSession: ObservableObject {
         let takeLength = try await Self.length(of: url)
         let used = takeRange ?? AudioTimeRange(start: 0, end: takeLength)
         guard used.isWellFormed, used.end <= takeLength + 0.001 else {
-            throw AudioEditError.invalidEdit("The stretch of the take to use isn't inside the take.")
+            // Translators: Said when a punch-in's recording is asked to use a stretch that is not inside the recording.
+            throw AudioEditError.invalidEdit(InterfaceText.line("audioEditSession.stretchTakeUse", "The stretch of the take to use isn't inside the take."))
         }
         // Checked with a stand-in for the take's place, which the history
         // gives it only as the edit is recorded.
@@ -482,14 +486,21 @@ final class AudioEditSession: ObservableObject {
     /// far it is. The book's own file is left as it is. MP3 is encoded by the
     /// LAME built into TextMouth, or, should that be unavailable, by the
     /// installed ffmpeg (`MP3Route`).
+    /// - Returns: what the render wrote, which says whether a WAVE, AIFF, or
+    ///   CAF file was left without its chapter markers.
     /// - Throws: `AudioEditError.mp3NeedsFFmpeg` for MP3 with neither
     ///   encoder, or the render's errors.
-    func export(to url: URL, as format: AudioExportFormat, progress: (@Sendable (Double) -> Void)? = nil) async throws {
+    @discardableResult
+    func export(
+        to url: URL,
+        as format: AudioExportFormat,
+        progress: (@Sendable (Double) -> Void)? = nil
+    ) async throws -> AudioEditRenderer.Outcome {
         guard let library, let book = library.bookByID(bookID) else { throw AudioEditError.bookNotInLibrary }
         let ffmpeg = library.audioFilterEngine().ffmpeg
         guard !format.needsFFmpeg || ffmpeg != nil else { throw AudioEditError.mp3NeedsFFmpeg }
         try await restorePurgedStretches()
-        _ = try await AudioEditRenderer.render(
+        return try await AudioEditRenderer.render(
             timeline,
             sources: sources,
             to: url,

@@ -42,9 +42,9 @@ Two commits, one per part. Each message ends with `Co-Authored-By: Claude Sonnet
 ## Build and test
 - Run `TextFieldEditingKeysTests`, `MenuKeyShortcutTests` (it pins the refusal of a system command's key), `ConfigSyncTests`, `ConfigWatcherTests`, and `ShortcutConfigFileTests`, and nothing else.
 - Start each build in the background, and check on it no more often than every 4 minutes, with one short command.
-- Scratch files go in `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/d79ccbfe-f907-4768-bef3-66390cef7d23/scratchpad/`, each named `polish3-shortcutkeys-…`.
+- Scratch files go in `<session folder>/scratchpad/`, each named `polish3-shortcutkeys-…`.
 
-      BBS_AGENT=polish3-shortcutkeys .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath /var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-polish3-shortcutkeys -only-testing:TextMouthProductionTests/TextFieldEditingKeysTests -only-testing:TextMouthProductionTests/MenuKeyShortcutTests -only-testing:TextMouthProductionTests/ConfigSyncTests -only-testing:TextMouthProductionTests/ConfigWatcherTests -only-testing:TextMouthProductionTests/ShortcutConfigFileTests > /private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/d79ccbfe-f907-4768-bef3-66390cef7d23/scratchpad/polish3-shortcutkeys-build-1.log 2>&1
+      BBS_AGENT=polish3-shortcutkeys .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath $TMPDIR/TextMouth-DerivedData-polish3-shortcutkeys -only-testing:TextMouthProductionTests/TextFieldEditingKeysTests -only-testing:TextMouthProductionTests/MenuKeyShortcutTests -only-testing:TextMouthProductionTests/ConfigSyncTests -only-testing:TextMouthProductionTests/ConfigWatcherTests -only-testing:TextMouthProductionTests/ShortcutConfigFileTests > <session folder>/scratchpad/polish3-shortcutkeys-build-1.log 2>&1
 
 - Read a result with `grep -E "Executed [0-9]+ tests|error:|failed \(" <log> | tail -20`.
 

@@ -2,7 +2,7 @@
 
 Slug `audiofmt-m3usafety`, branch `audiofmt/m3usafety` made from `team/audiofmt`. Read `../common.md`, then `common.md` in this folder, then this brief.
 
-Everything is in `TextMouth/Parsers/M3UPlaylist.swift`; put your tests in `TextMouthProductionTests/M3UPlaylistTests.swift`. The review's reproductions are in `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/8d971e15-7103-46cf-b45e-5c4d099f2f74/scratchpad/review-audiofmt-d/`: `run1.txt` lists what each hostile entry gave, `fifo/main.swift` shows the FIFO's block.
+Everything is in `TextMouth/Parsers/M3UPlaylist.swift`; put your tests in `TextMouthProductionTests/M3UPlaylistTests.swift`. The review's reproductions are in `<session folder>/scratchpad/review-audiofmt-d/`: `run1.txt` lists what each hostile entry gave, `fifo/main.swift` shows the FIFO's block.
 
 ## Item 2 (high): an entry can name a file outside the folder
 `findFile` (about lines 316-337), `canonical` (340-342), `isInside` (346-350). When a path cannot be fully resolved, `resolvingSymlinksInPath()` only removes `x/..` textually. So `nothing-here/../extras/diary.m4a`, with `extras` a link to a folder outside, passes the inside check, `fileExists` follows the link, and the import copies the outside file into the book (`FileImportService.swift` about line 1318). The same happens with a dangling link or a link loop in place of `nothing-here`.

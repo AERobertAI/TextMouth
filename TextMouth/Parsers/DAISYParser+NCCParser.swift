@@ -65,7 +65,7 @@ struct DAISY202NCCParser {
     init(path: String, in provider: DAISYFileProvider) throws {
         let data = try provider.readFile(at: path)
         guard let html = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) else {
-            throw DAISYParserError.parseError("Cannot decode \(path)")
+            throw DAISYParserError.parseError("Cannot decode \(path)") // l10n: no (a parser's damage reason)
         }
         self.init(html: html, file: path)
     }
@@ -77,11 +77,11 @@ struct DAISY202NCCParser {
         guard Self.containsDocumentEnd(html) else {
             throw DAISYParserError.malformedXML(
                 file: file,
-                reason: "it stops before its closing body and html tags, so the end of the book's navigation is missing"
+                reason: "it stops before its closing body and html tags, so the end of the book's navigation is missing" // l10n: no (a parser's damage reason)
             )
         }
         var result = DAISY202NCCResult()
-        Self.collect(from: try SwiftSoup.parse(html), into: &result)
+        Self.collect(from: try MarkupGuard.parse(html), into: &result)
         return result
     }
 

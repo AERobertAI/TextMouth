@@ -1,6 +1,6 @@
 # Fix `fixflow`: one re-read flow for both pop-up models, one places sentence, and an honest confirmation (review findings 8 and 5)
 
-Team `braillecodes`, lead `braillecodes-lead`. Slug `braillecodes-fixflow`, branch `braillecodes/fixflow` from `team/braillecodes` (3b9bbee3 or later). Read `Scripts/agents/briefs/2026-10-30/teams-common.md`, "The worker's part", first. The outside review is `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/oct30/review-braillecodes.md`: read its findings 5 and 8 (lines 70-77 and 100-109). The orchestrator's decisions below settle every choice.
+Team `braillecodes`, lead `braillecodes-lead`. Slug `braillecodes-fixflow`, branch `braillecodes/fixflow` from `team/braillecodes` (3b9bbee3 or later). Read `Scripts/agents/briefs/2026-10-30/teams-common.md`, "The worker's part", first. The outside review is `<main checkout>/build/orchestrator/oct30/review-braillecodes.md`: read its findings 5 and 8 (lines 70-77 and 100-109). The orchestrator's decisions below settle every choice.
 
 **Do not build.** The disk is nearly full; the lead builds the whole fix round once. Write the code and tests carefully (they must compile the first time), run `make lint-tests LINT_BASE=team/braillecodes`, commit, post `done:`, and report.
 

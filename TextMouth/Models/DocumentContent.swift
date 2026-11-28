@@ -38,10 +38,10 @@ struct DocumentContent {
     /// chapter's last word, where a chapter's last page break often stands,
     /// begins at the first word of the next chapter that has words. The
     /// reader never rests at a chapter's very end, so it could not reach the
-    /// page there: Next Page would land on the page before and find the same
-    /// page again at every press. After the book's last word such a page
-    /// stays where it is, a page without words, which Next Page passes over
-    /// (`ReaderViewModel.nextPage()`).
+    /// page there: a move forward by page would land on the page before and
+    /// find the same page again at every press. After the book's last word
+    /// such a page stays where it is, a page without words, which a move by
+    /// page passes over (`ReaderViewModel.nextPage()`).
     private static func pageBreaks(of chapters: [Chapter]) -> [PageBreak] {
         var breaks: [PageBreak] = []
         for (index, chapter) in chapters.enumerated() where !chapter.pages.isEmpty {
@@ -115,7 +115,7 @@ struct DocumentContent {
         // Each stretch of the span before an excluded range, in order, then
         // the stretch after the last of them.
         var start = span.lowerBound
-        for range in excluded.sorted(by: { $0.lowerBound < $1.lowerBound }) {
+        for range in excluded.sortedStably(by: { $0.lowerBound < $1.lowerBound }) {
             // A range that ends before what is left of the span changes
             // nothing; one that starts at or after the span's end, and every
             // range after it, changes nothing either.
@@ -220,36 +220,13 @@ struct Chapter {
 
     /// The number of runs of Characters in `text` that are not whitespace,
     /// counted without building a substring per word or reading every
-    /// Character whole (PERF21: 64 ms per MB of reading text before).
-    ///
-    /// An ASCII byte followed by another ASCII byte, or by the end, is a
-    /// whole Character: no ASCII scalar extends or prepends a grapheme
-    /// cluster, and the one pair that forms one, CR LF, is whitespace like
-    /// each of its halves. Such a byte is judged on its own: it is
-    /// whitespace when it is a space or one of tab, line feed, vertical
-    /// tab, form feed, and carriage return, the ASCII scalars with the
-    /// Unicode White_Space property. Every other Character is read whole
-    /// from its first byte, and is whitespace when its first scalar is, as
-    /// `Character.isWhitespace` decides. Each step starts on a Character
-    /// boundary, so the count is the one the split makes.
+    /// Character whole (PERF21: 64 ms per MB of reading text before): the
+    /// Characters are stepped by `String.forEachCharacter(_:)`, which says
+    /// which are white space, so the count is the one the split makes.
     static func wordCount(of text: String) -> Int {
-        let bytes = text.utf8
         var count = 0
         var inWord = false
-        var index = bytes.startIndex
-        while index < bytes.endIndex {
-            let byte = bytes[index]
-            let next = bytes.index(after: index)
-            let isWhitespace: Bool
-            if byte < 0x80, next == bytes.endIndex || bytes[next] < 0x80 {
-                isWhitespace = byte == 0x20 || (0x09...0x0D).contains(byte)
-                // CR LF is one Character: step past both halves, so the
-                // next step starts on a boundary.
-                index = byte == 0x0D && next < bytes.endIndex && bytes[next] == 0x0A ? bytes.index(after: next) : next
-            } else {
-                isWhitespace = text[index].isWhitespace
-                index = text.index(after: index)
-            }
+        text.forEachCharacter { isWhitespace in
             if isWhitespace {
                 inWord = false
             } else if !inWord {
@@ -351,8 +328,12 @@ struct HeadingPosition: Equatable {
     /// book without headings (callers drop empty parts rather than speak them).
     var label: String {
         guard count > 0 else { return "" }
-        guard let number else { return "Before heading 1 of \(count)" }
-        return "Heading \(number) of \(count)"
+        guard let number else {
+            // Translators: Where the reader is when it precedes the first heading of a book. %lld is the number of headings in the book.
+            return InterfaceText.line("headingPosition.label.before", "Before heading 1 of \(number: count)")
+        }
+        // Translators: Where the reader is: the heading it is in. %1$lld is that heading's place among the book's headings and %2$lld the number of headings.
+        return InterfaceText.line("headingPosition.label.numberOfTotal", "Heading \(number: number) of \(number: count)")
     }
 
     /// The containing heading's text, or nil before the first heading or when
@@ -402,7 +383,7 @@ struct HeadingSweep {
 
     init(headings: [Heading]) {
         self.headings = headings
-        startOrder = headings.indices.sorted { lhs, rhs in
+        startOrder = headings.indices.sortedStably { lhs, rhs in
             (headings[lhs].chapterIndex, headings[lhs].characterOffset, lhs)
                 < (headings[rhs].chapterIndex, headings[rhs].characterOffset, rhs)
         }
@@ -465,14 +446,33 @@ enum SleepTimerDuration: Hashable {
     /// behavior.
     case endOfBook
 
-    /// The timer's name, as its preset button, its announcements ("Timer
-    /// set for 1 minute."), and the reader's status show it: its minutes
-    /// counted (TODO A10; it said "1 minutes"), or the place it stops at.
+    /// The timer's name, as its preset button, the custom minutes' value,
+    /// and the reader's status show it: its minutes counted (TODO A10; it
+    /// said "1 minutes"), or the place it stops at. Localized (FR35): the
+    /// minutes are one string with its plural forms in the String Catalog.
     var displayName: String {
         switch self {
-        case .minutes(let m): return CountWording.minutes(m)
-        case .endOfHeading: return "End of heading"
-        case .endOfBook: return "End of book"
+        case .minutes(let m):
+            // Translators: A sleep timer's length, as its preset button and the custom minutes' value say it, such as "10 minutes". %lld is the number of minutes.
+            return InterfaceText.line("common.countMinutes", "\(number: m) minutes")
+        case .endOfHeading:
+            // Translators: Name of the sleep timer that stops where the heading playing ends: its button in the sleep timer sheet, and the timer's state in the reader.
+            return InterfaceText.line("sleepTimerDuration.displayName.endOfHeading", "End of heading")
+        case .endOfBook:
+            // Translators: Name of the sleep timer that stops where the book ends: its button in the sleep timer sheet, and the timer's state in the reader.
+            return InterfaceText.line("sleepTimerDuration.displayName.endOfBook", "End of book")
+        }
+    }
+
+    /// The timer as the debug log names it: "10 min", "end-of-heading",
+    /// "end-of-book". Never localized, since the log stays English for bug
+    /// reports whatever the interface's language; `displayName` is the
+    /// interface's (FR35).
+    var logName: String {
+        switch self {
+        case .minutes(let m): return "\(m) min" // l10n: no (the debug log's name for the timer)
+        case .endOfHeading: return "end-of-heading" // l10n: no (the debug log's name for the timer)
+        case .endOfBook: return "end-of-book" // l10n: no (the debug log's name for the timer)
         }
     }
 
@@ -481,9 +481,14 @@ enum SleepTimerDuration: Hashable {
     /// timer counting minutes, which is read as the time it has left.
     var spokenStop: String? {
         switch self {
-        case .minutes: return nil
-        case .endOfHeading: return "stops at the end of this heading"
-        case .endOfBook: return "stops at the end of the book"
+        case .minutes:
+            return nil
+        case .endOfHeading:
+            // Translators: The state of a sleep timer set to End of heading, as VoiceOver reads it after "Sleep timer:". Lowercase, since it follows a colon.
+            return InterfaceText.line("sleepTimerDuration.spokenStop.endOfHeading", "stops at the end of this heading")
+        case .endOfBook:
+            // Translators: The state of a sleep timer set to End of book, as VoiceOver reads it after "Sleep timer:". Lowercase, since it follows a colon.
+            return InterfaceText.line("sleepTimerDuration.spokenStop.endOfBook", "stops at the end of the book")
         }
     }
 
@@ -525,7 +530,10 @@ enum SleepTimerDuration: Hashable {
 enum TimeFormatting {
     /// Format seconds to h:mm:ss or m:ss (for visual display)
     static func format(_ seconds: TimeInterval) -> String {
-        guard let totalSeconds = wholeSeconds(seconds) else { return "Unknown" }
+        guard let totalSeconds = wholeSeconds(seconds) else {
+            // Translators: Shown in place of a time (hours, minutes and seconds) that is not a usable number, such as an enormous or missing length.
+            return InterfaceText.line("timeFormatting.unknownLength", "Unknown")
+        }
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         let secs = totalSeconds % 60
@@ -538,7 +546,10 @@ enum TimeFormatting {
     /// Format seconds as spoken words for VoiceOver (e.g. "1 hour, 3 minutes, 45 seconds").
     /// Omits zero-valued leading fields so "0:54:35" becomes "54 minutes, 35 seconds".
     static func spoken(_ seconds: TimeInterval) -> String {
-        guard let totalSeconds = wholeSeconds(seconds) else { return "Unknown duration" }
+        guard let totalSeconds = wholeSeconds(seconds) else {
+            // Translators: Spoken in place of a length of time that is not a usable number, such as an enormous or missing length.
+            return InterfaceText.line("timeFormatting.spoken", "Unknown duration")
+        }
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         let secs = totalSeconds % 60
@@ -561,5 +572,53 @@ enum TimeFormatting {
     private static func wholeSeconds(_ seconds: TimeInterval) -> Int? {
         guard seconds.isFinite else { return nil }
         return Int(exactly: max(seconds, 0).rounded(.towardZero))
+    }
+}
+
+// MARK: - Stepping a String's Characters Quickly
+
+extension String {
+    /// Calls `body` once for each Character of the string, in order, with
+    /// whether the Character is white space (`Character.isWhitespace`).
+    ///
+    /// It steps over the UTF-8 bytes in a buffer, by their offsets, rather
+    /// than reading every Character whole (PERF21: 64 ms per MB of reading
+    /// text before; several times faster again over the buffer, the November
+    /// 14, 2026 import speed-up, H12). An ASCII byte followed by another
+    /// ASCII byte, or by the end, is a whole Character: no ASCII scalar
+    /// extends or prepends a grapheme cluster, and the one pair that forms
+    /// one, CR LF, is white space like each of its halves. Such a byte is
+    /// judged on its own: it is white space when it is a space or one of tab,
+    /// line feed, vertical tab, form feed, and carriage return, the ASCII
+    /// scalars with the Unicode White_Space property. Every other Character
+    /// is read whole from its first byte, and is white space when its first
+    /// scalar is, as `Character.isWhitespace` decides. Each step starts on a
+    /// Character boundary, so `body` is called once for each Character.
+    @inline(__always)
+    func forEachCharacter(_ body: (_ isWhitespace: Bool) -> Void) {
+        var storage = self
+        storage.makeContiguousUTF8()
+        // A second name for the same storage, read inside the closure that
+        // holds `storage` (a string may not be read while it is lent out).
+        let reader = storage
+        storage.withUTF8 { bytes in
+            let utf8 = reader.utf8
+            var offset = 0
+            while offset < bytes.count {
+                let byte = bytes[offset]
+                if byte < 0x80, offset + 1 == bytes.count || bytes[offset + 1] < 0x80 {
+                    body(byte == 0x20 || (0x09...0x0D).contains(byte))
+                    // CR LF is one Character: step past both halves, so the
+                    // next step starts on a boundary.
+                    let pairsWithLineFeed = byte == 0x0D && offset + 1 < bytes.count && bytes[offset + 1] == 0x0A
+                    offset += pairsWithLineFeed ? 2 : 1
+                } else {
+                    // A Character beyond ASCII, or an ASCII byte a mark follows.
+                    let index = utf8.index(utf8.startIndex, offsetBy: offset)
+                    body(reader[index].isWhitespace)
+                    offset = utf8.distance(from: utf8.startIndex, to: reader.index(after: index))
+                }
+            }
+        }
     }
 }

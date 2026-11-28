@@ -102,7 +102,7 @@ import XCTest
 /// continueNext | multi-file audio | none | covered by ContinueToNextBookTests.testFinishedBookAnnouncesTheNextOnceThenAsksForIt
 /// continueNext | multi-file audio | endOfBook | covered by IntegrationSleepTimerTests.testEndOfBookTimerPlaysAnAudiobookToItsEndAndStartsNothingAfter
 /// continueNext | multi-file audio | endOfHeading | covered by ContinueToNextBookTests.testEndOfHeadingTimerAtTheBooksEndKeepsTheNextBookFromStarting
-/// continueNext | multi-file audio | minutes (running) | covered by ContinueToNextBookTests.testFinishedBooksRunningSleepTimerKeepsTheNextBookFromStarting
+/// continueNext | multi-file audio | minutes (running) | covered by ContinueToNextBookTests.testFinishedBooksRunningSleepTimerGoesOnWithTheNextBook
 /// continueNext | multi-file audio | minutes (expired) | covered by EndBehaviorMatrixTests.testMultiFileAudioEndBehaviorMatrix
 /// stop | DAISY | none | covered by FinishedBookReaderTests.testEveryAudiobookLayoutRestsExactlyAtItsEnd (clips)
 /// stop | DAISY | endOfBook | covered by EndBehaviorMatrixTests.testDAISYEndBehaviorMatrix
@@ -172,9 +172,10 @@ final class EndBehaviorMatrixTests: XCTestCase {
         /// content, and what the listener hears, for a book titled `title`
         /// whose next book in its folder is titled `next`.
         func outcome(title: String, next: String) -> Outcome {
-            // A timer that stops playback at the end, or one still running,
-            // keeps the next book from starting: it could never pause it.
-            let timerEndsListening = timer.stopsAtTheBooksEnd || timer == .minutesRunning
+            // A timer that stops playback at the end keeps the next book from
+            // starting. One still running does not (0.2.5): it goes on with
+            // the next book.
+            let timerEndsListening = timer.stopsAtTheBooksEnd
             switch behavior {
             case .stop, .stopAndPlayStartsOver:
                 // The two stop alike at the end; only Play at the end differs.
@@ -322,7 +323,8 @@ final class EndBehaviorMatrixTests: XCTestCase {
             reader.startSleepTimer(duration: .minutes(60))
         case .minutesExpired:
             reader.startSleepTimer(duration: .minutes(1))
-            SleepTimerService.shared._expireForTesting()
+            // The reader's window's timer is the one that runs out.
+            reader.sleepTimerService._expireForTesting()
         }
     }
 
@@ -334,7 +336,7 @@ final class EndBehaviorMatrixTests: XCTestCase {
     /// its end or waits at its beginning, whether the next book is asked
     /// for, and whether the timer is still in effect.
     func testTextBookEndBehaviorMatrix() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         for cell in Self.textCells {
             try withSpeechReader(
                 "Matrix Text \(cell.behavior) \(cell.timer)", endOfBook: cell.behavior, chapters: headedChapters()
@@ -369,7 +371,7 @@ final class EndBehaviorMatrixTests: XCTestCase {
                         chapter: reader.currentChapterIndex,
                         nextAsked: nextAsked,
                         nextRequested: speech.world.autoplayRequests.hasRequest(for: speech.nextBook.id),
-                        timerInEffect: SleepTimerService.shared.isActive
+                        timerInEffect: reader.sleepTimerService.isActive
                     ),
                     is: cell, title: speech.book.title, next: speech.nextBook.title, lastChapter: 2, content: "text"
                 )
@@ -385,7 +387,7 @@ final class EndBehaviorMatrixTests: XCTestCase {
     /// end, so it plays out in real time, silently, and a loop plays on for
     /// long after.
     func testSingleFileAudioEndBehaviorMatrix() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let seconds: TimeInterval = 10
         for cell in Self.singleFileAudioCells {
             let world = try makeIntegrationWorld("Matrix Audio \(cell.behavior) \(cell.timer)")

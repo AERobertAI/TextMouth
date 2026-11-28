@@ -127,7 +127,7 @@ enum AudioEditHistoryStore {
         if let version = try? decoder.decode(LayoutProbe.self, from: bytes).version,
            version != AudioEditHistory.currentVersion {
             guard version > 0 else {
-                let reason = "version \(version) is not a layout any TextMouth writes"
+                let reason = "version \(version) is not a layout any TextMouth writes" // l10n: no (a damage reason for the debug log and the kept copy; the listener hears AudioEditError.historyUnusable)
                 preserveUnusable(url, bytes: bytes, because: reason)
                 return .unusable(reason)
             }
@@ -260,6 +260,12 @@ enum AudioEditHistoryStore {
         if history != before || startedOver {
             try write(history, source: source, toPackage: package, bookFile: bookFile, loadOrigin: loadOrigin)
         }
+        if startedOver {
+            // The podcast chapters set aside for the old history's original
+            // fit no audio the new history will start from, so undoing every
+            // edit of the new history must never bring them back.
+            AudioEditPackage.discardSetAsidePodcastChapters(inPackage: package)
+        }
         AudioEditPackage.removeUnusedTakes(of: history, inPackage: package)
         return result
     }
@@ -292,7 +298,7 @@ enum AudioEditHistoryStore {
             because: reason,
             logging: logTag,
             in: .storage,
-            standIn: "the book's audio can't be edited until its history is started over"
+            standIn: "the book's audio can't be edited until its history is started over" // l10n: no (a damage reason for the debug log and the kept copy; the listener hears AudioEditError.historyUnusable)
         )
     }
 }

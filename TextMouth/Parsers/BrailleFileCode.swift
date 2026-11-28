@@ -202,16 +202,16 @@ extension BrailleFileCode {
     /// braille file, and of every book that records no code.
     static let northAmerican = BrailleFileCode(
         id: "ascii-na",
-        name: "North American Braille ASCII",
-        characterName: "braille ASCII",
+        name: "North American Braille ASCII", // l10n: no (a braille code's own name, like a table's, which is never translated)
+        characterName: "braille ASCII", // l10n: no (inside the English damage reasons of BrailleFileReader, question 3)
         kind: .sevenBit(.northAmerican)
     )
 
     /// Eurobraille, six-dot, of German-speaking Europe (SBS Zürich's table).
     static let eurobraille = BrailleFileCode(
         id: "ascii-eurobraille",
-        name: "Eurobraille, six-dot (German-speaking countries)",
-        characterName: "Eurobraille",
+        name: "Eurobraille, six-dot (German-speaking countries)", // l10n: no (a braille code's own name, like a table's, which is never translated)
+        characterName: "Eurobraille", // l10n: no (inside the English damage reasons of BrailleFileReader, question 3)
         kind: .sevenBit(.eurobraille)
     )
 
@@ -219,8 +219,8 @@ extension BrailleFileCode {
     /// one code a file can be known to use by its bytes alone.
     static let unicode = BrailleFileCode(
         id: "unicode",
-        name: "Unicode braille patterns",
-        characterName: "a Unicode braille pattern",
+        name: "Unicode braille patterns", // l10n: no (a braille code's own name, like a table's, which is never translated)
+        characterName: "a Unicode braille pattern", // l10n: no (inside the English damage reasons of BrailleFileReader, question 3)
         kind: .unicodePatterns
     )
 

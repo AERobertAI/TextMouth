@@ -37,7 +37,13 @@ enum FeedItemPackage {
     /// metadata edited by hand (`Book.HandEdits`), or files of the
     /// listener's (`holdsListenersFiles(_:)`). Only such a package stays
     /// once its file is removed.
-    static func holdsListenerState(_ row: Book, package: URL) -> Bool {
+    ///
+    /// The last test reads the package's folder and, for a transcript, its
+    /// transcript.json, which is slow for a long transcript on a cloud
+    /// drive. A caller on the main thread that has the answer already, read
+    /// off it (`listenersFilesHeld(in:)`), passes it as `holdsListenersFiles`
+    /// and nothing is read here; without it the package is read here.
+    static func holdsListenerState(_ row: Book, package: URL, holdsListenersFiles known: Bool? = nil) -> Bool {
         !row.isUnopened
             || row.readingPosition != nil
             || !row.bookmarks.isEmpty
@@ -45,18 +51,39 @@ enum FeedItemPackage {
             || row.lastPlaybackStopped != nil
             || row.hasOwnSettings
             || !(row.handEdits?.fields.isEmpty ?? true)
-            || holdsListenersFiles(package)
+            || (known ?? holdsListenersFiles(package))
+    }
+
+    /// For each of `packages`, by the ID of the book it belongs to, whether
+    /// it holds files of the listener's (`holdsListenersFiles(_:)`). The
+    /// reads are slow enough to be felt (about 70 ms for a transcript of
+    /// 16 MB, once for each episode a rule removes), so a caller on the main
+    /// thread has them made on another and passes the answers to
+    /// `holdsListenerState(_:package:holdsListenersFiles:)`. Safe to call
+    /// from any thread.
+    static func listenersFilesHeld(in packages: [UUID: URL]) -> [UUID: Bool] {
+        packages.mapValues { holdsListenersFiles($0) }
     }
 
     /// Whether the package at `package` holds files of the listener's: a
     /// transcript, a copy of one kept beside it, or a copy Edit Text kept of
-    /// an edited text, which may be the only copy of the edit. Looked for
-    /// without downloading anything; a package that is there but cannot be
-    /// listed, as one whose folder is only in the cloud or cannot be read,
-    /// is taken to hold them, so it is kept rather than deleted on a guess.
+    /// an edited text, which may be the only copy of the edit. A podcast's
+    /// own transcript the listener has not touched is not the listener's
+    /// (FMT25): it came with the download and comes again with the next, so
+    /// an automatic download that ages out unopened still leaves nothing
+    /// behind (`TranscriptStore.holdsUntouchedPodcastTranscript(in:)`).
+    /// Looked for without downloading anything; a package that is there but
+    /// cannot be listed, as one whose folder is only in the cloud or cannot
+    /// be read, is taken to hold them, so it is kept rather than deleted on a
+    /// guess.
     static func holdsListenersFiles(_ package: URL) -> Bool {
         guard let names = try? listedEntryNames(of: package) else { return true }
-        return names.contains { TextMouthPaths.isTranscriptFile($0) || TextMouthPaths.isKeptTextCopy($0) }
+        return names.contains { name in
+            if name == TextMouthPaths.transcriptFileName {
+                return !TranscriptStore.holdsUntouchedPodcastTranscript(in: package)
+            }
+            return TextMouthPaths.isTranscriptFile(name) || TextMouthPaths.isKeptTextCopy(name)
+        }
     }
 
     /// Whether the entry named `name` at the top of a package stays there
@@ -269,12 +296,12 @@ enum FeedItemPackage {
         let feeds = FeedPaths.recordsFolder(in: root)
         let fileManager = FileManager.default
         let names = (try? DatalessFiles.withoutDownloading { try fileManager.contentsOfDirectory(atPath: feeds.path) }) ?? []
-        return names.sorted().flatMap { name -> [URL] in
+        return names.sortedStably().flatMap { name -> [URL] in
             // A feed's own folder is named by its ID alone (FR11).
             guard let feedID = FeedPaths.feedID(ofItemsFolderNamed: name) else { return [] }
             let folder = FeedPaths.itemsFolder(of: feedID, in: root)
             let entries = (try? DatalessFiles.withoutDownloading { try fileManager.contentsOfDirectory(atPath: folder.path) }) ?? []
-            return entries.filter { $0.hasPrefix(removalHolderPrefix) }.sorted().map {
+            return entries.filter { $0.hasPrefix(removalHolderPrefix) }.sortedStably().map {
                 folder.appendingPathComponent($0, isDirectory: true)
             }
         }
@@ -642,14 +669,17 @@ enum FeedItemPackageError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .notAFeedPackage:
-            return "This download isn't where its feed keeps its downloads, so TextMouth left its files as they are."
+            // Translators: Why a feed episode's download could not be deleted: it is not in its feed's folder.
+            return InterfaceText.line("feedItemPackageError.notAFeedPackage", "This download isn't in its feed's folder, so TextMouth left its files as they are.")
         case .indexNotWritten:
-            return "TextMouth couldn't save its list of this feed's downloads, so the download was kept. "
-                + "Try again once the library can be saved."
+            // Translators: Why a feed episode's download could not be deleted: the list of the feed's downloads could not be saved.
+            return InterfaceText.line("feedItemPackageError.indexNotWritten", "TextMouth couldn't save its list of this feed's downloads, so the download was kept. Try again once the library can be saved.")
         case .staysInItsFeed:
-            return "It belongs to its feed while it is downloaded. Delete Download removes its file and keeps its place and bookmarks."
+            // Translators: Why a feed episode's book cannot be removed from the library: it belongs to its feed. %@ is the name of the Delete Download command, which the sentence recommends.
+            return InterfaceText.line("feedItemPackageError.staysInItsFeed", "It belongs to its feed while it is downloaded. \(FeedWording.title(of: .deleteDownload, isArticle: false)) removes its file and keeps its place and bookmarks.")
         case .earlierTextNotKept:
-            return "TextMouth couldn't keep the article's earlier text beside the new download, so it kept the article as it was."
+            // Translators: Why a feed article's new download failed: its earlier text could not be kept beside it.
+            return InterfaceText.line("feedItemPackageError.earlierTextNotKept", "TextMouth couldn't keep the earlier text beside the new download, so the article stays as it was.")
         }
     }
 }

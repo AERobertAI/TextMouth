@@ -79,6 +79,30 @@ struct FinishedBookCounts: Equatable {
         }
     }
 
+    /// `count` text books: "1 text book", "4 text books".
+    private static func textBooksPhrase(_ count: Int) -> String {
+        // Translators: A count of finished text books, one item of the Stats pane's breakdown of finished books by kind, such as "4 text books". %lld is the number of books.
+        InterfaceText.line("finishedBookCounts.textBooksPhrase", "\(number: count) text books")
+    }
+
+    /// `count` audiobooks: "1 audiobook", "2 audiobooks".
+    private static func audiobooksPhrase(_ count: Int) -> String {
+        // Translators: A count of finished audiobooks, one item of the Stats pane's breakdown of finished books by kind, such as "2 audiobooks". %lld is the number of books.
+        InterfaceText.line("finishedBookCounts.audiobooksPhrase", "\(number: count) audiobooks")
+    }
+
+    /// `count` podcast episodes: "1 podcast episode".
+    private static func podcastEpisodesPhrase(_ count: Int) -> String {
+        // Translators: A count of finished podcast episodes, one item of the Stats pane's breakdown of finished books by kind, such as "1 podcast episode". %lld is the number of episodes.
+        InterfaceText.line("finishedBookCounts.podcastEpisodesPhrase", "\(number: count) podcast episodes")
+    }
+
+    /// `count` books of no known kind: "1 other book".
+    private static func otherBooksPhrase(_ count: Int) -> String {
+        // Translators: A count of finished books of no known kind, one item of the Stats pane's breakdown of finished books by kind, such as "1 other book". %lld is the number of books.
+        InterfaceText.line("finishedBookCounts.otherBooksPhrase", "\(number: count) other books")
+    }
+
     /// How many books of a known kind there are.
     var known: Int {
         textBooks + audiobooks + episodes
@@ -91,14 +115,15 @@ struct FinishedBookCounts: Equatable {
     /// no kind is known, when the counts would say no more than `total`.
     func breakdown(of total: Int) -> String? {
         guard total > 0, known > 0 else { return nil }
+        // Each kind with any books, in the fixed order, as its own plural phrase.
         let parts = [
-            (textBooks, "text book", "text books"),
-            (audiobooks, "audiobook", "audiobooks"),
-            (episodes, "podcast episode", "podcast episodes"),
-            (max(0, total - known), "other book", "other books"),
+            (textBooks, Self.textBooksPhrase),
+            (audiobooks, Self.audiobooksPhrase),
+            (episodes, Self.podcastEpisodesPhrase),
+            (max(0, total - known), Self.otherBooksPhrase),
         ]
-        .filter { count, _, _ in count > 0 }
-        .map { count, singular, plural in CountWording.phrase(count, singular: singular, plural: plural) }
+        .filter { count, _ in count > 0 }
+        .map { count, phrase in phrase(count) }
         return CountWording.list(parts)
     }
 }
@@ -132,12 +157,24 @@ enum ReadingStatsTile: String, CaseIterable, Identifiable {
     /// The title shown beside the tile's value.
     var title: String {
         switch self {
-        case .today: return "Today"
-        case .thisWeek: return "This Week"
-        case .allTime: return "All Time"
-        case .currentStreak: return "Current Streak"
-        case .booksFinishedThisYear: return "Books Finished This Year"
-        case .booksFinishedAllTime: return "Books Finished All Time"
+        case .today:
+            // Translators: Title of the Stats pane's tile showing the listening time of today.
+            return InterfaceText.line("readingStatsTile.title.today", "Today")
+        case .thisWeek:
+            // Translators: Title of the Stats pane's tile showing the listening time of this week.
+            return InterfaceText.line("readingStatsTile.title.thisWeek", "This Week")
+        case .allTime:
+            // Translators: Title of the Stats pane's tile showing the total listening time.
+            return InterfaceText.line("readingStatsTile.title.allTime", "All Time")
+        case .currentStreak:
+            // Translators: Title of the Stats pane's tile showing how many days in a row the user has listened.
+            return InterfaceText.line("readingStatsTile.title.currentStreak", "Current Streak")
+        case .booksFinishedThisYear:
+            // Translators: Title of the Stats pane's tile showing how many books were finished this year.
+            return InterfaceText.line("readingStatsTile.title.booksFinishedThisYear", "Books Finished This Year")
+        case .booksFinishedAllTime:
+            // Translators: Title of the Stats pane's tile showing how many books were ever finished.
+            return InterfaceText.line("readingStatsTile.title.booksFinishedAllTime", "Books Finished All Time")
         }
     }
 
@@ -152,19 +189,24 @@ enum ReadingStatsTile: String, CaseIterable, Identifiable {
     func wording(for figures: ReadingStatsFigures) -> ReadingStatsTileWording {
         switch self {
         case .today:
-            return .duration(figures.today, spokenAfter: "Listening time today")
+            // Translators: What VoiceOver says before the listening time of today on the Stats pane; a colon and the time follow.
+            return .duration(figures.today, spokenAfter: InterfaceText.line("readingStatsTile.wording.today", "Listening time today"))
         case .thisWeek:
-            return .duration(figures.thisWeek, spokenAfter: "Listening time this week")
+            // Translators: What VoiceOver says before the listening time of this week on the Stats pane; a colon and the time follow.
+            return .duration(figures.thisWeek, spokenAfter: InterfaceText.line("readingStatsTile.wording.thisWeek", "Listening time this week"))
         case .allTime:
-            return .duration(figures.allTime, spokenAfter: "Total listening time")
+            // Translators: What VoiceOver says before the total listening time on the Stats pane; a colon and the time follow.
+            return .duration(figures.allTime, spokenAfter: InterfaceText.line("readingStatsTile.wording.allTime", "Total listening time"))
         case .currentStreak:
-            return .count(figures.currentStreakDays, singular: "day", plural: "days") {
-                "Current listening streak: \($0)"
-            }
+            return .streak(figures.currentStreakDays)
         case .booksFinishedThisYear:
-            return .books(figures.booksFinishedThisYear, byKind: figures.booksFinishedThisYearByKind, finished: "this year")
+            let total = figures.booksFinishedThisYear
+            // Translators: What VoiceOver says for the Stats pane's tile of books finished this year; a colon and the count of each kind may follow. %lld is the number of books.
+            return .books(total, byKind: figures.booksFinishedThisYearByKind, spoken: InterfaceText.line("readingStatsTile.wording.booksFinishedThisYear", "\(number: total) books finished this year"))
         case .booksFinishedAllTime:
-            return .books(figures.booksFinishedAllTime, byKind: figures.booksFinishedAllTimeByKind, finished: "all time")
+            let total = figures.booksFinishedAllTime
+            // Translators: What VoiceOver says for the Stats pane's tile of books finished in all, the library's whole history; a colon and the count of each kind may follow. %lld is the number of books.
+            return .books(total, byKind: figures.booksFinishedAllTimeByKind, spoken: InterfaceText.line("readingStatsTile.wording.booksFinishedAllTime", "\(number: total) books finished all time"))
         }
     }
 }
@@ -193,34 +235,32 @@ struct ReadingStatsTileWording: Equatable {
     static func duration(_ seconds: TimeInterval, spokenAfter subject: String) -> ReadingStatsTileWording {
         ReadingStatsTileWording(
             value: TimeFormatting.format(seconds),
-            accessibilityLabel: "\(subject): \(TimeFormatting.spoken(seconds))"
+            accessibilityLabel: SentenceWording.labelled(subject, TimeFormatting.spoken(seconds))
         )
     }
 
-    /// A count, shown as its count phrase ("1 day", "3 days", from
-    /// `CountWording`) and spoken as `spoken` places that same phrase in a
-    /// sentence.
-    static func count(
-        _ count: Int,
-        singular: String,
-        plural: String,
-        spoken: (String) -> String
-    ) -> ReadingStatsTileWording {
-        let phrase = CountWording.phrase(count, singular: singular, plural: plural)
-        return ReadingStatsTileWording(value: phrase, accessibilityLabel: spoken(phrase))
+    /// The current streak of `days` days, shown as the count ("1 day", "3
+    /// days") and spoken after "Current listening streak": the same count,
+    /// so the screen and VoiceOver agree, plural included.
+    static func streak(_ days: Int) -> ReadingStatsTileWording {
+        // Translators: A count of days in a row, the Stats pane's current listening streak, such as "3 days". %lld is the number of days.
+        let phrase = InterfaceText.line("common.countDays", "\(number: days) days")
+        // Translators: What VoiceOver says before the count of days of the current listening streak on the Stats pane; a colon and the count follow.
+        let subject = InterfaceText.line("readingStatsTile.streak", "Current listening streak")
+        return ReadingStatsTileWording(value: phrase, accessibilityLabel: SentenceWording.labelled(subject, phrase))
     }
 
-    /// Books finished `when` ("this year", "all time"): `total`, shown as
-    /// its phrase ("7 books") with the count of each kind under it when any
-    /// kind is known, and spoken as one sentence holding both: "7 books
+    /// Books finished in a period: `total`, shown as its phrase ("7 books")
+    /// with the count of each kind under it when any kind is known, and
+    /// spoken as `spoken`, the sentence that says the total and the period
+    /// ("7 books finished this year"), then the count of each kind: "7 books
     /// finished this year: 4 text books, 2 audiobooks, and 1 podcast
     /// episode". With no kind known, only the total is shown and spoken.
-    static func books(_ total: Int, byKind counts: FinishedBookCounts, finished when: String) -> ReadingStatsTileWording {
-        let phrase = CountWording.books(total)
+    static func books(_ total: Int, byKind counts: FinishedBookCounts, spoken: String) -> ReadingStatsTileWording {
         let breakdown = counts.breakdown(of: total)
         return ReadingStatsTileWording(
-            value: phrase,
-            accessibilityLabel: "\(phrase) finished \(when)" + (breakdown.map { ": \($0)" } ?? ""),
+            value: CountWording.books(total),
+            accessibilityLabel: breakdown.map { SentenceWording.labelled(spoken, $0) } ?? spoken,
             detail: breakdown
         )
     }

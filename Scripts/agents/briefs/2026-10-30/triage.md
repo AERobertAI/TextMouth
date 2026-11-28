@@ -1,6 +1,6 @@
 # Triage of the TODO's open items and follow-ups (October 30, 2026)
 
-You are `triage`, a read-only agent. TextMouth is a native macOS text-to-speech and audiobook player, at `/Users/roberteggleston/programming/ai/claude/swift/TextMouth`, whose user is blind and reads with VoiceOver and a braille display. You change no code and build nothing. You write one report.
+You are `triage`, a read-only agent. TextMouth is a native macOS text-to-speech and audiobook player, at `<main checkout>`, whose user is blind and reads with VoiceOver and a braille display. You change no code and build nothing. You write one report.
 
 The user asked tonight: "Please try working through any remaining todos and unfinished work that doesn't require me". The orchestrator needs to know what is still open, what is already done but not ticked, and what can be built tonight without asking the user.
 
@@ -26,7 +26,7 @@ Check each against the current code on `main` (grep for the function, the wordin
 - **Open, buildable tonight:** the user has already decided, or the item has a clear recommended answer and no decision of the user's is pending.
 
 ## The report
-Write it to `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/oct30/triage-report.md`, navigable with headings and lists, and make your final message a summary of at most 25 lines.
+Write it to `<main checkout>/build/orchestrator/oct30/triage-report.md`, navigable with headings and lists, and make your final message a summary of at most 25 lines.
 1. **Tick list:** every unticked TODO item that is done, with its identifier and evidence, so the orchestrator can tick it.
 2. **Buildable tonight, ranked:** data loss first, then crashes and hangs, then wrong words a listener hears, then features the user asked for, then the rest. For each: the item or follow-up (quote its words briefly), the files and lines, the fix in two sentences, its size (S, M, L), and the tests. Group them into batches that touch disjoint files, each a sensible task for one agent (at most about 8 items or 400 lines per batch), and name the batches.
 3. **Needs the user:** one line each, with the question.

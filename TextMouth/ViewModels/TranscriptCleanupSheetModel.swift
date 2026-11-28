@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Foundation
 import UniformTypeIdentifiers
 
@@ -18,7 +22,7 @@ struct TranscriptCleanupServices {
     /// Opens the user's copy of the rules in their text editor, from a
     /// window, making it from TextMouth's own rules first when there is
     /// none: nil once it opened, or why it could not.
-    var editRules: @MainActor (NSWindow?) async -> String?
+    var editRules: @MainActor (PlatformWindow?) async -> String?
     /// Whether the book is being transcribed now.
     var isTranscribing: @MainActor (UUID) -> Bool
     /// Settles and ends the Edit Text session of a book whose transcript is
@@ -28,7 +32,7 @@ struct TranscriptCleanupServices {
     /// Begins the book's Edit Text session again when the rewrite failed.
     var resumeTextEdit: @MainActor (Book) async -> Void
     /// Asks VoiceOver to speak a message from a window.
-    var announce: @MainActor (String, NSWindow?) -> Void
+    var announce: @MainActor (String, PlatformWindow?) -> Void
 
     /// The app's own: the rule file in the bundle and the data directory,
     /// the user's default text editor, the app's transcription center and
@@ -58,7 +62,14 @@ struct TranscriptCleanupServices {
                     try TranscriptCleanupRuleFile.prepareUserCopy()
                 }
             }
+            #if os(macOS)
             let editor = NSWorkspace.shared.urlForApplication(toOpen: .plainText)
+            #else
+            // iPhone has no default text editor to name: the open below
+            // throws "Editing a book's text in another app is not
+            // available on iPhone yet", which the sheet shows as its notice.
+            let editor: URL? = nil
+            #endif
             try await PackageFileEditing.openWithWorkspace(TextMouthPaths.transcriptCleanupRulesFile, app: editor)
             return nil
         } catch {
@@ -120,7 +131,7 @@ final class TranscriptCleanupSheetModel: ObservableObject, Identifiable {
 
         /// What VoiceOver reads for the row.
         var accessibilityLabel: String {
-            ([title] + examples).joined(separator: " ")
+            SentenceWording.joined([title] + examples)
         }
     }
 
@@ -138,11 +149,13 @@ final class TranscriptCleanupSheetModel: ObservableObject, Identifiable {
     /// Whether Undo Cleanup is offered: the transcript is cleaned up, and
     /// the transcript from before is kept beside it.
     @Published private(set) var canUndo = false
-    /// Why Edit Rules… could not open the rules, after it tried.
-    @Published private(set) var editRulesNotice: String?
+    /// The system's reason Edit Rules… could not open the rules, after it tried.
+    @Published private var editRulesFailure: String?
+    /// Why Edit Rules… could not open the rules, after it tried: worded when read, so it follows the interface language (FR39).
+    var editRulesNotice: String? { editRulesFailure.map(TranscriptCleanupWording.editRulesFailed(reason:)) }
 
     /// The window the sheet sits on, where announcements come from.
-    weak var window: NSWindow?
+    weak var window: PlatformWindow?
     /// Closes the sheet; the presenter sets it.
     var onClose: () -> Void = {}
 
@@ -453,7 +466,7 @@ final class TranscriptCleanupSheetModel: ObservableObject, Identifiable {
     /// failure is shown and spoken.
     func editRules() async {
         guard phase == .ready else { return }
-        editRulesNotice = await services.editRules(window).map(TranscriptCleanupWording.editRulesFailed(reason:))
+        editRulesFailure = await services.editRules(window)
         if let notice = editRulesNotice {
             services.announce(notice, window)
         }

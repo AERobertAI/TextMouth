@@ -53,7 +53,10 @@ extension LibraryViewModel {
     /// feed's item (FR11), whose title and author come from its feed.
     nonisolated static func needsMetadataRefresh(_ book: Book) -> Bool {
         !book.isFeedItem
-            && SemanticVersion.isOutdated(stored: book.metadataReaderVersion, current: ImportedFileMetadata.readerVersion)
+            && SemanticVersion.isOutdated(stored: book.metadataReaderVersion, current: ImportedFileMetadata.readerVersion(for: book.format))
+            // A protected book's file cannot be read without its password
+            // (FR41); asked last, since it looks at the file.
+            && !book.isPasswordProtected
     }
 
     /// The fields of `book` the refresh replaces with what its file names
@@ -115,7 +118,9 @@ extension LibraryViewModel {
             return
         }
         isRefreshingMetadata = true
-        DispatchQueue.global(qos: .utility).async {
+        // Weak here too: a strong capture would hold the library until the
+        // pass ends, though the closure below is written for its going.
+        DispatchQueue.global(qos: .utility).async { [weak self] in
             let boundary = StorageBoundary.shared
             let skips = CloudSkips(.metadataRefresh)
             var readings: [MetadataReading] = []
@@ -169,7 +174,11 @@ extension LibraryViewModel {
                 // With an empty fallback title, a file that names no title
                 // reads as naming none, where an import would list the
                 // book under its file's name.
-                let read = ImportedFileMetadata.read(from: file, format: book.format, fallbackTitle: "")
+                // A braille book's title page is read with the table and the
+                // file characters the book was imported with.
+                let braille = book.brailleTable.map { (table: $0, fileCode: book.brailleFileCode) }
+                let read = ImportedFileMetadata.read(
+                    from: file, format: book.format, fallbackTitle: "", brailleReading: braille)
                 return MetadataReading(bookID: book.id, read: read)
             }
             // A file that went to the cloud while it was read may have been
@@ -207,7 +216,7 @@ extension LibraryViewModel {
         var replaced = 0
         for index in books.indices {
             guard let reading = latest[books[index].id] else { continue }
-            books[index].metadataReaderVersion = ImportedFileMetadata.readerVersion
+            books[index].metadataReaderVersion = ImportedFileMetadata.readerVersion(for: books[index].format)
             let values = Self.refreshedValues(of: books[index], from: reading)
             guard !values.isEmpty else { continue }
             for (field, value) in values {

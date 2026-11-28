@@ -39,7 +39,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
         let analysis = Self.bookWithEveryFieldSet(seed: 2)
         XCTAssertEqual(
             Self.fieldsThatDiffer(user, analysis).count,
-            Mirror(reflecting: user).children.count,
+            user.reflectedFields.children.count,
             "the fixtures must differ in every field, or this test proves nothing about it"
         )
 
@@ -222,9 +222,13 @@ final class ContentAnalysisMergeTests: XCTestCase {
     }
 
     /// A book rebuilt from its record has every field it was saved with,
-    /// placed where the caller found its package.
+    /// placed where the caller found its package. The keys a later
+    /// TextMouth added to its row are the one thing a record cannot give
+    /// back (V04): a record keeps its own, under its own names, so the
+    /// rebuilt row has none (`Book.init(record:filePath:folderPath:tmbDirectoryName:)`).
     func testBookRebuiltFromItsRecordHasEveryField() {
         let book = Self.bookWithEveryFieldSet(seed: 5)
+        XCTAssertFalse(book.unknownKeys.isEmpty, "the fixture must hold a row's unknown key")
 
         let rebuilt = Book(
             record: book.makeBookInfo(),
@@ -233,7 +237,10 @@ final class ContentAnalysisMergeTests: XCTestCase {
             tmbDirectoryName: book.tmbDirectoryName
         )
 
-        XCTAssertEqual(rebuilt, book)
+        XCTAssertTrue(rebuilt.unknownKeys.isEmpty)
+        var expected = book
+        expected.unknownKeys = UnknownKeys()
+        XCTAssertEqual(rebuilt, expected)
     }
 
     // MARK: - Dropping Stale Results
@@ -531,13 +538,16 @@ final class ContentAnalysisMergeTests: XCTestCase {
 
         try book.saveBookInfoThrowing()
         XCTAssertEqual(try revision(of: book), 1)
-        try book.saveBookInfoThrowing(contentIndex: Self.index(of: "one two"))
+        // One index, made once: an index made again a moment later can carry
+        // the next second as its date, and then is not the one saved.
+        let index = Self.index(of: "one two")
+        try book.saveBookInfoThrowing(contentIndex: index)
         XCTAssertEqual(try revision(of: book), 2)
         try book.saveBookInfoThrowing()
         XCTAssertEqual(try revision(of: book), 3)
         XCTAssertEqual(
             try BookInfo.load(from: book.tmbDirectory).contentIndex,
-            Self.index(of: "one two"),
+            index,
             "a save without an index keeps the stored one"
         )
     }
@@ -780,7 +790,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
 
     /// A book with every field set, each to a value derived from `seed`, so
     /// books made from two different seeds differ in every field.
-    private static func bookWithEveryFieldSet(seed: Int) -> Book {
+    static func bookWithEveryFieldSet(seed: Int) -> Book {
         let date = Date(timeIntervalSince1970: TimeInterval(1_700_000_000 + seed * 1_000))
         // A skipped heading in step with its ID, as a book keeps both (T06).
         let skipped = SkippedHeading(
@@ -793,7 +803,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
             level: 1 + (seed + 2) % 6, label: "Waiting \(seed)", chapterIndex: seed + 50, characterOffset: seed * 11,
             anchor: anchor(seed: seed, at: "waiting heading")
         )
-        return Book(
+        var book = Book(
             id: UUID(),
             title: "Title \(seed)",
             author: "Author \(seed)",
@@ -852,8 +862,16 @@ final class ContentAnalysisMergeTests: XCTestCase {
             brailleFileCode: "code-\(seed)",
             textEncoding: "encoding-\(seed)",
             // Two values only, so books of two seeds differ when one is odd and one even.
-            textEncodingSource: seed.isMultiple(of: 2) ? .automatic : .chosen
+            textEncodingSource: seed.isMultiple(of: 2) ? .automatic : .chosen,
+            // One case only (`.guessed`), so an even seed leaves it unset: books
+            // of an odd and an even seed still differ in it.
+            brailleTableOrigin: seed.isMultiple(of: 2) ? nil : .guessed
         )
+        // A key a later TextMouth added to the row (V04), which no
+        // initializer sets: a row holds one only when it was read from a
+        // file that had it.
+        book.unknownKeys = UnknownKeys(["addedLater": .string("later-\(seed)")])
+        return book
     }
 
     /// A saved place's anchor (T06) whose every value derives from `seed`
@@ -882,7 +900,7 @@ final class ContentAnalysisMergeTests: XCTestCase {
     }
 
     /// The names of the `Book` properties an analysis owns.
-    private static let analysisFieldNames: Set<String> = [
+    static let analysisFieldNames: Set<String> = [
         "totalWordCount", "totalCharacterCount", "audioDuration", "contentIndexVersion", "cacheFormatVersion",
         "textCacheFingerprint", "editedText", "pageReaderVersion"
     ]
@@ -940,8 +958,8 @@ final class ContentAnalysisMergeTests: XCTestCase {
 
     /// The names of `Book`'s stored properties whose values differ between
     /// `a` and `b`.
-    private static func fieldsThatDiffer(_ a: Book, _ b: Book) -> [String] {
-        zip(Mirror(reflecting: a).children, Mirror(reflecting: b).children).compactMap { left, right in
+    static func fieldsThatDiffer(_ a: Book, _ b: Book) -> [String] {
+        zip(a.reflectedFields.children, b.reflectedFields.children).compactMap { left, right in
             String(reflecting: left.value) == String(reflecting: right.value) ? nil : left.label
         }
     }

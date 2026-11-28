@@ -83,17 +83,11 @@ extension LibraryViewModel {
     nonisolated static func libraryOnlyRemovalProblems(refused: [String], recordsLeft: [String]) -> String? {
         var paragraphs: [String] = []
         if !refused.isEmpty {
-            let heading = refused.count == 1
-                ? "This book could not be removed from the library and remains in it:"
-                : "These books could not be removed from the library and remain in it:"
+            let heading = LibraryViewModelWording.removalRefusedHeading(count: refused.count)
             paragraphs.append(([heading] + refused).joined(separator: "\n"))
         }
         if !recordsLeft.isEmpty {
-            let heading = recordsLeft.count == 1
-                ? "This book was removed from the library, but its bookInfo.json file could not be deleted. "
-                    + "It will still stay out of the library:"
-                : "These books were removed from the library, but their bookInfo.json files could not be deleted. "
-                    + "They will still stay out of the library:"
+            let heading = LibraryViewModelWording.removalRecordLeftHeading(count: recordsLeft.count)
             paragraphs.append(([heading] + recordsLeft).joined(separator: "\n"))
         }
         return paragraphs.isEmpty ? nil : paragraphs.joined(separator: "\n\n")
@@ -230,7 +224,7 @@ extension LibraryViewModel {
             downloads.isEmpty ? nil : FeedDownloadRemovalWording(mode, items: downloads)
                 .completionMessage(kept: downloads.compactMap { kept[$0.id] }),
         ].compactMap { $0 }
-        return sentences.isEmpty ? nil : sentences.joined(separator: " ")
+        return sentences.isEmpty ? nil : SentenceWording.joined(sentences)
     }
 
     /// Takes `book`, whose package was just deleted, out of the library
@@ -243,6 +237,11 @@ extension LibraryViewModel {
         library.removeBook(id: book.id)
         LibraryPersistenceService.forgetDeletedBook(book)
         ReadingTextCache.shared.remove(bookID: book.id)
+        // The password remembered for it goes too, unless a copy of the same
+        // file is still in the library (FR41).
+        if !library.books.contains(where: { $0.md5Hash == book.md5Hash }) {
+            CredentialStores.current.forget(forBook: book.md5Hash)
+        }
     }
 
     // MARK: - Moving Books
@@ -295,7 +294,7 @@ extension LibraryViewModel {
             }
             return .success(LibraryTransitionWording.feedItemsLeft(titles: left.map(\.title)))
         } catch {
-            return .failure("Could not move books", error)
+            return .failure(LibraryViewModelWording.couldNotMoveBooks, error)
         }
     }
 
@@ -422,7 +421,7 @@ extension LibraryViewModel {
         guard changedFolders.allSatisfy({ BookFolder.isValidLibraryPath($0.fullPath) }),
               proposed.books.filter({ affectedBookIDs.contains($0.id) })
                 .allSatisfy({ BookFolder.isValidLibraryPath($0.folderPath) }) else {
-            throw FileImportError.importFailed("A destination folder path is invalid.")
+            throw FileImportError.importFailed(LibraryViewModelWording.invalidDestinationFolderPath)
         }
         // Each book is found by ID once, not by a search per affected book,
         // which for a folder of hundreds of books took a tenth of a second.
@@ -645,8 +644,13 @@ extension LibraryViewModel {
     /// writes have been made (TODO S09): they are written now, and a success
     /// that leaves changes unsaved becomes a failure that names them, since
     /// "Done" would claim the work was saved. Storage settings report their
-    /// operations through this.
+    /// operations through this. A Retry kept until the operation ended runs
+    /// first, in the same turn the operation let the storage work go, before
+    /// its own wait's turn: otherwise a finished move, Rebuild, or Reset
+    /// would be reported failed for a change about to be saved. The outcome
+    /// is what VoiceOver hears, so the retry announces nothing of its own.
     func outcomeConfirmingSaves(_ outcome: OperationOutcome) -> OperationOutcome {
+        failureCenter.runRetriesKeptForStorageWork(announcing: false)
         LibraryPersistenceService.flushPendingSave()
         return outcome.confirmingSaves(failureCenter.unsavedFailures())
     }
@@ -695,6 +699,21 @@ extension LibraryViewModel {
         }
         LibraryPersistenceService.saveReadingCheckpoint(library, of: bookID)
         LibraryPersistenceService.saveBookInfo(for: book)
+    }
+
+    /// Gives the row of the book `bookID` the reading state that stands
+    /// between its own and `recorded` (`Book.readingState(standingAgainst:)`),
+    /// as a reader opening the book found its record holding the later
+    /// place (risk 2 of the local-first research,
+    /// `ReaderViewModel.takeNewerRecordedState(_:)`), and saves the row and
+    /// its record as any change of the book is saved. A row holding the
+    /// later place already, or a book no longer in the library, changes and
+    /// writes nothing.
+    func takeStandingReadingState(_ recorded: Book.ReadingState, of bookID: UUID) {
+        guard let row = bookByID(bookID) else { return }
+        let standing = row.readingState(standingAgainst: recorded)
+        guard standing != row.readingState else { return }
+        updateBook(id: bookID) { $0.readingState = standing }
     }
 
     /// Saves `edit`, one save of a metadata editor, to the row of the book
@@ -807,16 +826,26 @@ extension LibraryViewModel {
                     URL(fileURLWithPath: row.filePath)
                 )
             } catch {
+                // A file that is not there is told apart from one that could
+                // not be written: the way on is different, and its error
+                // carries the file's whole path, which neither the log nor
+                // a listener's ear should have.
+                var isMissing = false
+                if case EPUBParserError.fileNotFound = error { isMissing = true }
                 // The error's domain, code, and description, which names files
-                // by name; its full description would repeat absolute paths.
+                // by name; the missing file's error would repeat the path.
                 let failure = error as NSError
+                let detail = isMissing
+                    ? "the file was not found" // l10n: no (log-only: the debug log's wording)
+                    : "\(failure.domain) \(failure.code): \(failure.localizedDescription)"
                 DiagnosticLog.event(
                     .storage,
                     "EPUB_METADATA_WRITE_FAILED: book=\(book.id.uuidString.prefix(8)) "
-                        + "file=\(DiagnosticLog.loggablePath(row.filePath)): "
-                        + "\(failure.domain) \(failure.code): \(failure.localizedDescription)"
+                        + "file=\(DiagnosticLog.loggablePath(row.filePath)): \(detail)"
                 )
-                return .failed(message: wording.writeFailed(reason: error.localizedDescription))
+                return .failed(message: isMissing
+                    ? wording.fileMissing
+                    : wording.writeFailed(reason: error.localizedDescription))
             }
             message = wording.savedToFile
         } else {
@@ -911,6 +940,8 @@ extension LibraryViewModel {
         cacheFormatVersion: String? = nil
     ) {
         guard let bookIndex = library.books.firstIndex(where: { $0.id == bookID }) else { return }
+        // A protected book's headings are never saved (FR41).
+        guard !library.books[bookIndex].isPasswordProtected else { return }
         library.books[bookIndex].applyContentAnalysis(index, cacheFormatVersion: cacheFormatVersion)
         let updatedBook = library.books[bookIndex]
         save()
@@ -919,27 +950,92 @@ extension LibraryViewModel {
 
     // MARK: - Queries
 
+    /// The book `id` of the library, found by the list cache's index of the
+    /// books by ID rather than a scan of every book.
     func bookByID(_ id: UUID) -> Book? {
-        library.books.first { $0.id == id }
+        listCache.book(withID: id, in: library)
     }
 
     // MARK: - Open Book Tracking
 
-    func registerOpenBook(_ id: UUID) {
-        openBookIDs.insert(id)
+    /// Notes that a reader opened the book `id`: the book is open until its
+    /// last reader closes (`openReaderCounts`).
+    ///
+    /// - Parameter config: The settings that note it as the last book opened;
+    ///   the app's own, unless a test gives one of its own.
+    func registerOpenBook(_ id: UUID, config: ConfigService = .shared) {
+        openReaderCounts[id, default: 0] += 1
+        noteOpenBookChanged(id)
         // Track last opened book for quick-resume. config.json takes it once
-        // changes pause (PERF17), not as the reader window opens.
-        let config = ConfigService.shared
+        // changes pause (PERF17), not as the reader window opens. Opening a
+        // book changes no setting the listener chose, so its save never makes
+        // a config.json that has not arrived in a cloud location (risk 5).
+        // This runs while a reader is built in SwiftUI's update (B22), and it
+        // changes ConfigService's @Published `config`: safe only because no
+        // SwiftUI view observes ConfigService and its two Combine subscribers
+        // (SettingsViewModel, RemovalWording) filter to other fields, so
+        // nothing is published downstream. A view that observes it would need
+        // this moved to the next main-queue turn.
         config.config.lastOpenedBookID = id.uuidString
-        config.scheduleSave()
+        config.scheduleSave(creatingAwaitedFile: false)
     }
 
-    /// Notes that the book `id`'s reader closed. Its last reading checkpoint,
-    /// saved as it closed, reaches library.json now rather than at the
-    /// checkpoint's deadline (PERF15).
+    /// Notes that a reader of the book `id` closed: the book leaves
+    /// `openBookIDs` with its last reader, not before. Its last reading
+    /// checkpoint, saved as it closed, reaches library.json now rather than at
+    /// the checkpoint's deadline (PERF15).
     func unregisterOpenBook(_ id: UUID) {
-        openBookIDs.remove(id)
+        let remaining = (openReaderCounts[id] ?? 0) - 1
+        if remaining > 0 {
+            openReaderCounts[id] = remaining
+        } else {
+            openReaderCounts[id] = nil
+            noteOpenBookChanged(id)
+        }
         LibraryPersistenceService.writePendingIndexSoon()
+    }
+
+    /// Whether a reader has the book `id` open, true from the moment its
+    /// reader registers until the last one unregisters: the synchronous
+    /// truth, which the published `openBookIDs` follows a turn later. Every
+    /// check that decides something (a move, a delete, a switch) asks this,
+    /// and may from any thread.
+    func isBookOpenNow(_ id: UUID) -> Bool {
+        audioEditActivity.isOpenInReader(id)
+    }
+
+    /// The books open in readers now (`isBookOpenNow`), as a set.
+    var openBookIDsNow: Set<UUID> {
+        audioEditActivity.openInReaders
+    }
+
+    /// Notes at once that the book `id` opened or closed in a reader (what
+    /// FR04's audio original policy reads), and has `openBookIDs` follow on
+    /// the main queue's next turn. A reader is built inside SwiftUI's update,
+    /// where changing this object's `@Published` state starts a transaction
+    /// and aborts the app (B22). Changes within one turn coalesce into one
+    /// publish, which reads the counts as they stand then, so a register
+    /// then an unregister leaves no book behind.
+    private func noteOpenBookChanged(_ id: UUID) {
+        audioEditActivity.setOpenInReader(id, (openReaderCounts[id] ?? 0) > 0)
+        let wasWaiting = !openBookIDsToPublish.isEmpty
+        openBookIDsToPublish.insert(id)
+        guard !wasWaiting else { return }
+        DispatchQueue.main.async { [weak self] in
+            self?.publishOpenBookIDs()
+        }
+    }
+
+    /// Has `openBookIDs` follow the registrations since it last did, from the
+    /// counts as they stand. Sets it only when it changes.
+    private func publishOpenBookIDs() {
+        let touched = openBookIDsToPublish
+        openBookIDsToPublish = []
+        var published = openBookIDs
+        for id in touched {
+            if (openReaderCounts[id] ?? 0) > 0 { published.insert(id) } else { published.remove(id) }
+        }
+        if published != openBookIDs { openBookIDs = published }
     }
 
     /// The most recently opened book (for quick-resume on launch)
@@ -965,6 +1061,28 @@ struct LibraryTransitionMove: Sendable {
     let destination: URL
     /// False when the package already sits in its destination directory.
     let needsDiskMove: Bool
+
+    /// This move with its books' paths and its package's places under the
+    /// data directory in use now (`StorageBoundary.rebasedToCurrent`): a
+    /// move captured before a data-directory move published, as a stranded
+    /// package's retry keeps it, then acts where the moved library is, not
+    /// in the folder it was copied from. Unchanged until a move publishes.
+    func rebasedToCurrent(_ boundary: StorageBoundary = .shared) -> LibraryTransitionMove {
+        LibraryTransitionMove(
+            original: boundary.rebasedToCurrent(original),
+            updated: boundary.rebasedToCurrent(updated),
+            source: Self.rebased(source, boundary),
+            destination: Self.rebased(destination, boundary),
+            needsDiskMove: needsDiskMove
+        )
+    }
+
+    /// The package directory `url` under the data directory in use now, or
+    /// `url` itself when its path does not change.
+    private static func rebased(_ url: URL, _ boundary: StorageBoundary) -> URL {
+        let path = boundary.rebasedToCurrent(url.path)
+        return path == url.path ? url : URL(fileURLWithPath: path, isDirectory: true)
+    }
 }
 
 /// A library transition worked out on the main actor before anything on
@@ -1092,7 +1210,11 @@ enum LibraryTransitionDiskWork {
     /// returns whether it is back. One that cannot be moved back is reported
     /// to the failure center with where it is and where it belongs; its
     /// retry, on the main actor, moves it back and then restores its record
-    /// as the library holds the book then.
+    /// as the library holds the book then. The retry moves a package from
+    /// the main thread, so it waits while an operation holds the storage
+    /// work (`PersistenceFailure.waitsForStorageWork`): a folder edit moving
+    /// packages, or a data-directory move copying them. It then acts where
+    /// the package is now, in the data directory a move published since.
     @discardableResult
     static func moveBack(_ move: LibraryTransitionMove, disk: LibraryTransitionDisk, model: LibraryViewModel?) -> Bool {
         do {
@@ -1107,9 +1229,10 @@ enum LibraryTransitionDiskWork {
                     home: move.source.path
                 ),
                 path: move.destination.path,
-                error: error
+                error: error,
+                waitsForStorageWork: true
             ) { [weak model] _ in
-                guard moveBack(move, disk: disk, model: model) else { return }
+                guard moveBack(move.rebasedToCurrent(), disk: disk, model: model) else { return }
                 model?.retryRecordRestore(ofBookID: move.original.id, disk: disk)
             }
             return false
@@ -1119,7 +1242,9 @@ enum LibraryTransitionDiskWork {
     /// Writes `book`'s record into its package. Success settles the book's
     /// failure; a failure is reported as the book's unsaved record, whose
     /// retry, on the main actor, writes the record of the book as the
-    /// library holds it then (`LibraryViewModel.retryRecordRestore`).
+    /// library holds it then (`LibraryViewModel.retryRecordRestore`). That
+    /// retry writes into a package from the main thread, so it waits while
+    /// an operation holds the storage work, as a stranded package's does.
     static func restoreRecord(of book: Book, disk: LibraryTransitionDisk, restoringThrough model: LibraryViewModel?) {
         do {
             try disk.writeRecord(book)
@@ -1128,7 +1253,8 @@ enum LibraryTransitionDiskWork {
             PersistenceFailureCenter.shared.recordFailure(
                 .bookRecord(bookID: book.id, title: book.title),
                 path: TextMouthPaths.bookInfoPath(in: book.tmbDirectory).path,
-                error: error
+                error: error,
+                waitsForStorageWork: true
             ) { [weak model] _ in
                 model?.retryRecordRestore(ofBookID: book.id, disk: disk)
             }
@@ -1149,7 +1275,8 @@ enum LibraryTransitionWording {
     /// `announcedPackageCount`.
     static func completion(movingPackagesOf count: Int) -> String? {
         guard count >= announcedPackageCount else { return nil }
-        return "Done. Moved \(CountWording.books(count))."
+        // Translators: VoiceOver announcement when a move of many books to a folder finishes. %lld is how many books were moved.
+        return InterfaceText.line("libraryTransition.completion", "Done. Moved \(number: count) books.")
     }
 
     /// The Move to Folder… command for `targets`, the books a row's commands
@@ -1160,7 +1287,11 @@ enum LibraryTransitionWording {
     static func moveToFolderTitle(for targets: [Book]) -> String? {
         let movable = targets.reduce(0) { $1.isFeedItem ? $0 : $0 + 1 }
         guard movable > 0 else { return nil }
-        return movable > 1 ? "Move \(movable) Books to Folder..." : "Move to Folder..."
+        return movable > 1
+            // Translators: Title of the command that moves several selected books to a folder, in a row's menu. %lld is how many books it moves.
+            ? InterfaceText.line("libraryTransition.moveToFolderTitle", "Move \(number: movable) Books to Folder...")
+            // Translators: Title of the command that moves the selected book to a folder, in a row's menu. The three dots mean a sheet opens to choose the folder.
+            : InterfaceText.line("common.moveToFolder", "Move to Folder...")
     }
 
     /// What VoiceOver hears when Move to Folder… leaves feed items titled
@@ -1173,11 +1304,18 @@ enum LibraryTransitionWording {
         guard !titles.isEmpty else { return nil }
         let shown = titles.prefix(3).map { "“\($0)”" }
         let rest = titles.count - shown.count
+        // The names: all of them when there are three or fewer, else the
+        // first three and how many more.
         let names = rest > 0
-            ? shown.joined(separator: ", ") + ", and \(rest) more"
+            // Translators: The first three titles of the feed items that were left where they are, then how many others there were. %1$@ is the three titles, in quotes, separated by commas. %2$lld is how many more.
+            ? InterfaceText.line("libraryTransition.feedItemsLeft.more", "\(shown.joined(separator: ", ")), and \(number: rest) more")
             : CountWording.list(Array(shown))
-        let place = titles.count == 1 ? "where it is" : "where they are"
-        return "Left \(names) \(place): episodes and articles stay in their feeds; "
-            + "\(ShortcutAction.moveToLibrary.title) makes one a book of your library."
+        let command = ShortcutAction.moveToLibrary.title
+        if titles.count == 1 {
+            // Translators: VoiceOver announcement when Move to Folder left one feed item where it is. %1$@ is the item's title, in quotes. %2$@ is the name of the Move to Library command, which makes an item a book of the library.
+            return InterfaceText.line("libraryTransition.feedItemsLeft.episodes", "Left \(names) where it is: episodes and articles stay in their feeds; \(command) makes one a book of your library.")
+        }
+        // Translators: VoiceOver announcement when Move to Folder left several feed items where they are. %1$@ is the items' titles, in quotes, such as "A", "B", and 2 more. %2$@ is the name of the Move to Library command, which makes an item a book of the library.
+        return InterfaceText.line("libraryTransition.feedItemsLeft.they", "Left \(names) where they are: episodes and articles stay in their feeds; \(command) makes one a book of your library.")
     }
 }

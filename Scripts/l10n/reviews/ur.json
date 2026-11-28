@@ -1,0 +1,2378 @@
+{
+ "language": "ur",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "\"%@\" plays the next book in the same folder by sort order.",
+     "id": "settings.continueNextExplanation",
+     "english": "\"%@\" plays the next book in the same folder by sort order.",
+     "before": "“%@” ایک ہی فولڈر میں ترتیب کے مطابق اگلی کتاب چلاتا ہے۔",
+     "after": "“%@” اسی فولڈر میں ترتیب کے مطابق اگلی کتاب چلاتا ہے۔",
+     "why": "natural: ایک ہی فولڈر means one and the same folder, used to compare two things; the same folder as the book is اسی فولڈر"
+    },
+    {
+     "key": "%@ hadn't arrived from the cloud after %lld seconds",
+     "id": "libraryComparison.shortReason.notArrived",
+     "english": {
+      "one": "%@ hadn't arrived from the cloud after %lld second",
+      "other": "%@ hadn't arrived from the cloud after %lld seconds"
+     },
+     "before": {
+      "one": "%1$@ کلاؤڈ سے %2$lld سیکنڈ بعد بھی موصول نہیں ہوا",
+      "other": "%1$@ کلاؤڈ سے %2$lld سیکنڈ بعد بھی موصول نہیں ہوا"
+     },
+     "after": {
+      "one": "%1$@ کو کلاؤڈ سے %2$lld سیکنڈ بعد بھی وصول نہیں کیا جا سکا",
+      "other": "%1$@ کو کلاؤڈ سے %2$lld سیکنڈ بعد بھی وصول نہیں کیا جا سکا"
+     },
+     "why": "grammar: the file phrase is feminine for the identity file and masculine for the index and the record, so a verb agreeing with it broke for one of them; کو with an impersonal passive fits all"
+    },
+    {
+     "key": "%@ is set to be read as “%@”, a text encoding this version of TextMouth can't read.",
+     "id": "textEncoding.unknownChoice.version",
+     "english": "%1$@ is set to be read as “%2$@”, a text encoding this version of TextMouth can't read.",
+     "before": "%1$@ کو “%2$@” کے طور پر پڑھنے کے لیے سیٹ کیا گیا ہے، جو TextMouth کا یہ ورژن نہیں پڑھ سکتا۔",
+     "after": "%1$@ کو “%2$@” کے طور پر پڑھنے کے لیے سیٹ کیا گیا ہے، ایک ایسی ٹیکسٹ انکوڈنگ جسے TextMouth کا یہ ورژن نہیں پڑھ سکتا۔",
+     "why": "meaning: a text encoding was dropped, so the last clause could be heard as the book being unreadable"
+    },
+    {
+     "key": "%@ moved to position %@ of %@",
+     "id": "substitutions.moved",
+     "english": "%1$@ moved to position %2$@ of %3$@",
+     "before": "%1$@ کو %3$@ میں سے مقام %2$@ پر منتقل کر دیا گیا",
+     "after": "%1$@ کو %3$@ میں سے نمبر %2$@ پر منتقل کر دیا گیا",
+     "why": "natural: a place in a list is a number (نمبر), not a location (مقام)"
+    },
+    {
+     "key": "%@ wasn't asked for again, because the drive hasn't answered an earlier read",
+     "id": "libraryComparison.shortReason.stillBeingFetched",
+     "english": "%@ wasn't asked for again, because the drive hasn't answered an earlier read",
+     "before": "%@ کو دوبارہ نہیں مانگا گیا، کیونکہ ڈرائیو نے پچھلی ریڈ کا جواب نہیں دیا",
+     "after": "%@ کو دوبارہ نہیں مانگا گیا، کیونکہ ڈرائیو نے پڑھنے کی پچھلی درخواست کا جواب نہیں دیا",
+     "why": "natural: ریڈ, a loan of the noun read, is heard as red; the drive did not answer an earlier request to read"
+    },
+    {
+     "key": "%@ wasn't read within %lld seconds",
+     "id": "libraryComparison.shortReason.timeRanOut",
+     "english": {
+      "one": "%@ wasn't read within %lld second",
+      "other": "%@ wasn't read within %lld seconds"
+     },
+     "before": {
+      "one": "%1$@ %2$lld سیکنڈ کے اندر نہیں پڑھا گیا",
+      "other": "%1$@ %2$lld سیکنڈ کے اندر نہیں پڑھا گیا"
+     },
+     "after": {
+      "one": "%1$@ کو %2$lld سیکنڈ کے اندر نہیں پڑھا گیا",
+      "other": "%1$@ کو %2$lld سیکنڈ کے اندر نہیں پڑھا گیا"
+     },
+     "why": "grammar: the file phrase is feminine for the identity file and masculine for the index and the record, so a verb agreeing with it broke for one of them; کو with an impersonal passive fits all"
+    },
+    {
+     "key": "%@ will be removed from the library.",
+     "id": "removal.confirmationMessage",
+     "english": "%@ will be removed from the library.",
+     "before": "%@ لائبریری سے ہٹا دیا جائے گا۔",
+     "after": "TextMouth لائبریری سے %@ ہٹا دے گا۔",
+     "why": "grammar: the passive verb agreed only with one named item and broke for a count such as 3 books; the active verb fits every value"
+    },
+    {
+     "key": "%lld differences between this library and the copy in %@.",
+     "id": "libraryComparison.countSentence.differences",
+     "english": {
+      "one": "%lld difference between this library and the copy in %@.",
+      "other": "%lld differences between this library and the copy in %@."
+     },
+     "before": {
+      "one": "اس لائبریری اور %2$@ کی کاپی کے درمیان %1$lld فرق ہے۔",
+      "other": "اس لائبریری اور %2$@ کی کاپی کے درمیان %1$lld فرق ہیں۔"
+     },
+     "after": {
+      "one": "اس لائبریری اور %2$@ میں موجود کاپی کے درمیان %1$lld فرق ہے۔",
+      "other": "اس لائبریری اور %2$@ میں موجود کاپی کے درمیان %1$lld فرق ہیں۔"
+     },
+     "why": "meaning: کی کاپی said the copy of the folder; the copy is in that folder"
+    },
+    {
+     "key": "0 = %@, 1 = %@ (periods), 2 = %@ (+ commas), 3 = %@ (+ paragraph breaks)",
+     "id": "settings.punctuationLevelsExplanation",
+     "english": "0 = %1$@, 1 = %2$@ (periods), 2 = %3$@ (+ commas), 3 = %4$@ (+ paragraph breaks)",
+     "before": "0 = %1$@، 1 = %2$@ (جملے کے اختتام)، 2 = %3$@ (+ کوما)، 3 = %4$@ (+ پیراگراف کے وقفے)",
+     "after": "0 = %1$@، 1 = %2$@ (جملے کے اختتام)، 2 = %3$@ (+ کاما)، 3 = %4$@ (+ پیراگراف کے وقفے)",
+     "why": "term: the punctuation mark is کاما; کوما is a coma (part 2 s word)"
+    },
+    {
+     "key": "A folder name can't be empty, \".\" or \"..\", end in \".tmb\", or be reserved by TextMouth.",
+     "id": "folderOperationConflict.invalidName",
+     "english": "A folder name can't be empty, \".\" or \"..\", end in \".tmb\", or be reserved by TextMouth.",
+     "before": "فولڈر کا نام خالی، “.” یا “..” نہیں ہو سکتا، “tmb” ایکسٹینشن پر ختم نہیں ہو سکتا، اور TextMouth کے لیے محفوظ کردہ بھی نہیں ہو سکتا۔",
+     "after": "فولڈر کا نام خالی، “.” یا “..” نہیں ہو سکتا، “.tmb” پر ختم نہیں ہو سکتا، اور TextMouth کے لیے مخصوص نام بھی نہیں ہو سکتا۔",
+     "why": "meaning: محفوظ کردہ is heard as saved (the Save command); reserved is مخصوص, and the ending keeps its dot"
+    },
+    {
+     "key": "A library in the cloud can take a while: its cloud-only files are downloaded to this Mac to be read.",
+     "id": "libraryComparison.comparingSentence.downloaded",
+     "english": "A library in the cloud can take a while: its cloud-only files are downloaded to this Mac to be read.",
+     "before": "کلاؤڈ میں موجود لائبریری میں کچھ وقت لگ سکتا ہے: اسے پڑھنے کے لیے صرف کلاؤڈ والی فائلیں اس Mac پر ڈاؤن لوڈ کی جاتی ہیں۔",
+     "after": "کلاؤڈ میں موجود لائبریری میں کچھ وقت لگ سکتا ہے: اس کی جو فائلیں صرف کلاؤڈ میں ہیں، وہ پڑھنے کے لیے اس Mac پر ڈاؤن لوڈ کی جاتی ہیں۔",
+     "why": "meaning: صرف کلاؤڈ والی فائلیں could be heard as only the cloud files are downloaded; these are the files kept only in the cloud"
+    },
+    {
+     "key": "A move shifts one book at a time, and several are selected. Select one book, then try again.",
+     "id": "manualBookOrder.severalBooksToMoveAnnouncement",
+     "english": "A move shifts one book at a time, and several are selected. Select one book, then try again.",
+     "before": "ایک منتقلی ایک وقت میں ایک کتاب کو منتقل کرتی ہے، اور کئی منتخب ہیں۔ ایک کتاب منتخب کریں، پھر دوبارہ کوشش کریں۔",
+     "after": "ایک وقت میں صرف ایک کتاب منتقل کی جا سکتی ہے، اور کئی کتابیں منتخب ہیں۔ ایک کتاب منتخب کریں، پھر دوبارہ کوشش کریں۔",
+     "why": "natural: ایک منتقلی ... منتقل کرتی ہے copied the English subject; Urdu says one book can be moved at a time"
+    },
+    {
+     "key": "Activate to navigate to this result",
+     "id": "bookSearch.resultHint",
+     "english": "Activate to navigate to this result",
+     "before": "اس نتیجے پر جانے کے لیے فعال کریں۔",
+     "after": "اس نتیجے پر لے جاتا ہے۔",
+     "why": "voiceover: فعال کریں is the interface word for Enable; the hint now says the result in the third person"
+    },
+    {
+     "key": "Adds or removes a bookmark at the current position",
+     "id": "settings.showBookmarkHint",
+     "english": "Adds or removes a bookmark at the current position",
+     "before": "موجودہ مقام پر بک مارک شامل یا ختم کرتا ہے۔",
+     "after": "موجودہ مقام پر بک مارک شامل کرتا ہے یا ہٹاتا ہے۔",
+     "why": "term: removing a bookmark is ہٹانا (the glossary Remove), not ختم کرنا, which says ends"
+    },
+    {
+     "key": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "id": "libraryViewsSettings.visibilityCaption",
+     "english": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "before": "ہمیشہ منظر کو ہر وقت پیش کرتا ہے۔ موزوں ہونے پر اسے صرف تب پیش کرتا ہے جب وہ کچھ دکھا رہا ہو: مطالعے کی فہرست جب اس میں کتاب، ایپی سوڈ یا مضمون ہو، اور فیڈز جب کوئی فیڈ ہو۔ پوشیدہ اسے نکال دیتا ہے۔ ونڈو اپنا منظر اس وقت تک رکھتی ہے جب تک آپ دوسرا منتخب نہ کریں۔",
+     "after": "“ہمیشہ” منظر کو ہر وقت پیش کرتا ہے۔ “موزوں ہونے پر” اسے صرف تب پیش کرتا ہے جب وہ کچھ دکھا رہا ہو: مطالعے کی فہرست جب اس میں کتاب، ایپی سوڈ یا مضمون ہو، اور فیڈز جب کوئی فیڈ ہو۔ “پوشیدہ” اسے نکال دیتا ہے۔ ونڈو اپنا منظر اس وقت تک رکھتی ہے جب تک آپ دوسرا منتخب نہ کریں۔",
+     "why": "meaning: without capitals the option names read as plain words (always, hidden); quotation marks mark them as the three choices"
+    },
+    {
+     "key": "Changes the view's name, what it lists, its conditions, its sort, and its limit.",
+     "id": "libraryViewEditor.editHint",
+     "english": "Changes the view's name, what it lists, its conditions, its sort, and its limit.",
+     "before": "منظر کا نام، وہ جو کچھ پیش کرتا ہے، اس کی شرائط، اس کی ترتیب اور اس کی حد تبدیل کرتا ہے۔",
+     "after": "منظر کا نام، اس میں دکھائی جانے والی چیزیں، اس کی شرائط، اس کی ترتیب اور اس کی حد تبدیل کرتا ہے۔",
+     "why": "natural: وہ جو کچھ پیش کرتا ہے was a stiff copy of what it lists; now the things the view shows"
+    },
+    {
+     "key": "Check the criteria above, then %@.",
+     "id": "duplicateFinder.notScannedYet",
+     "english": "Check the criteria above, then %@.",
+     "before": "اوپر کے معیارات جانچیں، پھر %@ منتخب کریں۔",
+     "after": "اوپر کے معیارات جانچیں، پھر “%@” منتخب کریں۔",
+     "why": "voiceover: the command name arrives unquoted, so its imperative ran into the sentence; quotation marks mark it as a name, as the literal names in other sentences are"
+    },
+    {
+     "key": "Check the text, or save the file in the editor as UTF-8 and choose %@ again.",
+     "id": "textImportPolicy.reloadMayBeMisread.choose",
+     "english": "Check the text, or save the file in the editor as UTF-8 and choose %@ again.",
+     "before": "متن کو جانچیں، یا فائل کو ایڈیٹر میں UTF-8 کے طور پر محفوظ کریں اور %@ دوبارہ منتخب کریں۔",
+     "after": "متن کو جانچیں، یا فائل کو ایڈیٹر میں UTF-8 کے طور پر محفوظ کریں اور “%@” دوبارہ منتخب کریں۔",
+     "why": "voiceover: the command name arrives unquoted, so its imperative ran into the sentence; quotation marks mark it as a name, as the literal names in other sentences are"
+    },
+    {
+     "key": "Choose %@ first.",
+     "id": "bookCloudError.stopKeepingFirst",
+     "english": "Choose %@ first.",
+     "before": "پہلے %@ منتخب کریں۔",
+     "after": "پہلے “%@” منتخب کریں۔",
+     "why": "voiceover: the command name arrives unquoted, so its imperative ran into the sentence; quotation marks mark it as a name, as the literal names in other sentences are"
+    },
+    {
+     "key": "Choose %@ in the Sort menu, then try again.",
+     "id": "manualBookOrder.noArrangedOrder.choose",
+     "english": "Choose %@ in the Sort menu, then try again.",
+     "before": "ترتیب مینو میں %@ منتخب کریں، پھر دوبارہ کوشش کریں۔",
+     "after": "ترتیب مینو میں “%@” منتخب کریں، پھر دوبارہ کوشش کریں۔",
+     "why": "voiceover: the sort name arrives unquoted and ran into the sentence; quotation marks mark it as a name"
+    },
+    {
+     "key": "Choose %@ or %@ from %@ at the top of the Library window.",
+     "id": "libraryIndexRecovery.settingsExplanation.choose",
+     "english": "Choose %1$@ or %2$@ from %3$@ at the top of the Library window.",
+     "before": "لائبریری ونڈو کے اوپر %3$@ سے %1$@ یا %2$@ منتخب کریں۔",
+     "after": "لائبریری ونڈو کے اوپر “%3$@” سے “%1$@” یا “%2$@” منتخب کریں۔",
+     "why": "voiceover: the command name arrives unquoted, so its imperative ran into the sentence; quotation marks mark it as a name, as the literal names in other sentences are"
+    },
+    {
+     "key": "Close search and return to the book",
+     "id": "bookSearch.backToBookHint",
+     "english": "Close search and return to the book",
+     "before": "تلاش بند کریں اور کتاب پر واپس جائیں۔",
+     "after": "تلاش بند کرتا ہے اور کتاب پر واپس لے جاتا ہے۔",
+     "why": "register: a hint is in the third person, not a command"
+    },
+    {
+     "key": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "id": "libraryComparison.comparingForUseSentence",
+     "english": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "before": "اس لائبریری کا آپ کے منتخب کردہ فولڈر کی کاپی سے موازنہ کیا جا رہا ہے تاکہ معلوم ہو کون سی نئی ہے۔ اس میں ایک منٹ تک لگ سکتا ہے؛ اسے چھوڑنے کے لیے “موازنہ روکیں” منتخب کریں۔",
+     "after": "اس لائبریری کا آپ کے منتخب کردہ فولڈر میں موجود کاپی سے موازنہ کیا جا رہا ہے تاکہ معلوم ہو کہ کون سی زیادہ نئی ہے۔ اس میں ایک منٹ تک لگ سکتا ہے؛ اسے چھوڑنے کے لیے “موازنہ روکیں” منتخب کریں۔",
+     "why": "meaning: فولڈر کی کاپی said the copy of the folder; the copy is in the folder"
+    },
+    {
+     "key": "Continue to Next Book",
+     "id": "endOfBookBehavior.title.continueNext",
+     "english": "Continue to Next Book",
+     "before": "اگلی کتاب پر جاری رکھیں",
+     "after": "اگلی کتاب سے جاری رکھیں",
+     "why": "natural: اگلی کتاب پر جاری رکھیں is not said; one continues with the next book (سے)"
+    },
+    {
+     "key": "Deletes the view. What it lists stays in the library.",
+     "id": "libraryViewsSettings.deleteHint",
+     "english": "Deletes the view. What it lists stays in the library.",
+     "before": "منظر کو حذف کرتا ہے۔ وہ جو کچھ دکھاتا ہے لائبریری میں رہتا ہے۔",
+     "after": "منظر کو حذف کرتا ہے۔ جو کچھ یہ دکھاتا ہے، وہ لائبریری میں رہتا ہے۔",
+     "why": "natural: وہ جو کچھ دکھاتا ہے copied the English order; the clause now comes first and its subject is clear"
+    },
+    {
+     "key": "Download it first: select it in the library, then choose %@.",
+     "id": "libraryCloud.downloadFirst.select",
+     "english": "Download it first: select it in the library, then choose %@.",
+     "before": "پہلے اسے ڈاؤن لوڈ کریں: لائبریری میں اسے منتخب کریں، پھر %@ منتخب کریں۔",
+     "after": "پہلے اسے ڈاؤن لوڈ کریں: لائبریری میں اسے منتخب کریں، پھر “%@” منتخب کریں۔",
+     "why": "voiceover: the command name arrives unquoted, so its imperative ran into the sentence; quotation marks mark it as a name, as the literal names in other sentences are"
+    },
+    {
+     "key": "Download them first: select them in the library, then choose %@.",
+     "id": "libraryCloud.downloadFirst.them",
+     "english": "Download them first: select them in the library, then choose %@.",
+     "before": "پہلے انہیں ڈاؤن لوڈ کریں: لائبریری میں انہیں منتخب کریں، پھر %@ منتخب کریں۔",
+     "after": "پہلے انہیں ڈاؤن لوڈ کریں: لائبریری میں انہیں منتخب کریں، پھر “%@” منتخب کریں۔",
+     "why": "voiceover: the command name arrives unquoted, so its imperative ran into the sentence; quotation marks mark it as a name, as the literal names in other sentences are"
+    },
+    {
+     "key": "Duplicate",
+     "id": "libraryViewsSettings.duplicateAction",
+     "english": "Duplicate",
+     "before": "ڈپلیکیٹ",
+     "after": "ڈپلیکیٹ بنائیں",
+     "why": "register: a button takes the polite imperative, like its neighbours چھپائیں and حذف کریں; the glossary noun stays"
+    },
+    {
+     "key": "Enable restart-timer gesture",
+     "id": "miscellaneousSettings.restartGestureTitle",
+     "english": "Enable restart-timer gesture",
+     "before": "ری اسٹارٹ ٹائمر اشارہ فعال کریں",
+     "after": "سلیپ ٹائمر ری اسٹارٹ کا اشارہ فعال کریں",
+     "why": "natural: ری اسٹارٹ ٹائمر اشارہ stacked three nouns in English order; now the wording of the Restart Sleep Timer Gesture heading"
+    },
+    {
+     "key": "Folder %@ created in %@.",
+     "id": "newFolderSheet.createdAnnouncement",
+     "english": "Folder %1$@ created in %2$@.",
+     "before": "فولڈر %1$@ %2$@ میں بنایا گیا۔",
+     "after": "فولڈر %1$@، %2$@ میں بنایا گیا۔",
+     "why": "voiceover: the new folder and its parent were two names side by side, heard as one; a comma parts them"
+    },
+    {
+     "key": "Folders is always shown: every folder and feed opens there.",
+     "id": "libraryViewsSettings.foldersVisibilityHint",
+     "english": "Folders is always shown: every folder and feed opens there.",
+     "before": "فولڈرز ہمیشہ دکھائے جاتے ہیں: ہر فولڈر اور فیڈ وہیں کھلتے ہیں۔",
+     "after": "“فولڈرز” منظر ہمیشہ دکھایا جاتا ہے: ہر فولڈر اور فیڈ اسی میں کھلتا ہے۔",
+     "why": "meaning: Folders is the name of a view, but the sentence said folders are always shown"
+    },
+    {
+     "key": "Go up one folder level",
+     "id": "libraryList.goUpOneFolderLevel",
+     "english": "Go up one folder level",
+     "before": "ایک فولڈر کی سطح اوپر جائیں",
+     "after": "ایک سطح اوپر جائیں",
+     "why": "natural: ایک فولڈر کی سطح اوپر جائیں was a word for word copy; Up one level is ایک سطح اوپر"
+    },
+    {
+     "key": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "id": "brailleCode.guessedRecovery",
+     "english": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "before": "کتاب کے بریل سے اندازہ لگایا گیا۔ اگر یہ غلط پڑھتا ہے تو بریل کوڈ میں یونیفائیڈ انگلش بریل منتخب کریں۔",
+     "after": "کتاب کے بریل سے اندازہ لگایا گیا۔ اگر یہ غلط پڑھتا ہے تو بریل کوڈ میں Unified English Braille منتخب کریں۔",
+     "why": "meaning: braille code names are never translated, so the pop-up lists Unified English Braille in English and the sentence must name it so"
+    },
+    {
+     "key": "If it is gone, choose %@.",
+     "id": "libraryFileWait.explanation.choose",
+     "english": "If it is gone, choose %@.",
+     "before": "اگر وہ موجود نہیں ہے تو %@ منتخب کریں۔",
+     "after": "اگر وہ موجود نہیں ہے تو “%@” منتخب کریں۔",
+     "why": "voiceover: the command name arrives unquoted, so its imperative ran into the sentence; quotation marks mark it as a name, as the literal names in other sentences are"
+    },
+    {
+     "key": "If the file arrives from %@ later, it names the same library.",
+     "id": "libraryFileWait.confirmation.identity.arrives",
+     "english": "If the file arrives from %@ later, it names the same library.",
+     "before": "اگر فائل بعد میں %@ سے پہنچے، تو وہ اسی لائبریری کا نام ظاہر کرتی ہے۔",
+     "after": "اگر فائل بعد میں %@ سے پہنچے، تو وہ اسی لائبریری کی نشاندہی کرتی ہے۔",
+     "why": "meaning: names here is identifies; نام ظاہر کرتی ہے said the file shows the library s name"
+    },
+    {
+     "key": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "id": "folderRemoval.ownFeedsChoiceSentences.downloads",
+     "english": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "یہ فیڈ %@ کا فولڈر ہے۔ دونوں صورتوں میں فیڈ اور اس کے ڈاؤن لوڈز رہتے ہیں، اور کسی فولڈر میں درج نہیں رہتے جب تک فیڈ کی معلومات اسے دوسرا فولڈر نہ دے؛ اس کی صف پر “فیڈ حذف کریں…” اسے حذف کرتا ہے۔",
+     "after": "یہ فیڈ %@ کا فولڈر ہے۔ دونوں صورتوں میں فیڈ اور اس کے ڈاؤن لوڈز رہتے ہیں، اور کسی فولڈر میں درج نہیں ہوتے جب تک “فیڈ کی معلومات” میں اسے دوسرا فولڈر نہ دیا جائے؛ اس کی صف پر “فیڈ حذف کریں…” اسے حذف کرتا ہے۔",
+     "why": "natural: Feed Info giving a folder copied the English; the sheet is now named in quotation marks and the folder is given in it"
+    },
+    {
+     "key": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "id": "folderRemoval.ownFeedsChoiceSentences.their",
+     "english": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "یہ فیڈز %@ کے فولڈر ہیں۔ دونوں صورتوں میں فیڈز اور ان کے ڈاؤن لوڈز رہتے ہیں، اور کسی فولڈر میں درج نہیں رہتے جب تک فیڈ کی معلومات ہر ایک کو دوسرا فولڈر نہ دے؛ فیڈ کی صف پر “فیڈ حذف کریں…” اسے حذف کرتا ہے۔",
+     "after": "یہ فیڈز %@ کا فولڈر ہے۔ دونوں صورتوں میں فیڈز اور ان کے ڈاؤن لوڈز رہتے ہیں، اور کسی فولڈر میں درج نہیں ہوتے جب تک “فیڈ کی معلومات” میں ہر ایک کو دوسرا فولڈر نہ دیا جائے؛ فیڈ کی صف پر “فیڈ حذف کریں…” اسے حذف کرتا ہے۔",
+     "why": "meaning: یہ ... کے فولڈر ہیں said several folders; it is one folder that holds several feeds; Feed Info quoted as in the singular"
+    },
+    {
+     "key": "It may be paused, signed out, or not running.",
+     "id": "bookCloudError.stalled.running",
+     "english": "It may be paused, signed out, or not running.",
+     "before": "ہو سکتا ہے یہ توقف میں ہو، سائن آؤٹ ہو، یا چل نہ رہا ہو۔",
+     "after": "ہو سکتا ہے یہ رکا ہوا ہو، سائن آؤٹ ہو، یا چل نہ رہا ہو۔",
+     "why": "natural: توقف is the pause of playback; a paused cloud service is رکا ہوا"
+    },
+    {
+     "key": "It may have been moved or renamed, or %@ may not have synced it to this Mac yet.",
+     "id": "dataDirectoryUnavailability.likelyCause.renamed",
+     "english": "It may have been moved or renamed, or %@ may not have synced it to this Mac yet.",
+     "before": "ہو سکتا ہے اسے منتقل یا نام تبدیل کر دیا گیا ہو، یا %@ نے اسے ابھی تک اس Mac پر سنک نہ کیا ہو۔",
+     "after": "ہو سکتا ہے اسے منتقل کر دیا گیا ہو یا اس کا نام تبدیل کر دیا گیا ہو، یا %@ نے اسے ابھی تک اس Mac پر سنک نہ کیا ہو۔",
+     "why": "grammar: اسے ... نام تبدیل کر دیا گیا is broken; renaming takes اس کا نام"
+    },
+    {
+     "key": "Its name, conditions, sort, and limit go back to TextMouth's own. Its place in the list and when it is offered stay as they are.",
+     "id": "libraryViewsSettings.restoreMessage",
+     "english": "Its name, conditions, sort, and limit go back to TextMouth's own. Its place in the list and when it is offered stay as they are.",
+     "before": "اس کا نام، شرائط، ترتیب اور حد TextMouth کی اپنی پر لوٹ جاتی ہیں۔ فہرست میں اس کی جگہ اور اس کے پیش ہونے کا وقت جیسا ہے ویسا رہتا ہے۔",
+     "after": "اس کا نام، شرائط، ترتیب اور حد پھر سے وہی ہو جاتی ہیں جو TextMouth نے دی تھیں۔ فہرست میں اس کی جگہ اور یہ کب پیش کیا جاتا ہے، دونوں جیسے ہیں ویسے ہی رہتے ہیں۔",
+     "why": "natural: TextMouth کی اپنی پر لوٹ جاتی ہیں copied TextMouth s own; the second sentence had two subjects and a singular verb"
+    },
+    {
+     "key": "Keeping %@ on this Mac",
+     "id": "libraryCloud.keepStarted.keeping",
+     "english": "Keeping %@ on this Mac",
+     "before": "%@ کو اس Mac پر رکھا جا رہا ہے",
+     "after": "اس Mac پر رکھا جا رہا ہے: %@",
+     "why": "grammar: a postposition after a count such as 3 books needs کتابوں, which the placeholder cannot give; the count now stands after a colon, so it reads right for every value"
+    },
+    {
+     "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.episodes",
+     "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "%1$@ کو جہاں ہے وہیں چھوڑ دیا گیا: ایپی سوڈز اور مضامین اپنی فیڈز میں رہتے ہیں؛ %2$@ کسی ایک کو آپ کی لائبریری کی کتاب بناتا ہے۔",
+     "after": "%1$@ کو جہاں ہے وہیں چھوڑ دیا گیا: ایپی سوڈز اور مضامین اپنی فیڈز میں رہتے ہیں؛ “%2$@” کسی ایک کو آپ کی لائبریری کی کتاب بنا دیتا ہے۔",
+     "why": "voiceover: the command name arrives unquoted, and its imperative read as an instruction inside the sentence; quotation marks mark it as a name"
+    },
+    {
+     "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.they",
+     "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "%1$@ کو جہاں ہیں وہیں چھوڑ دیا گیا: ایپی سوڈز اور مضامین اپنی فیڈز میں رہتے ہیں؛ %2$@ کسی ایک کو آپ کی لائبریری کی کتاب بناتا ہے۔",
+     "after": "%1$@ کو جہاں ہیں وہیں چھوڑ دیا گیا: ایپی سوڈز اور مضامین اپنی فیڈز میں رہتے ہیں؛ “%2$@” کسی ایک کو آپ کی لائبریری کی کتاب بنا دیتا ہے۔",
+     "why": "voiceover: the command name arrives unquoted, and its imperative read as an instruction inside the sentence; quotation marks mark it as a name"
+    },
+    {
+     "key": "Lists %@.",
+     "id": "libraryViewEditor.count.lists",
+     "english": "Lists %@.",
+     "before": "%@ کی فہرست دیتا ہے۔",
+     "after": "دکھاتا ہے: %@۔",
+     "why": "grammar: a postposition after a count such as 3 books needs کتابوں, which the placeholder cannot give; the count now stands after a colon, so it reads right for every value"
+    },
+    {
+     "key": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "id": "miscellaneousSettings.patternExplanation",
+     "english": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "before": "وہ میڈیا کنٹرول ایونٹس جو ری اسٹارٹ شروع کرتے ہیں۔ آخری ایونٹ استعمال ہو جاتا ہے، پلے بیک کو نہیں بھیجا جاتا، اس لیے وہ آڈیو شروع نہیں کر سکتا۔",
+     "after": "وہ میڈیا کنٹرول ایونٹس جن سے ری اسٹارٹ ہوتا ہے۔ آخری ایونٹ استعمال ہو جاتا ہے، پلے بیک کو نہیں بھیجا جاتا، اس لیے وہ آڈیو شروع نہیں کر سکتا۔",
+     "why": "natural: ری اسٹارٹ شروع کرتے ہیں said start the restart; the events make the restart happen"
+    },
+    {
+     "key": "Move contents to",
+     "id": "librarySheet.moveContentsTo",
+     "english": "Move contents to",
+     "before": "مندرجات یہاں منتقل کریں",
+     "after": "مندرجات کہاں منتقل کریں",
+     "why": "meaning: یہاں said move the contents here, but the pop-up after the caption chooses the place"
+    },
+    {
+     "key": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "id": "libraryComparison.newerCopySentence.differ",
+     "english": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "before": "کسی کے پاس نئے مقامات یا ایسی کتابیں نہیں جو دوسرے کے پاس نہ ہوں، لیکن وہ دوسرے طریقوں سے مختلف ہیں۔",
+     "after": "کسی بھی کاپی میں زیادہ نئے مقامات یا ایسی کتابیں نہیں جو دوسری میں نہ ہوں، لیکن دونوں دوسرے طریقوں سے مختلف ہیں۔",
+     "why": "grammar: a copy (کاپی) is feminine, as the neighbouring strings say دوسری; and newer places had become new places"
+    },
+    {
+     "key": "Neither is newer: each has changes the other lacks.",
+     "id": "libraryComparison.newerCopySentence.changes",
+     "english": "Neither is newer: each has changes the other lacks.",
+     "before": "کوئی بھی زیادہ نیا نہیں: ہر ایک میں ایسی تبدیلیاں ہیں جو دوسرے میں نہیں ہیں۔",
+     "after": "کوئی بھی کاپی زیادہ نئی نہیں: ہر ایک میں ایسی تبدیلیاں ہیں جو دوسری میں نہیں ہیں۔",
+     "why": "grammar: a copy (کاپی) is feminine, as the neighbouring strings say زیادہ نئی and دوسری"
+    },
+    {
+     "key": "Not Created",
+     "id": "storageSettings.notCreated",
+     "english": "Not Created",
+     "before": "بنایا نہیں گیا",
+     "after": "بنائی نہیں گئی",
+     "why": "grammar: the status is the data directory s, and ڈائریکٹری is feminine, as ڈیٹا ڈائریکٹری دوبارہ بنائی جا رہی ہے says"
+    },
+    {
+     "key": "Opens a file picker to import books in any format TextMouth reads.",
+     "id": "libraryList.importBookHint",
+     "english": "Opens a file picker to import books in any format TextMouth reads.",
+     "before": "کتابیں درآمد کرنے کے لیے فائل چننے والا کھولتا ہے، کسی بھی فارمیٹ میں جسے TextMouth پڑھتا ہے۔",
+     "after": "فائل منتخب کرنے کی ونڈو کھولتا ہے، تاکہ آپ ہر اس فارمیٹ کی کتابیں درآمد کر سکیں جو TextMouth پڑھتا ہے۔",
+     "why": "natural: فائل چننے والا reads as a person who picks files, and the format clause trailed as in English"
+    },
+    {
+     "key": "Reading list: %@ is only on %@'s list, at place %@.",
+     "id": "libraryComparison.sentence.readingListBookOnlyIn",
+     "english": "Reading list: %1$@ is only on %2$@'s list, at place %3$@.",
+     "before": "مطالعے کی فہرست: %1$@ صرف %2$@ کی فہرست میں ہے، مقام %3$@ پر۔",
+     "after": "مطالعے کی فہرست: %1$@ صرف %2$@ کی فہرست میں ہے، نمبر %3$@ پر۔",
+     "why": "natural: a place in a list is a number (نمبر), not a location (مقام)"
+    },
+    {
+     "key": "Removed the downloads of %@",
+     "id": "libraryCloud.removedDownloads",
+     "english": "Removed the downloads of %@",
+     "before": "%@ کے ڈاؤن لوڈ ہٹا دیے گئے",
+     "after": "ڈاؤن لوڈ ہٹا دیے گئے: %@",
+     "why": "grammar: a postposition after a count such as 3 books needs کتابوں, which the placeholder cannot give; the count now stands after a colon, so it reads right for every value"
+    },
+    {
+     "key": "Restarts the most recent sleep timer with a sequence of media-control presses",
+     "id": "miscellaneousSettings.restartGestureHint",
+     "english": "Restarts the most recent sleep timer with a sequence of media-control presses",
+     "before": "میڈیا کنٹرول کے دباؤ کی ترتیب سے حالیہ ترین سلیپ ٹائمر دوبارہ شروع کرتا ہے۔",
+     "after": "میڈیا کنٹرولز کو ایک خاص ترتیب میں دبانے سے حالیہ ترین سلیپ ٹائمر دوبارہ شروع کرتا ہے۔",
+     "why": "meaning: دباؤ is pressure; presses of a control are دبانا"
+    },
+    {
+     "key": "Retry is at the top of the Library window.",
+     "id": "persistenceBannerRow.announcement.retry",
+     "english": "Retry is at the top of the Library window.",
+     "before": "دوبارہ کوشش لائبریری ونڈو کے اوپر ہے۔",
+     "after": "“دوبارہ کوشش کریں” لائبریری ونڈو کے اوپر ہے۔",
+     "why": "meaning: Retry is a button whose Urdu label is دوبارہ کوشش کریں; the bare noun did not name it"
+    },
+    {
+     "key": "Rewind to",
+     "id": "settings.rewindToTitle",
+     "english": "Rewind to",
+     "before": "یہاں تک ری وائنڈ کریں",
+     "after": "کہاں تک ری وائنڈ کریں",
+     "why": "meaning: یہاں تک said rewind up to here, but the pop-up after the title chooses how far"
+    },
+    {
+     "key": "Save the file in the editor, then choose %@ again, or choose %@ to start again.",
+     "id": "textImportPolicy.reloadFailedAnnouncement.choose",
+     "english": "Save the file in the editor, then choose %1$@ again, or choose %2$@ to start again.",
+     "before": "ایڈیٹر میں فائل محفوظ کریں، پھر %1$@ دوبارہ منتخب کریں، یا نئے سرے سے شروع کرنے کے لیے %2$@ منتخب کریں۔",
+     "after": "ایڈیٹر میں فائل محفوظ کریں، پھر “%1$@” دوبارہ منتخب کریں، یا نئے سرے سے شروع کرنے کے لیے “%2$@” منتخب کریں۔",
+     "why": "voiceover: the command name arrives unquoted, so its imperative ran into the sentence; quotation marks mark it as a name, as the literal names in other sentences are"
+    },
+    {
+     "key": "Set its shortcut with %@ in the %@ tab; the default is %@.",
+     "id": "miscellaneousSettings.restartShortcutNote",
+     "english": "Set its shortcut with %1$@ in the %2$@ tab; the default is %3$@.",
+     "before": "اس کا شارٹ کٹ %2$@ ٹیب میں %1$@ کے ساتھ مقرر کریں؛ ڈیفالٹ %3$@ ہے۔",
+     "after": "اس کا شارٹ کٹ “%2$@” ٹیب میں “%1$@” کے ذریعے مقرر کریں؛ ڈیفالٹ %3$@ ہے۔",
+     "why": "meaning: کے ساتھ said together with the action; the shortcut is set through the action s row; both names quoted"
+    },
+    {
+     "key": "Some files of “%@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %@ again.",
+     "id": "refusal.sentence.filesInCloud",
+     "english": "Some files of “%1$@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %2$@ again.",
+     "before": "“%1$@” کی کچھ فائلیں صرف کلاؤڈ میں ہیں، اور اب اسے تبدیل کرنے سے وہ پیچھے رہ جائیں گی۔ کتاب ڈاؤن لوڈ کریں، پھر %2$@ دوبارہ منتخب کریں۔",
+     "after": "“%1$@” کی کچھ فائلیں صرف کلاؤڈ میں ہیں، اور اب اسے تبدیل کرنے سے وہ پیچھے رہ جائیں گی۔ کتاب ڈاؤن لوڈ کریں، پھر “%2$@” دوبارہ منتخب کریں۔",
+     "why": "voiceover: the command name arrives unquoted, so its imperative ran into the sentence; quotation marks mark it as a name, as the literal names in other sentences are"
+    },
+    {
+     "key": "Still downloading, %@ elapsed.",
+     "id": "readerCloud.stillDownloading",
+     "english": "Still downloading, %@ elapsed.",
+     "before": "ابھی ڈاؤن لوڈ ہو رہا ہے، %@ گزر چکے۔",
+     "after": "ابھی ڈاؤن لوڈ ہو رہا ہے، گزرا ہوا وقت: %@۔",
+     "why": "grammar: گزر چکے agreed only with a plural length and broke for one minute; the length now follows a colon, as the progress value says it"
+    },
+    {
+     "key": "Stop, and Play Starts Over",
+     "id": "endOfBookBehavior.title.stopAndPlayStartsOver",
+     "english": "Stop, and Play Starts Over",
+     "before": "رکیں اور چلانے پر دوبارہ شروع ہو",
+     "after": "رکیں، اور چلانے پر شروع سے چلے",
+     "why": "meaning: دوبارہ شروع is the app s word for Resume; Play here starts the book from its beginning (شروع سے)"
+    },
+    {
+     "key": "Stopped keeping %@ on this Mac",
+     "id": "libraryCloud.stoppedKeeping.onThisMac",
+     "english": "Stopped keeping %@ on this Mac",
+     "before": "%@ کو اس Mac پر رکھنا بند کر دیا گیا",
+     "after": "اس Mac پر رکھنا بند کر دیا گیا: %@",
+     "why": "grammar: a postposition after a count such as 3 books needs کتابوں, which the placeholder cannot give; the count now stands after a colon, so it reads right for every value"
+    },
+    {
+     "key": "Stops the search, keeping the matches found so far",
+     "id": "librarySearch.stopHint",
+     "english": "Stops the search, keeping the matches found so far",
+     "before": "تلاش روکتا ہے، اب تک ملی مماثلتیں رکھتے ہوئے۔",
+     "after": "تلاش روکتا ہے اور اب تک ملی مماثلتیں رکھتا ہے۔",
+     "why": "natural: رکھتے ہوئے copied the English -ing clause; two verbs joined by اور read naturally"
+    },
+    {
+     "key": "Switching to the library in %@...",
+     "id": "storageOperation.runningMessage.useLibrary",
+     "english": "Switching to the library in %@...",
+     "before": "%@ میں موجود لائبریری پر منتقل ہو رہا ہے...",
+     "after": "%@ میں موجود لائبریری پر جا رہا ہے...",
+     "why": "meaning: منتقل ہو رہا ہے is the app s word for moving the library; switching to a library is جانا, as the sentence on switching says"
+    },
+    {
+     "key": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "id": "libraryCloud.letGoOfOneBookFirst",
+     "english": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "before": "اسے مطالعے کی فہرست سے ہٹائیں، یا پہلے مطالعے کی فہرست کے اختیارات میں %@ صاف کریں۔",
+     "after": "اسے مطالعے کی فہرست سے ہٹائیں، یا پہلے مطالعے کی فہرست کے اختیارات میں “%@” آف کریں۔",
+     "why": "meaning: صاف کریں is clearing text; clearing an option is turning it off (آف کریں), and its name is quoted"
+    },
+    {
+     "key": "TextMouth could not move %@ to the current library format.",
+     "id": "legacyMigrationReport.userSummary.move",
+     "english": "TextMouth could not move %@ to the current library format.",
+     "before": "TextMouth %@ کو موجودہ لائبریری فارمیٹ میں منتقل نہیں کر سکا۔",
+     "after": "TextMouth موجودہ لائبریری فارمیٹ میں منتقل نہیں کر سکا: %@۔",
+     "why": "grammar: a postposition after a count such as 3 books needs کتابوں, which the placeholder cannot give; the count now stands after a colon, so it reads right for every value"
+    },
+    {
+     "key": "TextMouth could not record the removal in its package, %@.",
+     "id": "libraryRemovalError.couldNotMarkPackage",
+     "english": "TextMouth could not record the removal in its package, %@.",
+     "before": "TextMouth ہٹانے کو اپنے پیکیج %@ میں درج نہیں کر سکا۔",
+     "after": "TextMouth کتاب کے پیکیج %@ میں ہٹانے کا اندراج نہیں کر سکا۔",
+     "why": "meaning: اپنے پیکیج said TextMouth s own package; the package is the book s"
+    },
+    {
+     "key": "TextMouth is moving books between folders. Wait until that finishes, then choose %@ again.",
+     "id": "refusal.sentence.storageBusy.between",
+     "english": "TextMouth is moving books between folders. Wait until that finishes, then choose %@ again.",
+     "before": "TextMouth فولڈرز کے درمیان کتابیں منتقل کر رہا ہے۔ اس کے ختم ہونے تک انتظار کریں، پھر %@ دوبارہ منتخب کریں۔",
+     "after": "TextMouth فولڈرز کے درمیان کتابیں منتقل کر رہا ہے۔ اس کے ختم ہونے تک انتظار کریں، پھر “%@” دوبارہ منتخب کریں۔",
+     "why": "voiceover: the command name arrives unquoted, so its imperative ran into the sentence; quotation marks mark it as a name, as the literal names in other sentences are"
+    },
+    {
+     "key": "TextMouth is reading “%@” again with other braille file characters. Try again when that finishes.",
+     "id": "brailleFileCode.readingAgainRefusal",
+     "english": "TextMouth is reading “%@” again with other braille file characters. Try again when that finishes.",
+     "before": "TextMouth “%@” کو دوسرے بریل فائل کے حروف کے ساتھ دوبارہ پڑھ رہا ہے۔ اس کے ختم ہونے پر دوبارہ کوشش کریں۔",
+     "after": "TextMouth “%@” کو بریل فائل کے دوسرے حروف کے ساتھ دوبارہ پڑھ رہا ہے۔ اس کے ختم ہونے پر دوبارہ کوشش کریں۔",
+     "why": "meaning: دوسرے بریل فائل کے حروف could be heard as the characters of another braille file; these are other characters for the braille file"
+    },
+    {
+     "key": "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again.",
+     "id": "refusal.sentence.storageBusy.rebuilding",
+     "english": "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again.",
+     "before": "TextMouth اپنی ڈیٹا ڈائریکٹری دوبارہ بنا رہا ہے۔ اس کے ختم ہونے تک انتظار کریں، پھر %@ دوبارہ منتخب کریں۔",
+     "after": "TextMouth اپنی ڈیٹا ڈائریکٹری دوبارہ بنا رہا ہے۔ اس کے ختم ہونے تک انتظار کریں، پھر “%@” دوبارہ منتخب کریں۔",
+     "why": "voiceover: the command name arrives unquoted, so its imperative ran into the sentence; quotation marks mark it as a name, as the literal names in other sentences are"
+    },
+    {
+     "key": "TextMouth moved %@ to the current library format, but with problems:",
+     "id": "legacyMigrationReport.userSummary.problems",
+     "english": "TextMouth moved %@ to the current library format, but with problems:",
+     "before": "TextMouth نے %@ کو موجودہ لائبریری فارمیٹ میں منتقل کر دیا، لیکن مسائل کے ساتھ:",
+     "after": "TextMouth نے یہ %@ موجودہ لائبریری فارمیٹ میں منتقل کر دیں، لیکن مسائل کے ساتھ:",
+     "why": "grammar: کو after a count such as 3 books needs کتابوں; the count (always several books) is now the direct object, which the verb agrees with"
+    },
+    {
+     "key": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "id": "leadingArticle.description.ignoredForBoth",
+     "english": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "before": "The Hobbit کی ترتیب H کے درمیان ہوتی ہے اور وہ Hobbit, The کی صورت میں دکھائی دیتی ہے۔ H ٹائپ کرنے پر وہ H کے درمیان ملتی ہے۔",
+     "after": "The Hobbit ترتیب میں H سے شروع ہونے والے عنوانات میں آتی ہے اور Hobbit, The کی صورت میں دکھائی دیتی ہے۔ H ٹائپ کرنے پر وہ انہی عنوانات میں ملتی ہے۔",
+     "why": "natural: H کے درمیان said in the middle of H; among the H s is the titles that start with H"
+    },
+    {
+     "key": "The audio of “%@” is being edited. Close the audio editor or wait for it to save, then choose %@ again.",
+     "id": "refusal.sentence.audioBeingEdited",
+     "english": "The audio of “%1$@” is being edited. Close the audio editor or wait for it to save, then choose %2$@ again.",
+     "before": "“%1$@” کا آڈیو ایڈٹ کیا جا رہا ہے۔ آڈیو ایڈیٹر بند کریں یا اس کے محفوظ ہونے کا انتظار کریں، پھر %2$@ دوبارہ منتخب کریں۔",
+     "after": "“%1$@” کے آڈیو میں ترمیم کی جا رہی ہے۔ آڈیو ایڈیٹر بند کریں یا اس کے محفوظ ہونے کا انتظار کریں، پھر “%2$@” دوبارہ منتخب کریں۔",
+     "why": "term: edit is ترمیم across the app (آڈیو میں ترمیم کریں), not the loan ایڈٹ; and the command name is quoted"
+    },
+    {
+     "key": "The downloads of %@ weren't removed: %@",
+     "id": "libraryCloud.downloadsWerentRemoved",
+     "english": "The downloads of %1$@ weren't removed: %2$@",
+     "before": "%1$@ کے ڈاؤن لوڈ نہیں ہٹائے گئے: %2$@",
+     "after": "ڈاؤن لوڈ نہیں ہٹائے گئے، %1$@: %2$@",
+     "why": "grammar: a postposition after a count such as 3 books needs کتابوں, which the placeholder cannot give; the count now stands after a colon, so it reads right for every value"
+    },
+    {
+     "key": "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another.",
+     "id": "folderRemoval.confirmationMessage.stays",
+     "english": "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another.",
+     "before": "فیڈ %@ اپنے ڈاؤن لوڈز کے ساتھ بغیر فولڈر کے رہتا ہے جب تک فیڈ کی معلومات اسے دوسرا فولڈر نہ دے۔",
+     "after": "فیڈ %@ اپنے ڈاؤن لوڈز کے ساتھ بغیر فولڈر کے رہتا ہے، جب تک “فیڈ کی معلومات” میں اسے دوسرا فولڈر نہ دیا جائے۔",
+     "why": "natural: Feed Info giving a folder copied the English; the sheet is named in quotation marks and the folder is given in it"
+    },
+    {
+     "key": "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another.",
+     "id": "folderRemoval.confirmationMessage.folders",
+     "english": "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another.",
+     "before": "فیڈز %@ اپنے ڈاؤن لوڈز کے ساتھ بغیر فولڈر کے رہتے ہیں جب تک فیڈ کی معلومات ہر ایک کو دوسرا فولڈر نہ دے۔",
+     "after": "فیڈز %@ اپنے ڈاؤن لوڈز کے ساتھ بغیر فولڈر کے رہتے ہیں، جب تک “فیڈ کی معلومات” میں ہر ایک کو دوسرا فولڈر نہ دیا جائے۔",
+     "why": "natural: Feed Info giving a folder copied the English; the sheet is named in quotation marks and the folder is given in it"
+    },
+    {
+     "key": "The folder is no longer in the library. It may have been moved, renamed, or deleted in another window.",
+     "id": "folderOperationConflict.folderNotFound",
+     "english": "The folder is no longer in the library. It may have been moved, renamed, or deleted in another window.",
+     "before": "فولڈر اب لائبریری میں نہیں ہے۔ ہو سکتا ہے اسے کسی اور ونڈو میں منتقل، نام تبدیل یا حذف کیا گیا ہو۔",
+     "after": "فولڈر اب لائبریری میں نہیں ہے۔ ہو سکتا ہے کسی اور ونڈو میں اسے منتقل یا حذف کیا گیا ہو، یا اس کا نام تبدیل کیا گیا ہو۔",
+     "why": "grammar: اسے ... نام تبدیل کیا گیا is broken; renaming takes اس کا نام"
+    },
+    {
+     "key": "The folders %@ and %@ can't both move into %@: their names mean the same folder on this disk.",
+     "id": "folderOperationConflict.namesCollide",
+     "english": "The folders %1$@ and %2$@ can't both move into %3$@: their names mean the same folder on this disk.",
+     "before": "فولڈر %1$@ اور %2$@ دونوں %3$@ میں منتقل نہیں ہو سکتے: اس ڈسک پر ان کے نام ایک ہی فولڈر کے معنی رکھتے ہیں۔",
+     "after": "فولڈر %1$@ اور %2$@ دونوں %3$@ میں منتقل نہیں ہو سکتے: اس ڈسک پر دونوں نام ایک ہی فولڈر کی طرف اشارہ کرتے ہیں۔",
+     "why": "natural: کے معنی رکھتے ہیں copied mean; the names point to one folder, as the sentence on names that differ only in capitals says"
+    },
+    {
+     "key": "The index is not changed until you choose %@ or %@, which stay available from %@ at the top of the library.",
+     "id": "libraryIndexRecovery.continueReading.available",
+     "english": "The index is not changed until you choose %1$@ or %2$@, which stay available from %3$@ at the top of the library.",
+     "before": "انڈیکس اس وقت تک نہیں بدلتا جب تک آپ %1$@ یا %2$@ منتخب نہ کریں، جو لائبریری کے اوپر %3$@ سے دستیاب رہتے ہیں۔",
+     "after": "انڈیکس اس وقت تک نہیں بدلتا جب تک آپ “%1$@” یا “%2$@” منتخب نہ کریں، جو لائبریری کے اوپر “%3$@” سے دستیاب رہتے ہیں۔",
+     "why": "voiceover: the command names arrive unquoted, so their imperatives ran into the sentence; quotation marks mark them as names"
+    },
+    {
+     "key": "The library index was read successfully. Your library has %@, and changes are being saved again.",
+     "id": "libraryIndexRecoveryOutcome.restored",
+     "english": "The library index was read successfully. Your library has %@, and changes are being saved again.",
+     "before": "لائبریری انڈیکس کامیابی سے پڑھ لیا گیا۔ آپ کی لائبریری میں %@ ہیں، اور تبدیلیاں دوبارہ محفوظ ہو رہی ہیں۔",
+     "after": "لائبریری انڈیکس کامیابی سے پڑھ لیا گیا۔ آپ کی لائبریری میں: %@، اور تبدیلیاں دوبارہ محفوظ ہو رہی ہیں۔",
+     "why": "grammar: ہیں after the count was wrong for one book; the colon form fits every count, as the other count sentences do"
+    },
+    {
+     "key": "The library index was rebuilt with %@.",
+     "id": "libraryIndexRecoveryOutcome.rebuilt",
+     "english": "The library index was rebuilt with %@.",
+     "before": "لائبریری انڈیکس %@ کے ساتھ دوبارہ بنایا گیا۔",
+     "after": "لائبریری انڈیکس دوبارہ بنایا گیا: %@۔",
+     "why": "grammar: a postposition after a count such as 3 books needs کتابوں, which the placeholder cannot give; the count now stands after a colon, so it reads right for every value"
+    },
+    {
+     "key": "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.",
+     "id": "miscellaneousSettings.timeWindowExplanation",
+     "english": "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.",
+     "before": "پوری ترتیب کو زیادہ سے زیادہ جتنا وقت لگ سکتا ہے۔ چھوٹی حدیں غیر ارادی مماثلتیں کم کرتی ہیں لیکن دباؤ زیادہ تیزی سے مانگتی ہیں۔",
+     "after": "پوری ترتیب میں لگنے والا زیادہ سے زیادہ وقت۔ چھوٹی حدوں سے غیر ارادی مماثلتیں کم ہوتی ہیں، لیکن بٹن زیادہ تیزی سے دبانے پڑتے ہیں۔",
+     "why": "meaning: دباؤ is pressure; quicker presses means the buttons must be pressed faster"
+    },
+    {
+     "key": "The original file will remain untouched after import.",
+     "id": "storageSettings.originalRemains",
+     "english": "The original file will remain untouched after import.",
+     "before": "درآمد کے بعد اصل فائل ہاتھ لگائے بغیر رہے گی۔",
+     "after": "درآمد کے بعد اصل فائل جوں کی توں رہے گی۔",
+     "why": "natural: ہاتھ لگائے بغیر copied untouched word for word; as it is is جوں کی توں"
+    },
+    {
+     "key": "The unreadable library index is no longer there, so TextMouth saved the library rebuilt from your books as the new index, with %@.",
+     "id": "libraryIndexRecoveryOutcome.savedProvisional",
+     "english": "The unreadable library index is no longer there, so TextMouth saved the library rebuilt from your books as the new index, with %@.",
+     "before": "نہ پڑھا جا سکنے والا لائبریری انڈیکس اب موجود نہیں ہے، اس لیے TextMouth نے آپ کی کتابوں سے دوبارہ بنائی گئی لائبریری کو %@ کے ساتھ نئے انڈیکس کے طور پر محفوظ کر دیا۔",
+     "after": "نہ پڑھا جا سکنے والا لائبریری انڈیکس اب موجود نہیں ہے، اس لیے TextMouth نے آپ کی کتابوں سے دوبارہ بنائی گئی لائبریری کو نئے انڈیکس کے طور پر محفوظ کر دیا، جس میں: %@۔",
+     "why": "grammar: a postposition after a count such as 3 books needs کتابوں, which the placeholder cannot give; the count now stands after a colon, so it reads right for every value"
+    },
+    {
+     "key": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.thenLetGoOfOneBook",
+     "english": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "پھر اسے مطالعے کی فہرست سے ہٹائیں، یا مطالعے کی فہرست کے اختیارات میں %@ صاف کریں۔",
+     "after": "پھر اسے مطالعے کی فہرست سے ہٹائیں، یا مطالعے کی فہرست کے اختیارات میں “%@” آف کریں۔",
+     "why": "meaning: صاف کریں is clearing text; clearing an option is turning it off (آف کریں), and its name is quoted"
+    },
+    {
+     "key": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "id": "brailleCode.suggestsAmericanEdition",
+     "english": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "before": "یہ بریل انگلش بریل، امریکن ایڈیشن جیسا لگتا ہے۔ کتاب کی معلومات میں اس کا بریل کوڈ منتخب کریں۔",
+     "after": "یہ بریل English Braille, American Edition جیسا لگتا ہے۔ کتاب کی معلومات میں اس کا بریل کوڈ منتخب کریں۔",
+     "why": "meaning: braille code names are never translated, so the pop-up lists English Braille, American Edition in English and the sentence must name it so"
+    },
+    {
+     "key": "This folder has no stored name, so it cannot be changed safely.",
+     "id": "folderOperationConflict.invalidPath.changed",
+     "english": "This folder has no stored name, so it cannot be changed safely.",
+     "before": "اس فولڈر کا کوئی محفوظ شدہ نام نہیں ہے، اس لیے اسے محفوظ طریقے سے تبدیل نہیں کیا جا سکتا۔",
+     "after": "اس فولڈر کا کوئی محفوظ شدہ نام نہیں ہے، اس لیے اسے بحفاظت تبدیل نہیں کیا جا سکتا۔",
+     "why": "natural: محفوظ for both stored and safely in one sentence confused the two; safely is بحفاظت"
+    },
+    {
+     "key": "This folder holds another copy of the library TextMouth is using.",
+     "id": "libraryComparison.newerCopySentence.another",
+     "english": "This folder holds another copy of the library TextMouth is using.",
+     "before": "اس فولڈر میں اس لائبریری کی دوسری کاپی ہے جسے TextMouth استعمال کر رہا ہے۔",
+     "after": "اس فولڈر میں TextMouth کی زیر استعمال لائبریری کی ایک اور کاپی ہے۔",
+     "why": "meaning: the relative clause after کاپی ہے could be heard as the copy being the one in use; the library in use is now named before it"
+    },
+    {
+     "key": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "id": "leadingArticle.description.partOfTitle",
+     "english": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "before": "عنوانات ویسے ہی ترتیب پاتے اور ٹائپ کر کے ملتے ہیں جیسے لکھے ہیں: The Hobbit T کے درمیان ہے۔",
+     "after": "عنوانات ویسے ہی ترتیب پاتے اور ٹائپ کر کے ملتے ہیں جیسے لکھے ہیں: The Hobbit، T سے شروع ہونے والے عنوانات میں ہے۔",
+     "why": "natural: T کے درمیان said in the middle of T; among the T s is the titles that start with T"
+    },
+    {
+     "key": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.howToLetGo.reading",
+     "english": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "اسے چھوڑنے کے لیے، اسے مطالعے کی فہرست سے ہٹائیں، یا مطالعے کی فہرست کے اختیارات میں %@ صاف کریں۔",
+     "after": "اسے چھوڑنے کے لیے، اسے مطالعے کی فہرست سے ہٹائیں، یا مطالعے کی فہرست کے اختیارات میں “%@” آف کریں۔",
+     "why": "meaning: صاف کریں is clearing text; clearing an option is turning it off (آف کریں), and its name is quoted"
+    },
+    {
+     "key": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.howToLetGo.them",
+     "english": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "before": "انہیں چھوڑنے کے لیے، انہیں مطالعے کی فہرست سے ہٹائیں، یا مطالعے کی فہرست کے اختیارات میں %@ صاف کریں۔",
+     "after": "انہیں چھوڑنے کے لیے، انہیں مطالعے کی فہرست سے ہٹائیں، یا مطالعے کی فہرست کے اختیارات میں “%@” آف کریں۔",
+     "why": "meaning: صاف کریں is clearing text; clearing an option is turning it off (آف کریں), and its name is quoted"
+    },
+    {
+     "key": "To use another folder, open Settings, Storage, and choose %@ or %@.",
+     "id": "dataDirectoryUnavailable.anotherFolderPointer",
+     "english": "To use another folder, open Settings, Storage, and choose %1$@ or %2$@.",
+     "before": "کوئی اور فولڈر استعمال کرنے کے لیے ترتیبات کھولیں، اسٹوریج میں جائیں، اور %1$@ یا %2$@ منتخب کریں۔",
+     "after": "کوئی اور فولڈر استعمال کرنے کے لیے ترتیبات کھولیں، اسٹوریج میں جائیں، اور “%1$@” یا “%2$@” منتخب کریں۔",
+     "why": "voiceover: the command names arrive unquoted, so their imperatives ran into the sentence; quotation marks mark them as names"
+    },
+    {
+     "key": "Unread: %@ couldn't be read (%@), %@",
+     "id": "libraryComparison.sentence.cannotBeRead",
+     "english": "Unread: %1$@ couldn't be read (%2$@), %3$@",
+     "before": "نہ پڑھی گئی: %1$@ پڑھی نہیں جا سکی (%2$@)، %3$@",
+     "after": "نہ پڑھی گئی: %1$@ کو پڑھا نہیں جا سکا (%2$@)، %3$@",
+     "why": "grammar: the file phrase is feminine for the identity file and masculine for the index and the record, so a verb agreeing with it broke for one of them; کو with an impersonal passive fits all"
+    },
+    {
+     "key": "Unread: %@ hasn't arrived from the cloud after %lld seconds, %@",
+     "id": "libraryComparison.sentence.notArrived",
+     "english": {
+      "one": "Unread: %@ hasn't arrived from the cloud after %lld second, %@",
+      "other": "Unread: %@ hasn't arrived from the cloud after %lld seconds, %@"
+     },
+     "before": {
+      "one": "نہ پڑھی گئی: %1$@ %2$lld سیکنڈ بعد بھی کلاؤڈ سے نہیں پہنچی، %3$@",
+      "other": "نہ پڑھی گئی: %1$@ %2$lld سیکنڈ بعد بھی کلاؤڈ سے نہیں پہنچی، %3$@"
+     },
+     "after": {
+      "one": "نہ پڑھی گئی: %1$@ کو %2$lld سیکنڈ بعد بھی کلاؤڈ سے وصول نہیں کیا جا سکا، %3$@",
+      "other": "نہ پڑھی گئی: %1$@ کو %2$lld سیکنڈ بعد بھی کلاؤڈ سے وصول نہیں کیا جا سکا، %3$@"
+     },
+     "why": "grammar: the file phrase is feminine for the identity file and masculine for the index and the record, so a verb agreeing with it broke for one of them; کو with an impersonal passive fits all"
+    },
+    {
+     "key": "Unread: %@ wasn't asked for again, because the drive hasn't answered an earlier read, %@",
+     "id": "libraryComparison.sentence.stillBeingFetched",
+     "english": "Unread: %1$@ wasn't asked for again, because the drive hasn't answered an earlier read, %2$@",
+     "before": "نہ پڑھی گئی: %1$@ کو دوبارہ نہیں مانگا گیا، کیونکہ ڈرائیو نے پچھلی ریڈ کا جواب نہیں دیا، %2$@",
+     "after": "نہ پڑھی گئی: %1$@ کو دوبارہ نہیں مانگا گیا، کیونکہ ڈرائیو نے پڑھنے کی پچھلی درخواست کا جواب نہیں دیا، %2$@",
+     "why": "natural: ریڈ, a loan of the noun read, is heard as red; the drive did not answer an earlier request to read"
+    },
+    {
+     "key": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld seconds in all, %@",
+     "id": "libraryComparison.sentence.timeRanOut",
+     "english": {
+      "one": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld second in all, %@",
+      "other": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld seconds in all, %@"
+     },
+     "before": {
+      "one": "نہ پڑھی گئی: %1$@ نہیں پڑھی گئی، کیونکہ TextMouth نے کل %2$lld سیکنڈ بعد انتظار چھوڑ دیا، %3$@",
+      "other": "نہ پڑھی گئی: %1$@ نہیں پڑھی گئی، کیونکہ TextMouth نے کل %2$lld سیکنڈ بعد انتظار چھوڑ دیا، %3$@"
+     },
+     "after": {
+      "one": "نہ پڑھی گئی: %1$@ کو نہیں پڑھا گیا، کیونکہ TextMouth نے کل %2$lld سیکنڈ بعد انتظار چھوڑ دیا، %3$@",
+      "other": "نہ پڑھی گئی: %1$@ کو نہیں پڑھا گیا، کیونکہ TextMouth نے کل %2$lld سیکنڈ بعد انتظار چھوڑ دیا، %3$@"
+     },
+     "why": "grammar: the file phrase is feminine for the identity file and masculine for the index and the record, so a verb agreeing with it broke for one of them; کو with an impersonal passive fits all"
+    },
+    {
+     "key": "Use %@ and %@, or drag, to reorder. Rules apply top to bottom.",
+     "id": "substitutions.reorderInstructions",
+     "english": "Use %1$@ and %2$@, or drag, to reorder. Rules apply top to bottom.",
+     "before": "ترتیب بدلنے کے لیے %1$@ اور %2$@ استعمال کریں، یا گھسیٹیں۔ اصول اوپر سے نیچے لاگو ہوتے ہیں۔",
+     "after": "ترتیب بدلنے کے لیے “%1$@” اور “%2$@” استعمال کریں، یا گھسیٹیں۔ اصول اوپر سے نیچے لاگو ہوتے ہیں۔",
+     "why": "voiceover: the command names arrive unquoted, so their imperatives ran into the sentence; quotation marks mark them as names"
+    },
+    {
+     "key": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "id": "folderRemoval.feedsChoiceSentences.downloads",
+     "english": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "“%@” منتخب کرنے پر فیڈ اور اس کے ڈاؤن لوڈز رہتے ہیں، اور کسی فولڈر میں درج نہیں رہتے جب تک فیڈ کی معلومات اسے دوسرا فولڈر نہ دے؛ اس کی صف پر “فیڈ حذف کریں…” اسے حذف کرتا ہے۔",
+     "after": "“%@” منتخب کرنے پر فیڈ اور اس کے ڈاؤن لوڈز رہتے ہیں، اور کسی فولڈر میں درج نہیں ہوتے جب تک “فیڈ کی معلومات” میں اسے دوسرا فولڈر نہ دیا جائے؛ اس کی صف پر “فیڈ حذف کریں…” اسے حذف کرتا ہے۔",
+     "why": "natural: Feed Info giving a folder copied the English; the sheet is named in quotation marks and the folder is given in it"
+    },
+    {
+     "key": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "id": "folderRemoval.feedsChoiceSentences.each",
+     "english": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "“%@” منتخب کرنے پر فیڈز اور ان کے ڈاؤن لوڈز رہتے ہیں، اور کسی فولڈر میں درج نہیں رہتے جب تک فیڈ کی معلومات ہر ایک کو دوسرا فولڈر نہ دے؛ فیڈ کی صف پر “فیڈ حذف کریں…” اسے حذف کرتا ہے۔",
+     "after": "“%@” منتخب کرنے پر فیڈز اور ان کے ڈاؤن لوڈز رہتے ہیں، اور کسی فولڈر میں درج نہیں ہوتے جب تک “فیڈ کی معلومات” میں ہر ایک کو دوسرا فولڈر نہ دیا جائے؛ فیڈ کی صف پر “فیڈ حذف کریں…” اسے حذف کرتا ہے۔",
+     "why": "natural: Feed Info giving a folder copied the English; the sheet is named in quotation marks and the folder is given in it"
+    },
+    {
+     "key": "books",
+     "id": "libraryViewEditor.kindNameInSentence.books",
+     "english": "books",
+     "before": "کتابیں",
+     "after": "کتابوں",
+     "why": "grammar: this kind name is used only before کی فہرست in a view s description (Lists books and feeds), which needs the oblique کتابوں; the other kind names do not change"
+    }
+   ]
+  },
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%lld were subscribed already.",
+     "id": "opmlImportSummary.sentence.already",
+     "english": {
+      "one": "%lld was subscribed already.",
+      "other": "%lld were subscribed already."
+     },
+     "before": {
+      "one": "%lld فیڈ پہلے ہی سبسکرائب تھی۔",
+      "other": "%lld فیڈز پہلے ہی سبسکرائب تھیں۔"
+     },
+     "after": {
+      "one": "%lld فیڈ پہلے ہی سبسکرائب شدہ تھی۔",
+      "other": "%lld فیڈز پہلے ہی سبسکرائب شدہ تھیں۔"
+     },
+     "why": "grammar: the bare verb stem سبسکرائب needs شدہ to describe a feed that is subscribed"
+    },
+    {
+     "key": "Cleaned up on %@, with rules version %@: %@.",
+     "id": "transcriptCleanup.alreadyCleanedUp.version",
+     "english": "Cleaned up on %1$@, with rules version %2$@: %3$@.",
+     "before": "%1$@ کو، قواعد کے ورژن %2$@ کے ساتھ، صاف کیا گیا: %3$@۔",
+     "after": "%1$@ کو، اصولوں کے ورژن %2$@ کے ساتھ، صاف کیا گیا: %3$@۔",
+     "why": "term: the glossary and entries 851 and 881 say اصول for the cleanup rules; قواعد also means grammar"
+    },
+    {
+     "key": "Copied %@.",
+     "id": "audioEditor.copied",
+     "english": "Copied %@.",
+     "before": "%@ کاپی کیا گیا۔",
+     "after": "کاپی کیا گیا: %@۔",
+     "why": "grammar: %@ کاپی کیا گیا cannot agree with a plural length such as 3 سیکنڈ; the length now follows a colon"
+    },
+    {
+     "key": "Cut %@.",
+     "id": "audioEditor.cut",
+     "english": "Cut %@.",
+     "before": "%@ کاٹا گیا۔",
+     "after": "کاٹا گیا: %@۔",
+     "why": "grammar: %@ کاٹا گیا cannot agree with a plural length such as 2.5 سیکنڈ; the length now follows a colon"
+    },
+    {
+     "key": "Deleted %@.",
+     "id": "common.deletedValue",
+     "english": "Deleted %@.",
+     "before": "%@ حذف ہو گیا۔",
+     "after": "حذف کر دیا گیا: %@۔",
+     "why": "grammar: a singular masculine verb cannot agree with a list of what went (the feed, its downloads) or a view name; the colon form fits both"
+    },
+    {
+     "key": "Description",
+     "id": "feed.descriptionLabel",
+     "english": "Description",
+     "before": "وضاحت",
+     "after": "تفصیل",
+     "why": "term: Urdu interfaces (YouTube, Windows) call a description تفصیل; وضاحت means an explanation"
+    },
+    {
+     "key": "Description of %@",
+     "id": "feed.descriptionTextLabel",
+     "english": "Description of %@",
+     "before": "%@ کی وضاحت",
+     "after": "%@ کی تفصیل",
+     "why": "term: Description is تفصیل, as in Urdu interfaces; وضاحت means an explanation"
+    },
+    {
+     "key": "Downloaded",
+     "id": "common.downloaded",
+     "english": "Downloaded",
+     "before": "ڈاؤن لوڈ ہو چکا",
+     "after": "ڈاؤن لوڈ شدہ",
+     "why": "grammar: the masculine ہو چکا does not fit a book row (کتاب is feminine); the state adjective fits every row"
+    },
+    {
+     "key": "Every article listed, downloads by hand",
+     "id": "feed.itemPolicyTitle.byHandArticle",
+     "english": "Every article listed, downloads by hand",
+     "before": "ہر مضمون فہرست میں، ڈاؤن لوڈ ہاتھ سے",
+     "after": "ہر مضمون فہرست میں، دستی ڈاؤن لوڈ",
+     "why": "natural: ہاتھ سے copies the English by hand; Urdu interfaces say دستی, as the glossary does for Manual Order"
+    },
+    {
+     "key": "Every episode listed, downloads by hand",
+     "id": "feed.itemPolicyTitle.byHandEpisode",
+     "english": "Every episode listed, downloads by hand",
+     "before": "ہر ایپی سوڈ فہرست میں، ڈاؤن لوڈ ہاتھ سے",
+     "after": "ہر ایپی سوڈ فہرست میں، دستی ڈاؤن لوڈ",
+     "why": "natural: ہاتھ سے copies the English by hand; Urdu interfaces say دستی, as the glossary does for Manual Order"
+    },
+    {
+     "key": "Every item listed, downloads by hand",
+     "id": "feed.itemPolicyTitle.byHandItem",
+     "english": "Every item listed, downloads by hand",
+     "before": "ہر آئٹم فہرست میں، ڈاؤن لوڈ ہاتھ سے",
+     "after": "ہر آئٹم فہرست میں، دستی ڈاؤن لوڈ",
+     "why": "natural: ہاتھ سے copies the English by hand; Urdu interfaces say دستی, as the glossary does for Manual Order"
+    },
+    {
+     "key": "Extracting archive...",
+     "id": "importProgress.startingArchive",
+     "english": "Extracting archive...",
+     "before": "آرکائیو نکالی جا رہی ہے...",
+     "after": "آرکائیو سے مواد نکالا جا رہا ہے...",
+     "why": "meaning: آرکائیو نکالی جا رہی ہے says the archive itself is being pulled out; the files come out of it, as entry 199 says"
+    },
+    {
+     "key": "Filters in ffmpeg's syntax, separated by commas; options follow an equals sign, separated by colons.",
+     "id": "audioFilterPresets.chainHint",
+     "english": "Filters in ffmpeg's syntax, separated by commas; options follow an equals sign, separated by colons.",
+     "before": "ffmpeg کی نحو میں فلٹرز، کوما سے الگ کیے گئے؛ آپشنز برابر کے نشان کے بعد آتے ہیں اور کولن سے الگ ہوتے ہیں۔",
+     "after": "ffmpeg کی نحو میں فلٹرز، کاما سے الگ کیے گئے؛ آپشنز برابر کے نشان کے بعد آتے ہیں اور کولن سے الگ ہوتے ہیں۔",
+     "why": "meaning: کوما is coma (the medical state); the punctuation mark is کاما, as کاپی writes copy"
+    },
+    {
+     "key": "Import cancelled while extracting the archive, before any book was imported.",
+     "id": "zipImportCancellation.sentence.whileExtracting",
+     "english": "Import cancelled while extracting the archive, before any book was imported.",
+     "before": "آرکائیو نکالتے وقت درآمد منسوخ کر دی گئی، کوئی کتاب درآمد ہونے سے پہلے۔",
+     "after": "کوئی کتاب درآمد ہونے سے پہلے، آرکائیو سے مواد نکالتے وقت درآمد منسوخ کر دی گئی۔",
+     "why": "natural: the trailing before-clause copied the English order, and the archive was not itself extracted"
+    },
+    {
+     "key": "Labels and semicolons need ffmpeg. TextMouth's own filters take one comma-separated chain.",
+     "id": "audioFilterError.needsFFmpeg",
+     "english": "Labels and semicolons need ffmpeg. TextMouth's own filters take one comma-separated chain.",
+     "before": "لیبلز اور سیمی کولن کے لیے ffmpeg درکار ہے۔ TextMouth کے اپنے فلٹرز کوما سے الگ کی ہوئی ایک زنجیر لیتے ہیں۔",
+     "after": "لیبلز اور سیمی کولن کے لیے ffmpeg درکار ہے۔ TextMouth کے اپنے فلٹرز کاما سے الگ کی ہوئی ایک زنجیر لیتے ہیں۔",
+     "why": "meaning: کوما is coma (the medical state); the punctuation mark is کاما, as کاپی writes copy"
+    },
+    {
+     "key": "Listen and Move",
+     "id": "audioEditor.listenHeading",
+     "english": "Listen and Move",
+     "before": "سنیں اور منتقل کریں",
+     "after": "سنیں اور آگے پیچھے جائیں",
+     "why": "meaning: منتقل کریں is moving an item; these buttons move the cursor, so go back and forth"
+    },
+    {
+     "key": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "id": "feed.everyListedNewestDownloaded.article",
+     "english": {
+      "one": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "one": "ہر مضمون کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔",
+      "other": "ہر مضمون کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔"
+     },
+     "after": {
+      "one": "ہر مضمون کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ شدہ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔",
+      "other": "ہر مضمون کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ شدہ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔"
+     },
+     "why": "grammar: keeps the newest downloaded needs the adjective ڈاؤن لوڈ شدہ, not the noun ڈاؤن لوڈ"
+    },
+    {
+     "key": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "id": "feed.everyListedNewestDownloaded.episodeArticle",
+     "english": {
+      "one": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "one": "ہر ایپی سوڈ اور مضمون کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔",
+      "other": "ہر ایپی سوڈ اور مضمون کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔"
+     },
+     "after": {
+      "one": "ہر ایپی سوڈ اور مضمون کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ شدہ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔",
+      "other": "ہر ایپی سوڈ اور مضمون کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ شدہ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔"
+     },
+     "why": "grammar: keeps the newest downloaded needs the adjective ڈاؤن لوڈ شدہ, not the noun ڈاؤن لوڈ"
+    },
+    {
+     "key": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "id": "feed.everyListedNewestDownloaded.episode",
+     "english": {
+      "one": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "one": "ہر ایپی سوڈ کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔",
+      "other": "ہر ایپی سوڈ کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔"
+     },
+     "after": {
+      "one": "ہر ایپی سوڈ کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ شدہ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔",
+      "other": "ہر ایپی سوڈ کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ شدہ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔"
+     },
+     "why": "grammar: keeps the newest downloaded needs the adjective ڈاؤن لوڈ شدہ, not the noun ڈاؤن لوڈ"
+    },
+    {
+     "key": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+     "id": "feed.itemPolicyHint.onlyNewestListed.played",
+     "english": {
+      "one": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+      "other": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more."
+     },
+     "before": {
+      "one": "جو آپ نے نہیں چلائے ان میں سے تازہ ترین %lld، اور ہر ڈاؤن لوڈ کو فہرست میں دکھاتا ہے۔ صرف وہی ڈاؤن لوڈ کرتا ہے جو آپ مانگیں؛ باقی اپنے ریکارڈ رکھتے ہیں اور زیادہ فہرست کرنے پر واپس آ جاتے ہیں۔",
+      "other": "جو آپ نے نہیں چلائے ان میں سے تازہ ترین %lld، اور ہر ڈاؤن لوڈ کو فہرست میں دکھاتا ہے۔ صرف وہی ڈاؤن لوڈ کرتا ہے جو آپ مانگیں؛ باقی اپنے ریکارڈ رکھتے ہیں اور زیادہ فہرست کرنے پر واپس آ جاتے ہیں۔"
+     },
+     "after": {
+      "one": "جو آپ نے نہیں چلائے ان میں سے تازہ ترین %lld، اور ہر ڈاؤن لوڈ کو فہرست میں دکھاتا ہے۔ صرف وہی ڈاؤن لوڈ کرتا ہے جو آپ مانگیں؛ باقی اپنے ریکارڈ رکھتے ہیں اور مزید فہرست میں دکھانے پر واپس آ جاتے ہیں۔",
+      "other": "جو آپ نے نہیں چلائے ان میں سے تازہ ترین %lld، اور ہر ڈاؤن لوڈ کو فہرست میں دکھاتا ہے۔ صرف وہی ڈاؤن لوڈ کرتا ہے جو آپ مانگیں؛ باقی اپنے ریکارڈ رکھتے ہیں اور مزید فہرست میں دکھانے پر واپس آ جاتے ہیں۔"
+     },
+     "why": "grammar: فہرست کرنا is not an Urdu verb; list more is to show more in the list"
+    },
+    {
+     "key": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+     "id": "feed.itemPolicyHint.onlyNewestListed.read",
+     "english": {
+      "one": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+      "other": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more."
+     },
+     "before": {
+      "one": "جو آپ نے نہیں پڑھے ان میں سے تازہ ترین %lld، اور ہر ڈاؤن لوڈ کو فہرست میں دکھاتا ہے۔ صرف وہی ڈاؤن لوڈ کرتا ہے جو آپ مانگیں؛ باقی اپنے ریکارڈ رکھتے ہیں اور زیادہ فہرست کرنے پر واپس آ جاتے ہیں۔",
+      "other": "جو آپ نے نہیں پڑھے ان میں سے تازہ ترین %lld، اور ہر ڈاؤن لوڈ کو فہرست میں دکھاتا ہے۔ صرف وہی ڈاؤن لوڈ کرتا ہے جو آپ مانگیں؛ باقی اپنے ریکارڈ رکھتے ہیں اور زیادہ فہرست کرنے پر واپس آ جاتے ہیں۔"
+     },
+     "after": {
+      "one": "جو آپ نے نہیں پڑھے ان میں سے تازہ ترین %lld، اور ہر ڈاؤن لوڈ کو فہرست میں دکھاتا ہے۔ صرف وہی ڈاؤن لوڈ کرتا ہے جو آپ مانگیں؛ باقی اپنے ریکارڈ رکھتے ہیں اور مزید فہرست میں دکھانے پر واپس آ جاتے ہیں۔",
+      "other": "جو آپ نے نہیں پڑھے ان میں سے تازہ ترین %lld، اور ہر ڈاؤن لوڈ کو فہرست میں دکھاتا ہے۔ صرف وہی ڈاؤن لوڈ کرتا ہے جو آپ مانگیں؛ باقی اپنے ریکارڈ رکھتے ہیں اور مزید فہرست میں دکھانے پر واپس آ جاتے ہیں۔"
+     },
+     "why": "grammar: فہرست کرنا is not an Urdu verb; list more is to show more in the list"
+    },
+    {
+     "key": "Mark All Played",
+     "id": "feed.markAllPlayedTitle.forPlayback",
+     "english": "Mark All Played",
+     "before": "تمام کو چلایا گیا نشان زد کریں",
+     "after": "تمام کو بطور چلایا گیا نشان زد کریں",
+     "why": "grammar: without بطور (as) the command reads mark the played one, not mark as played"
+    },
+    {
+     "key": "Mark All Read",
+     "id": "feed.markAllPlayedTitle.read",
+     "english": "Mark All Read",
+     "before": "تمام کو پڑھا گیا نشان زد کریں",
+     "after": "تمام کو بطور پڑھا گیا نشان زد کریں",
+     "why": "grammar: without بطور (as) the command reads mark the read one, not mark as read"
+    },
+    {
+     "key": "Mark Played",
+     "id": "feed.title.markPlayed.episode",
+     "english": "Mark Played",
+     "before": "چلایا گیا نشان زد کریں",
+     "after": "بطور چلایا گیا نشان زد کریں",
+     "why": "grammar: without بطور (as) the command reads mark the played one, not mark as played"
+    },
+    {
+     "key": "Mark Read",
+     "id": "feed.title.markPlayed.read",
+     "english": "Mark Read",
+     "before": "پڑھا گیا نشان زد کریں",
+     "after": "بطور پڑھا گیا نشان زد کریں",
+     "why": "grammar: without بطور (as) the command reads mark the read one, not mark as read"
+    },
+    {
+     "key": "Mark Unplayed",
+     "id": "feed.title.markUnplayed.episode",
+     "english": "Mark Unplayed",
+     "before": "نہ چلایا گیا نشان زد کریں",
+     "after": "بطور نہ چلایا گیا نشان زد کریں",
+     "why": "grammar: without بطور (as) the command reads mark the unplayed one, not mark as unplayed"
+    },
+    {
+     "key": "Mark Unread",
+     "id": "feed.title.markUnplayed.unread",
+     "english": "Mark Unread",
+     "before": "نہ پڑھا گیا نشان زد کریں",
+     "after": "بطور نہ پڑھا گیا نشان زد کریں",
+     "why": "grammar: without بطور (as) the command reads mark the unread one, not mark as unread"
+    },
+    {
+     "key": "Marked %lld articles of %@ read.",
+     "id": "feed.markedAll.articles",
+     "english": {
+      "one": "Marked %lld article of %@ read.",
+      "other": "Marked %lld articles of %@ read."
+     },
+     "before": {
+      "one": "%2$@ کا %1$lld مضمون پڑھا گیا نشان زد کیا گیا۔",
+      "other": "%2$@ کے %1$lld مضامین پڑھے گئے نشان زد کیے گئے۔"
+     },
+     "after": {
+      "one": "%2$@ کا %1$lld مضمون بطور پڑھا گیا نشان زد کیا گیا۔",
+      "other": "%2$@ کے %1$lld مضامین بطور پڑھا گیا نشان زد کیے گئے۔"
+     },
+     "why": "grammar: marked as read needs بطور, as the command Mark Read now has"
+    },
+    {
+     "key": "Marked %lld episodes of %@ played.",
+     "id": "feed.markedAll.episodes",
+     "english": {
+      "one": "Marked %lld episode of %@ played.",
+      "other": "Marked %lld episodes of %@ played."
+     },
+     "before": {
+      "one": "%2$@ کا %1$lld ایپی سوڈ چلایا گیا نشان زد کیا گیا۔",
+      "other": "%2$@ کے %1$lld ایپی سوڈ چلائے گئے نشان زد کیے گئے۔"
+     },
+     "after": {
+      "one": "%2$@ کا %1$lld ایپی سوڈ بطور چلایا گیا نشان زد کیا گیا۔",
+      "other": "%2$@ کے %1$lld ایپی سوڈ بطور چلایا گیا نشان زد کیے گئے۔"
+     },
+     "why": "grammar: marked as played needs بطور, as the command Mark Played now has"
+    },
+    {
+     "key": "Marked %lld items of %@ played.",
+     "id": "feed.markedAll.items",
+     "english": {
+      "one": "Marked %lld item of %@ played.",
+      "other": "Marked %lld items of %@ played."
+     },
+     "before": {
+      "one": "%2$@ کا %1$lld آئٹم چلایا گیا نشان زد کیا گیا۔",
+      "other": "%2$@ کے %1$lld آئٹم چلائے گئے نشان زد کیے گئے۔"
+     },
+     "after": {
+      "one": "%2$@ کا %1$lld آئٹم بطور چلایا گیا نشان زد کیا گیا۔",
+      "other": "%2$@ کے %1$lld آئٹم بطور چلایا گیا نشان زد کیے گئے۔"
+     },
+     "why": "grammar: marked as played needs بطور, as the command Mark Played now has"
+    },
+    {
+     "key": "Marked “%@” played.",
+     "id": "feed.marked.played",
+     "english": "Marked “%@” played.",
+     "before": "“%@” چلایا گیا نشان زد کیا گیا۔",
+     "after": "“%@” بطور چلایا گیا نشان زد کیا گیا۔",
+     "why": "grammar: marked as played needs بطور, as the command Mark Played now has"
+    },
+    {
+     "key": "Marked “%@” read.",
+     "id": "feed.marked.read",
+     "english": "Marked “%@” read.",
+     "before": "“%@” پڑھا گیا نشان زد کیا گیا۔",
+     "after": "“%@” بطور پڑھا گیا نشان زد کیا گیا۔",
+     "why": "grammar: marked as read needs بطور, as the command Mark Read now has"
+    },
+    {
+     "key": "Marked “%@” unplayed.",
+     "id": "feed.marked.unplayed",
+     "english": "Marked “%@” unplayed.",
+     "before": "“%@” نہ چلایا گیا نشان زد کیا گیا۔",
+     "after": "“%@” بطور نہ چلایا گیا نشان زد کیا گیا۔",
+     "why": "grammar: marked as unplayed needs بطور, as the command Mark Unplayed now has"
+    },
+    {
+     "key": "Marked “%@” unread.",
+     "id": "feed.marked.unread",
+     "english": "Marked “%@” unread.",
+     "before": "“%@” نہ پڑھا گیا نشان زد کیا گیا۔",
+     "after": "“%@” بطور نہ پڑھا گیا نشان زد کیا گیا۔",
+     "why": "grammar: marked as unread needs بطور, as the command Mark Unread now has"
+    },
+    {
+     "key": "No Thanks",
+     "id": "importDecisionChoice.declineFolder.thanks",
+     "english": "No Thanks",
+     "before": "نہیں شکریہ",
+     "after": "نہیں، شکریہ",
+     "why": "punctuation: Urdu writes No, thanks with a comma, which VoiceOver also hears as a pause"
+    },
+    {
+     "key": "Not Downloaded",
+     "id": "feedItemState.visibleNote.notDownloaded",
+     "english": "Not Downloaded",
+     "before": "ڈاؤن لوڈ نہیں ہوا",
+     "after": "ڈاؤن لوڈ شدہ نہیں",
+     "why": "grammar: the masculine ہوا does not fit a book row (feminine); the state adjective fits every row and pairs with Downloaded"
+    },
+    {
+     "key": "Pasted %@ over %@.",
+     "id": "audioEditor.pasted.over",
+     "english": "Pasted %1$@ over %2$@.",
+     "before": "%2$@ کی جگہ %1$@ چسپاں کیا گیا۔",
+     "after": "چسپاں کیا گیا: %2$@ کی جگہ %1$@۔",
+     "why": "grammar: the singular verb cannot agree with a plural pasted length; the lengths now follow a colon"
+    },
+    {
+     "key": "Pasted %@.",
+     "id": "audioEditor.pasted.alone",
+     "english": "Pasted %@.",
+     "before": "%@ چسپاں کیا گیا۔",
+     "after": "چسپاں کیا گیا: %@۔",
+     "why": "grammar: %@ چسپاں کیا گیا cannot agree with a plural length such as 3 سیکنڈ; the length now follows a colon"
+    },
+    {
+     "key": "Post a notification for each feed with new episodes",
+     "id": "feedSettings.notifications",
+     "english": "Post a notification for each feed with new episodes",
+     "before": "نئے ایپی سوڈ والی ہر فیڈ کے لیے اطلاع پوسٹ کریں",
+     "after": "نئے ایپی سوڈ والی ہر فیڈ کے لیے اطلاع بھیجیں",
+     "why": "natural: اطلاع پوسٹ کریں copies the English post; Urdu sends (بھیجنا) a notification"
+    },
+    {
+     "key": "Preview filters before applying",
+     "id": "audioEditingSettings.previewFiltersLabel",
+     "english": "Preview filters before applying",
+     "before": "لاگو کرنے سے پہلے فلٹرز کا پیش منظر دیکھیں",
+     "after": "لاگو کرنے سے پہلے فلٹرز کا پیش منظر سنیں",
+     "why": "meaning: a filter preview is played and heard, not seen"
+    },
+    {
+     "key": "Published by",
+     "id": "feed.authorLabel",
+     "english": "Published by",
+     "before": "شائع کنندہ",
+     "after": "ناشر",
+     "why": "term: شائع کنندہ is a rare coinage; ناشر is the common word and the glossary word for Publisher"
+    },
+    {
+     "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "id": "audioEditor.explanation.editorPunchIn",
+     "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "before": "بیپ کے بعد انتخاب پر، یا کرسر پر، ریکارڈ کرتا ہے۔ یہی بٹن دوبارہ، یا “روکیں”، اسے ختم کرتا ہے۔",
+     "after": "بیپ کے بعد انتخاب پر، یا کرسر پر، ریکارڈ کرتا ہے۔ اسے دوبارہ منتخب کرنے سے، یا “روکیں” سے، ریکارڈنگ ختم ہو جاتی ہے۔",
+     "why": "voiceover: the hint named its control (بٹن); it now says choosing it again, or Stop, ends the recording"
+    },
+    {
+     "key": "Redid %@.",
+     "id": "audioEditor.redid",
+     "english": "Redid %@.",
+     "before": "%@ دوبارہ کیا گیا۔",
+     "after": "دوبارہ کیا گیا: %@۔",
+     "why": "grammar: an edit's name is a command (2.5 سیکنڈ کاٹیں), so %@ دوبارہ کیا گیا stacked two verbs; the name now follows a colon"
+    },
+    {
+     "key": "Redo %@",
+     "id": "audioEditor.redoTitle",
+     "english": "Redo %@",
+     "before": "%@ دوبارہ کریں",
+     "after": "دوبارہ کریں: %@",
+     "why": "grammar: an edit's name is a command (2.5 سیکنڈ کاٹیں), so %@ دوبارہ کریں stacked two commands; the name now follows a colon"
+    },
+    {
+     "key": "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.",
+     "id": "refusedFormatAdvice.wordPerfect",
+     "english": "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.",
+     "before": "WordPerfect دستاویزات کو ایسے پروگرام میں جو انہیں پڑھ سکے، جیسے LibreOffice، Word یا HTML فائلوں کے طور پر محفوظ کریں، پھر انہیں درآمد کریں۔",
+     "after": "WordPerfect دستاویزات کو LibreOffice جیسے کسی ایسے پروگرام میں جو انہیں پڑھ سکے، Word یا HTML فائلوں کے طور پر محفوظ کریں، پھر انہیں درآمد کریں۔",
+     "why": "meaning: LibreOffice، Word یا HTML was heard as one list of three; the example now sits inside its own phrase"
+    },
+    {
+     "key": "Saved as",
+     "id": "audioEditor.savedAsLabel",
+     "english": "Saved as",
+     "before": "اس کے طور پر محفوظ",
+     "after": "محفوظ شدہ فارمیٹ",
+     "why": "natural: اس کے طور پر محفوظ (saved as this) copied the English as a label; the label names the format the audio is saved in"
+    },
+    {
+     "key": "Selected %@.",
+     "id": "audioEditor.selected",
+     "english": "Selected %@.",
+     "before": "%@ منتخب کیا گیا۔",
+     "after": "منتخب کیا گیا: %@۔",
+     "why": "grammar: %@ منتخب کیا گیا cannot agree with a plural length such as 2.5 سیکنڈ; the length now follows a colon"
+    },
+    {
+     "key": "Selected all %@.",
+     "id": "audioEditor.selectedAll",
+     "english": "Selected all %@.",
+     "before": "پورا %@ منتخب کیا گیا۔",
+     "after": "پورا آڈیو منتخب کیا گیا: %@۔",
+     "why": "grammar: پورا %@ cannot agree with a plural length such as 3 منٹ (پورے تین منٹ); the length now follows a colon"
+    },
+    {
+     "key": "Selected the %@ before chapter 1.",
+     "id": "audioEditor.selectedBeforeFirstChapter",
+     "english": "Selected the %@ before chapter 1.",
+     "before": "باب 1 سے پہلے کا %@ منتخب کیا گیا۔",
+     "after": "باب 1 سے پہلے کا حصہ منتخب کیا گیا: %@۔",
+     "why": "grammar: کا %@ منتخب کیا گیا cannot agree with a plural length such as 12 سیکنڈ; the length now follows a colon"
+    },
+    {
+     "key": "Shorten Long Pauses",
+     "id": "premadeFilterPreset.title.shortenLongPauses",
+     "english": "Shorten Long Pauses",
+     "before": "لمبے وقفے کم کریں",
+     "after": "لمبے وقفے مختصر کریں",
+     "why": "meaning: کم کریں reads as fewer long pauses; the preset makes each one shorter"
+    },
+    {
+     "key": "Show Description…",
+     "id": "feed.title.showDescription",
+     "english": "Show Description…",
+     "before": "وضاحت دکھائیں…",
+     "after": "تفصیل دکھائیں…",
+     "why": "term: Description is تفصیل, as in Urdu interfaces; وضاحت means an explanation"
+    },
+    {
+     "key": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+     "id": "feedDownloadProgress.comingBack.checks",
+     "english": {
+      "one": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+      "other": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens."
+     },
+     "before": {
+      "one": "TextMouth ان میں سے %lld کو ان کی فیڈز کی اگلی چیک پر، یا اگلی بار کھلنے پر، دوبارہ ڈاؤن لوڈ کرتا ہے۔",
+      "other": "TextMouth ان میں سے %lld کو ان کی فیڈز کی اگلی چیک پر، یا اگلی بار کھلنے پر، دوبارہ ڈاؤن لوڈ کرتا ہے۔"
+     },
+     "after": {
+      "one": "TextMouth ان میں سے %lld کو ان کی فیڈز کی اگلے چیک پر، یا اگلی بار کھلنے پر، دوبارہ ڈاؤن لوڈ کرتا ہے۔",
+      "other": "TextMouth ان میں سے %lld کو ان کی فیڈز کی اگلے چیک پر، یا اگلی بار کھلنے پر، دوبارہ ڈاؤن لوڈ کرتا ہے۔"
+     },
+     "why": "grammar: the noun چیک is masculine, as in آخری چیک ناکام رہا"
+    },
+    {
+     "key": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "id": "feedDownloadProgress.comingBack.check",
+     "english": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "before": "TextMouth ان میں سے 1 کو اس کی فیڈ کی اگلی چیک پر، یا اگلی بار کھلنے پر، دوبارہ ڈاؤن لوڈ کرتا ہے۔",
+     "after": "TextMouth ان میں سے 1 کو اس کی فیڈ کی اگلے چیک پر، یا اگلی بار کھلنے پر، دوبارہ ڈاؤن لوڈ کرتا ہے۔",
+     "why": "grammar: the noun چیک is masculine, as in آخری چیک ناکام رہا"
+    },
+    {
+     "key": "TextMouth downloads each feed's newest again at its next check, or the next time it opens.",
+     "id": "feedDownloadProgress.retryAfterCancel",
+     "english": "TextMouth downloads each feed's newest again at its next check, or the next time it opens.",
+     "before": "TextMouth ہر فیڈ کے تازہ ترین کو اس کی اگلی چیک پر، یا اگلی بار کھلنے پر، دوبارہ ڈاؤن لوڈ کرتا ہے۔",
+     "after": "TextMouth ہر فیڈ کے تازہ ترین کو اس کی اگلے چیک پر، یا اگلی بار کھلنے پر، دوبارہ ڈاؤن لوڈ کرتا ہے۔",
+     "why": "grammar: the noun چیک is masculine, as in آخری چیک ناکام رہا"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "id": "feed.notificationsRefused",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "TextMouth کو اطلاعات پوسٹ کرنے کی اجازت نہیں ہے۔ انہیں سسٹم ترتیبات، اطلاعات، TextMouth میں آن کریں۔",
+     "after": "TextMouth کو اطلاعات بھیجنے کی اجازت نہیں ہے۔ انہیں سسٹم ترتیبات، اطلاعات، TextMouth میں آن کریں۔",
+     "why": "natural: اطلاع پوسٹ کرنا copies the English post; Urdu sends (بھیجنا) notifications"
+    },
+    {
+     "key": "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
+     "id": "convertedOriginal.keepingCaption",
+     "english": "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
+     "before": "TextMouth درآمد کے وقت تبدیل کی جانے والی آڈیو کی اصل فائل رکھتا ہے۔ ایک اصل فائل تقریباً اتنی ہی ڈسک جگہ لیتی ہے جتنی اس کی تبدیل شدہ فائل، یا غیر کمپریسڈ ہو تو دگنی۔ برآمد اسے اصل فائل کے طور پر پیش کرتا ہے۔ فیڈ کے ایپی سوڈ کی اصل فائل نہیں رکھی جاتی: اسے دوبارہ ڈاؤن لوڈ کیا جا سکتا ہے۔",
+     "after": "TextMouth درآمد کے وقت تبدیل کی جانے والی آڈیو کی اصل فائل رکھتا ہے۔ ایک اصل فائل تقریباً اتنی ہی ڈسک جگہ لیتی ہے جتنی اس کی تبدیل شدہ فائل، یا غیر کمپریسڈ ہو تو دگنی۔ برآمد اسے اصل فائل کے طور پر پیش کرتی ہے۔ فیڈ کے ایپی سوڈ کی اصل فائل نہیں رکھی جاتی: اسے دوبارہ ڈاؤن لوڈ کیا جا سکتا ہے۔",
+     "why": "grammar: برآمد (Export) is feminine, as درآمد is throughout"
+    },
+    {
+     "key": "The %@ kept for %lld removed downloads was deleted.",
+     "id": "feed.unsubscribed.downloadsWas",
+     "english": {
+      "one": "The %@ kept for %lld removed download was deleted.",
+      "other": "The %@ kept for %lld removed downloads was deleted."
+     },
+     "before": {
+      "one": "%@ کو، جو ہٹائے گئے %lld ڈاؤن لوڈ کے لیے رکھا گیا تھا، حذف کر دیا گیا۔",
+      "other": "%@ کو، جو ہٹائے گئے %lld ڈاؤن لوڈ کے لیے رکھا گیا تھا، حذف کر دیا گیا۔"
+     },
+     "after": {
+      "one": "ہٹائے گئے %2$lld ڈاؤن لوڈ کے لیے محفوظ %1$@ کو حذف کر دیا گیا۔",
+      "other": "ہٹائے گئے %2$lld ڈاؤن لوڈز کے لیے محفوظ %1$@ کو حذف کر دیا گیا۔"
+     },
+     "why": "grammar: the part kept may be feminine (جگہ) or masculine (ٹرانسکرپٹ); the invariant محفوظ and کو need no agreement"
+    },
+    {
+     "key": "The %@ kept for %lld removed downloads were deleted.",
+     "id": "feed.unsubscribed.were",
+     "english": {
+      "one": "The %@ kept for %lld removed download were deleted.",
+      "other": "The %@ kept for %lld removed downloads were deleted."
+     },
+     "before": {
+      "one": "%@ کو، جو ہٹائے گئے %lld ڈاؤن لوڈ کے لیے رکھا گیا تھا، حذف کر دیا گیا۔",
+      "other": "%@ کو، جو ہٹائے گئے %lld ڈاؤن لوڈ کے لیے رکھا گیا تھا، حذف کر دیا گیا۔"
+     },
+     "after": {
+      "one": "ہٹائے گئے %2$lld ڈاؤن لوڈ کے لیے محفوظ %1$@ کو حذف کر دیا گیا۔",
+      "other": "ہٹائے گئے %2$lld ڈاؤن لوڈز کے لیے محفوظ %1$@ کو حذف کر دیا گیا۔"
+     },
+     "why": "grammar: the parts kept may be feminine (جگہیں) or masculine (بک مارکس); the invariant محفوظ and کو need no agreement"
+    },
+    {
+     "key": "The archive also holds %lld other books that were not imported; unzip it to import them.",
+     "id": "daisyArchive.originalKept.import",
+     "english": {
+      "one": "The archive also holds %lld other book that was not imported; unzip it to import it.",
+      "other": "The archive also holds %lld other books that were not imported; unzip it to import them."
+     },
+     "before": {
+      "one": "آرکائیو میں %lld اور کتاب بھی ہے جو درآمد نہیں ہوئی؛ اسے درآمد کرنے کے لیے ان زپ کریں۔",
+      "other": "آرکائیو میں %lld اور کتابیں بھی ہیں جو درآمد نہیں ہوئیں؛ انہیں درآمد کرنے کے لیے ان زپ کریں۔"
+     },
+     "after": {
+      "one": "آرکائیو میں %lld اور کتاب بھی ہے جو درآمد نہیں ہوئی؛ اسے درآمد کرنے کے لیے آرکائیو کو ان زپ کریں۔",
+      "other": "آرکائیو میں %lld اور کتابیں بھی ہیں جو درآمد نہیں ہوئیں؛ انہیں درآمد کرنے کے لیے آرکائیو کو ان زپ کریں۔"
+     },
+     "why": "meaning: without its object, unzip seemed to apply to the book; it is the archive that is unzipped"
+    },
+    {
+     "key": "The book's audio holds edits its history lost, so they stay, to save or undo next time you edit this book.",
+     "id": "audioEditor.discardKept",
+     "english": "The book's audio holds edits its history lost, so they stay, to save or undo next time you edit this book.",
+     "before": "کتاب کے آڈیو میں ایسی ترامیم ہیں جو اس کی تاریخ سے کھو گئیں، اس لیے وہ رہتی ہیں، تاکہ اس کتاب میں اگلی بار ترمیم کرتے وقت انہیں محفوظ یا کالعدم کیا جا سکے۔",
+     "after": "کتاب کے آڈیو میں ایسی ترامیم ہیں جو اس کی سرگزشت سے کھو گئیں، اس لیے وہ رہتی ہیں، تاکہ اس کتاب میں اگلی بار ترمیم کرتے وقت انہیں محفوظ یا کالعدم کیا جا سکے۔",
+     "why": "term: تاریخ is date elsewhere in the app (تاریخ %@); Android and Chrome say سرگزشت for History"
+    },
+    {
+     "key": "The edit history couldn't be read. A copy was kept in the book's package.",
+     "id": "audioEditError.historyUnusable",
+     "english": "The edit history couldn't be read. A copy was kept in the book's package.",
+     "before": "ترامیم کی تاریخ پڑھی نہیں جا سکی۔ ایک کاپی کتاب کے پیکیج میں رکھی گئی۔",
+     "after": "ترامیم کی سرگزشت پڑھی نہیں جا سکی۔ ایک کاپی کتاب کے پیکیج میں رکھی گئی۔",
+     "why": "term: ترامیم کی تاریخ also reads the date of the edits; Android and Chrome say سرگزشت for History"
+    },
+    {
+     "key": "The edit history is only in the cloud, not on this Mac yet.",
+     "id": "audioEditError.historyInCloud.only",
+     "english": "The edit history is only in the cloud, not on this Mac yet.",
+     "before": "ترامیم کی تاریخ صرف کلاؤڈ میں ہے، ابھی اس Mac پر نہیں۔",
+     "after": "ترامیم کی سرگزشت صرف کلاؤڈ میں ہے، ابھی اس Mac پر نہیں۔",
+     "why": "term: ترامیم کی تاریخ also reads the date of the edits; Android and Chrome say سرگزشت for History"
+    },
+    {
+     "key": "The edit history names a file outside the book, so it isn't used.",
+     "id": "audioEditError.fileOutsidePackage",
+     "english": "The edit history names a file outside the book, so it isn't used.",
+     "before": "ترامیم کی تاریخ کتاب سے باہر کی ایک فائل کا نام لیتی ہے، اس لیے اسے استعمال نہیں کیا جاتا۔",
+     "after": "ترامیم کی سرگزشت کتاب سے باہر کی ایک فائل کا نام لیتی ہے، اس لیے اسے استعمال نہیں کیا جاتا۔",
+     "why": "term: ترامیم کی تاریخ also reads the date of the edits; Android and Chrome say سرگزشت for History"
+    },
+    {
+     "key": "The edit history of %@ couldn't be read.",
+     "id": "audioEditor.historyUnusableQuestion",
+     "english": "The edit history of %@ couldn't be read.",
+     "before": "%@ کی ترامیم کی تاریخ پڑھی نہیں جا سکی۔",
+     "after": "%@ کی ترامیم کی سرگزشت پڑھی نہیں جا سکی۔",
+     "why": "term: ترامیم کی تاریخ also reads the date of the edits; Android and Chrome say سرگزشت for History"
+    },
+    {
+     "key": "The transcript and the text made from it are deleted.",
+     "id": "transcription.deleteConfirmationMessage.text",
+     "english": "The transcript and the text made from it are deleted.",
+     "before": "ٹرانسکرپٹ اور اس سے بنا متن حذف ہو جاتا ہے۔",
+     "after": "ٹرانسکرپٹ اور اس سے بنا متن حذف ہو جاتے ہیں۔",
+     "why": "grammar: two things joined by اور (the transcript and its text) take a plural verb"
+    },
+    {
+     "key": "There is not enough free disk space to convert %@: it needs %@ free.",
+     "id": "failure.notEnoughSpace",
+     "english": "There is not enough free disk space to convert %1$@: it needs %2$@ free.",
+     "before": "%1$@ کو تبدیل کرنے کے لیے ڈسک پر کافی خالی جگہ نہیں ہے: اسے %2$@ خالی درکار ہے۔",
+     "after": "%1$@ کو تبدیل کرنے کے لیے ڈسک پر کافی خالی جگہ نہیں ہے: اسے %2$@ خالی جگہ درکار ہے۔",
+     "why": "natural: needs 4 GB free is خالی جگہ (free space) in Urdu; خالی alone is cut short"
+    },
+    {
+     "key": "There's an empty filter between two commas.",
+     "id": "audioFilterChain.parseFilter.between",
+     "english": "There's an empty filter between two commas.",
+     "before": "دو کوما کے درمیان ایک خالی فلٹر ہے۔",
+     "after": "دو کاما کے درمیان ایک خالی فلٹر ہے۔",
+     "why": "meaning: کوما is coma (the medical state); the punctuation mark is کاما"
+    },
+    {
+     "key": "This article has no description.",
+     "id": "feed.noDescription.article",
+     "english": "This article has no description.",
+     "before": "اس مضمون کی کوئی وضاحت نہیں ہے۔",
+     "after": "اس مضمون کی کوئی تفصیل نہیں ہے۔",
+     "why": "term: Description is تفصیل, as in Urdu interfaces; وضاحت means an explanation"
+    },
+    {
+     "key": "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it.",
+     "id": "fileImportService.bookNoValid",
+     "english": "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it.",
+     "before": "اس کتاب کا کوئی درست منظم پیکیج نہیں ہے۔ اسے صرف لائبریری سے ہٹائیں، یا حذف کرنے سے پہلے اس کا اسٹوریج مرمت کریں۔",
+     "after": "اس کتاب کا کوئی درست منظم پیکیج نہیں ہے۔ اسے صرف لائبریری سے ہٹائیں، یا حذف کرنے سے پہلے اس کے اسٹوریج کی مرمت کریں۔",
+     "why": "grammar: مرمت کرنا takes its object with کی"
+    },
+    {
+     "key": "This comic book archive holds more than the %@ pictures TextMouth reads.",
+     "id": "pageImage.tooManyPictures",
+     "english": "This comic book archive holds more than the %@ pictures TextMouth reads.",
+     "before": "اس کامک بک آرکائیو میں %@ سے زیادہ تصاویر ہیں جنہیں TextMouth پڑھتا ہے۔",
+     "after": "TextMouth زیادہ سے زیادہ %@ تصاویر پڑھتا ہے، اور اس کامک بک آرکائیو میں اس سے زیادہ ہیں۔",
+     "why": "meaning: the relative clause said TextMouth reads the pictures; the English says it reads at most that many"
+    },
+    {
+     "key": "This episode has no description.",
+     "id": "feed.noDescription.episode",
+     "english": "This episode has no description.",
+     "before": "اس ایپی سوڈ کی کوئی وضاحت نہیں ہے۔",
+     "after": "اس ایپی سوڈ کی کوئی تفصیل نہیں ہے۔",
+     "why": "term: Description is تفصیل, as in Urdu interfaces; وضاحت means an explanation"
+    },
+    {
+     "key": "Trimmed to the selection: %@ kept.",
+     "id": "audioEditor.trimmed",
+     "english": "Trimmed to the selection: %@ kept.",
+     "before": "انتخاب تک تراشا گیا: %@ رکھا گیا۔",
+     "after": "انتخاب تک تراشا گیا: %@ باقی۔",
+     "why": "grammar: %@ رکھا گیا cannot agree with a plural length such as 3 منٹ; باقی needs no agreement, as in About %@ left"
+    },
+    {
+     "key": "Undid %@.",
+     "id": "audioEditor.undid",
+     "english": "Undid %@.",
+     "before": "%@ کالعدم کیا گیا۔",
+     "after": "کالعدم کیا گیا: %@۔",
+     "why": "grammar: an edit's name is a command (2.5 سیکنڈ کاٹیں), so %@ کالعدم کیا گیا stacked two verbs; the name now follows a colon"
+    },
+    {
+     "key": "Undo %@",
+     "id": "audioEditor.undoTitle",
+     "english": "Undo %@",
+     "before": "%@ کالعدم کریں",
+     "after": "کالعدم کریں: %@",
+     "why": "grammar: an edit's name is a command (2.5 سیکنڈ کاٹیں), so %@ کالعدم کریں stacked two commands; the name now follows a colon"
+    },
+    {
+     "key": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "id": "feed.useGlobalHint",
+     "english": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "before": "جب نشان زد ہو تو یہ فیڈ ترتیبات، %@، کی ترتیب کی پیروی کرتی ہے؛ اسے اپنی ترتیب دینے کے لیے نشان ہٹائیں۔",
+     "after": "جب نشان زد ہو تو یہ فیڈ ترتیبات، %@، کی ترتیب کی پیروی کرتی ہے؛ فیڈ کو اس کی اپنی ترتیب دینے کے لیے نشان ہٹائیں۔",
+     "why": "meaning: in a command اپنی refers to the listener, so it read give it your own setting; the feed gets its own"
+    },
+    {
+     "key": "extracting the archive",
+     "id": "importStep.phrase.extractingArchive",
+     "english": "extracting the archive",
+     "before": "آرکائیو نکالنا",
+     "after": "آرکائیو سے مواد نکالنا",
+     "why": "meaning: آرکائیو نکالنا says the archive itself is pulled out; the files come out of it"
+    },
+    {
+     "key": "its row names no package the library manages",
+     "id": "feedItemMoveError.packageNotManaged",
+     "english": "its row names no package the library manages",
+     "before": "اس کی صف کسی ایسے پیکیج کا نام نہیں دیتی جسے لائبریری منظم کرتی ہے",
+     "after": "اس کی صف میں کسی ایسے پیکیج کا نام نہیں جسے لائبریری منظم کرتی ہے",
+     "why": "meaning: نام دینا is to give a name; the row mentions no package, as entries 275 and 506 say with نام لینا"
+    },
+    {
+     "key": "the %@ kept for %lld removed downloads",
+     "id": "feed.keptPhrase.downloads",
+     "english": {
+      "one": "the %@ kept for %lld removed download",
+      "other": "the %@ kept for %lld removed downloads"
+     },
+     "before": {
+      "one": "ہٹائے گئے %2$lld ڈاؤن لوڈ کے لیے رکھی گئی %1$@",
+      "other": "ہٹائے گئے %2$lld ڈاؤن لوڈ کے لیے رکھی گئی %1$@"
+     },
+     "after": {
+      "one": "ہٹائے گئے %2$lld ڈاؤن لوڈ کے لیے محفوظ %1$@",
+      "other": "ہٹائے گئے %2$lld ڈاؤن لوڈز کے لیے محفوظ %1$@"
+     },
+     "why": "grammar: the feminine رکھی گئی cannot agree with a list such as places and bookmarks; the invariant محفوظ fits any list"
+    },
+    {
+     "key": "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
+     "id": "duplicateCopy.changedWhileReplacing",
+     "english": "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
+     "before": "“%@” کے بدلے جانے کے دوران وہ تبدیل ہو گئی، اس لیے TextMouth نے دونوں کاپیاں جیسی تھیں ویسی ہی رہنے دیں۔ “موجودہ کو تبدیل کریں” دوبارہ منتخب کریں۔",
+     "after": "“%@” کو تبدیل کیے جانے کے دوران وہ بدل گئی، اس لیے TextMouth نے دونوں کاپیاں جیسی تھیں ویسی ہی رہنے دیں۔ “موجودہ کو تبدیل کریں” دوبارہ منتخب کریں۔",
+     "why": "meaning: the two verbs were swapped, so being replaced and changed blurred; Replace is تبدیل, as in Replace Existing"
+    }
+   ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ adds one at the current position.",
+     "id": "bookmarkPanelView.emptyListHelp.onePosition",
+     "english": "%@ adds one at the current position.",
+     "before": "%@ موجودہ پوزیشن پر ایک شامل کرتا ہے۔",
+     "after": "“%@” سے موجودہ پوزیشن پر بک مارک شامل ہو جاتا ہے۔",
+     "why": "natural: the imperative button name read as a command when made the subject; quoted, with سے"
+    },
+    {
+     "key": "%@ does the same for every such chapter of this export, without asking again.",
+     "id": "bookExportDeepChapter.message.without",
+     "english": "%@ does the same for every such chapter of this export, without asking again.",
+     "before": "%@ اس برآمد کے ہر ایسے باب کے لیے یہی کرتا ہے، دوبارہ پوچھے بغیر۔",
+     "after": "“%@” سے اس برآمد کے ہر ایسے باب کے ساتھ یہی ہوتا ہے، دوبارہ پوچھے بغیر۔",
+     "why": "natural: the imperative button name read as a command when made the subject; quoted, with سے"
+    },
+    {
+     "key": "%@ has its default, %@",
+     "id": "shortcutsSettings.defaultsHeldElsewhere",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%1$@ کے پاس اپنی ڈیفالٹ کلید ہے، %2$@",
+     "after": "%1$@ کے پاس اس کی ڈیفالٹ کلید ہے، %2$@",
+     "why": "meaning: the reflexive اپنی gave the other action its own default; the key is this row action default"
+    },
+    {
+     "key": "%@ in",
+     "id": "phoneReader.timeIntoRecording",
+     "english": "%@ in",
+     "before": "%@ گزر چکے",
+     "after": "آغاز سے %@",
+     "why": "grammar: the plural گزر چکے could not agree with 1 گھنٹہ or 1 منٹ; آغاز سے needs no verb"
+    },
+    {
+     "key": "%@ of %lld chapters could not be read",
+     "id": "extractionReport.summary.value",
+     "english": {
+      "one": "%@ of %lld chapter could not be read",
+      "other": "%@ of %lld chapters could not be read"
+     },
+     "before": {
+      "one": "%2$lld باب میں سے %1$@ پڑھا نہیں جا سکا",
+      "other": "%2$lld ابواب میں سے %1$@ پڑھے نہیں جا سکے"
+     },
+     "after": {
+      "one": "%2$lld باب میں سے %1$@ کو پڑھا نہیں جا سکا",
+      "other": "%2$lld ابواب میں سے %1$@ کو پڑھا نہیں جا سکا"
+     },
+     "why": "grammar: the plural verb followed the total, so 1 of 12 read as plural; the کو passive fits every count"
+    },
+    {
+     "key": "%@ reset to default: %@",
+     "id": "shortcutsSettings.resetAnnouncement",
+     "english": "%1$@ reset to default: %2$@",
+     "before": "%1$@ ڈیفالٹ پر ری سیٹ ہو گئی: %2$@",
+     "after": "%1$@ کو ڈیفالٹ پر ری سیٹ کر دیا گیا: %2$@",
+     "why": "grammar: the feminine verb could not agree with every action name; the کو passive fits all, as recorded for does"
+    },
+    {
+     "key": "%@ stops the whole export. Files already written stay.",
+     "id": "bookExportDeepChapter.message.already",
+     "english": "%@ stops the whole export. Files already written stay.",
+     "before": "%@ پوری برآمد روک دیتا ہے۔ لکھی جا چکی فائلیں برقرار رہتی ہیں۔",
+     "after": "“%@” سے پوری برآمد رک جاتی ہے۔ لکھی جا چکی فائلیں برقرار رہتی ہیں۔",
+     "why": "natural: the imperative button name read as a command when made the subject; quoted, with سے"
+    },
+    {
+     "key": "%@ tries again, %@ quits without saving, %@ keeps TextMouth open.",
+     "id": "unsavedChangesPrompt.choices",
+     "english": "%1$@ tries again, %2$@ quits without saving, %3$@ keeps TextMouth open.",
+     "before": "%1$@ دوبارہ کوشش کرتا ہے، %2$@ بغیر محفوظ کیے بند کرتا ہے، %3$@ TextMouth کو کھلا رکھتا ہے۔",
+     "after": "“%1$@” سے دوبارہ کوشش ہوتی ہے، “%2$@” سے TextMouth محفوظ کیے بغیر بند ہو جاتا ہے، اور “%3$@” سے TextMouth کھلا رہتا ہے۔",
+     "why": "natural: the imperative button names read as commands when made subjects; quoted, each with سے"
+    },
+    {
+     "key": "%@ uses it in the menus",
+     "id": "shortcutRefusal.reason.systemCommand",
+     "english": "%@ uses it in the menus",
+     "before": "%@ اسے مینو میں استعمال کرتا ہے",
+     "after": "“%@” اسے مینو میں استعمال کرتا ہے",
+     "why": "natural: the imperative command name read as a command when made the subject; quoted as a name"
+    },
+    {
+     "key": "%@ works in %@.",
+     "id": "shortcutsSettings.scopeChanged",
+     "english": "%1$@ works in %2$@.",
+     "before": "%1$@ %2$@ میں کام کرتا ہے۔",
+     "after": "“%1$@” %2$@ میں کام کرتا ہے۔",
+     "why": "natural: the imperative command name read as a command when made the subject; quoted as a name"
+    },
+    {
+     "key": "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "id": "bookExportDeepChapter.message.paragraphs",
+     "english": "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "before": "%@ اس باب کو اس کی سطروں کے سادہ پیراگرافوں کی صورت میں لکھتا ہے، اس کے اقتباس اور فہرست کے نشانات حروف کی شکل میں رکھتا ہے، اور باقی سب کچھ معمول کے مطابق برآمد کرتا ہے۔",
+     "after": "“%@” سے وہ باب اس کی سطروں کے سادہ پیراگرافوں کی صورت میں لکھا جاتا ہے، اس کے اقتباس اور فہرست کے نشانات حروف کی شکل میں رہتے ہیں، اور باقی سب کچھ معمول کے مطابق برآمد ہوتا ہے۔",
+     "why": "natural: the imperative button name read as a command when made the subject; quoted, with سے"
+    },
+    {
+     "key": "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "id": "bookExportDeepChapter.message.text",
+     "english": "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "before": "%@ متن کو اس کی سطروں کے سادہ پیراگرافوں کی صورت میں لکھتا ہے، اس کے اقتباس اور فہرست کے نشانات حروف کی شکل میں رکھتا ہے، اور باقی سب کچھ معمول کے مطابق برآمد کرتا ہے۔",
+     "after": "“%@” سے متن اس کی سطروں کے سادہ پیراگرافوں کی صورت میں لکھا جاتا ہے، اس کے اقتباس اور فہرست کے نشانات حروف کی شکل میں رہتے ہیں، اور باقی سب کچھ معمول کے مطابق برآمد ہوتا ہے۔",
+     "why": "natural: the imperative button name read as a command when made the subject; quoted, with سے"
+    },
+    {
+     "key": "%@, edited by hand",
+     "id": "metadataEditor.fieldLabel",
+     "english": "%@, edited by hand",
+     "before": "%@، ہاتھ سے ترمیم شدہ",
+     "after": "%@، دستی طور پر ترمیم شدہ",
+     "why": "natural: ہاتھ سے copies the English by hand; Urdu interfaces say دستی, as part 2 writes it"
+    },
+    {
+     "key": "%lld words per minute",
+     "id": "common.countWordsPerMinute",
+     "english": {
+      "one": "%lld word per minute",
+      "other": "%lld words per minute"
+     },
+     "before": {
+      "one": "%lld الفاظ فی منٹ",
+      "other": "%lld الفاظ فی منٹ"
+     },
+     "after": {
+      "one": "%lld لفظ فی منٹ",
+      "other": "%lld الفاظ فی منٹ"
+     },
+     "why": "grammar: the one form had the plural الفاظ, so 1 الفاظ"
+    },
+    {
+     "key": "About",
+     "id": "phoneSettings.aboutSection",
+     "english": "About",
+     "before": "کے بارے میں",
+     "after": "ایپ کے بارے میں",
+     "why": "grammar: a heading cannot begin with the postposition کے; it needs its object"
+    },
+    {
+     "key": "Afterwards, Play tries the passage again",
+     "id": "speechRefusal.closeHint",
+     "english": "Afterwards, Play tries the passage again",
+     "before": "بعد میں، چلائیں دبانے سے یہ حصہ دوبارہ آزمایا جاتا ہے۔",
+     "after": "بعد میں “چلائیں” سے یہ حصہ دوبارہ آزمایا جاتا ہے۔",
+     "why": "voiceover: the hint named pressing (دبانے); Play quoted as the button name"
+    },
+    {
+     "key": "Applies when listening goes on to another article",
+     "id": "listeningOptions.skipFinishedHint.article",
+     "english": "Applies when listening goes on to another article",
+     "before": "اس وقت لاگو ہوتا ہے جب سننا کسی دوسرے مضمون پر جاتا ہے۔",
+     "after": "اس وقت لاگو ہوتا ہے جب پلے بیک کسی دوسرے مضمون پر جاتا ہے۔",
+     "why": "natural: listening as a subject that goes on is a calque; playback (پلے بیک) moves on"
+    },
+    {
+     "key": "Applies when listening goes on to another book",
+     "id": "listeningOptions.skipFinishedHint.book",
+     "english": "Applies when listening goes on to another book",
+     "before": "اس وقت لاگو ہوتا ہے جب سننا کسی دوسری کتاب پر جاتا ہے۔",
+     "after": "اس وقت لاگو ہوتا ہے جب پلے بیک کسی دوسری کتاب پر جاتا ہے۔",
+     "why": "natural: listening as a subject that goes on is a calque; playback (پلے بیک) moves on"
+    },
+    {
+     "key": "Applies when listening goes on to another episode",
+     "id": "listeningOptions.skipFinishedHint.episode",
+     "english": "Applies when listening goes on to another episode",
+     "before": "اس وقت لاگو ہوتا ہے جب سننا کسی دوسرے ایپی سوڈ پر جاتا ہے۔",
+     "after": "اس وقت لاگو ہوتا ہے جب پلے بیک کسی دوسرے ایپی سوڈ پر جاتا ہے۔",
+     "why": "natural: listening as a subject that goes on is a calque; playback (پلے بیک) moves on"
+    },
+    {
+     "key": "Applies when listening goes on to another item",
+     "id": "listeningOptions.skipFinishedHint.item",
+     "english": "Applies when listening goes on to another item",
+     "before": "اس وقت لاگو ہوتا ہے جب سننا کسی دوسرے آئٹم پر جاتا ہے۔",
+     "after": "اس وقت لاگو ہوتا ہے جب پلے بیک کسی دوسرے آئٹم پر جاتا ہے۔",
+     "why": "natural: listening as a subject that goes on is a calque; playback (پلے بیک) moves on"
+    },
+    {
+     "key": "Backward navigation unit",
+     "id": "playbackControls.backwardUnitLabel",
+     "english": "Backward navigation unit",
+     "before": "پیچھے جانے کی نیویگیشن یونٹ",
+     "after": "پیچھے جانے کا نیویگیشن یونٹ",
+     "why": "grammar: یونٹ is masculine, as the rest of the app writes it"
+    },
+    {
+     "key": "Bookmark %@, %@, Note: %@, added %@",
+     "id": "bookmark.accessibilityLabel.headingNoteAdded",
+     "english": "Bookmark %1$@, %2$@, Note: %3$@, added %4$@",
+     "before": "بک مارک %1$@، %2$@، نوٹ: %3$@، شامل کیا گیا %4$@",
+     "after": "بک مارک %1$@، %2$@، نوٹ: %3$@، %4$@ کو شامل کیا گیا",
+     "why": "natural: the day came after its verb in English order; Urdu puts it first, with کو"
+    },
+    {
+     "key": "Bookmark %@, %@, added %@",
+     "id": "bookmark.accessibilityLabel.headingAdded",
+     "english": "Bookmark %1$@, %2$@, added %3$@",
+     "before": "بک مارک %1$@، %2$@، شامل کیا گیا %3$@",
+     "after": "بک مارک %1$@، %2$@، %3$@ کو شامل کیا گیا",
+     "why": "natural: the day came after its verb in English order; Urdu puts it first, with کو"
+    },
+    {
+     "key": "Bookmark %@, Note: %@, added %@",
+     "id": "bookmark.accessibilityLabel.numberNoteAdded",
+     "english": "Bookmark %1$@, Note: %2$@, added %3$@",
+     "before": "بک مارک %1$@، نوٹ: %2$@، شامل کیا گیا %3$@",
+     "after": "بک مارک %1$@، نوٹ: %2$@، %3$@ کو شامل کیا گیا",
+     "why": "natural: the day came after its verb in English order; Urdu puts it first, with کو"
+    },
+    {
+     "key": "Bookmark %@, added %@",
+     "id": "bookmark.accessibilityLabel.numberAdded",
+     "english": "Bookmark %1$@, added %2$@",
+     "before": "بک مارک %1$@، شامل کیا گیا %2$@",
+     "after": "بک مارک %1$@، %2$@ کو شامل کیا گیا",
+     "why": "natural: the day came after its verb in English order; Urdu puts it first, with کو"
+    },
+    {
+     "key": "Cells per line",
+     "id": "brailleExport.cellsLabel",
+     "english": "Cells per line",
+     "before": "فی سطر سیل",
+     "after": "سیل فی سطر",
+     "why": "natural: فی comes between the count and its unit, as in الفاظ فی منٹ"
+    },
+    {
+     "key": "Change this book's forward and backward navigation unit",
+     "id": "playbackControls.unitHelp",
+     "english": "Change this book's forward and backward navigation unit",
+     "before": "اس کتاب کی آگے اور پیچھے جانے کی نیویگیشن یونٹ تبدیل کریں",
+     "after": "اس کتاب کا آگے اور پیچھے جانے کا نیویگیشن یونٹ تبدیل کریں",
+     "why": "grammar: یونٹ is masculine, as the rest of the app writes it"
+    },
+    {
+     "key": "Change this book's forward and backward navigation units",
+     "id": "playbackControls.unitsHelp",
+     "english": "Change this book's forward and backward navigation units",
+     "before": "اس کتاب کی آگے اور پیچھے جانے کی نیویگیشن یونٹس تبدیل کریں",
+     "after": "اس کتاب کے آگے اور پیچھے جانے کے نیویگیشن یونٹس تبدیل کریں",
+     "why": "grammar: یونٹ is masculine, as the rest of the app writes it"
+    },
+    {
+     "key": "Choose separate forward and backward navigation units for this book",
+     "id": "playbackControls.unitsHint",
+     "english": "Choose separate forward and backward navigation units for this book",
+     "before": "اس کتاب کے لیے آگے اور پیچھے جانے کی الگ الگ نیویگیشن یونٹس منتخب کریں۔",
+     "after": "اس کتاب کے لیے آگے اور پیچھے جانے کے الگ الگ نیویگیشن یونٹس منتخب کرنے دیتا ہے۔",
+     "why": "grammar: یونٹ is masculine; the hint also made third person, as Urdu hints are"
+    },
+    {
+     "key": "Chooses what Play and the skip buttons move by.",
+     "id": "phoneReader.navigationUnitHint",
+     "english": "Chooses what Play and the skip buttons move by.",
+     "before": "منتخب کرتا ہے کہ چلائیں اور چھلانگ کے بٹن کس اکائی سے آگے بڑھیں۔",
+     "after": "منتخب کرتا ہے کہ “چلائیں” اور چھلانگ کے بٹن کس اکائی سے آگے بڑھیں۔",
+     "why": "natural: the bare imperative Play read as a verb inside the sentence; quoted as the button name"
+    },
+    {
+     "key": "Close the headings screen and return to the book",
+     "id": "headingNavigatorView.backToBookHint",
+     "english": "Close the headings screen and return to the book",
+     "before": "سرخیوں کی اسکرین بند کر کے کتاب پر واپس جائیں۔",
+     "after": "سرخیوں کی اسکرین بند کر کے کتاب پر واپس لے جاتا ہے۔",
+     "why": "register: a hint in the imperative; Urdu hints are third person"
+    },
+    {
+     "key": "Comma",
+     "id": "keyBinding.localizedKeyWords.comma",
+     "english": "Comma",
+     "before": "کوما",
+     "after": "کاما",
+     "why": "meaning: کوما is coma (the medical state); the punctuation mark is کاما, as part 2 writes it"
+    },
+    {
+     "key": "Cycle Backward Navigation Unit",
+     "id": "shortcutAction.title.cycleBackwardNavigationUnit",
+     "english": "Cycle Backward Navigation Unit",
+     "before": "پیچھے جانے کی نیویگیشن یونٹ بدلیں",
+     "after": "پیچھے جانے کا نیویگیشن یونٹ بدلیں",
+     "why": "grammar: یونٹ is masculine, as the rest of the app writes it"
+    },
+    {
+     "key": "Cycle Forward Navigation Unit",
+     "id": "shortcutAction.title.cycleForwardNavigationUnit",
+     "english": "Cycle Forward Navigation Unit",
+     "before": "آگے جانے کی نیویگیشن یونٹ بدلیں",
+     "after": "آگے جانے کا نیویگیشن یونٹ بدلیں",
+     "why": "grammar: یونٹ is masculine, as the rest of the app writes it"
+    },
+    {
+     "key": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "id": "bookExport.chapterListChoiceHint.exports",
+     "english": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "before": "ہر سرخی کا عنوان اور آغاز، ایک CUE شیٹ کی صورت میں جو آڈیو کا نام اسی طرح لکھتی ہے جیسے آڈیو اسے برآمد کرتا ہے۔",
+     "after": "ہر سرخی کا عنوان اور آغاز، ایک CUE شیٹ کی صورت میں جو آڈیو کا نام اسی طرح لکھتی ہے جیسے “آڈیو” اسے برآمد کرتا ہے۔",
+     "why": "natural: Audio is the export item name; quoted, since Urdu has no capital letter to show it"
+    },
+    {
+     "key": "End",
+     "ids": [
+      "keyBinding.localizedKeyWords.end",
+      "speechExport.endName"
+     ],
+     "english": "End",
+     "before": "اختتام",
+     "after": "اینڈ",
+     "why": "term: the key is labelled End, beside Home (ہوم); اختتام is the end of a book"
+    },
+    {
+     "key": "Every shortcut and where it works go back to the defaults. Your own keys are lost.",
+     "id": "shortcutsSettings.resetAllAlertMessage",
+     "english": "Every shortcut and where it works go back to the defaults. Your own keys are lost.",
+     "before": "ہر شارٹ کٹ اور اس کے کام کرنے کی جگہ ڈیفالٹ پر لوٹ جاتی ہے۔ آپ کی اپنی کلیدیں ختم ہو جائیں گی۔",
+     "after": "ہر شارٹ کٹ اور اس کے کام کرنے کی جگہ ڈیفالٹ پر لوٹ جائیں گے۔ آپ کی اپنی کلیدیں ختم ہو جائیں گی۔",
+     "why": "grammar: two things joined by اور take a plural verb, as part 2 writes it; future, as the next sentence"
+    },
+    {
+     "key": "Export to: %@",
+     "id": "bookExport.destination",
+     "english": "Export to: %@",
+     "before": "یہاں برآمد کریں: %@",
+     "after": "برآمد کا فولڈر: %@",
+     "why": "natural: the line names the folder; یہاں برآمد کریں read as a command"
+    },
+    {
+     "key": "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press.",
+     "id": "shortcutsSettings.tryDoublePressHint",
+     "english": "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press.",
+     "before": "پانچ سیکنڈ تک اگلے دو بار کلید دبانا شارٹ کٹ نہیں ہوتا؛ TextMouth بتاتا ہے کہ وہ دوہرا دبانا بنے یا نہیں۔",
+     "after": "پانچ سیکنڈ تک اگلی دو بار کلید دبانے سے کوئی شارٹ کٹ نہیں چلتا؛ TextMouth بتاتا ہے کہ ان سے دوہرا دبانا بنتا ہے یا نہیں۔",
+     "why": "grammar: بار (a time) is feminine, so اگلی دو بار; the presses were made the subject of a pressing, not a shortcut"
+    },
+    {
+     "key": "Forward navigation unit",
+     "id": "playbackControls.forwardUnitLabel",
+     "english": "Forward navigation unit",
+     "before": "آگے جانے کی نیویگیشن یونٹ",
+     "after": "آگے جانے کا نیویگیشن یونٹ",
+     "why": "grammar: یونٹ is masculine, as the rest of the app writes it"
+    },
+    {
+     "key": "Forward navigation unit: %@; backward navigation unit: %@",
+     "id": "playbackControls.unitsValue",
+     "english": "Forward navigation unit: %1$@; backward navigation unit: %2$@",
+     "before": "آگے کی نیویگیشن یونٹ: %1$@؛ پیچھے کی نیویگیشن یونٹ: %2$@",
+     "after": "آگے جانے کا نیویگیشن یونٹ: %1$@؛ پیچھے جانے کا نیویگیشن یونٹ: %2$@",
+     "why": "grammar: یونٹ is masculine, as the rest of the app writes it"
+    },
+    {
+     "key": "Go To",
+     "ids": [
+      "common.goTo",
+      "phoneReader.goTo"
+     ],
+     "english": "Go To",
+     "before": "پر جائیں",
+     "after": "مقام پر جائیں",
+     "why": "grammar: a label cannot begin with the postposition پر; مقام پر جائیں fits all four uses of this key (bookmark, heading, marker, iPhone Go To)"
+    },
+    {
+     "key": "Go back to where you were before browsing headings or bookmarks",
+     "id": "readerView.returnHint",
+     "english": "Go back to where you were before browsing headings or bookmarks",
+     "before": "سرخیاں یا بک مارک دیکھنے سے پہلے والی جگہ پر واپس جائیں۔",
+     "after": "سرخیاں یا بک مارک دیکھنے سے پہلے والی جگہ پر واپس لے جاتا ہے۔",
+     "why": "register: a hint in the imperative; Urdu hints are third person"
+    },
+    {
+     "key": "How high the voice sounds in the file. It starts at the book's pitch.",
+     "id": "speechExport.pitchHint",
+     "english": "How high the voice sounds in the file. It starts at the book's pitch.",
+     "before": "فائل میں آواز کتنی اونچی لگتی ہے۔ یہ کتاب کی پچ سے شروع ہوتی ہے۔",
+     "after": "فائل میں آواز کتنی باریک یا بھاری لگتی ہے۔ یہ کتاب کی پچ سے شروع ہوتی ہے۔",
+     "why": "meaning: اونچی آواز is a loud voice; pitch is how thin or deep the voice sounds"
+    },
+    {
+     "key": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "id": "shortcutsSettings.doublePressTimeHint",
+     "english": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "before": "دوسری بار دبانا پہلی بار کے کتنی جلدی بعد ہونا چاہیے۔ جس کلید کے ایک بار اور دو بار دبانے کے عمل الگ ہوں وہ ایک بار دبانے پر عمل کرنے سے پہلے اتنی دیر انتظار کرتی ہے۔",
+     "after": "وہ وقت جس کے اندر پہلی بار کے بعد دوسری بار دبانا ضروری ہے۔ جس کلید کے ایک بار اور دو بار دبانے کے عمل الگ ہوں وہ ایک بار دبانے پر عمل کرنے سے پہلے اتنی دیر انتظار کرتی ہے۔",
+     "why": "natural: the first sentence read as a question without its mark; now a description of the setting"
+    },
+    {
+     "key": "It has no pictures, sound, or video, and the text of a picture's description is kept as text.",
+     "id": "epubPackageBuilder.accessibilitySummary.noMedia",
+     "english": "It has no pictures, sound, or video, and the text of a picture's description is kept as text.",
+     "before": "اس میں تصاویر، آواز یا ویڈیو نہیں ہیں، اور تصویر کی وضاحت کا متن بطور متن رکھا گیا ہے۔",
+     "after": "اس میں تصاویر، آواز یا ویڈیو نہیں ہیں، اور تصویر کی تفصیل کا متن بطور متن رکھا گیا ہے۔",
+     "why": "term: a picture description is تفصیل, as part 2 writes it; وضاحت means an explanation"
+    },
+    {
+     "key": "It lists the book's tracks in play order, each with its heading's title. You can reorder, retitle, and group them under headings of your own, and set the pauses between them.",
+     "id": "bookManifestEdit.explanation.headings",
+     "english": "It lists the book's tracks in play order, each with its heading's title. You can reorder, retitle, and group them under headings of your own, and set the pauses between them.",
+     "before": "یہ کتاب کے ٹریکس کو چلانے کی ترتیب میں ہر ایک کی سرخی کے عنوان کے ساتھ فہرست کرتا ہے۔ آپ انہیں دوبارہ ترتیب دے سکتے ہیں، ان کے عنوان بدل سکتے ہیں، انہیں اپنی سرخیوں کے تحت گروپ کر سکتے ہیں، اور ان کے درمیان وقفے مقرر کر سکتے ہیں۔",
+     "after": "اس میں کتاب کے ٹریکس چلنے کی ترتیب سے درج ہیں، ہر ایک اپنی سرخی کے عنوان کے ساتھ۔ آپ انہیں دوبارہ ترتیب دے سکتے ہیں، ان کے عنوان بدل سکتے ہیں، انہیں اپنی سرخیوں کے تحت گروپ کر سکتے ہیں، اور ان کے درمیان وقفے مقرر کر سکتے ہیں۔",
+     "why": "natural: فہرست کرنا is a calque of to list; درج ہیں says it"
+    },
+    {
+     "key": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "id": "readingList.keepBooksHint",
+     "english": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "before": "فہرست کی کتابیں اس Mac پر ڈاؤن لوڈ رکھتا ہے؛ ہر Mac اپنے لیے منتخب کرتا ہے۔ نشان ہٹانے سے کوئی ڈاؤن لوڈ نہیں ہٹتا۔",
+     "after": "فہرست کی کتابیں اس Mac پر ڈاؤن لوڈ شدہ رکھتا ہے؛ ہر Mac اپنے لیے منتخب کرتا ہے۔ نشان ہٹانے سے کوئی ڈاؤن لوڈ نہیں ہٹتا۔",
+     "why": "grammar: keeps downloaded needs the adjective ڈاؤن لوڈ شدہ, not the noun, as part 2 writes it"
+    },
+    {
+     "key": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+     "id": "speechExport.kept.chaptersGo",
+     "english": {
+      "one": "Kept %@ of %lld chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+      "other": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "one": "TextMouth بند ہونے تک، یا جب تک کوئی دوسری بولی گئی آڈیو برآمد شروع نہ ہو یا کتاب کی آواز، متن، تبدیلی کے اصول یا وقفے نہ بدلیں، %2$lld باب میں سے %1$@ رکھا گیا ہے۔ باب %3$@ سے آگے بڑھنے کے لیے اسی رفتار اور پچ پر وہی حد برآمد کریں۔",
+      "other": "TextMouth بند ہونے تک، یا جب تک کوئی دوسری بولی گئی آڈیو برآمد شروع نہ ہو یا کتاب کی آواز، متن، تبدیلی کے اصول یا وقفے نہ بدلیں، %2$lld ابواب میں سے %1$@ رکھے گئے ہیں۔ باب %3$@ سے آگے بڑھنے کے لیے اسی رفتار اور پچ پر وہی حد برآمد کریں۔"
+     },
+     "after": {
+      "one": "TextMouth بند ہونے تک، یا جب تک کوئی دوسری بولی گئی آڈیو برآمد شروع نہ ہو یا کتاب کی آواز، متن، تبدیلی کے اصول یا وقفے نہ بدلیں، %2$lld باب میں سے %1$@ کو رکھا گیا ہے۔ باب %3$@ سے آگے بڑھنے کے لیے اسی رفتار اور پچ پر وہی حد برآمد کریں۔",
+      "other": "TextMouth بند ہونے تک، یا جب تک کوئی دوسری بولی گئی آڈیو برآمد شروع نہ ہو یا کتاب کی آواز، متن، تبدیلی کے اصول یا وقفے نہ بدلیں، %2$lld ابواب میں سے %1$@ کو رکھا گیا ہے۔ باب %3$@ سے آگے بڑھنے کے لیے اسی رفتار اور پچ پر وہی حد برآمد کریں۔"
+     },
+     "why": "grammar: the plural verb followed the total, so 1 of 12 read as plural; the کو passive fits every count"
+    },
+    {
+     "key": "Left Arrow",
+     "id": "keyBinding.localizedKeyWords.arrow",
+     "english": "Left Arrow",
+     "before": "بائیں تیر",
+     "after": "بایاں تیر",
+     "why": "grammar: a key name alone takes the direct form بایاں, as the bracket keys do"
+    },
+    {
+     "key": "Left Parenthesis",
+     "id": "keyBinding.localizedKeyWords.leftParenthesis",
+     "english": "Left Parenthesis",
+     "before": "بایاں قوسین",
+     "after": "بایاں قوس",
+     "why": "grammar: قوسین is the pair of parentheses; one sign is قوس"
+    },
+    {
+     "key": "Lines per page",
+     "id": "brailleExport.linesLabel",
+     "english": "Lines per page",
+     "before": "فی صفحہ سطریں",
+     "after": "سطریں فی صفحہ",
+     "why": "natural: فی comes between the count and its unit, as in الفاظ فی منٹ"
+    },
+    {
+     "key": "Media controls not released: this book does not hold them.",
+     "id": "mediaControls.notHeld",
+     "english": "Media controls not released: this book does not hold them.",
+     "before": "میڈیا کنٹرولز جاری نہیں کیے گئے: یہ کتاب انہیں نہیں رکھتی۔",
+     "after": "میڈیا کنٹرولز نہیں چھوڑے گئے: یہ کتاب انہیں نہیں رکھتی۔",
+     "why": "meaning: جاری کرنا is to issue; handing the media controls back is چھوڑنا, as Release Media Controls (چھوڑ دیں) says"
+    },
+    {
+     "key": "Media controls released",
+     "id": "mediaControls.released",
+     "english": "Media controls released",
+     "before": "میڈیا کنٹرولز جاری کر دیے گئے",
+     "after": "میڈیا کنٹرولز چھوڑ دیے گئے",
+     "why": "meaning: جاری کرنا is to issue; handing the media controls back is چھوڑنا, as Release Media Controls (چھوڑ دیں) says"
+    },
+    {
+     "key": "Preview %@ sound",
+     "id": "soundEffectsSettings.previewLabel",
+     "english": "Preview %@ sound",
+     "before": "%@ ساؤنڈ کا پیش منظر",
+     "after": "%@ کے ساؤنڈ کا پیش منظر سنیں",
+     "why": "register: a button takes the imperative, and an audio preview is heard (سنیں), as part 2 writes it; کے joins the event name to its sound"
+    },
+    {
+     "key": "Preview Voice",
+     "id": "common.previewVoice",
+     "english": "Preview Voice",
+     "before": "آواز کا پیش منظر",
+     "after": "آواز کا پیش منظر سنیں",
+     "why": "register: a button takes the imperative; an audio preview is heard (سنیں), as part 2 writes it"
+    },
+    {
+     "key": "Preview selected voice",
+     "id": "common.previewSelectedVoice",
+     "english": "Preview selected voice",
+     "before": "منتخب آواز کا پیش منظر",
+     "after": "منتخب آواز کا پیش منظر سنیں",
+     "why": "register: a button takes the imperative; an audio preview is heard (سنیں), as part 2 writes it"
+    },
+    {
+     "key": "Quotation Mark",
+     "id": "keyBinding.localizedKeyWords.quotation",
+     "english": "Quotation Mark",
+     "before": "حوالے کا نشان",
+     "after": "اقتباسی نشان",
+     "why": "term: حوالہ is a reference or citation; the app calls the sign اقتباسی نشان elsewhere"
+    },
+    {
+     "key": "Right Arrow",
+     "id": "keyBinding.localizedKeyWords.right",
+     "english": "Right Arrow",
+     "before": "دائیں تیر",
+     "after": "دایاں تیر",
+     "why": "grammar: a key name alone takes the direct form دایاں, as the bracket keys do"
+    },
+    {
+     "key": "Right Parenthesis",
+     "id": "keyBinding.localizedKeyWords.rightParenthesis",
+     "english": "Right Parenthesis",
+     "before": "دایاں قوسین",
+     "after": "دایاں قوس",
+     "why": "grammar: قوسین is the pair of parentheses; one sign is قوس"
+    },
+    {
+     "key": "Sound Assignments",
+     "id": "soundEffectsSettings.assignmentsHeader",
+     "english": "Sound Assignments",
+     "before": "ساؤنڈ تفویض",
+     "after": "ساؤنڈز کا انتخاب",
+     "why": "natural: two nouns side by side without a کا; the section chooses each event sound"
+    },
+    {
+     "key": "Still starting: %@",
+     "id": "endOfBook.stillStarting",
+     "english": "Still starting: %@",
+     "before": "ابھی شروع ہو رہا ہے: %@",
+     "after": "اب بھی شروع ہو رہا ہے: %@",
+     "why": "meaning: ابھی is heard as right now; still is اب بھی"
+    },
+    {
+     "key": "Stop At",
+     "id": "sleepTimerView.stopAtHeading",
+     "english": "Stop At",
+     "before": "یہاں روکیں",
+     "after": "کہاں روکیں",
+     "why": "meaning: یہاں روکیں is stop here; the heading is where in the book the timer stops"
+    },
+    {
+     "key": "Switches to jump to page controls",
+     "id": "readerPage.switchHint",
+     "english": "Switches to jump to page controls",
+     "before": "صفحے پر چھلانگ لگانے کے کنٹرولز پر منتقل کرتا ہے۔",
+     "after": "صفحے پر چھلانگ لگانے کے کنٹرولز پر لے جاتا ہے۔",
+     "why": "meaning: منتقل کرنا is moving an item; the button takes the listener to the other panel, as part 2 says of moving the cursor"
+    },
+    {
+     "key": "Switches to jump to percent controls",
+     "id": "readerView.switchPercentHint",
+     "english": "Switches to jump to percent controls",
+     "before": "فیصد پر چھلانگ لگانے کے کنٹرولز پر منتقل کرتا ہے۔",
+     "after": "فیصد پر چھلانگ لگانے کے کنٹرولز پر لے جاتا ہے۔",
+     "why": "meaning: منتقل کرنا is moving an item; the button takes the listener to the other panel, as part 2 says of moving the cursor"
+    },
+    {
+     "key": "Switches to jump to time controls",
+     "id": "readerView.switchTimeHint",
+     "english": "Switches to jump to time controls",
+     "before": "وقت پر چھلانگ لگانے کے کنٹرولز پر منتقل کرتا ہے۔",
+     "after": "وقت پر چھلانگ لگانے کے کنٹرولز پر لے جاتا ہے۔",
+     "why": "meaning: منتقل کرنا is moving an item; the button takes the listener to the other panel, as part 2 says of moving the cursor"
+    },
+    {
+     "key": "Takes %lld to %lld minutes.",
+     "id": "sleepTimerView.customMinutesRangeHint",
+     "english": "Takes %1$lld to %2$lld minutes.",
+     "before": "%1$lld سے %2$lld منٹ لیتا ہے۔",
+     "after": "%1$lld سے %2$lld منٹ تک قبول کرتا ہے۔",
+     "why": "meaning: لیتا ہے reads as lasting that long; the field accepts those values"
+    },
+    {
+     "key": "Takes %lld to %lld minutes. Return sets the timer and plays the book.",
+     "id": "sleepTimerView.customMinutesHint",
+     "english": "Takes %1$lld to %2$lld minutes. Return sets the timer and plays the book.",
+     "before": "%1$lld سے %2$lld منٹ لیتا ہے۔ ریٹرن ٹائمر سیٹ کرتا ہے اور کتاب چلاتا ہے۔",
+     "after": "%1$lld سے %2$lld منٹ تک قبول کرتا ہے۔ ریٹرن ٹائمر سیٹ کرتا ہے اور کتاب چلاتا ہے۔",
+     "why": "meaning: لیتا ہے reads as lasting that long; the field accepts those values"
+    },
+    {
+     "key": "Text not updated: chapter %@ of the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.nestedTooDeeply.chapter",
+     "english": "Text not updated: chapter %1$@ of the edited text of %2$@ %3$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "before": "متن اپ ڈیٹ نہیں ہوا: %2$@ کے ترمیم شدہ متن کے باب %1$@ میں %3$@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ اسے سیدھا کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں؛ تب تک کتاب اپنا پرانا متن رکھتی ہے۔",
+     "after": "متن اپ ڈیٹ نہیں ہوا: %2$@ کے ترمیم شدہ متن کے باب %1$@ میں %3$@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ تہہ بندی کم کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں؛ تب تک کتاب اپنا پرانا متن رکھتی ہے۔",
+     "why": "natural: سیدھا کرنا is to straighten; flattening nested markup is reducing its تہہ بندی, the word of the clause before it"
+    },
+    {
+     "key": "Text not updated: the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.nestedTooDeeply.updated",
+     "english": "Text not updated: the edited text of %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "before": "متن اپ ڈیٹ نہیں ہوا: %1$@ کے ترمیم شدہ متن میں %2$@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ اسے سیدھا کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں؛ تب تک کتاب اپنا پرانا متن رکھتی ہے۔",
+     "after": "متن اپ ڈیٹ نہیں ہوا: %1$@ کے ترمیم شدہ متن میں %2$@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ تہہ بندی کم کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں؛ تب تک کتاب اپنا پرانا متن رکھتی ہے۔",
+     "why": "natural: سیدھا کرنا is to straighten; flattening nested markup is reducing its تہہ بندی, the word of the clause before it"
+    },
+    {
+     "key": "Text not updated: the edited transcript of %@ has %@, but the audiobook has %@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.chaptersChanged",
+     "english": "Text not updated: the edited transcript of %1$@ has %2$@, but the audiobook has %3$@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then.",
+     "before": "متن اپ ڈیٹ نہیں ہوا: %1$@ کے ترمیم شدہ ٹرانسکرپٹ میں %2$@ ہیں، لیکن آڈیو بک میں %3$@ ہیں۔ ہر وہ سطر رکھیں جو <!-- chapter: سے شروع ہو اور دوبارہ محفوظ کریں؛ تب تک کتاب اپنا پرانا متن رکھتی ہے۔",
+     "after": "متن اپ ڈیٹ نہیں ہوا: %1$@ کا ترمیم شدہ ٹرانسکرپٹ %2$@ پر مشتمل ہے، لیکن آڈیو بک %3$@ پر۔ <!-- chapter: سے شروع ہونے والی ہر سطر رکھیں اور دوبارہ محفوظ کریں؛ تب تک کتاب اپنا پرانا متن رکھتی ہے۔",
+     "why": "grammar: ہیں after a count fragment read 1 باب ہیں; مشتمل ہے agrees with the transcript for every count"
+    },
+    {
+     "key": "The book has no timed transcript to write as captions.",
+     "id": "bookExport.noTimedTranscriptReason",
+     "english": "The book has no timed transcript to write as captions.",
+     "before": "کتاب میں کیپشنز کے طور پر لکھنے کے لیے وقت بند ٹرانسکرپٹ نہیں ہے۔",
+     "after": "کتاب میں کیپشنز کے طور پر لکھنے کے لیے وقت بندی والا ٹرانسکرپٹ نہیں ہے۔",
+     "why": "natural: وقت بند reads as time-locked; the captions strings beside it say وقت بندی"
+    },
+    {
+     "key": "The book's voice can't be recorded to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "id": "speechRenderFailure.unusableVoice",
+     "english": "The book's voice can't be recorded to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "before": "کتاب کی آواز فائل میں ریکارڈ نہیں کی جا سکتی۔ ریڈر میں %@ بٹن سے کوئی دوسری آواز منتخب کریں، پھر دوبارہ برآمد کریں۔",
+     "after": "کتاب کی آواز فائل میں ریکارڈ نہیں کی جا سکتی۔ ریڈر میں “%@” بٹن سے کوئی دوسری آواز منتخب کریں، پھر دوبارہ برآمد کریں۔",
+     "why": "punctuation: the button name in the sentence is quoted, since Urdu has no capital letters to mark it"
+    },
+    {
+     "key": "The disk lacks room: this needs about %@, and TextMouth keeps %@ free. Free some space, then export again.",
+     "id": "speechExportError.notEnoughSpace",
+     "english": "The disk lacks room: this needs about %1$@, and TextMouth keeps %2$@ free. Free some space, then export again.",
+     "before": "ڈسک میں جگہ کم ہے: اس کے لیے تقریباً %1$@ درکار ہے، اور TextMouth %2$@ خالی رکھتا ہے۔ کچھ جگہ خالی کریں، پھر دوبارہ برآمد کریں۔",
+     "after": "ڈسک میں جگہ کم ہے: اس کے لیے تقریباً %1$@ درکار ہے، اور TextMouth %2$@ جگہ خالی رکھتا ہے۔ کچھ جگہ خالی کریں، پھر دوبارہ برآمد کریں۔",
+     "why": "natural: keeping 2 GB free is جگہ خالی رکھنا; خالی alone is cut short, as part 2 says"
+    },
+    {
+     "key": "The file %@ could not be read quickly enough.",
+     "id": "audioPlaybackFailure.message.stalled",
+     "english": "The file %@ could not be read quickly enough.",
+     "before": "فائل %@ کو اتنی تیزی سے پڑھا نہیں جا سکا۔",
+     "after": "فائل %@ کو کافی تیزی سے پڑھا نہیں جا سکا۔",
+     "why": "natural: اتنی تیزی سے (that fast) needs a comparison; quickly enough is کافی تیزی سے"
+    },
+    {
+     "key": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+     "id": "speechRefusal.summary",
+     "english": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+     "before": "اسپیچ انجن نے یہاں متن کو دو بار بولنے سے انکار کیا، اس لیے اسپیچ رک گئی۔ چلائیں اسی جگہ سے دوبارہ کوشش کرتا ہے۔",
+     "after": "اسپیچ انجن نے یہاں متن کو دو بار بولنے سے انکار کیا، اس لیے اسپیچ رک گئی۔ “چلائیں” اسی جگہ سے دوبارہ کوشش کرتا ہے۔",
+     "why": "natural: the bare imperative Play read as a command when made the subject; quoted as the button name"
+    },
+    {
+     "key": "The voice made no sound for “%@”. Check that it speaks the book's language.",
+     "id": "speechRenderFailure.noSound",
+     "english": "The voice made no sound for “%@”. Check that it speaks the book's language.",
+     "before": "آواز نے “%@” کے لیے کوئی آواز پیدا نہیں کی۔ دیکھیں کہ وہ کتاب کی زبان بولتی ہے۔",
+     "after": "آواز “%@” کے لیے کچھ نہیں بولی۔ دیکھیں کہ وہ کتاب کی زبان بولتی ہے۔",
+     "why": "natural: آواز twice read as the voice made no voice; it said nothing"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "id": "bookManifestEdit.explanation.quotation",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "سیدھے اقتباسی نشان ٹائپ کریں: TextEdit میں Edit > Substitutions کے تحت Smart Quotes آف کریں۔",
+     "after": "سیدھے اقتباسی نشان ٹائپ کریں: TextEdit میں Edit، Substitutions کے تحت Smart Quotes آف کریں۔",
+     "why": "punctuation: VoiceOver reads > aloud; the menu path takes the Urdu comma, as the English does"
+    },
+    {
+     "key": "What a book of this kind moves by until it has a unit of its own.",
+     "id": "phoneSettings.navigationUnitHint",
+     "english": "What a book of this kind moves by until it has a unit of its own.",
+     "before": "اس قسم کی کتاب اس وقت تک کس اکائی سے آگے بڑھتی ہے جب تک اس کی اپنی اکائی نہ ہو۔",
+     "after": "وہ یونٹ جس سے اس قسم کی کتاب آگے بڑھتی ہے، جب تک اس کا اپنا یونٹ نہ ہو۔",
+     "why": "natural: it read as a question without its mark; now a description, with the navigation unit word یونٹ"
+    },
+    {
+     "key": "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning.",
+     "id": "endOfBook.playOnAFinishedBookCaption",
+     "english": "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning.",
+     "before": "“%1$@” منتخب ہونے پر، مکمل کتاب پر چلائیں بتاتا ہے کہ وہ مکمل ہو چکی ہے؛ “%2$@” منتخب ہونے پر، چلائیں اسے شروع سے دوبارہ شروع کرتا ہے۔",
+     "after": "“%1$@” منتخب ہونے پر، مکمل کتاب پر “چلائیں” بتاتا ہے کہ وہ مکمل ہو چکی ہے؛ “%2$@” منتخب ہونے پر، “چلائیں” اسے شروع سے دوبارہ شروع کرتا ہے۔",
+     "why": "natural: the bare imperative Play read as a command when made the subject; quoted as the button name"
+    },
+    {
+     "key": "built %@",
+     "id": "speechRefusal.build.built",
+     "english": "built %@",
+     "before": "بنایا گیا %@",
+     "after": "%@ کو بنایا گیا",
+     "why": "natural: the date came after its verb in English order; Urdu puts it first, with کو"
+    },
+    {
+     "key": "edited by hand",
+     "id": "metadataEditor.editedByHand",
+     "english": "edited by hand",
+     "before": "ہاتھ سے ترمیم شدہ",
+     "after": "دستی طور پر ترمیم شدہ",
+     "why": "natural: ہاتھ سے copies the English by hand; Urdu interfaces say دستی, as part 2 writes it"
+    },
+    {
+     "key": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "id": "bookTextEdit.heldReason.nestedTooDeeply.opens",
+     "english": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "before": "اس میں %@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ اسے سیدھا کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں، اور کتاب کھل جائے گی۔",
+     "after": "اس میں %@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ تہہ بندی کم کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں، اور کتاب کھل جائے گی۔",
+     "why": "natural: سیدھا کرنا is to straighten; flattening nested markup is reducing its تہہ بندی, the word of the clause before it"
+    },
+    {
+     "key": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "id": "bookTextEdit.heldReason.nestedTooDeeply.shows",
+     "english": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "before": "اس میں %@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ اسے سیدھا کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں، اور متن دکھائی دے گا۔",
+     "after": "اس میں %@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ تہہ بندی کم کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں، اور متن دکھائی دے گا۔",
+     "why": "natural: سیدھا کرنا is to straighten; flattening nested markup is reducing its تہہ بندی, the word of the clause before it"
+    },
+    {
+     "key": "it has %@, where the audiobook has %@. Keep every line beginning with <!-- chapter: and save again, and the text shows.",
+     "id": "bookTextEdit.heldReason.chaptersChanged",
+     "english": "it has %1$@, where the audiobook has %2$@. Keep every line beginning with <!-- chapter: and save again, and the text shows.",
+     "before": "اس میں %1$@ ہیں، جبکہ آڈیو بک میں %2$@ ہیں۔ ہر وہ سطر رکھیں جو <!-- chapter: سے شروع ہو اور دوبارہ محفوظ کریں، اور متن دکھائی دے گا۔",
+     "after": "یہ %1$@ پر مشتمل ہے، جبکہ آڈیو بک %2$@ پر۔ <!-- chapter: سے شروع ہونے والی ہر سطر رکھیں اور دوبارہ محفوظ کریں، اور متن دکھائی دے گا۔",
+     "why": "grammar: ہیں after a count fragment read 1 باب ہیں; مشتمل ہے agrees with the transcript for every count"
+    },
+    {
+     "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "id": "bookTextEdit.heldReason.nestedTooDeeply.chapter",
+     "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "before": "اس کے باب %1$@ میں %2$@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ اسے سیدھا کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں، اور کتاب کھل جائے گی۔",
+     "after": "اس کے باب %1$@ میں %2$@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ تہہ بندی کم کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں، اور کتاب کھل جائے گی۔",
+     "why": "natural: سیدھا کرنا is to straighten; flattening nested markup is reducing its تہہ بندی, the word of the clause before it"
+    },
+    {
+     "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "id": "bookTextEdit.nestedTooDeeply.chapterShows",
+     "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "before": "اس کے باب %1$@ میں %2$@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ اسے سیدھا کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں، اور متن دکھائی دے گا۔",
+     "after": "اس کے باب %1$@ میں %2$@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ تہہ بندی کم کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں، اور متن دکھائی دے گا۔",
+     "why": "natural: سیدھا کرنا is to straighten; flattening nested markup is reducing its تہہ بندی, the word of the clause before it"
+    },
+    {
+     "key": "the file %@ could not be read quickly enough",
+     "id": "audioPlaybackFailure.problem.stalled",
+     "english": "the file %@ could not be read quickly enough",
+     "before": "فائل %@ کو اتنی تیزی سے پڑھا نہیں جا سکا",
+     "after": "فائل %@ کو کافی تیزی سے پڑھا نہیں جا سکا",
+     "why": "natural: اتنی تیزی سے (that fast) needs a comparison; quickly enough is کافی تیزی سے"
+    },
+    {
+     "key": "“%@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "id": "speechExportError.personalVoice",
+     "english": "“%1$@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %2$@ button in the reader, then export again.",
+     "before": "“%1$@” ایک Personal Voice ہے، جسے macOS فائل میں ریکارڈ نہیں کر سکتا۔ ریڈر میں %2$@ بٹن سے کوئی دوسری آواز منتخب کریں، پھر دوبارہ برآمد کریں۔",
+     "after": "“%1$@” ایک Personal Voice ہے، جسے macOS فائل میں ریکارڈ نہیں کر سکتا۔ ریڈر میں “%2$@” بٹن سے کوئی دوسری آواز منتخب کریں، پھر دوبارہ برآمد کریں۔",
+     "why": "punctuation: the button name in the sentence is quoted, since Urdu has no capital letters to mark it"
+    }
+   ]
+  }
+ ]
+}

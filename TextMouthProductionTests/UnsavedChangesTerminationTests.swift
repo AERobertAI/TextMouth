@@ -65,6 +65,33 @@ final class UnsavedChangesTerminationTests: XCTestCase {
         XCTAssertEqual(harness.terminationGuard.reply(), .terminateCancel, "Quit Anyway answered only that request")
     }
 
+    /// Quit Anyway answers only the changes its prompt listed. A change of
+    /// another file reported before the request it makes goes ahead, as a
+    /// feed change that a quit's wait for its records gave up on is, is
+    /// asked about once more, and Quit Anyway chosen again covers both; a
+    /// change it listed, reported again as a failure that recurs is, needs
+    /// no second answer. Quit Anyway used to quit without the new change.
+    func testQuitAnywayCoversOnlyTheChangesItsPromptListed() {
+        let center = self.center
+        center.recordFailure(.libraryIndex, path: "/data/library.json", error: WriteRefused())
+        let harness = Harness(center: center, answer: .quitAnyway)
+        XCTAssertEqual(harness.terminationGuard.reply(), .terminateCancel)
+        XCTAssertTrue(waitUntil(timeout: 5) { harness.terminationRequests.calls.count == 1 })
+
+        // The request Quit Anyway made waits for work, which gives up on a
+        // feed change; the library index fails again meanwhile.
+        XCTAssertEqual(harness.terminationGuard.reply { .terminateCancel }, .terminateCancel)
+        center.recordFailure(.libraryIndex, path: "/data/library.json", error: WriteRefused())
+        let feedID = UUID()
+        center.recordFailure(.feedRecord(feedID: feedID, title: "Tide Tables"), path: "/data/Feeds/t.json", error: WriteRefused())
+
+        XCTAssertEqual(harness.terminationGuard.reply(), .terminateCancel, "Quit Anyway quit without a change its prompt never listed")
+        XCTAssertTrue(waitUntil(timeout: 5) { harness.terminationRequests.calls.count == 2 })
+        XCTAssertEqual(harness.prompts.calls, [[.libraryIndex], [.libraryIndex, .feed(feedID)]])
+        center.recordFailure(.libraryIndex, path: "/data/library.json", error: WriteRefused())
+        XCTAssertEqual(harness.terminationGuard.reply(), .terminateNow, "Quit Anyway, chosen again, did not cover both")
+    }
+
     /// Retry runs the unsaved writes again and asks to quit again; with
     /// them saved, that request quits.
     func testRetrySavesAndAsksToQuitAgain() {
@@ -189,6 +216,35 @@ final class UnsavedChangesTerminationTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: TextMouthPaths.libraryIndexFile), indexBytes, "The quit rewrote library.json")
     }
 
+    /// The flush runs a Retry kept until an operation holding the storage
+    /// work ended, when the operation has ended and the kept retry's own turn
+    /// has not come yet: a quit right after a folder edit then asks about
+    /// nothing the retry saves. Nothing here awaits, so that turn never
+    /// comes before the flush.
+    func testTheFlushRunsARetryKeptForStorageWorkThatHasEnded() throws {
+        let shared = cleanSharedFailureCenter()
+        let attempts = CallLog<PersistenceFailure.ID>()
+        shared.recordFailure(.statistics, path: "/data/reading_stats.json", error: WriteRefused(), waitsForStorageWork: true) { id in
+            attempts.record(id)
+            shared.recordSuccess(.statistics)
+        }
+        let hold = try StorageBoundary.shared.holdWork(for: .movingBooksBetweenFolders)
+        defer { hold.release() }
+        recordingAnnouncements { shared.retry(.statistics) }
+        XCTAssertEqual(attempts.calls, [], "the retry ran while a folder edit held the storage work")
+        // While the edit still holds the work, the flush leaves the retry
+        // kept, and VoiceOver hears nothing of it.
+        let early = recordingAnnouncements { UnsavedChangesTerminationGuard.flushPendingWrites() }
+        XCTAssertEqual(attempts.calls, [], "the flush ran the kept retry while the folder edit held the storage work")
+        XCTAssertEqual(early.announcements.map(\.message).filter { $0.contains("Listening statistics") }, [])
+
+        hold.release()
+        recordingAnnouncements { UnsavedChangesTerminationGuard.flushPendingWrites() }
+
+        XCTAssertEqual(attempts.calls.count, 1, "the flush left the kept retry for later")
+        XCTAssertFalse(shared.hasUnsavedChanges)
+    }
+
     // MARK: - The Prompt
 
     /// The prompt names each unsaved subsystem as the banner does, leaves
@@ -211,7 +267,7 @@ final class UnsavedChangesTerminationTests: XCTestCase {
 
             Settings could not be saved: The volume is read-only.
 
-            Choose Retry to try saving them again, Quit Anyway to quit without them, or Cancel to keep TextMouth open.
+            Retry tries again, Quit Anyway quits without saving, Cancel keeps TextMouth open.
             """
         )
         XCTAssertEqual(UnsavedChangesPrompt.title, "Some Changes Could Not Be Saved")

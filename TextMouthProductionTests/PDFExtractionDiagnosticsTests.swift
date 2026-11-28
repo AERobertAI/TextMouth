@@ -88,7 +88,7 @@ final class PDFExtractionDiagnosticsTests: XCTestCase {
 
         XCTAssertEqual(
             PDFExtractionDiagnostics(pages: pages).problem,
-            "OCR could not run on 3 of 12 pages, so text that appears only in their images is missing: "
+            "OCR could not run on 3 of 12 pages, so text found only in their images is missing: "
                 + "pages 3 and 7 (text recognition is not available); "
                 + "page 9 (the page could not be drawn for text recognition)."
         )
@@ -104,17 +104,17 @@ final class PDFExtractionDiagnosticsTests: XCTestCase {
 
         XCTAssertEqual(
             three.problem,
-            "OCR could not run on all 3 pages, so text that appears only in their images is missing: "
+            "OCR could not run on all 3 pages, so text found only in their images is missing: "
                 + "pages 1 to 3 (text recognition is not available)."
         )
         XCTAssertEqual(
             only.problem,
-            "OCR could not run on the PDF's only page, so text that appears only in its images is missing: "
+            "OCR could not run on the PDF's only page, so text found only in its images is missing: "
                 + "page 1 (text recognition is not available)."
         )
         XCTAssertEqual(
             oneOfTwo.problem,
-            "OCR could not run on 1 of 2 pages, so text that appears only in its images is missing: "
+            "OCR could not run on 1 of 2 pages, so text found only in their images is missing: "
                 + "page 2 (text recognition is not available)."
         )
     }

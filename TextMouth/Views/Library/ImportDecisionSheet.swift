@@ -15,6 +15,12 @@ import SwiftUI
 /// (`ImportDecisionPresenter.userIsIn(_:)`). Return and Escape choose the
 /// marked choices; deleting a file is never on a key. An answer that fails
 /// leaves the question showing, with the reason.
+///
+/// An answer can take a while (Replace Existing reads a long braille book
+/// again, off the main actor): while it runs the choices are dimmed, so it
+/// cannot be given twice, a spinner beside the words "Replacing ..." shows
+/// that the sheet is working, and VoiceOver is told once if it is still
+/// working after a moment (`announcementDelay`).
 struct ImportDecisionSheet: View {
     /// The question asked.
     let decision: ImportDecision
@@ -23,8 +29,9 @@ struct ImportDecisionSheet: View {
     /// How long VoiceOver waits before moving to the first control
     /// (`voiceOverFocusDelay(position:)`).
     let voiceOverDelay: TimeInterval
-    /// Answers the question and says what happened.
-    let onAnswer: (ImportDecisionAnswer) -> OperationOutcome
+    /// Answers the question, off the main actor where that takes long, and
+    /// says what happened.
+    let onAnswer: @MainActor (ImportDecisionAnswer) async -> OperationOutcome
     /// Asks VoiceOver to speak the question. The app announces through
     /// `VoiceOverAnnouncer`; tests record instead.
     let announce: @MainActor (String) -> Void
@@ -35,6 +42,13 @@ struct ImportDecisionSheet: View {
     @State private var takesFocus: Bool
     /// Why the last answer failed, until the folder name changes.
     @State private var failureMessage: String?
+    /// Whether an answer is being carried out: the choices are dimmed until
+    /// it is done.
+    @State private var isAnswering = false
+    /// What the sheet says it is doing while the answer to a duplicate's
+    /// question is Replace Existing, the one answer that takes a while; nil
+    /// for any other, which is done at once.
+    @State private var workLabel: String?
     /// The name of a ZIP archive's new folder, at first the archive's name.
     @State private var folderName: String
     /// Whether the first control has keyboard focus.
@@ -47,7 +61,7 @@ struct ImportDecisionSheet: View {
         wording: ImportDecisionWording,
         voiceOverDelay: TimeInterval,
         takesFocus: Bool = true,
-        onAnswer: @escaping (ImportDecisionAnswer) -> OperationOutcome,
+        onAnswer: @escaping @MainActor (ImportDecisionAnswer) async -> OperationOutcome,
         announce: @escaping @MainActor (String) -> Void = { VoiceOverAnnouncer.announce($0) }
     ) {
         self.decision = decision
@@ -71,6 +85,12 @@ struct ImportDecisionSheet: View {
             Text(wording.message)
                 .fixedSize(horizontal: false, vertical: true)
             choices
+                // The choices are dimmed while an answer is carried out, so
+                // none is given twice.
+                .disabled(isAnswering)
+            if isAnswering, let workLabel {
+                SheetWorkIndicator(label: workLabel)
+            }
         }
         .padding(20)
         .frame(width: 460)
@@ -133,11 +153,37 @@ struct ImportDecisionSheet: View {
         answer: ImportDecisionAnswer
     ) -> some View {
         Button(words.title, role: role) {
-            failureMessage = OperationFailureNotice.message(after: onAnswer(answer))
+            give(answer)
         }
         .keyboardShortcut(shortcut)
         .accessibilityLabel(words.title)
         .accessibilityHint(words.hint)
+    }
+
+    /// Gives `answer` to the question: the choices are dimmed and the last
+    /// failure cleared while it is carried out, then the failure it ends in,
+    /// if any, is shown and spoken (`OperationFailureNotice.run`). An answer
+    /// that takes a while, Replace Existing, says it is working, and tells
+    /// VoiceOver once if it is still working after `announcementDelay`.
+    private func give(_ answer: ImportDecisionAnswer) {
+        guard !isAnswering else { return }
+        workLabel = answer == .replaceExisting ? replacingWords : nil
+        let onAnswer = onAnswer
+        OperationFailureNotice.run({ await onAnswer(answer) }, isWorking: $isAnswering, failureMessage: $failureMessage)
+        guard let words = workLabel else { return }
+        let announce = announce
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(Self.announcementDelay))
+            if isAnswering {
+                announce(words)
+            }
+        }
+    }
+
+    /// What the sheet says while Replace Existing works, naming the book.
+    private var replacingWords: String? {
+        guard case .duplicate(let duplicate) = decision.kind else { return nil }
+        return DuplicateCopyWording.replacing(bookTitle: duplicate.book.title)
     }
 
     /// Gives the first control keyboard focus, then announces the question
@@ -167,6 +213,10 @@ struct ImportDecisionSheet: View {
     /// How long after VoiceOver's move the question is announced: time for
     /// VoiceOver to land on the control and say its name.
     static let announcementLag: TimeInterval = 0.8
+
+    /// How long an answer may take before VoiceOver is told that the sheet is
+    /// working: an answer done sooner is heard only as its result.
+    static let announcementDelay: TimeInterval = 1.0
 }
 
 // MARK: - Choice Words
@@ -181,26 +231,36 @@ struct ImportDecisionChoiceWording: Equatable {
     let hint: String
 
     /// A duplicate: keep both copies.
-    static let keepBoth = ImportDecisionChoiceWording(
-        title: "Keep Both",
-        hint: "Adds the new copy to the library as a separate book."
-    )
+    static var keepBoth: ImportDecisionChoiceWording {
+        ImportDecisionChoiceWording(
+            // Translators: Title and VoiceOver label of the button of the duplicate-book question that keeps both copies. Title case.
+            title: InterfaceText.line("importDecisionChoice.keepBoth.title", "Keep Both"),
+            // Translators: VoiceOver hint of the Keep Both button of the duplicate-book question.
+            hint: InterfaceText.line("importDecisionChoice.keepBoth.separate", "Adds the new copy to the library as a separate book.")
+        )
+    }
     /// A duplicate: replace the library's copy. The hint says what the new
     /// copy keeps of the existing one (ST04): its reading position,
     /// bookmarks, and settings, which the question itself names in full.
-    static let replaceExisting = ImportDecisionChoiceWording(
-        title: "Replace Existing",
-        hint: "Puts the new copy in place of the one already in the library, "
-            + "keeping the existing copy's reading position, bookmarks, and settings."
-    )
+    static var replaceExisting: ImportDecisionChoiceWording {
+        ImportDecisionChoiceWording(
+            // Translators: Title and VoiceOver label of the button of the duplicate-book question that replaces the copy in the library. Title case.
+            title: InterfaceText.line("importDecisionChoice.replace", "Replace Existing"),
+            // Translators: VoiceOver hint of the Replace Existing button of the duplicate-book question, when both copies are of one kind. "The existing copy" is the copy in the library.
+            hint: InterfaceText.line("importDecisionChoice.replaceExisting", "Puts the new copy in place of the one already in the library, keeping the existing copy's reading position, bookmarks, and settings.")
+        )
+    }
     /// A duplicate whose copies are an audiobook and a book that is not:
     /// replacing keeps only the book's place in the library (ST04), and the
     /// hint promises no more.
-    static let replaceExistingAcrossKinds = ImportDecisionChoiceWording(
-        title: "Replace Existing",
-        hint: "Puts the new copy in place of the one already in the library, "
-            + "keeping only the existing copy's folder and place on the reading list."
-    )
+    static var replaceExistingAcrossKinds: ImportDecisionChoiceWording {
+        ImportDecisionChoiceWording(
+            // Translators: Title and VoiceOver label of the button of the duplicate-book question that replaces the copy in the library. Title case.
+            title: InterfaceText.line("importDecisionChoice.replace", "Replace Existing"),
+            // Translators: VoiceOver hint of the Replace Existing button of the duplicate-book question, when one copy is an audiobook and the other is not. "The existing copy" is the copy in the library.
+            hint: InterfaceText.line("importDecisionChoice.replaceExistingAcrossKinds", "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list.")
+        )
+    }
 
     /// Replace Existing's words for a duplicate whose copies differ in kind
     /// when `acrossKinds`, an audiobook and a book that is not.
@@ -208,42 +268,65 @@ struct ImportDecisionChoiceWording: Equatable {
         acrossKinds ? replaceExistingAcrossKinds : replaceExisting
     }
     /// A duplicate: discard the new copy.
-    static let cancelDuplicate = ImportDecisionChoiceWording(
-        title: "Cancel",
-        hint: "Discards the new copy. The library stays as it was."
-    )
+    static var cancelDuplicate: ImportDecisionChoiceWording {
+        ImportDecisionChoiceWording(
+            // Translators: Title and VoiceOver label of the Cancel button of the duplicate-book question.
+            title: InterfaceText.line("common.cancel", "Cancel"),
+            // Translators: VoiceOver hint of the Cancel button of the duplicate-book question.
+            hint: InterfaceText.line("importDecisionChoice.cancelDuplicate", "Discards the new copy. The library stays as it was.")
+        )
+    }
     /// An original file: keep it.
-    static let keepOriginal = ImportDecisionChoiceWording(
-        title: "Keep",
-        hint: "Leaves the original file where it is."
-    )
+    static var keepOriginal: ImportDecisionChoiceWording {
+        ImportDecisionChoiceWording(
+            // Translators: Title and VoiceOver label of the button that keeps the original file of a book just imported. Title case.
+            title: InterfaceText.line("common.keep", "Keep"),
+            // Translators: VoiceOver hint of the Keep button of the question about the original file.
+            hint: InterfaceText.line("importDecisionChoice.keepOriginal", "Leaves the original file where it is.")
+        )
+    }
     /// An original file: delete it, to the Trash or permanently, as
     /// `deletion` says.
     static func deleteOriginal(_ deletion: OriginalFileDeletionWording) -> ImportDecisionChoiceWording {
         ImportDecisionChoiceWording(title: deletion.buttonTitle, hint: deletion.consequence)
     }
     /// A ZIP archive's books: put them in a new folder.
-    static let createFolder = ImportDecisionChoiceWording(
-        title: "Create Folder",
-        hint: "Moves the imported books into a new folder with this name."
-    )
+    static var createFolder: ImportDecisionChoiceWording {
+        ImportDecisionChoiceWording(
+            // Translators: Title and VoiceOver label of the button that puts the books of a ZIP archive in a new folder. Title case.
+            title: InterfaceText.line("importDecisionChoice.createFolder.title", "Create Folder"),
+            // Translators: VoiceOver hint of the Create Folder button of the ZIP archive question. "This name" is the name in the folder name field.
+            hint: InterfaceText.line("importDecisionChoice.createFolder.imported", "Moves the imported books into a new folder with this name.")
+        )
+    }
     /// A ZIP archive's books: leave them where they are.
-    static let declineFolder = ImportDecisionChoiceWording(
-        title: "No Thanks",
-        hint: "Leaves the imported books where they are."
-    )
+    static var declineFolder: ImportDecisionChoiceWording {
+        ImportDecisionChoiceWording(
+            // Translators: Title and VoiceOver label of the button that leaves the books of a ZIP archive where they are. Title case.
+            title: InterfaceText.line("importDecisionChoice.declineFolder.thanks", "No Thanks"),
+            // Translators: VoiceOver hint of the No Thanks button of the ZIP archive question.
+            hint: InterfaceText.line("importDecisionChoice.declineFolder.imported", "Leaves the imported books where they are.")
+        )
+    }
     /// The label of a ZIP archive's folder name field.
-    static let folderNameLabel = "Folder name"
+    static var folderNameLabel: String {
+        // Translators: Label of the field where the name of the new folder for a ZIP archive's books is typed.
+        InterfaceText.line("common.folderName", "Folder name")
+    }
     /// An audiobook just imported: transcribe it (FR05).
-    static let transcribe = ImportDecisionChoiceWording(
-        title: TranscriptionWording.offerTranscribeTitle,
-        hint: TranscriptionWording.offerTranscribeHint
-    )
+    static var transcribe: ImportDecisionChoiceWording {
+        ImportDecisionChoiceWording(
+            title: TranscriptionWording.offerTranscribeTitle,
+            hint: TranscriptionWording.offerTranscribeHint
+        )
+    }
     /// An audiobook just imported: leave it untranscribed for now.
-    static let notNow = ImportDecisionChoiceWording(
-        title: TranscriptionWording.offerNotNowTitle,
-        hint: TranscriptionWording.offerNotNowHint
-    )
+    static var notNow: ImportDecisionChoiceWording {
+        ImportDecisionChoiceWording(
+            title: TranscriptionWording.offerNotNowTitle,
+            hint: TranscriptionWording.offerNotNowHint
+        )
+    }
 }
 
 extension ImportDecision.ZipBatch {

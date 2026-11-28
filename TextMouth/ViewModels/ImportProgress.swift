@@ -39,6 +39,16 @@ struct ImportProgressState: Equatable {
     /// alone, as an import starts or waits, or how far an archive's
     /// extraction has got.
     private(set) var notice = ""
+
+    /// An archive being extracted, which its line counts: kept as what it is made from, not as a sentence, so the line is
+    /// worded in the interface language in use when it is read (FR39).
+    struct Extracting: Equatable {
+        let archive: String
+        let progress: ArchiveExtractionProgress
+    }
+
+    /// The archive extracted while the bar only spins; nil otherwise.
+    private(set) var extracting: Extracting?
     /// The book under way, while one is.
     private(set) var book: BookUnderWay?
     /// What the batch's books timed so far took, those imported or failed,
@@ -79,7 +89,10 @@ struct ImportProgressState: Equatable {
     /// with how far an archive holding one audiobook has been extracted
     /// while it is, or, with none, the notice.
     var message: String {
-        guard let book else { return notice }
+        guard let book else {
+            if let extracting { return ImportProgressWording.extracting(archive: extracting.archive, progress: extracting.progress) }
+            return notice
+        }
         guard let number = book.number else {
             return ImportProgressWording.book(book.name, step: book.step, extraction: book.extractionShown)
         }
@@ -101,7 +114,8 @@ struct ImportProgressState: Equatable {
             current = 0
             total = 0
             book = nil
-            notice = ImportProgressWording.extracting(archive: archive, progress: extraction)
+            notice = ""
+            extracting = Extracting(archive: archive, progress: extraction)
         case let .foundBooks(sizes):
             bookSizes = sizes
         case let .importingBook(number, total, name, step):
@@ -266,6 +280,18 @@ final class ImportProgress: ObservableObject {
         self.now = now
     }
 
+    #if os(iOS)
+    /// Whether a book plays now, which the phone's import sets: while one
+    /// does, the quarters of a batch are not said over it (the spec's
+    /// "Progress").
+    var isBookPlaying: @MainActor () -> Bool = { false }
+
+    /// How urgent what an import says unasked is on the phone: low, so it
+    /// waits for VoiceOver's own speech and never cuts into it (the
+    /// engineering review's F18).
+    static let unaskedPriority = NSAccessibilityPriorityLevel.low
+    #endif
+
     /// Shows `message` alone, under a bar that only spins: an import
     /// starting, or waiting for a data-directory move (TODO S04).
     func show(_ message: String) {
@@ -337,10 +363,19 @@ final class ImportProgress: ObservableObject {
         guard quarter > quarterReached else { return }
         quarterReached = quarter
         guard quarter < 4, !state.isCancelling, hasRunLong(at: date), let subject else { return }
+        #if os(iOS)
+        // On the phone a quarter is said only while no book plays, softly.
+        guard !isBookPlaying() else { return }
+        VoiceOverAnnouncer.announce(
+            ImportProgressWording.quarter(of: subject, done: done, total: total, secondsLeft: state.secondsLeft),
+            priority: Self.unaskedPriority
+        )
+        #else
         VoiceOverAnnouncer.announce(
             ImportProgressWording.quarter(of: subject, done: done, total: total, secondsLeft: state.secondsLeft),
             priority: .medium
         )
+        #endif
     }
 
     /// Notes that Cancel was pressed while this import runs, which the
@@ -359,7 +394,11 @@ final class ImportProgress: ObservableObject {
     /// more.
     func end(_ ending: Ending) {
         if let words = endAnnouncement(for: ending) {
+            #if os(iOS)
+            VoiceOverAnnouncer.announce(words, priority: Self.unaskedPriority)
+            #else
             VoiceOverAnnouncer.announce(words)
+            #endif
         }
         clear()
     }
@@ -384,7 +423,14 @@ final class ImportProgress: ObservableObject {
                 failed: result.failures.count
             )
         case .book:
+            #if os(iOS)
+            // On the phone the end of one book is said however short its
+            // import was: focus stays where it was, and nothing else says
+            // the book is in.
+            return ImportProgressWording.finished(book: subject)
+            #else
             return ranLong ? ImportProgressWording.finished(book: subject) : nil
+            #endif
         case .failure:
             return ranLong ? ImportProgressWording.failed(subject) : nil
         }

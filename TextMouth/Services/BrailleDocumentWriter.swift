@@ -32,25 +32,34 @@ struct BrailleExportOptions: TextExportOptions {
     /// the setting, or a test's bound table) and the braille file characters
     /// the Braille tab chose (`BraillePreferences.importFileCode()`: the
     /// setting, or a test's bound code; North American Braille ASCII for an
-    /// id that names no code). One of this Mac's tables that this Mac does
-    /// not offer (gone, or a bundled table's twin), or that its check refused
-    /// this session, is replaced by the default table, so the pop-ups show
+    /// id that names no code). A table the export cannot start from
+    /// (`exportCannotStart(from:)`: on the Mac one of its own that it does not
+    /// offer, or that its check refused this session; on the iPhone one no
+    /// export list has) is replaced by the default table, so the pop-ups show
     /// what the export will use (review R4); the braille file characters are
     /// kept either way.
     static func standard() -> BrailleExportOptions {
         let setting = BraillePreferences.importTable()
         let fileCode = BrailleFileCode.code(withID: BraillePreferences.importFileCode()) ?? .northAmerican
-        guard isUnusableMacTable(setting) else { return BrailleExportOptions(table: setting, fileCode: fileCode) }
+        guard exportCannotStart(from: setting) else { return BrailleExportOptions(table: setting, fileCode: fileCode) }
         return BrailleExportOptions(table: BrailleTableCatalog.defaultTableID, fileCode: fileCode, replacedTable: setting)
     }
 
-    /// Whether `table` is one of this Mac's tables that an export cannot
-    /// start from: not offered, or refused by a check that lasts the session.
-    static func isUnusableMacTable(_ table: String) -> Bool {
-        guard BrailleTableSource.parse(table).source == .mac else { return false }
+    /// Whether an export cannot start from `table`, the Braille setting's. On the Mac, when it is one of this Mac's tables
+    /// that it does not offer, or that a check refused for the session. On the iPhone, which has no folder of the Mac's
+    /// tables and judges any Settings table, when the translator would refuse it: the pack has no table of its file name
+    /// (`BrailleTableCatalog.bundledID(forStored:)`, which the translator asks and which finds a usable table hidden
+    /// behind a twin in the lists). So a `mac:` value of a table the pack has is kept, as FR40 reads it with the pack's
+    /// table of that name, and one the pack lacks is replaced, which the options say (`replacedTable`).
+    static func exportCannotStart(from table: String) -> Bool {
+        #if os(iOS)
+        return BrailleTableCatalog.bundledID(forStored: table) == nil
+        #else
+        guard BrailleTableCatalog.readsFromMacFolder(table) else { return false }
         guard BrailleTableCatalog.table(withID: table) != nil else { return true }
         if case .refused? = MacBrailleTableCheck.verdicts.verdict(for: table) { return true }
         return false
+        #endif
     }
 }
 

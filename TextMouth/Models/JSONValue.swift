@@ -6,11 +6,24 @@ import Foundation
 /// for the keys a record holds that this version does not know.
 ///
 /// Integers stay integers (`3` is written back as `3`, never `3.0`), and a
-/// date stays the string it was, since it is only text here.
+/// date stays the string it was, since it is only text here. A whole number
+/// above `Int64.max` that a `UInt64` holds stays exact too (`unsigned`).
+///
+/// Two kinds of number do not come back digit for digit, since each is held
+/// as a `Double`: a whole number beyond `UInt64`, and a fraction of more
+/// than about 17 significant digits. TextMouth writes neither: every number
+/// in its files is an `Int`, an `Int64`, or a `Double`, which `JSONEncoder`
+/// writes in the shortest form that reads back as the same `Double`. A
+/// number is also written in `JSONEncoder`'s form (`1.50` comes back as
+/// `1.5`, and `1.0` as `1`), which is the form TextMouth wrote it in.
 enum JSONValue: Codable, Equatable, Sendable {
     case null
     case bool(Bool)
     case integer(Int64)
+    /// A whole number above `Int64.max`, which an `Int64` cannot hold and a
+    /// `Double` would round (V04): kept exact, as an identifier or a hash a
+    /// later TextMouth stores might need.
+    case unsigned(UInt64)
     case number(Double)
     case string(String)
     case array([JSONValue])
@@ -24,7 +37,7 @@ enum JSONValue: Codable, Equatable, Sendable {
     // MARK: - Reading
 
     /// Reads whatever JSON value is there. The kinds are tried in a fixed
-    /// order: null, bool, integer, number, string, array, object. A bool is
+    /// order: null, bool, integer, unsigned, number, string, array, object. A bool is
     /// never read as an integer (the decoder keeps `true` apart from `1`),
     /// and a number that is not whole stays a number.
     ///
@@ -37,7 +50,7 @@ enum JSONValue: Codable, Equatable, Sendable {
             throw DecodingError.dataCorrupted(
                 DecodingError.Context(
                     codingPath: decoder.codingPath,
-                    debugDescription: "A JSON value is nested deeper than the limit of \(Self.maximumDepth) levels."
+                    debugDescription: "A JSON value is nested deeper than the limit of \(Self.maximumDepth) levels." // l10n: no (damage reason: what is wrong inside a file stays English, question 3)
                 )
             )
         }
@@ -48,6 +61,9 @@ enum JSONValue: Codable, Equatable, Sendable {
             self = .bool(flag)
         } else if let whole = try? container.decode(Int64.self) {
             self = .integer(whole)
+        } else if let large = try? container.decode(UInt64.self) {
+            // Only a whole number above `Int64.max` reaches here.
+            self = .unsigned(large)
         } else if let fraction = try? container.decode(Double.self) {
             self = .number(fraction)
         } else if let text = try? container.decode(String.self) {
@@ -60,7 +76,7 @@ enum JSONValue: Codable, Equatable, Sendable {
             throw DecodingError.dataCorrupted(
                 DecodingError.Context(
                     codingPath: decoder.codingPath,
-                    debugDescription: "The value is not a JSON null, bool, number, string, array, or object."
+                    debugDescription: "The value is not a JSON null, bool, number, string, array, or object." // l10n: no (damage reason: what is wrong inside a file stays English, question 3)
                 )
             )
         }
@@ -90,6 +106,7 @@ enum JSONValue: Codable, Equatable, Sendable {
         case .null: try container.encodeNil()
         case .bool(let flag): try container.encode(flag)
         case .integer(let whole): try container.encode(whole)
+        case .unsigned(let large): try container.encode(large)
         case .number(let fraction): try container.encode(fraction)
         case .string(let text): try container.encode(text)
         case .array(let items): try container.encode(items)

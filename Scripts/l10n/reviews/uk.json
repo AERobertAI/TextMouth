@@ -1,0 +1,2878 @@
+{
+ "language": "uk",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ can't be made, because the folder that would hold it, %@, can't be found.",
+     "id": "storage.cantMadeBecause",
+     "english": "%1$@ can't be made, because the folder that would hold it, %2$@, can't be found.",
+     "before": "%1$@ не можна створити, тому що не вдається знайти папку, в якій воно мало б міститися: %2$@.",
+     "after": "%1$@ не можна створити, бо не вдається знайти батьківську папку: %2$@.",
+     "why": "grammar: neuter «воно» had no noun to point to; the chosen path is masculine"
+    },
+    {
+     "key": "%@ can't be read as %@: it holds bytes that are not valid in that encoding.",
+     "id": "textEncoding.notValid",
+     "english": "%1$@ can't be read as %2$@: it holds bytes that are not valid in that encoding.",
+     "before": "%1$@ не вдається прочитати як %2$@: байти, недійсні в цьому кодуванні.",
+     "after": "%1$@ не вдається прочитати як %2$@: дані містять байти, недійсні в цьому кодуванні.",
+     "why": "natural: the reason after the colon was a bare noun phrase with no verb"
+    },
+    {
+     "key": "%@ has no transcript to search. Transcribe it first, with Transcribe Audio.",
+     "id": "bookSearch.noTranscript",
+     "english": "%@ has no transcript to search. Transcribe it first, with Transcribe Audio.",
+     "before": "%@: немає транскрипції для пошуку. Спершу транскрибуйте її командою «Транскрибувати аудіо».",
+     "after": "%@: немає транскрипції для пошуку. Спершу створіть її командою «Транскрибувати аудіо».",
+     "why": "grammar: «транскрибуйте її» pointed back to the transcript, so it read as transcribing the transcript; the command makes the transcript"
+    },
+    {
+     "key": "%@ is filed %@ in %@ and %@ in %@.",
+     "id": "libraryComparison.sentence.bookFiledDifferently",
+     "english": "%1$@ is filed %2$@ in %3$@ and %4$@ in %5$@.",
+     "before": "%1$@: у %3$@ — %2$@, у %5$@ — %4$@.",
+     "after": "%1$@: %3$@ — %2$@, %5$@ — %4$@.",
+     "why": "grammar: «у %3$@» put the copy names, which are nominative («ця копія»), after a preposition that needs the locative"
+    },
+    {
+     "key": "%@ may be signed out or not running.",
+     "id": "dataDirectoryUnavailability.likelyCause.running",
+     "english": "%@ may be signed out or not running.",
+     "before": "Можливо, зі служби вийшли з облікового запису або її не запущено (%@).",
+     "after": "%@: можливо, ви вийшли з облікового запису або програму не запущено.",
+     "why": "natural: «зі служби вийшли з облікового запису або її не запущено (%@)» was convoluted, with the service name in brackets at the end"
+    },
+    {
+     "key": "%@ percent",
+     "id": "librarySubview.spokenPercent",
+     "english": "%@ percent",
+     "before": "%@ відсотків",
+     "after": "відсотків: %@",
+     "why": "grammar: «%@ відсотків» is wrong for 1, 2 to 4, 21 to 24 and so on (42 відсотки); the label form reads right for every number, as the other percent strings do"
+    },
+    {
+     "key": "%@ read",
+     "id": "librarySubview.percentRead",
+     "english": "%@ read",
+     "before": "прочитано: %@",
+     "after": "прочитано %@",
+     "why": "grammar: it wraps the progress, now «відсотків: 42», and reads «прочитано відсотків: 42»; the colon would have doubled"
+    },
+    {
+     "key": "%@ total remaining at current speed",
+     "id": "librarySubview.totalRemaining",
+     "english": "%@ total remaining at current speed",
+     "before": "%@ усього залишилося за поточної швидкості",
+     "after": "усього залишилося %@ за поточної швидкості",
+     "why": "natural: the time placed before «усього залишилося» copied the English word order"
+    },
+    {
+     "key": "%lld Selected",
+     "id": "removal.selectedObject",
+     "english": {
+      "one": "%lld Selected",
+      "other": "%lld Selected"
+     },
+     "before": {
+      "few": "%lld вибраних",
+      "many": "%lld вибраних",
+      "one": "%lld вибраних",
+      "other": "%lld вибраних"
+     },
+     "after": {
+      "one": "%lld вибрану",
+      "few": "%lld вибрані",
+      "many": "%lld вибраних",
+      "other": "%lld вибраних"
+     },
+     "why": "grammar: «1 вибраних» does not agree with the count; the object of «Перемістити … до Кошика» is accusative, as in «%lld вибрану книгу»"
+    },
+    {
+     "key": "%lld books in this library need a newer version of TextMouth. They are kept as they are, but not shown.",
+     "id": "storageLocation.booksNeedingNewerTextMouth.need",
+     "english": "%lld books in this library need a newer version of TextMouth. They are kept as they are, but not shown.",
+     "before": "%lld книг у цій бібліотеці потребують новішої версії TextMouth. Вони зберігаються як є, але не показуються.",
+     "after": "Книг у цій бібліотеці, яким потрібна новіша версія TextMouth: %lld. Вони зберігаються як є, але не показуються.",
+     "why": "grammar: the string has no plural forms, and «%lld книг» is wrong for 2 to 4 and 22 to 24 (3 книги); the count now follows a colon"
+    },
+    {
+     "key": "%lld views need a newer TextMouth. They are kept as they are, and not offered.",
+     "id": "libraryViewsSettings.unreadableCaption",
+     "english": {
+      "one": "%lld view needs a newer TextMouth. It is kept as it is, and not offered.",
+      "other": "%lld views need a newer TextMouth. They are kept as they are, and not offered."
+     },
+     "before": {
+      "few": "%lld вигляди потребують новішої версії TextMouth. Їх збережено як є, але не пропонуються.",
+      "many": "%lld виглядів потребують новішої версії TextMouth. Їх збережено як є, але не пропонуються.",
+      "one": "%lld вигляд потребує новішої версії TextMouth. Його збережено як є, але не пропонується.",
+      "other": "%lld вигляди потребують новішої версії TextMouth. Їх збережено як є, але не пропонуються."
+     },
+     "after": {
+      "one": "%lld вигляд потребує новішої версії TextMouth. Його збережено як є, але він не пропонується.",
+      "few": "%lld вигляди потребують новішої версії TextMouth. Їх збережено як є, але вони не пропонуються.",
+      "many": "%lld виглядів потребують новішої версії TextMouth. Їх збережено як є, але вони не пропонуються.",
+      "other": "%lld вигляди потребують новішої версії TextMouth. Їх збережено як є, але вони не пропонуються."
+     },
+     "why": "grammar: «не пропонуються» had no subject, since «Їх» is the object of «збережено»"
+    },
+    {
+     "key": "A book that's only in the cloud needs an internet connection to open.",
+     "id": "storage.moveLocationSentence.cloud.connection",
+     "english": "A book that's only in the cloud needs an internet connection to open.",
+     "before": "Книзі, яка є лише в хмарі, для відкриття потрібне підключення до інтернету.",
+     "after": "Щоб відкрити книгу, яка є лише в хмарі, потрібне підключення до інтернету.",
+     "why": "natural: «Книзі ... для відкриття потрібне» was stiff; now built as its sibling with the service name"
+    },
+    {
+     "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "id": "textEncoding.keptTextNote",
+     "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "before": "Редагування його тексту зберігається поряд із новим прочитанням як копія в пакеті книги.",
+     "after": "Ваші зміни в тексті зберігаються як копія в пакеті книги, поряд із заново прочитаним текстом.",
+     "why": "meaning: «нове прочитання» is a new interpretation, not the text a re-read makes; and «його» had no masculine noun to point to"
+    },
+    {
+     "key": "Asks first, then gives the library a new identity and opens it.",
+     "id": "libraryFileWait.openHint.identityNotKnown",
+     "english": "Asks first, then gives the library a new identity and opens it.",
+     "before": "Спочатку запитує, потім надає бібліотеці нову ідентичність і відкриває її.",
+     "after": "Спочатку запитує, потім надає бібліотеці новий ідентифікатор і відкриває її.",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "Asks first, then writes the identity this Mac knows for the library and opens it.",
+     "id": "libraryFileWait.openHint.identity",
+     "english": "Asks first, then writes the identity this Mac knows for the library and opens it.",
+     "before": "Спочатку запитує, потім записує ідентичність, яку цей Mac знає для бібліотеки, і відкриває її.",
+     "after": "Спочатку запитує, потім записує ідентифікатор бібліотеки, відомий цьому Mac, і відкриває її.",
+     "why": "term: «ідентичність» is a personal identity, the library mark is its «ідентифікатор»; and «яку цей Mac знає для бібліотеки» was a calque"
+    },
+    {
+     "key": "Cancel New Folder",
+     "id": "libraryFolderPicker.cancelNewFolderTitle",
+     "english": "Cancel New Folder",
+     "before": "Скасувати нову папку",
+     "after": "Скасувати створення папки",
+     "why": "natural: «Скасувати нову папку» cancels a folder; the button closes the new folder fields without making one"
+    },
+    {
+     "key": "Changes to %lld other books could not be saved either.",
+     "id": "persistenceSubsystem.othersSentence.bookRecord",
+     "english": {
+      "one": "Changes to %lld other book could not be saved either.",
+      "other": "Changes to %lld other books could not be saved either."
+     },
+     "before": {
+      "few": "Зміни ще до %lld інших книг також не вдалося зберегти.",
+      "many": "Зміни ще до %lld інших книг також не вдалося зберегти.",
+      "one": "Зміни ще до %lld іншої книги також не вдалося зберегти.",
+      "other": "Зміни ще до %lld іншої книги також не вдалося зберегти."
+     },
+     "after": {
+      "one": "Також не вдалося зберегти зміни ще в %lld іншій книзі.",
+      "few": "Також не вдалося зберегти зміни ще в %lld інших книгах.",
+      "many": "Також не вдалося зберегти зміни ще в %lld інших книгах.",
+      "other": "Також не вдалося зберегти зміни ще в %lld інших книгах."
+     },
+     "why": "meaning: «Зміни ще до %lld» reads as changes to up to that many; «до» before a number means up to"
+    },
+    {
+     "key": "Changes to %lld other feeds could not be saved either.",
+     "id": "persistenceSubsystem.othersSentence.feedRecords",
+     "english": {
+      "one": "Changes to %lld other feed could not be saved either.",
+      "other": "Changes to %lld other feeds could not be saved either."
+     },
+     "before": {
+      "few": "Зміни ще до %lld інших стрічок також не вдалося зберегти.",
+      "many": "Зміни ще до %lld інших стрічок також не вдалося зберегти.",
+      "one": "Зміни ще до %lld іншої стрічки також не вдалося зберегти.",
+      "other": "Зміни ще до %lld іншої стрічки також не вдалося зберегти."
+     },
+     "after": {
+      "one": "Також не вдалося зберегти зміни ще в %lld іншій стрічці.",
+      "few": "Також не вдалося зберегти зміни ще в %lld інших стрічках.",
+      "many": "Також не вдалося зберегти зміни ще в %lld інших стрічках.",
+      "other": "Також не вдалося зберегти зміни ще в %lld інших стрічках."
+     },
+     "why": "meaning: «Зміни ще до %lld» reads as changes to up to that many; «до» before a number means up to"
+    },
+    {
+     "key": "Could not discard duplicate import",
+     "id": "libraryViewModel.couldNotDiscardDuplicateImport",
+     "english": "Could not discard duplicate import",
+     "before": "Не вдалося відхилити дубльований імпорт",
+     "after": "Не вдалося відкинути імпортований дублікат",
+     "why": "meaning: «відхилити дубльований імпорт» rejects a repeated import; the new copy that duplicates a book is what could not be discarded"
+    },
+    {
+     "key": "Could not read the text back from the editor's file, so the text here is unchanged.",
+     "id": "textImportPolicy.reloadFailed.unchanged",
+     "english": "Could not read the text back from the editor's file, so the text here is unchanged.",
+     "before": "Не вдалося прочитати текст назад із файлу редактора, тому текст тут не змінено.",
+     "after": "Не вдалося зчитати текст із файлу редактора, тому текст тут не змінено.",
+     "why": "natural: «прочитати назад» reads as reading backwards; reading a saved file back is «зчитати»"
+    },
+    {
+     "key": "Delete After Import",
+     "id": "importDeleteBehavior.title.deleteAfterImport",
+     "english": "Delete After Import",
+     "before": "Видалити після імпорту",
+     "after": "Видаляти після імпорту",
+     "why": "natural: a standing setting takes the imperfective, as its sibling «Запитувати щоразу» does"
+    },
+    {
+     "key": "Details are at the top of the Library window.",
+     "id": "persistenceBannerRow.announcement.details",
+     "english": "Details are at the top of the Library window.",
+     "before": "Подробиці вгорі вікна бібліотеки.",
+     "after": "Подробиці наведено вгорі вікна бібліотеки.",
+     "why": "natural: the sentence had no verb"
+    },
+    {
+     "key": "Downloaded. Loading.",
+     "id": "readerCloud.downloadedLoading",
+     "english": "Downloaded. Loading.",
+     "before": "Завантажено. Завантаження книги.",
+     "after": "Завантажено. Відкриття книги.",
+     "why": "meaning: «Завантаження книги» right after «Завантажено» reads as downloading again; the book is now loading into the reader"
+    },
+    {
+     "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "id": "textEncoding.stopsEditingNote",
+     "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "before": "Редагування тексту цієї книги завершується; виберіть «Редагувати текст» ще раз, щоб редагувати нове прочитання.",
+     "after": "Редагування тексту цієї книги завершується; виберіть «Редагувати текст» ще раз, щоб редагувати заново прочитаний текст.",
+     "why": "meaning: «нове прочитання» is a new interpretation, not the text a re-read makes"
+    },
+    {
+     "key": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "id": "miscellaneousSettings.restartGestureExplanation",
+     "english": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "before": "Експериментально. Послідовність медіаклавіш або елементів керування AirPods за короткий проміжок часу знову запускає останній таймер сну, що зручно після його спрацювання.",
+     "after": "Експериментальна функція. Послідовність медіаклавіш або елементів керування AirPods за короткий проміжок часу знову запускає останній таймер сну, що зручно після його спрацювання.",
+     "why": "natural: «Експериментально.» alone is an adverb, not a label for an experimental feature"
+    },
+    {
+     "key": "Failed to rebuild to default",
+     "id": "libraryViewModel.resetFailureContext",
+     "english": "Failed to rebuild to default",
+     "before": "Не вдалося відновити типові значення",
+     "after": "Не вдалося повернути бібліотеку до типового розташування",
+     "why": "meaning: Reset to Default in Storage moves the library back to the default location; «відновити типові значення» restores settings"
+    },
+    {
+     "key": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "id": "libraryIndexRecovery.rebuild.placement",
+     "english": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "before": "Розташування папок і порядок, задані вручну, які зберігалися лише в нечитабельному індексі, буде втрачено з бібліотеки.",
+     "after": "Розміщення книг у папках і власний порядок, що зберігалися лише в нечитабельному індексі, буде втрачено.",
+     "why": "natural: «буде втрачено з бібліотеки» copies «lost from the library»; and «порядок, задані вручну» lost agreement"
+    },
+    {
+     "key": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "id": "libraryViewEditor.editDisabledHint",
+     "english": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "before": "Папки та список читання завжди показують те, що мають. Їх можна переміщувати, а список читання — приховати.",
+     "after": "«Папки» та «Список читання» завжди показують свій звичайний вміст. Їх можна переміщувати, а «Список читання» — приховати.",
+     "why": "natural: «показують те, що мають» was close to a tautology, and the two view names lacked the quotes the other view names have"
+    },
+    {
+     "key": "Give It a New Identity…",
+     "id": "libraryFileWait.openTitle.identityNotKnown",
+     "english": "Give It a New Identity…",
+     "before": "Надати нову ідентичність…",
+     "after": "Надати новий ідентифікатор…",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "Give a New Identity",
+     "id": "libraryFileWait.confirmTitle.identityNotKnown",
+     "english": "Give a New Identity",
+     "before": "Надати нову ідентичність",
+     "after": "Надати новий ідентифікатор",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "Give the library a new identity?",
+     "id": "libraryFileWait.identityNotKnown",
+     "english": "Give the library a new identity?",
+     "before": "Надати бібліотеці нову ідентичність?",
+     "after": "Надати бібліотеці новий ідентифікатор?",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "id": "brailleCode.guessedRecovery",
+     "english": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "before": "Визначено за брайлем книги. Якщо код прочитано неправильно, виберіть Unified English Braille у пункті «Код Брайля».",
+     "after": "Код припущено на основі брайля книги. Якщо книга читається неправильно, виберіть Unified English Braille у меню «Код Брайля».",
+     "why": "meaning: «Визначено» lost the doubt of «guessed»; «код прочитано неправильно» said the code was misread, not the book; Braille Code is a pop-up menu"
+    },
+    {
+     "key": "Its text is replaced by the new reading.",
+     "id": "textEncoding.replacedNote",
+     "english": "Its text is replaced by the new reading.",
+     "before": "Його текст замінюється новим прочитанням.",
+     "after": "Текст книги замінюється заново прочитаним текстом.",
+     "why": "meaning: «нове прочитання» is a new interpretation, not the text a re-read makes; and «Його» had no masculine noun to point to"
+    },
+    {
+     "key": "Keep Original",
+     "id": "importDeleteBehavior.title.keepOriginal",
+     "english": "Keep Original",
+     "before": "Залишити оригінал",
+     "after": "Залишати оригінал",
+     "why": "natural: a standing setting takes the imperfective, as its sibling «Запитувати щоразу» does"
+    },
+    {
+     "key": "Loading ISBNs...",
+     "id": "duplicateFinder.loadingISBNsTitle",
+     "english": "Loading ISBNs...",
+     "before": "Завантаження ISBN...",
+     "after": "Зчитування ISBN...",
+     "why": "meaning: «Завантаження ISBN» reads as downloading them; the scan reads the ISBNs from the books"
+    },
+    {
+     "key": "Most rows shown",
+     "id": "libraryViewEditor.limitFieldLabel",
+     "english": "Most rows shown",
+     "before": "Найбільше показаних рядків",
+     "after": "Найбільша кількість рядків",
+     "why": "natural: «Найбільше показаних рядків» reads as most of the rows shown; the limit field holds the largest number of rows"
+    },
+    {
+     "key": "Only the Latest from Each Feed",
+     "id": "libraryViewEditor.onePerFeedTitle",
+     "english": "Only the Latest from Each Feed",
+     "before": "Лише найновіше з кожної стрічки",
+     "after": "Лише останнє з кожної стрічки",
+     "why": "meaning: «найновіше» says the newest published; the checkbox keeps the item opened last, as its hint says"
+    },
+    {
+     "key": "Removal Behavior",
+     "id": "storageSettings.removalBehaviorHeader",
+     "english": "Removal Behavior",
+     "before": "Поведінка при вилученні",
+     "after": "Поведінка вилучення",
+     "why": "natural: «при вилученні» is a Russian-style use of «при» (the only one in the catalog); built as its sibling «Поведінка імпорту»"
+    },
+    {
+     "key": "Restore Its Identity…",
+     "id": "libraryFileWait.openTitle.identity",
+     "english": "Restore Its Identity…",
+     "before": "Відновити її ідентичність…",
+     "after": "Відновити її ідентифікатор…",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "Restore the library's identity?",
+     "id": "libraryFileWait.confirmationTitle.identity",
+     "english": "Restore the library's identity?",
+     "before": "Відновити ідентичність бібліотеки?",
+     "after": "Відновити ідентифікатор бібліотеки?",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "Retry is at the top of the Library window.",
+     "id": "persistenceBannerRow.announcement.retry",
+     "english": "Retry is at the top of the Library window.",
+     "before": "Кнопка «Повторити» вгорі вікна бібліотеки.",
+     "after": "Кнопка «Повторити» — угорі вікна бібліотеки.",
+     "why": "natural: without a verb or a dash the sentence read as a bare noun phrase"
+    },
+    {
+     "key": "Show bookmark button in playback controls",
+     "id": "settings.showBookmarkLabel",
+     "english": "Show bookmark button in playback controls",
+     "before": "Показувати кнопку закладки в елементах керування відтворенням",
+     "after": "Показувати кнопку закладки на панелі відтворення",
+     "why": "natural: «в елементах керування відтворенням» is a long calque of in playback controls; the buttons go on the playback bar, «панель відтворення», as other strings say"
+    },
+    {
+     "key": "Show speed controls in playback controls",
+     "id": "settings.showSpeedLabel",
+     "english": "Show speed controls in playback controls",
+     "before": "Показувати елементи керування швидкістю в елементах керування відтворенням",
+     "after": "Показувати елементи керування швидкістю на панелі відтворення",
+     "why": "natural: «в елементах керування відтворенням» is a long calque of in playback controls; the buttons go on the playback bar, «панель відтворення», as other strings say"
+    },
+    {
+     "key": "Some files of “%@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %@ again.",
+     "id": "refusal.sentence.filesInCloud",
+     "english": "Some files of “%1$@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %2$@ again.",
+     "before": "Деякі файли «%1$@» є лише в хмарі, і заміна зараз залишила б їх. Завантажте книгу, а потім знову виберіть «%2$@».",
+     "after": "Деякі файли «%1$@» є лише в хмарі, і якщо замінити книгу зараз, їх не буде перенесено. Завантажте книгу, а потім знову виберіть «%2$@».",
+     "why": "meaning: «заміна зараз залишила б їх» also reads as keeping the files; the replacement would leave them out"
+    },
+    {
+     "key": "Start New Library",
+     "id": "storageChoice.startNewLibrary.button",
+     "english": "Start New Library",
+     "before": "Почати нову бібліотеку",
+     "after": "Створити нову бібліотеку",
+     "why": "natural: «почати бібліотеку» copies start a library; a new library is created, «створити», as the hint «створює там нову» says"
+    },
+    {
+     "key": "Start a New Library?",
+     "id": "storageChoice.startNewLibrary.question",
+     "english": "Start a New Library?",
+     "before": "Почати нову бібліотеку?",
+     "after": "Створити нову бібліотеку?",
+     "why": "natural: «почати бібліотеку» copies start a library; a new library is created, «створити», as the hint «створює там нову» says"
+    },
+    {
+     "key": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
+     "id": "storage.unsavedSentence",
+     "english": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
+     "before": "Перемикання втрачає зміни, які TextMouth не вдалося зберегти, поки бібліотека недоступна.",
+     "after": "Під час перемикання буде втрачено зміни, які TextMouth не вдалося зберегти, поки бібліотека недоступна.",
+     "why": "natural: «Перемикання втрачає зміни» made the switch an agent that loses things"
+    },
+    {
+     "key": "Test input text",
+     "id": "substitutions.testInputLabel",
+     "english": "Test input text",
+     "before": "Тестовий вхідний текст",
+     "after": "Текст для перевірки",
+     "why": "natural: «Тестовий вхідний текст» is programmer jargon; the field its label names already says «Текст для перевірки»"
+    },
+    {
+     "key": "Test this rule against the input",
+     "id": "substitutions.testButtonLabel",
+     "english": "Test this rule against the input",
+     "before": "Перевірити це правило на вхідному тексті",
+     "after": "Перевірити це правило на введеному тексті",
+     "why": "natural: «вхідному тексті» is programmer jargon for the text typed to test"
+    },
+    {
+     "key": "TextMouth could not check whether to move it to the Trash.",
+     "id": "legacyMigrationError.trashPreferenceUnavailable",
+     "english": "TextMouth could not check whether to move it to the Trash.",
+     "before": "TextMouth не вдалося перевірити, чи переміщувати її до Кошика.",
+     "after": "TextMouth не вдалося перевірити, чи переміщувати його до Кошика.",
+     "why": "grammar: «It» is the original file, masculine, so «його», not «її»"
+    },
+    {
+     "key": "TextMouth could not move %@ to the current library format.",
+     "id": "legacyMigrationReport.userSummary.move",
+     "english": "TextMouth could not move %@ to the current library format.",
+     "before": "TextMouth не вдалося перемістити до поточного формату бібліотеки: %@.",
+     "after": "TextMouth не вдалося перевести в поточний формат бібліотеки: %@.",
+     "why": "natural: «перемістити до формату» copies move to a format, and «таке:» was filler; a book is brought into a format, «перевести в формат»"
+    },
+    {
+     "key": "TextMouth could not save a copy of %@, so it left that file unchanged.",
+     "id": "libraryIndexRecoveryError.couldNotPreserve",
+     "english": "TextMouth could not save a copy of %@, so it left that file unchanged.",
+     "before": "TextMouth не вдалося зберегти копію %@, тому залишив цей файл без змін.",
+     "after": "TextMouth не зміг зберегти копію %@, тому залишив цей файл без змін.",
+     "why": "grammar: «TextMouth не вдалося» puts TextMouth in the dative, so «залишив» had no subject"
+    },
+    {
+     "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "id": "textEncoding.editNotKeptRefusal",
+     "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "before": "TextMouth не вдалося зберегти текст, який ви змінили в «%@», поряд із новим прочитанням, тому книгу залишено без змін.",
+     "after": "TextMouth не вдалося зберегти текст, який ви змінили в «%@», поряд із заново прочитаним текстом, тому книгу залишено без змін.",
+     "why": "meaning: «нове прочитання» is a new interpretation, not the text a re-read makes"
+    },
+    {
+     "key": "TextMouth moved %@ to the current library format, but with a problem:",
+     "id": "legacyMigrationReport.userSummary.problem",
+     "english": "TextMouth moved %@ to the current library format, but with a problem:",
+     "before": "TextMouth перемістив до поточного формату бібліотеки таке: %@, але з проблемою:",
+     "after": "TextMouth перевів у поточний формат бібліотеки: %@, але з проблемою:",
+     "why": "natural: «перемістити до формату» copies move to a format, and «таке:» was filler; a book is brought into a format, «перевести в формат»"
+    },
+    {
+     "key": "TextMouth moved %@ to the current library format, but with problems:",
+     "id": "legacyMigrationReport.userSummary.problems",
+     "english": "TextMouth moved %@ to the current library format, but with problems:",
+     "before": "TextMouth перемістив до поточного формату бібліотеки таке: %@, але з проблемами:",
+     "after": "TextMouth перевів у поточний формат бібліотеки: %@, але з проблемами:",
+     "why": "natural: «перемістити до формату» copies move to a format, and «таке:» was filler; a book is brought into a format, «перевести в формат»"
+    },
+    {
+     "key": "TextMouth will start a new, empty library in the default location, %@, instead of the library in %@, which isn't available.",
+     "id": "storage.startNewLibrarySentence.available",
+     "english": "TextMouth will start a new, empty library in the default location, %1$@, instead of the library in %2$@, which isn't available.",
+     "before": "TextMouth почне нову порожню бібліотеку в типовому розташуванні, %1$@, замість бібліотеки в %2$@, яка недоступна.",
+     "after": "TextMouth створить нову порожню бібліотеку в типовому розташуванні, %1$@, замість бібліотеки в %2$@, яка недоступна.",
+     "why": "natural: «почати бібліотеку» copies start a library; a new library is created, «створити», as the hint «створює там нову» says"
+    },
+    {
+     "key": "TextMouth writes %@ with a new identity for the library, and opens it.",
+     "id": "libraryFileWait.identityNotKnown.writes",
+     "english": "TextMouth writes %@ with a new identity for the library, and opens it.",
+     "before": "TextMouth запише %@ з новою ідентичністю бібліотеки й відкриє її.",
+     "after": "TextMouth запише %@ з новим ідентифікатором бібліотеки й відкриє її.",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "TextMouth writes %@ with the identity this Mac knows for the library, and opens it.",
+     "id": "libraryFileWait.confirmation.identity.writes",
+     "english": "TextMouth writes %@ with the identity this Mac knows for the library, and opens it.",
+     "before": "TextMouth запише %@ з ідентичністю, яку цей Mac знає для бібліотеки, і відкриє її.",
+     "after": "TextMouth запише %@ з ідентифікатором бібліотеки, відомим цьому Mac, і відкриє її.",
+     "why": "term: «ідентичність» is a personal identity, the library mark is its «ідентифікатор»; and «яку цей Mac знає для бібліотеки» was a calque"
+    },
+    {
+     "key": "That would put %@ %lld levels deep, but folders nest at most %lld levels.",
+     "id": "folderOperationConflict.tooDeep",
+     "english": {
+      "one": "That would put %@ %lld level deep, but folders nest at most %lld levels.",
+      "other": "That would put %@ %lld levels deep, but folders nest at most %lld levels."
+     },
+     "before": {
+      "few": "Через це %1$@ було б розташовано на %2$lld рівнях вкладеності, а папки можуть мати щонайбільше %3$lld рівнів вкладеності.",
+      "many": "Через це %1$@ було б розташовано на %2$lld рівнях вкладеності, а папки можуть мати щонайбільше %3$lld рівнів вкладеності.",
+      "one": "Через це %1$@ було б розташовано на %2$lld рівні вкладеності, а папки можуть мати щонайбільше %3$lld рівнів вкладеності.",
+      "other": "Через це %1$@ було б розташовано на %2$lld рівнях вкладеності, а папки можуть мати щонайбільше %3$lld рівнів вкладеності."
+     },
+     "after": {
+      "one": "Через це %1$@ було б розташовано на %2$lld рівні вкладеності, а найбільша допустима глибина — %3$lld.",
+      "few": "Через це %1$@ було б розташовано на %2$lld рівнях вкладеності, а найбільша допустима глибина — %3$lld.",
+      "many": "Через це %1$@ було б розташовано на %2$lld рівнях вкладеності, а найбільша допустима глибина — %3$lld.",
+      "other": "Через це %1$@ було б розташовано на %2$lld рівнях вкладеності, а найбільша допустима глибина — %3$lld."
+     },
+     "why": "grammar: the limit is 4, and «щонайбільше 4 рівнів» does not agree (4 рівні); the limit now stands alone after a dash"
+    },
+    {
+     "key": "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written.",
+     "id": "leadingArticle.description.ignoredWhenTyping",
+     "english": "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written.",
+     "before": "«The Hobbit» під час введення враховується як H. Список зберігає свій порядок і показує кожну назву так, як вона написана.",
+     "after": "Під час введення «The Hobbit» знаходиться за літерою H. Список зберігає свій порядок і показує кожну назву так, як вона написана.",
+     "why": "meaning: «враховується як H» says the title counts as the letter H; typing H finds it"
+    },
+    {
+     "key": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "id": "leadingArticle.description.ignoredForBoth",
+     "english": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "before": "«The Hobbit» сортується серед H і показується як «Hobbit, The». Введення H знаходить її серед H.",
+     "after": "«The Hobbit» сортується серед назв на H і показується як «Hobbit, The». Введення H знаходить цю книгу серед них.",
+     "why": "natural: «серед H» copies among the H-s; titles sort among the titles on a letter"
+    },
+    {
+     "key": "The folder is there, but TextMouth can't read its library identity file: %@",
+     "id": "dataDirectoryUnavailability.identityUnreadable",
+     "english": "The folder is there, but TextMouth can't read its library identity file: %@",
+     "before": "Папка на місці, але TextMouth не може прочитати файл ідентичності її бібліотеки: %@",
+     "after": "Папка на місці, але TextMouth не може прочитати файл ідентифікатора її бібліотеки: %@",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "The library's identity file is on this Mac, but its index, %@, hasn't arrived from %@.",
+     "id": "libraryFileWait.explanation.index",
+     "english": "The library's identity file is on this Mac, but its index, %1$@, hasn't arrived from %2$@.",
+     "before": "Файл ідентичності бібліотеки є на цьому Mac, але її індекс, %1$@, не надійшов (джерело: %2$@).",
+     "after": "Файл ідентифікатора бібліотеки є на цьому Mac, але її індекс, %1$@, не надійшов (джерело: %2$@).",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "The library's index is on this Mac, but its identity file, %@, hasn't arrived from %@.",
+     "id": "libraryFileWait.explanation.identity",
+     "english": "The library's index is on this Mac, but its identity file, %1$@, hasn't arrived from %2$@.",
+     "before": "Індекс бібліотеки є на цьому Mac, але її файл ідентичності, %1$@, не надійшов (джерело: %2$@).",
+     "after": "Індекс бібліотеки є на цьому Mac, але її файл ідентифікатора, %1$@, не надійшов (джерело: %2$@).",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "This Mac doesn't know the library's identity, so it can't restore it.",
+     "id": "libraryFileWait.explanation.identityRestore",
+     "english": "This Mac doesn't know the library's identity, so it can't restore it.",
+     "before": "Цей Mac не знає ідентичності бібліотеки, тому не може її відновити.",
+     "after": "Цей Mac не знає ідентифікатора бібліотеки, тому не може його відновити.",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор»"
+    },
+    {
+     "key": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "id": "brailleCode.suggestsAmericanEdition",
+     "english": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "before": "Цей брайль схожий на English Braille, American Edition. Виберіть його «Код Брайля» у вікні «Інформація про книгу».",
+     "after": "Цей брайль схожий на English Braille, American Edition. Виберіть цей код у меню «Код Брайля» вікна «Інформація про книгу».",
+     "why": "natural: «Виберіть його «Код Брайля»» chose the pop-up itself; the code is chosen in the Braille Code pop-up of the window"
+    },
+    {
+     "key": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "id": "leadingArticle.description.partOfTitle",
+     "english": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "before": "Назви сортуються й шукаються введенням так, як написані: «The Hobbit» серед T.",
+     "after": "Назви сортуються й знаходяться введенням так, як їх написано: «The Hobbit» стоїть серед назв на T.",
+     "why": "natural: «серед T» copies among the T-s; titles sort among the titles on a letter"
+    },
+    {
+     "key": "Together with the archives inside it, the archive expands to %@, more than the %@ TextMouth extracts from archives holding audio or other archives.",
+     "id": "archiveBudgetError.expandsPastLimit.innerHolding",
+     "english": "Together with the archives inside it, the archive expands to %1$@, more than the %2$@ TextMouth extracts from archives holding audio or other archives.",
+     "before": "Разом з архівами всередині нього він займе після розпакування %1$@, що більше за ліміт TextMouth для архівів з аудіо чи іншими архівами: %2$@.",
+     "after": "Разом з архівами всередині нього архів після розпакування займе %1$@, що більше за ліміт TextMouth для архівів з аудіо чи іншими архівами: %2$@.",
+     "why": "grammar: «він займе» had no noun to point to; the archive is now named, as its sibling about files and folders names it"
+    },
+    {
+     "key": "Together with the archives inside it, the archive expands to %@, more than the %@ TextMouth extracts from archives without audio.",
+     "id": "archiveBudgetError.expandsPastLimit.innerWithout",
+     "english": "Together with the archives inside it, the archive expands to %1$@, more than the %2$@ TextMouth extracts from archives without audio.",
+     "before": "Разом з архівами всередині нього він займе після розпакування %1$@, що більше за ліміт TextMouth для архівів без аудіо: %2$@.",
+     "after": "Разом з архівами всередині нього архів після розпакування займе %1$@, що більше за ліміт TextMouth для архівів без аудіо: %2$@.",
+     "why": "grammar: «він займе» had no noun to point to; the archive is now named, as its sibling about files and folders names it"
+    },
+    {
+     "key": "Transcribe it again, then search the new transcript.",
+     "id": "bookSearch.transcribeAgainAdvice",
+     "english": "Transcribe it again, then search the new transcript.",
+     "before": "Транскрибуйте її знову, а потім шукайте в новій транскрипції.",
+     "after": "Транскрибуйте аудіо ще раз, а потім шукайте в новій транскрипції.",
+     "why": "grammar: «Транскрибуйте її» pointed back to the transcript named just before; the audio is what is transcribed"
+    },
+    {
+     "key": "Try again in a moment.",
+     "id": "common.tryAgainInAMoment",
+     "english": "Try again in a moment.",
+     "before": "Повторіть спробу за мить.",
+     "after": "Повторіть спробу трохи згодом.",
+     "why": "natural: «за мить» is literary and promises an instant; Apple says to try again later"
+    },
+    {
+     "key": "Until then, changing the location and rebuilding the directory are unavailable.",
+     "id": "libraryIndexRecovery.settings.rebuilding",
+     "english": "Until then, changing the location and rebuilding the directory are unavailable.",
+     "before": "До цього змінити розташування й перебудувати каталог неможливо.",
+     "after": "До того часу змінити розташування й перебудувати каталог неможливо.",
+     "why": "meaning: «До цього» usually means before this, so the sentence read as a past limit"
+    },
+    {
+     "key": "What happens when a book finishes playing",
+     "id": "settings.endOfBookHint",
+     "english": "What happens when a book finishes playing",
+     "before": "Що відбувається, коли книга закінчує відтворюватися.",
+     "after": "Що відбувається, коли відтворення книги закінчується.",
+     "why": "natural: «книга закінчує відтворюватися» was a stiff calque of finishes playing"
+    },
+    {
+     "key": "When checked, matches must use the same upper and lower case",
+     "id": "bookSearch.matchCaseHint",
+     "english": "When checked, matches must use the same upper and lower case",
+     "before": "Якщо позначено, збіги мають мати той самий регістр літер.",
+     "after": "Якщо позначено, у збігах враховується регістр літер.",
+     "why": "natural: «збіги мають мати» stacked two forms of «мати»"
+    },
+    {
+     "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "id": "textEncoding.placesSentence.whereNoneTheirWords",
+     "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Якщо не залишилося жодного з їхніх слів, %@, кожне з них переходить приблизно на те саме місце в розділі або до найближчого уривка, спільного для обох прочитань.",
+     "after": "Якщо не залишилося жодного з їхніх слів, %@, кожна з них переходить приблизно на те саме місце в розділі або до найближчого уривка, спільного для старого й нового тексту.",
+     "why": "grammar: neuter «кожне» did not agree with позиція and закладки, both feminine; and «обох прочитань» meant two interpretations, not the old and new text"
+    },
+    {
+     "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "id": "textEncoding.placesSentence.whereNoneTheir",
+     "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Якщо не залишилося жодного з їхніх слів, кожне з них переходить приблизно на те саме місце в розділі або до найближчого уривка, спільного для обох прочитань.",
+     "after": "Якщо не залишилося жодного з їхніх слів, кожна з них переходить приблизно на те саме місце в розділі або до найближчого уривка, спільного для старого й нового тексту.",
+     "why": "grammar: neuter «кожне» did not agree with позиція and закладки, both feminine; and «обох прочитань» meant two interpretations, not the old and new text"
+    },
+    {
+     "key": "its files are deleted permanently and cannot be recovered",
+     "id": "removalMode.filesClause.permanentlyRecovered",
+     "english": "its files are deleted permanently and cannot be recovered",
+     "before": "його файли видаляються остаточно й не підлягають відновленню",
+     "after": "її файли видаляються остаточно й не підлягають відновленню",
+     "why": "grammar: the clause is about a book, which is feminine, so its files are «її», not «його»"
+    },
+    {
+     "key": "its files go to the Trash, where you can recover them until the Trash is emptied",
+     "id": "removalMode.filesClause.trashWhereRecoverEmptied",
+     "english": "its files go to the Trash, where you can recover them until the Trash is emptied",
+     "before": "його файли потрапляють до Кошика, де їх можна відновити, доки Кошик не очищено",
+     "after": "її файли потрапляють до Кошика, де їх можна відновити, доки Кошик не очищено",
+     "why": "grammar: the clause is about a book, which is feminine, so its files are «її», not «його»"
+    },
+    {
+     "key": "its files stay in the TextMouth library folder",
+     "id": "removalMode.filesClause.stayLibraryFolder",
+     "english": "its files stay in the TextMouth library folder",
+     "before": "його файли залишаються в папці бібліотеки TextMouth",
+     "after": "її файли залишаються в папці бібліотеки TextMouth",
+     "why": "grammar: the clause is about a book, which is feminine, so its files are «її», not «його»"
+    },
+    {
+     "key": "only the latest from each feed",
+     "id": "libraryViewEditor.description.latest",
+     "english": "only the latest from each feed",
+     "before": "лише найновіше з кожної стрічки",
+     "after": "лише останнє з кожної стрічки",
+     "why": "meaning: «найновіше» says the newest published; the option keeps the item opened last"
+    },
+    {
+     "key": "permission denied",
+     "id": "common.permissionDenied",
+     "english": "permission denied",
+     "before": "дозвіл відхилено",
+     "after": "немає дозволу",
+     "why": "term: «дозвіл відхилено» copies permission denied; macOS says «немає дозволу»"
+    },
+    {
+     "key": "so its place and bookmarks there were taken from the library index alone.",
+     "id": "libraryComparison.sentence.record",
+     "english": "so its place and bookmarks there were taken from the library index alone.",
+     "before": "тому його позицію та закладки там узято лише з індексу бібліотеки.",
+     "after": "тому позицію та закладки цієї книги там узято лише з індексу бібліотеки.",
+     "why": "grammar: «його» pointed to the record named before, not to the book, which is feminine"
+    },
+    {
+     "key": "the identity marker of %@",
+     "id": "libraryComparison.shortReason.identityMarker",
+     "english": "the identity marker of %@",
+     "before": "маркер ідентичності (%@)",
+     "after": "маркер ідентифікатора (%@)",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор», as in the other identity strings"
+    },
+    {
+     "key": "the identity marker of the library in %@",
+     "id": "libraryComparison.identityMarker.ofLibraryIn",
+     "english": "the identity marker of the library in %@",
+     "before": "маркер ідентичності бібліотеки (%@)",
+     "after": "маркер ідентифікатора бібліотеки (%@)",
+     "why": "term: «ідентичність» is a personal or cultural identity; the library mark that tells copies apart is its «ідентифікатор», as in the other identity strings"
+    },
+    {
+     "key": "“%@” keeps %@.",
+     "id": "brailleCode.keptGuess",
+     "english": "“%1$@” keeps %2$@.",
+     "before": "«%1$@» залишає %2$@.",
+     "after": "Для «%1$@» залишено %2$@.",
+     "why": "meaning: ««%1$@» залишає %2$@» also reads as the book leaving the code behind; the listener keeps the code for the book"
+    }
+   ]
+  },
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ are in your library, unsubscribed. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "id": "feed.importFoundUnsubscribed",
+     "english": "%1$@ are in your library, unsubscribed. Choose %2$@ on a feed's row, or in its %3$@, to check it again.",
+     "before": "%1$@ є у вашій бібліотеці без підписки. Виберіть %2$@ у рядку стрічки або в аркуші «%3$@», щоб перевірити їх знову.",
+     "after": "%1$@ є у вашій бібліотеці без підписки. Виберіть «%2$@» у рядку стрічки або в аркуші «%3$@», щоб відновити їх перевірку.",
+     "why": "punctuation: the Resubscribe name takes «» like the sheet name beside it, and \"щоб відновити перевірку\" avoids \"Підписатися знову … знову\""
+    },
+    {
+     "key": "%@ didn't answer for %lld seconds.",
+     "id": "feedFetchError.didntAnswerSeconds",
+     "english": {
+      "one": "%@ didn't answer for %lld second.",
+      "other": "%@ didn't answer for %lld seconds."
+     },
+     "before": {
+      "few": "%@ не відповів. Очікування тривало %lld секунди.",
+      "many": "%@ не відповів. Очікування тривало %lld секунд.",
+      "one": "%@ не відповів. Очікування тривало %lld секунду.",
+      "other": "%@ не відповів. Очікування тривало %lld секунди."
+     },
+     "after": {
+      "one": "Сервер %@ не відповідав %lld секунду.",
+      "few": "Сервер %@ не відповідав %lld секунди.",
+      "many": "Сервер %@ не відповідав %lld секунд.",
+      "other": "Сервер %@ не відповідав %lld секунди."
+     },
+     "why": "grammar: a host name has no gender for \"не відповів\"; \"Сервер %@\" as the other server errors say, in one sentence"
+    },
+    {
+     "key": "%@ for %@ is now in effect: %@.",
+     "id": "feed.itemPolicyApplied.forFeedInEffect",
+     "english": "%1$@ for %2$@ is now in effect: %3$@.",
+     "before": "%1$@ для «%2$@» тепер діє: %3$@.",
+     "after": "Параметр «%1$@» для «%2$@» тепер діє: %3$@.",
+     "why": "grammar: \"Список і завантаження … діє\" heard as two nouns with a singular verb; named as a setting in «», as elsewhere"
+    },
+    {
+     "key": "%@ for %@ now follows the global setting: %@.",
+     "id": "feed.itemPolicyApplied.follows",
+     "english": "%1$@ for %2$@ now follows the global setting: %3$@.",
+     "before": "%1$@ для «%2$@» знову відповідає загальному налаштуванню: %3$@.",
+     "after": "Параметр «%1$@» для «%2$@» знову відповідає загальному налаштуванню: %3$@.",
+     "why": "grammar: \"Список і завантаження … діє\" heard as two nouns with a singular verb; named as a setting in «», as elsewhere"
+    },
+    {
+     "key": "%@ in %@.",
+     "id": "transcriptCleanup.summary.value",
+     "english": "%1$@ in %2$@.",
+     "before": "%1$@ у %2$@.",
+     "after": "%1$@ на %2$@.",
+     "why": "grammar: \"у 19 речень\" (the count comes in the nominative); \"на\" takes it as it is"
+    },
+    {
+     "key": "%@ is being transcribed. Clean up its transcript once that finishes.",
+     "id": "transcriptCleanup.busyTranscribing",
+     "english": "%@ is being transcribed. Clean up its transcript once that finishes.",
+     "before": "%@ транскрибується. Очистіть транскрипцію, коли воно завершиться.",
+     "after": "%@ транскрибується. Очистіть транскрипцію, коли транскрибування завершиться.",
+     "why": "grammar: \"воно\" had no noun to point at in its sentence"
+    },
+    {
+     "key": "%@ is in your library, unsubscribed. Choose %@ on its row, or in its %@, to check it again.",
+     "id": "feedSubscribeError.message.unsubscribedAlready",
+     "english": "%1$@ is in your library, unsubscribed. Choose %2$@ on its row, or in its %3$@, to check it again.",
+     "before": "%1$@ є в бібліотеці без підписки. Виберіть %2$@ у рядку стрічки або в аркуші «%3$@», щоб перевірити знову.",
+     "after": "%1$@ є в бібліотеці без підписки. Виберіть «%2$@» у рядку стрічки або в аркуші «%3$@», щоб відновити перевірку.",
+     "why": "punctuation: the Resubscribe name takes «» like the sheet name beside it, and \"щоб відновити перевірку\" avoids \"Підписатися знову … знову\""
+    },
+    {
+     "key": "%@ is now in effect: %@.",
+     "id": "feed.itemPolicyApplied.inEffect",
+     "english": "%1$@ is now in effect: %2$@.",
+     "before": "%1$@ тепер діє: %2$@.",
+     "after": "Параметр «%1$@» тепер діє: %2$@.",
+     "why": "grammar: \"Список і завантаження … діє\" heard as two nouns with a singular verb; named as a setting in «», as elsewhere"
+    },
+    {
+     "key": "%@ is unsubscribed, so TextMouth doesn't check it. Choose %@ to check it again.",
+     "id": "feed.notChecked",
+     "english": "%1$@ is unsubscribed, so TextMouth doesn't check it. Choose %2$@ to check it again.",
+     "before": "Підписку на %1$@ скасовано, тому TextMouth її не перевіряє. Виберіть %2$@, щоб перевіряти знову.",
+     "after": "Підписку на %1$@ скасовано, тому TextMouth не перевіряє цю стрічку. Виберіть «%2$@», щоб відновити перевірку.",
+     "why": "punctuation: the Resubscribe name takes «» like the sheet name beside it, and \"щоб відновити перевірку\" avoids \"Підписатися знову … знову\""
+    },
+    {
+     "key": "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder.",
+     "id": "feed.nothingToMoveToLibrary",
+     "english": "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder.",
+     "before": "%@ переміщує епізод або статтю, завантажені зі стрічки. Виберіть такий елемент у папці його стрічки.",
+     "after": "«%@» переміщує епізод або статтю, завантажені зі стрічки. Виберіть такий елемент у папці його стрічки.",
+     "why": "punctuation: a command name inside a sentence takes «», as the catalog quotes command names it spells out"
+    },
+    {
+     "key": "%@ of %@ transcribed",
+     "id": "transcription.secondsLine",
+     "english": "%1$@ of %2$@ transcribed",
+     "before": "Транскрибовано %1$@ з %2$@",
+     "after": "Транскрибовано: %1$@ (усього %2$@)",
+     "why": "grammar: a length in words comes in the nominative (\"1 хвилина\", \"2 хвилини\"), which this preposition would need in the genitive; \"з 2 години\" and \"Транскрибовано 1 хвилина\" were wrong"
+    },
+    {
+     "key": "%@ on this book",
+     "id": "importProgress.timeOnBook",
+     "english": "%@ on this book",
+     "before": "%@ на цю книгу",
+     "after": "Час на цю книгу: %@",
+     "why": "natural: a nominative time phrase glued to \"на цю книгу\" read as a literal copy"
+    },
+    {
+     "key": "%lld new",
+     "id": "feed.countsPhrase.count",
+     "english": {
+      "one": "%lld new",
+      "other": "%lld new"
+     },
+     "before": {
+      "few": "%lld нових",
+      "many": "%lld нових",
+      "one": "%lld нових",
+      "other": "%lld нових"
+     },
+     "after": {
+      "one": "нових: %lld",
+      "few": "нових: %lld",
+      "many": "нових: %lld",
+      "other": "нових: %lld"
+     },
+     "why": "grammar: \"1 нових\" (and 21) is wrong, and the noun may be an episode or an article, so a label and count"
+    },
+    {
+     "key": "%lld unplayed",
+     "id": "feed.countsPhrase.unplayed",
+     "english": {
+      "one": "%lld unplayed",
+      "other": "%lld unplayed"
+     },
+     "before": {
+      "few": "%lld непрослуханих",
+      "many": "%lld непрослуханих",
+      "one": "%lld непрослуханих",
+      "other": "%lld непрослуханих"
+     },
+     "after": {
+      "one": "непрослуханих: %lld",
+      "few": "непрослуханих: %lld",
+      "many": "непрослуханих: %lld",
+      "other": "непрослуханих: %lld"
+     },
+     "why": "grammar: \"1 непрослуханих\" is wrong; label and count, as the new count beside it"
+    },
+    {
+     "key": "%lld unread",
+     "id": "feed.countsPhrase.unread",
+     "english": {
+      "one": "%lld unread",
+      "other": "%lld unread"
+     },
+     "before": {
+      "few": "%lld непрочитаних",
+      "many": "%lld непрочитаних",
+      "one": "%lld непрочитаних",
+      "other": "%lld непрочитаних"
+     },
+     "after": {
+      "one": "непрочитаних: %lld",
+      "few": "непрочитаних: %lld",
+      "many": "непрочитаних: %lld",
+      "other": "непрочитаних: %lld"
+     },
+     "why": "grammar: \"1 непрочитаних\" is wrong; label and count, as the new count beside it"
+    },
+    {
+     "key": "About %@ left",
+     "id": "importProgress.timeLeft.about",
+     "english": "About %@ left",
+     "before": "Залишилося приблизно %@",
+     "after": "Залишилося: приблизно %@",
+     "why": "grammar: \"Залишилося приблизно 1 хвилина\" breaks agreement; the colon takes the time as it is"
+    },
+    {
+     "key": "Also write the markers as Audacity labels",
+     "id": "audioEditor.exportLabelsToggle",
+     "english": "Also write the markers as Audacity labels",
+     "before": "Також записати мітки як мітки Audacity",
+     "after": "Також записувати мітки у файл міток Audacity",
+     "why": "register: a checkbox label in the imperfective, as part 1 set for standing settings; \"мітки як мітки\" repeated the noun"
+    },
+    {
+     "key": "An article's details come from its feed; %@ makes it a book you can edit.",
+     "id": "feedItemBookInfo.whyReadOnly.article",
+     "english": "An article's details come from its feed; %@ makes it a book you can edit.",
+     "before": "Відомості про статтю беруться з її стрічки; %@ перетворює її на книгу, яку можна редагувати.",
+     "after": "Відомості про статтю беруться з її стрічки; «%@» перетворює її на книгу, яку можна редагувати.",
+     "why": "punctuation: a command name inside a sentence takes «», as the catalog quotes command names it spells out"
+    },
+    {
+     "key": "An episode's details come from its feed; %@ makes it a book you can edit.",
+     "id": "feedItemBookInfo.whyReadOnly.episode",
+     "english": "An episode's details come from its feed; %@ makes it a book you can edit.",
+     "before": "Відомості про епізод беруться з його стрічки; %@ перетворює його на книгу, яку можна редагувати.",
+     "after": "Відомості про епізод беруться з його стрічки; «%@» перетворює його на книгу, яку можна редагувати.",
+     "why": "punctuation: a command name inside a sentence takes «», as the catalog quotes command names it spells out"
+    },
+    {
+     "key": "Applied %@ to %@.",
+     "id": "audioEditor.appliedFilter.toSelection",
+     "english": "Applied %1$@ to %2$@.",
+     "before": "До %2$@ застосовано %1$@.",
+     "after": "%1$@ застосовано до виділення тривалістю %2$@.",
+     "why": "grammar: a length in words comes in the nominative (\"1 хвилина\", \"2 хвилини\"), which this preposition would need in the genitive; \"тривалістю\" takes it as it is, as \"Вставлено тишу тривалістю\" does"
+    },
+    {
+     "key": "Audio that TextMouth converts at import keeps only the converted file.",
+     "id": "convertedOriginal.notKeepingCaption",
+     "english": "Audio that TextMouth converts at import keeps only the converted file.",
+     "before": "Аудіо, яке TextMouth перетворює під час імпорту, зберігає лише перетворений файл.",
+     "after": "Для аудіо, яке TextMouth перетворює під час імпорту, зберігається лише перетворений файл.",
+     "why": "natural: the audio itself does not keep a file; the file is what is kept"
+    },
+    {
+     "key": "Checking the feed won't bring it back.",
+     "id": "feed.deleteItemMessage.checking",
+     "english": "Checking the feed won't bring it back.",
+     "before": "Перевірка стрічки не поверне його.",
+     "after": "Перевірка стрічки не поверне видалене.",
+     "why": "grammar: one sentence serves an episode and an article, and \"його\" is wrong for an article"
+    },
+    {
+     "key": "Checks this feed again from now on, and at once",
+     "id": "feed.resubscribeHint",
+     "english": "Checks this feed again from now on, and at once",
+     "before": "Знову перевіряє цю стрічку відтепер, а також негайно.",
+     "after": "Відновлює перевірку цієї стрічки й одразу перевіряє її.",
+     "why": "natural: \"відтепер, а також негайно\" copied the English word order"
+    },
+    {
+     "key": "Closing the reader of %@, since editing changes its audio.",
+     "id": "audioEditor.closingReader",
+     "english": "Closing the reader of %@, since editing changes its audio.",
+     "before": "Закриття вікна читання для %@, бо редагування змінює його аудіо.",
+     "after": "Закриття вікна читання для %@, бо редагування змінює аудіо книги.",
+     "why": "grammar: \"його аудіо\" pointed at the reader window, not the book"
+    },
+    {
+     "key": "Copied %@.",
+     "id": "audioEditor.copied",
+     "english": "Copied %@.",
+     "before": "Скопійовано %@.",
+     "after": "Скопійовано: %@.",
+     "why": "grammar: a length in words comes in the nominative (\"1 секунда\"), which this slot would need in the accusative; the colon takes it as it is, as \"Виділено все: %@.\" does"
+    },
+    {
+     "key": "Cut %@",
+     "id": "audioEdit.actionName.cut",
+     "english": "Cut %@",
+     "before": "Вирізати %@",
+     "after": "Вирізати (%@)",
+     "why": "grammar: the edit name follows \"Скасувати\"/\"Повторити\", and a length after an infinitive must be accusative (\"1 секунда\" is not); parentheses keep it as it is"
+    },
+    {
+     "key": "Cut %@.",
+     "id": "audioEditor.cut",
+     "english": "Cut %@.",
+     "before": "Вирізано %@.",
+     "after": "Вирізано: %@.",
+     "why": "grammar: a length in words comes in the nominative (\"1 секунда\"), which this slot would need in the accusative; the colon takes it as it is, as \"Виділено все: %@.\" does"
+    },
+    {
+     "key": "Days to keep an original",
+     "id": "audioEditingSettings.daysLabel",
+     "english": "Days to keep an original",
+     "before": "Днів зберігання оригіналу",
+     "after": "Скільки днів зберігати оригінал",
+     "why": "natural: \"Днів зберігання оригіналу\" is a string of genitives; as \"Скільки найновіших\""
+    },
+    {
+     "key": "Downloading “%@”. It opens once it has downloaded.",
+     "id": "feed.downloadingToOpen",
+     "english": "Downloading “%@”. It opens once it has downloaded.",
+     "before": "Завантажується «%@». Після завантаження її буде відкрито.",
+     "after": "Завантажується «%@». Відкриється після завантаження.",
+     "why": "grammar: the item may be an episode or an article, and \"її\" fits only an article"
+    },
+    {
+     "key": "Duplicate Copies Moved to the Trash",
+     "id": "duplicateCopy.unansweredTrashedTitle",
+     "english": "Duplicate Copies Moved to the Trash",
+     "before": "Дублікати копій переміщено до Кошика",
+     "after": "Дублікати переміщено до Кошика",
+     "why": "meaning: \"Дублікати копій\" said duplicates of copies"
+    },
+    {
+     "key": "Edits one track at a time, listed by chapter name.",
+     "id": "audioEditor.chooseTrackExplanation",
+     "english": "Edits one track at a time, listed by chapter name.",
+     "before": "Редагує по одній доріжці, перелічених за назвами розділів.",
+     "after": "Редагує по одній доріжці; доріжки перелічено за назвами розділів.",
+     "why": "grammar: \"перелічених\" agreed with nothing in \"по одній доріжці\""
+    },
+    {
+     "key": "Every feed is unsubscribed, so none was checked. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "id": "feed.everyFeedUnsubscribed",
+     "english": "Every feed is unsubscribed, so none was checked. Choose %1$@ on a feed's row, or in its %2$@, to check it again.",
+     "before": "Усі стрічки без підписки, тому жодну не перевірено. Виберіть %1$@ у рядку стрічки або в аркуші «%2$@», щоб перевірити знову.",
+     "after": "Усі стрічки без підписки, тому жодну не перевірено. Виберіть «%1$@» у рядку стрічки або в аркуші «%2$@», щоб відновити перевірку.",
+     "why": "punctuation: the Resubscribe name takes «» like the sheet name beside it, and \"щоб відновити перевірку\" avoids \"Підписатися знову … знову\""
+    },
+    {
+     "key": "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
+     "id": "transcriptCleanup.experimentalLine",
+     "english": "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
+     "before": "Експериментально. Ці правила виправляють слова, які розпізнавач записує інакше, ніж вони звучать у книгах, прочитаних вголос. Перевірте зміни, перш ніж застосовувати їх; «Скасувати очищення» повертає транскрипцію.",
+     "after": "Експериментально. Ці правила виправляють слова, які розпізнавач записує інакше, ніж їх пишуть у книгах, прочитаних вголос. Перевірте зміни, перш ніж застосовувати їх; «Скасувати очищення» повертає транскрипцію.",
+     "why": "meaning: the rules fix spelling, not how words \"звучать\" (sound)"
+    },
+    {
+     "key": "Feeds refresh only at launch, if that is on, and when you choose %@ or %@",
+     "id": "feedThreshold.refreshInterval.choose",
+     "english": "Feeds refresh only at launch, if that is on, and when you choose %1$@ or %2$@",
+     "before": "Стрічки оновлюються лише під час запуску, якщо це увімкнено, і коли ви вибираєте %1$@ або %2$@.",
+     "after": "Стрічки оновлюються лише під час запуску, якщо це увімкнено, і коли ви вибираєте «%1$@» або «%2$@».",
+     "why": "punctuation: a command name inside a sentence takes «», as the catalog quotes command names it spells out"
+    },
+    {
+     "key": "Import cancelled while extracting the archive, before any book was imported.",
+     "id": "zipImportCancellation.sentence.whileExtracting",
+     "english": "Import cancelled while extracting the archive, before any book was imported.",
+     "before": "Імпорт скасовано під час розпакування архіву, до імпорту будь-якої книги.",
+     "after": "Імпорт скасовано під час розпакування архіву, ще до імпорту першої книги.",
+     "why": "natural: \"до імпорту будь-якої книги\" copied English \"any\""
+    },
+    {
+     "key": "Install TextMouth again, then import the book again.",
+     "id": "ffmpegImport.reinstallAdvice.book",
+     "english": "Install TextMouth again, then import the book again.",
+     "before": "Встановіть TextMouth знову, а потім імпортуйте книгу знову.",
+     "after": "Перевстановіть TextMouth, а потім знову імпортуйте книгу.",
+     "why": "natural: \"знову\" twice in one short sentence"
+    },
+    {
+     "key": "Install TextMouth again, then import the file again.",
+     "id": "ffmpegImport.reinstallAdvice.file",
+     "english": "Install TextMouth again, then import the file again.",
+     "before": "Встановіть TextMouth знову, а потім імпортуйте файл знову.",
+     "after": "Перевстановіть TextMouth, а потім знову імпортуйте файл.",
+     "why": "natural: \"знову\" twice in one short sentence"
+    },
+    {
+     "key": "It",
+     "id": "feedDownloadInUseError.errorDescription",
+     "english": "It",
+     "before": "Її",
+     "after": "Вона",
+     "why": "grammar: the subject of \"експортується\" and \"транскрибується\" must be nominative; the open-in-reader clause now agrees"
+    },
+    {
+     "key": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "id": "feedItemPackageError.staysInItsFeed",
+     "english": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "before": "Вона належить своїй стрічці, поки її завантажено. %@ вилучає її файл і зберігає місце та закладки.",
+     "after": "Вона належить своїй стрічці, поки її завантажено. «%@» вилучає її файл і зберігає місце та закладки.",
+     "why": "punctuation: a command name inside a sentence takes «», as the catalog quotes command names it spells out"
+    },
+    {
+     "key": "It can be downloaded again.",
+     "id": "keptParts.keptForRedownloadSentence.downloaded",
+     "english": "It can be downloaded again.",
+     "before": "Її можна завантажити знову.",
+     "after": "Його можна завантажити знову.",
+     "why": "grammar: follows \"Завантаження «…» видалено\", a neuter noun, not \"її\""
+    },
+    {
+     "key": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "id": "feed.deletesSentence.goes",
+     "english": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "before": "Видаляє %@: це переміщується до Кошика, де його можна відновити, доки Кошик не очищено.",
+     "after": "Буде видалено: %@; це переміститься до Кошика, де його можна відновити, доки Кошик не очищено.",
+     "why": "grammar: after \"Видаляє\" a phrase must be accusative, and \"її завантажена стаття\" is nominative; a colon list takes each phrase as it is"
+    },
+    {
+     "key": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "id": "feed.deletesSentence.deletedPermanentlyRecovered",
+     "english": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "before": "Видаляє %@: це буде видалено назавжди; відновити неможливо.",
+     "after": "Буде назавжди видалено: %@; відновити це неможливо.",
+     "why": "grammar: after \"Видаляє\" a phrase must be accusative, and \"її завантажена стаття\" is nominative; a colon list takes each phrase as it is"
+    },
+    {
+     "key": "It deletes %@: it stays in the TextMouth library folder.",
+     "id": "feed.deletesSentence.stays",
+     "english": "It deletes %@: it stays in the TextMouth library folder.",
+     "before": "Видаляє %@: це залишається в папці бібліотеки TextMouth.",
+     "after": "Буде видалено: %@; це залишиться в папці бібліотеки TextMouth.",
+     "why": "grammar: after \"Видаляє\" a phrase must be accusative, and \"її завантажена стаття\" is nominative; a colon list takes each phrase as it is"
+    },
+    {
+     "key": "It deletes %@: they are deleted permanently and cannot be recovered.",
+     "id": "feed.deletesSentence.permanentlyRecovered",
+     "english": "It deletes %@: they are deleted permanently and cannot be recovered.",
+     "before": "Видаляє %@: їх буде видалено назавжди; відновити неможливо.",
+     "after": "Буде назавжди видалено: %@; відновити їх неможливо.",
+     "why": "grammar: after \"Видаляє\" a phrase must be accusative, and \"її завантажена стаття\" is nominative; a colon list takes each phrase as it is"
+    },
+    {
+     "key": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "id": "feed.deletesSentence.them",
+     "english": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "before": "Видаляє %@: вони потрапляють до Кошика, де їх можна відновити, доки Кошик не очищено.",
+     "after": "Буде видалено: %@; вони потраплять до Кошика, де їх можна відновити, доки Кошик не очищено.",
+     "why": "grammar: after \"Видаляє\" a phrase must be accusative, and \"її завантажена стаття\" is nominative; a colon list takes each phrase as it is"
+    },
+    {
+     "key": "It deletes %@: they stay in the TextMouth library folder.",
+     "id": "feed.deletesSentence.stay",
+     "english": "It deletes %@: they stay in the TextMouth library folder.",
+     "before": "Видаляє %@: вони залишаються в папці бібліотеки TextMouth.",
+     "after": "Буде видалено: %@; вони залишаться в папці бібліотеки TextMouth.",
+     "why": "grammar: after \"Видаляє\" a phrase must be accusative, and \"її завантажена стаття\" is nominative; a colon list takes each phrase as it is"
+    },
+    {
+     "key": "Its cleanup is replaced too.",
+     "id": "transcription.replaceConfirmationMessage.cleanup",
+     "english": "Its cleanup is replaced too.",
+     "before": "Його очищення теж замінюється.",
+     "after": "Очищення транскрипції теж замінюється.",
+     "why": "grammar: \"Його\" cannot point at the transcript, a feminine noun"
+    },
+    {
+     "key": "Its file is now “%@”, since TextMouth can't write its old format.",
+     "id": "audioEditor.saved.format",
+     "english": "Its file is now “%@”, since TextMouth can't write its old format.",
+     "before": "Тепер його файл називається «%@», бо TextMouth не може записувати в його старому форматі.",
+     "after": "Тепер файл книги називається «%@», бо TextMouth не може записувати в старому форматі.",
+     "why": "grammar: \"його файл\" and \"його старому форматі\" cannot point at the book, a feminine noun"
+    },
+    {
+     "key": "Keep",
+     "id": "common.keep",
+     "english": "Keep",
+     "before": "Залишити",
+     "after": "Зберігати",
+     "why": "term: the picker beside it says \"Не зберігати\"; one verb for all three choices"
+    },
+    {
+     "key": "Keep for a number of days",
+     "id": "audioEditingSettings.choiceTitle.deleteAfterDays",
+     "english": "Keep for a number of days",
+     "before": "Залишити на кілька днів",
+     "after": "Зберігати задану кількість днів",
+     "why": "meaning: \"на кілька днів\" is \"for a few days\", but the number is set by the stepper beside it"
+    },
+    {
+     "key": "Kept",
+     "id": "audioEditor.originalStatus.kept",
+     "english": "Kept",
+     "before": "Залишено",
+     "after": "Зберігається",
+     "why": "term: the same state when off reads \"Не зберігається\""
+    },
+    {
+     "key": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "id": "feed.everyListedNewestDownloaded.article",
+     "english": {
+      "one": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "few": "Показує всі статті, зберігає завантаженими найновіші (%lld) і вилучає старіші завантаження, створені ним, зберігаючи їхнє місце, закладки й налаштування.",
+      "many": "Показує всі статті, зберігає завантаженими найновіші (%lld) і вилучає старіші завантаження, створені ним, зберігаючи їхнє місце, закладки й налаштування.",
+      "one": "Показує всі статті, зберігає завантаженими найновіші (%lld) і вилучає старіші завантаження, створені ним, зберігаючи їхнє місце, закладки й налаштування.",
+      "other": "Показує всі статті, зберігає завантаженими найновіші (%lld) і вилучає старіші завантаження, створені ним, зберігаючи їхнє місце, закладки й налаштування."
+     },
+     "after": {
+      "one": "Показує всі статті, зберігає завантаженими найновіші (%lld) і вилучає старіші автоматичні завантаження, зберігаючи їхнє місце, закладки й налаштування.",
+      "few": "Показує всі статті, зберігає завантаженими найновіші (%lld) і вилучає старіші автоматичні завантаження, зберігаючи їхнє місце, закладки й налаштування.",
+      "many": "Показує всі статті, зберігає завантаженими найновіші (%lld) і вилучає старіші автоматичні завантаження, зберігаючи їхнє місце, закладки й налаштування.",
+      "other": "Показує всі статті, зберігає завантаженими найновіші (%lld) і вилучає старіші автоматичні завантаження, зберігаючи їхнє місце, закладки й налаштування."
+     },
+     "why": "natural: \"створені ним\" pointed at nothing; these are the automatic downloads"
+    },
+    {
+     "key": "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "id": "feed.everyListedDownloadsByHand.article",
+     "english": "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Показує всі статті; нічого не завантажується саме, а завантаження зберігається, доки ви його не видалите або не мине кількість днів після відтворення.",
+     "after": "Показує всі статті; нічого не завантажується автоматично, а завантаження зберігається, доки ви його не видалите або не мине кількість днів після відтворення.",
+     "why": "natural: \"не завантажується саме\" reads as \"exactly\"; automatically is meant"
+    },
+    {
+     "key": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "id": "feed.everyListedNewestDownloaded.episodeArticle",
+     "english": {
+      "one": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "few": "Показує всі епізоди й статті, зберігає завантаженими найновіші (%lld) і вилучає старіші завантаження, створені ним, зберігаючи їхнє місце, закладки й налаштування.",
+      "many": "Показує всі епізоди й статті, зберігає завантаженими найновіші (%lld) і вилучає старіші завантаження, створені ним, зберігаючи їхнє місце, закладки й налаштування.",
+      "one": "Показує всі епізоди й статті, зберігає завантаженими найновіші (%lld) і вилучає старіші завантаження, створені ним, зберігаючи їхнє місце, закладки й налаштування.",
+      "other": "Показує всі епізоди й статті, зберігає завантаженими найновіші (%lld) і вилучає старіші завантаження, створені ним, зберігаючи їхнє місце, закладки й налаштування."
+     },
+     "after": {
+      "one": "Показує всі епізоди й статті, зберігає завантаженими найновіші (%lld) і вилучає старіші автоматичні завантаження, зберігаючи їхнє місце, закладки й налаштування.",
+      "few": "Показує всі епізоди й статті, зберігає завантаженими найновіші (%lld) і вилучає старіші автоматичні завантаження, зберігаючи їхнє місце, закладки й налаштування.",
+      "many": "Показує всі епізоди й статті, зберігає завантаженими найновіші (%lld) і вилучає старіші автоматичні завантаження, зберігаючи їхнє місце, закладки й налаштування.",
+      "other": "Показує всі епізоди й статті, зберігає завантаженими найновіші (%lld) і вилучає старіші автоматичні завантаження, зберігаючи їхнє місце, закладки й налаштування."
+     },
+     "why": "natural: \"створені ним\" pointed at nothing; these are the automatic downloads"
+    },
+    {
+     "key": "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "id": "feed.everyListedDownloadsByHand.episodeArticle",
+     "english": "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Показує всі епізоди й статті; нічого не завантажується саме, а завантаження зберігається, доки ви його не видалите або не мине кількість днів після відтворення.",
+     "after": "Показує всі епізоди й статті; нічого не завантажується автоматично, а завантаження зберігається, доки ви його не видалите або не мине кількість днів після відтворення.",
+     "why": "natural: \"не завантажується саме\" reads as \"exactly\"; automatically is meant"
+    },
+    {
+     "key": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "id": "feed.everyListedNewestDownloaded.episode",
+     "english": {
+      "one": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "few": "Показує всі епізоди, зберігає завантаженими найновіші (%lld) і вилучає старіші завантаження, створені ним, зберігаючи їхнє місце, закладки й налаштування.",
+      "many": "Показує всі епізоди, зберігає завантаженими найновіші (%lld) і вилучає старіші завантаження, створені ним, зберігаючи їхнє місце, закладки й налаштування.",
+      "one": "Показує всі епізоди, зберігає завантаженими найновіші (%lld) і вилучає старіші завантаження, створені ним, зберігаючи їхнє місце, закладки й налаштування.",
+      "other": "Показує всі епізоди, зберігає завантаженими найновіші (%lld) і вилучає старіші завантаження, створені ним, зберігаючи їхнє місце, закладки й налаштування."
+     },
+     "after": {
+      "one": "Показує всі епізоди, зберігає завантаженими найновіші (%lld) і вилучає старіші автоматичні завантаження, зберігаючи їхнє місце, закладки й налаштування.",
+      "few": "Показує всі епізоди, зберігає завантаженими найновіші (%lld) і вилучає старіші автоматичні завантаження, зберігаючи їхнє місце, закладки й налаштування.",
+      "many": "Показує всі епізоди, зберігає завантаженими найновіші (%lld) і вилучає старіші автоматичні завантаження, зберігаючи їхнє місце, закладки й налаштування.",
+      "other": "Показує всі епізоди, зберігає завантаженими найновіші (%lld) і вилучає старіші автоматичні завантаження, зберігаючи їхнє місце, закладки й налаштування."
+     },
+     "why": "natural: \"створені ним\" pointed at nothing; these are the automatic downloads"
+    },
+    {
+     "key": "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "id": "feed.everyListedDownloadsByHand.episodeDownload",
+     "english": "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Показує всі епізоди; нічого не завантажується саме, а завантаження зберігається, доки ви його не видалите або не мине кількість днів після відтворення.",
+     "after": "Показує всі епізоди; нічого не завантажується автоматично, а завантаження зберігається, доки ви його не видалите або не мине кількість днів після відтворення.",
+     "why": "natural: \"не завантажується саме\" reads as \"exactly\"; automatically is meant"
+    },
+    {
+     "key": "Marked %lld articles of %@ read.",
+     "id": "feed.markedAll.articles",
+     "english": {
+      "one": "Marked %lld article of %@ read.",
+      "other": "Marked %lld articles of %@ read."
+     },
+     "before": {
+      "few": "Позначено як прочитані: %lld (стрічка «%@»).",
+      "many": "Позначено як прочитані: %lld (стрічка «%@»).",
+      "one": "Позначено як прочитані: %lld (стрічка «%@»).",
+      "other": "Позначено як прочитані: %lld (стрічка «%@»)."
+     },
+     "after": {
+      "one": "Позначено %lld статтю стрічки «%@» як прочитану.",
+      "few": "Позначено %lld статті стрічки «%@» як прочитані.",
+      "many": "Позначено %lld статей стрічки «%@» як прочитані.",
+      "other": "Позначено %lld статті стрічки «%@» як прочитані."
+     },
+     "why": "natural: a label, a count, and the feed in parentheses, where the plural forms let it read as a sentence"
+    },
+    {
+     "key": "Marked %lld episodes of %@ played.",
+     "id": "feed.markedAll.episodes",
+     "english": {
+      "one": "Marked %lld episode of %@ played.",
+      "other": "Marked %lld episodes of %@ played."
+     },
+     "before": {
+      "few": "Позначено як прослухані епізоди: %lld (стрічка «%@»).",
+      "many": "Позначено як прослухані епізоди: %lld (стрічка «%@»).",
+      "one": "Позначено як прослухані епізоди: %lld (стрічка «%@»).",
+      "other": "Позначено як прослухані епізоди: %lld (стрічка «%@»)."
+     },
+     "after": {
+      "one": "Позначено %lld епізод стрічки «%@» як прослуханий.",
+      "few": "Позначено %lld епізоди стрічки «%@» як прослухані.",
+      "many": "Позначено %lld епізодів стрічки «%@» як прослухані.",
+      "other": "Позначено %lld епізоду стрічки «%@» як прослухані."
+     },
+     "why": "natural: a label, a count, and the feed in parentheses, where the plural forms let it read as a sentence"
+    },
+    {
+     "key": "Marked %lld items of %@ played.",
+     "id": "feed.markedAll.items",
+     "english": {
+      "one": "Marked %lld item of %@ played.",
+      "other": "Marked %lld items of %@ played."
+     },
+     "before": {
+      "few": "Позначено як прослухані: %lld (стрічка «%@»).",
+      "many": "Позначено як прослухані: %lld (стрічка «%@»).",
+      "one": "Позначено як прослухані: %lld (стрічка «%@»).",
+      "other": "Позначено як прослухані: %lld (стрічка «%@»)."
+     },
+     "after": {
+      "one": "Позначено %lld елемент стрічки «%@» як прослуханий.",
+      "few": "Позначено %lld елементи стрічки «%@» як прослухані.",
+      "many": "Позначено %lld елементів стрічки «%@» як прослухані.",
+      "other": "Позначено %lld елемента стрічки «%@» як прослухані."
+     },
+     "why": "natural: a label, a count, and the feed in parentheses, where the plural forms let it read as a sentence"
+    },
+    {
+     "key": "Move %@",
+     "id": "audioEdit.actionName.move",
+     "english": "Move %@",
+     "before": "Перемістити %@",
+     "after": "Перемістити (%@)",
+     "why": "grammar: the edit name follows \"Скасувати\"/\"Повторити\", and a length after an infinitive must be accusative (\"1 секунда\" is not); parentheses keep it as it is"
+    },
+    {
+     "key": "Moved %@ to %@.",
+     "id": "audioEditor.moved",
+     "english": "Moved %1$@ to %2$@.",
+     "before": "Переміщено %1$@ на позначку %2$@.",
+     "after": "Переміщено на позначку %2$@: %1$@.",
+     "why": "grammar: a length in words comes in the nominative (\"1 секунда\"), which this slot would need in the accusative; the length moves after a colon"
+    },
+    {
+     "key": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds",
+     "id": "feed.moveToLibraryHint.articles",
+     "english": {
+      "one": "Moves this %lld article into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "few": "Переміщує ці %lld статті до папки бібліотеки як книги, які можна редагувати; вони залишають свої стрічки",
+      "many": "Переміщує ці %lld статей до папки бібліотеки як книги, які можна редагувати; вони залишають свої стрічки",
+      "one": "Переміщує цю %lld статтю до папки бібліотеки як книгу, яку можна редагувати; вона залишає стрічку",
+      "other": "Переміщує ці %lld статті до папки бібліотеки як книги, які можна редагувати; вони залишають свої стрічки"
+     },
+     "after": {
+      "one": "Переміщує цю %lld статтю до папки бібліотеки як книгу, яку можна редагувати; вона зникає зі стрічки",
+      "few": "Переміщує ці %lld статті до папки бібліотеки як книги, які можна редагувати; вони зникають зі своїх стрічок",
+      "many": "Переміщує ці %lld статей до папки бібліотеки як книги, які можна редагувати; вони зникають зі своїх стрічок",
+      "other": "Переміщує ці %lld статті до папки бібліотеки як книги, які можна редагувати; вони зникають зі своїх стрічок"
+     },
+     "why": "meaning: \"залишає стрічку\" (leaves) is a near twin of \"залишається у стрічці\" (stays) in the same sheet"
+    },
+    {
+     "key": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds",
+     "id": "feed.moveToLibraryHint.episodes",
+     "english": {
+      "one": "Moves this %lld episode into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "few": "Переміщує ці %lld епізоди до папки бібліотеки як книги, які можна редагувати; вони залишають свої стрічки",
+      "many": "Переміщує ці %lld епізодів до папки бібліотеки як книги, які можна редагувати; вони залишають свої стрічки",
+      "one": "Переміщує цей %lld епізод до папки бібліотеки як книгу, яку можна редагувати; він залишає стрічку",
+      "other": "Переміщує ці %lld епізоду до папки бібліотеки як книги, які можна редагувати; вони залишають свої стрічки"
+     },
+     "after": {
+      "one": "Переміщує цей %lld епізод до папки бібліотеки як книгу, яку можна редагувати; він зникає зі стрічки",
+      "few": "Переміщує ці %lld епізоди до папки бібліотеки як книги, які можна редагувати; вони зникають зі своїх стрічок",
+      "many": "Переміщує ці %lld епізодів до папки бібліотеки як книги, які можна редагувати; вони зникають зі своїх стрічок",
+      "other": "Переміщує ці %lld епізоду до папки бібліотеки як книги, які можна редагувати; вони зникають зі своїх стрічок"
+     },
+     "why": "meaning: \"залишає стрічку\" (leaves) is a near twin of \"залишається у стрічці\" (stays) in the same sheet"
+    },
+    {
+     "key": "Moves these %lld items into a library folder as books you can edit; they leave their feeds",
+     "id": "feed.moveToLibraryHint.items",
+     "english": {
+      "one": "Moves this %lld item into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld items into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "few": "Переміщує ці %lld елементи до папки бібліотеки як книги, які можна редагувати; вони залишають свої стрічки",
+      "many": "Переміщує ці %lld елементів до папки бібліотеки як книги, які можна редагувати; вони залишають свої стрічки",
+      "one": "Переміщує цей %lld елемент до папки бібліотеки як книгу, яку можна редагувати; він залишає стрічку",
+      "other": "Переміщує ці %lld елемента до папки бібліотеки як книги, які можна редагувати; вони залишають свої стрічки"
+     },
+     "after": {
+      "one": "Переміщує цей %lld елемент до папки бібліотеки як книгу, яку можна редагувати; він зникає зі стрічки",
+      "few": "Переміщує ці %lld елементи до папки бібліотеки як книги, які можна редагувати; вони зникають зі своїх стрічок",
+      "many": "Переміщує ці %lld елементів до папки бібліотеки як книги, які можна редагувати; вони зникають зі своїх стрічок",
+      "other": "Переміщує ці %lld елемента до папки бібліотеки як книги, які можна редагувати; вони зникають зі своїх стрічок"
+     },
+     "why": "meaning: \"залишає стрічку\" (leaves) is a near twin of \"залишається у стрічці\" (stays) in the same sheet"
+    },
+    {
+     "key": "Moves this article into a library folder as a book you can edit; it leaves the feed",
+     "id": "feed.moveToLibraryHint.article",
+     "english": "Moves this article into a library folder as a book you can edit; it leaves the feed",
+     "before": "Переміщує цю статтю до папки бібліотеки як книгу, яку можна редагувати; вона залишає стрічку",
+     "after": "Переміщує цю статтю до папки бібліотеки як книгу, яку можна редагувати; вона зникає зі стрічки",
+     "why": "meaning: \"залишає стрічку\" (leaves) is a near twin of \"залишається у стрічці\" (stays) in the same sheet"
+    },
+    {
+     "key": "Moves this episode into a library folder as a book you can edit; it leaves the feed",
+     "id": "feed.moveToLibraryHint.episode",
+     "english": "Moves this episode into a library folder as a book you can edit; it leaves the feed",
+     "before": "Переміщує цей епізод до папки бібліотеки як книгу, яку можна редагувати; він залишає стрічку",
+     "after": "Переміщує цей епізод до папки бібліотеки як книгу, яку можна редагувати; він зникає зі стрічки",
+     "why": "meaning: \"залишає стрічку\" (leaves) is a near twin of \"залишається у стрічці\" (stays) in the same sheet"
+    },
+    {
+     "key": "Moves this item into a library folder as a book you can edit; it leaves the feed",
+     "id": "feed.moveToLibraryHint.item",
+     "english": "Moves this item into a library folder as a book you can edit; it leaves the feed",
+     "before": "Переміщує цей елемент до папки бібліотеки як книгу, яку можна редагувати; він залишає стрічку",
+     "after": "Переміщує цей елемент до папки бібліотеки як книгу, яку можна редагувати; він зникає зі стрічки",
+     "why": "meaning: \"залишає стрічку\" (leaves) is a near twin of \"залишається у стрічці\" (stays) in the same sheet"
+    },
+    {
+     "key": "No original audio is kept for this book, so saved edits can't be undone.",
+     "id": "audioEdit.undoLimit.editedInPlace",
+     "english": "No original audio is kept for this book, so saved edits can't be undone.",
+     "before": "Оригінал аудіо для цієї книги не зберігається, тому збережені правки скасувати не можна.",
+     "after": "Оригінальне аудіо для цієї книги не зберігається, тому збережені правки скасувати не можна.",
+     "why": "term: the glossary's \"Оригінальне аудіо\" for Original audio"
+    },
+    {
+     "key": "Only the newest %lld listed",
+     "id": "feed.itemPolicyTitle.onlyNewestListed",
+     "english": {
+      "one": "Only the newest %lld listed",
+      "other": "Only the newest %lld listed"
+     },
+     "before": {
+      "few": "Лише найновіші: %lld",
+      "many": "Лише найновіші: %lld",
+      "one": "Лише найновіші: %lld",
+      "other": "Лише найновіші: %lld"
+     },
+     "after": {
+      "one": "У списку лише найновіші: %lld",
+      "few": "У списку лише найновіші: %lld",
+      "many": "У списку лише найновіші: %lld",
+      "other": "У списку лише найновіші: %lld"
+     },
+     "why": "meaning: \"listed\" was lost, and the choice is only about the list, beside \"Усі … у списку\""
+    },
+    {
+     "key": "Opens it",
+     "id": "feed.itemRowHint.opens",
+     "english": "Opens it",
+     "before": "Відкриває його.",
+     "after": "Відкриває.",
+     "why": "grammar: the item may be an episode or an article, and \"його\" is wrong for an article; as the hint \"Завантажує, а потім відкриває.\""
+    },
+    {
+     "key": "Original audio for this book",
+     "id": "audioEditor.policyLabel",
+     "english": "Original audio for this book",
+     "before": "Оригінал аудіо для цієї книги",
+     "after": "Оригінальне аудіо для цієї книги",
+     "why": "term: the glossary's \"Оригінальне аудіо\" for Original audio, as the Storage settings label says it"
+    },
+    {
+     "key": "Pasted %@ back where they were cut.",
+     "id": "audioEditor.pastedBack",
+     "english": "Pasted %@ back where they were cut.",
+     "before": "Вставлено %@ назад на місце вирізання.",
+     "after": "Вставлено назад на місце вирізання: %@.",
+     "why": "grammar: a length in words comes in the nominative (\"1 секунда\"), which this slot would need in the accusative; the length moves after a colon"
+    },
+    {
+     "key": "Pasted %@ over %@.",
+     "id": "audioEditor.pasted.over",
+     "english": "Pasted %1$@ over %2$@.",
+     "before": "Вставлено %1$@ поверх %2$@.",
+     "after": "Вставлено: %1$@, поверх виділення тривалістю %2$@.",
+     "why": "grammar: a length in words comes in the nominative (\"1 секунда\"), which this slot would need in the accusative; and \"поверх\" needs the genitive; a colon and \"тривалістю\" take both as they are"
+    },
+    {
+     "key": "Pasted %@.",
+     "id": "audioEditor.pasted.alone",
+     "english": "Pasted %@.",
+     "before": "Вставлено %@.",
+     "after": "Вставлено: %@.",
+     "why": "grammar: a length in words comes in the nominative (\"1 секунда\"), which this slot would need in the accusative; the colon takes it as it is, as \"Виділено все: %@.\" does"
+    },
+    {
+     "key": "Recording over %@ at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "id": "audioEditor.punchInStarting.over",
+     "english": "Recording over %1$@ at %2$@, from %3$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "Запис поверх %1$@ від позначки %2$@, з %3$@, після сигналу. «Записати поверх» або «Зупинити» завершує його; «Зняти виділення» відхиляє.",
+     "after": "Запис поверх виділення тривалістю %1$@ від позначки %2$@, з %3$@, після сигналу. «Записати поверх» або «Зупинити» завершує його; «Зняти виділення» відхиляє.",
+     "why": "grammar: a length in words comes in the nominative (\"1 хвилина\", \"2 хвилини\"), which this preposition would need in the genitive; \"поверх виділення тривалістю\" takes it as it is"
+    },
+    {
+     "key": "Redid %@.",
+     "id": "audioEditor.redid",
+     "english": "Redid %@.",
+     "before": "Повторено %@.",
+     "after": "Повторено «%@».",
+     "why": "natural: an edit name is a command (\"Вирізати …\"), so the frame read \"Повторити Вирізати …\"; quoted as a name"
+    },
+    {
+     "key": "Redo %@",
+     "id": "audioEditor.redoTitle",
+     "english": "Redo %@",
+     "before": "Повторити %@",
+     "after": "Повторити «%@»",
+     "why": "natural: an edit name is a command (\"Вирізати …\"), so the frame read \"Повторити Вирізати …\"; quoted as a name"
+    },
+    {
+     "key": "Replace %@",
+     "id": "audioEdit.actionName.replace",
+     "english": "Replace %@",
+     "before": "Замінити %@",
+     "after": "Замінити (%@)",
+     "why": "grammar: the edit name follows \"Скасувати\"/\"Повторити\", and a length after an infinitive must be accusative (\"1 секунда\" is not); parentheses keep it as it is"
+    },
+    {
+     "key": "Replaced %@ with %@ of new recording, which is selected.",
+     "id": "audioEditor.punchedIn",
+     "english": "Replaced %1$@ with %2$@ of new recording, which is selected.",
+     "before": "Замінено %1$@ новим записом тривалістю %2$@, його виділено.",
+     "after": "Фрагмент тривалістю %1$@ замінено новим записом тривалістю %2$@, його виділено.",
+     "why": "grammar: a length in words comes in the nominative (\"1 секунда\"), which this slot would need in the accusative; \"Фрагмент тривалістю\" takes it as it is"
+    },
+    {
+     "key": "Reverse",
+     "id": "premadeFilterPreset.title.reverse",
+     "english": "Reverse",
+     "before": "Навпаки",
+     "after": "Задом наперед",
+     "why": "meaning: \"Навпаки\" is \"conversely\"; the preset plays the audio backwards"
+    },
+    {
+     "key": "Seconds between level announcements",
+     "id": "recording.announceIntervalLabel",
+     "english": "Seconds between level announcements",
+     "before": "Секунд між оголошеннями рівня",
+     "after": "Скільки секунд між оголошеннями рівня",
+     "why": "natural: a label of genitives alone; as \"Скільки днів зберігати оригінал\" and \"Скільки найновіших\""
+    },
+    {
+     "key": "Selected %@.",
+     "id": "audioEditor.selected",
+     "english": "Selected %@.",
+     "before": "Виділено %@.",
+     "after": "Виділено: %@.",
+     "why": "grammar: a length in words comes in the nominative (\"1 секунда\"), which this slot would need in the accusative; the colon takes it as it is, as \"Виділено все: %@.\" does"
+    },
+    {
+     "key": "Selected the %@ before chapter 1.",
+     "id": "audioEditor.selectedBeforeFirstChapter",
+     "english": "Selected the %@ before chapter 1.",
+     "before": "Виділено %@ перед розділом 1.",
+     "after": "Виділено аудіо перед розділом 1: %@.",
+     "why": "grammar: a length in words comes in the nominative (\"1 секунда\"), which this slot would need in the accusative; the length moves after a colon"
+    },
+    {
+     "key": "Selection from %@ to %@; %@ long.",
+     "id": "audioEditor.selectionSentence",
+     "english": "Selection from %1$@ to %2$@; %3$@ long.",
+     "before": "Виділення від %1$@ до %2$@; тривалість %3$@.",
+     "after": "Виділення від позначки %1$@ до позначки %2$@; тривалість %3$@.",
+     "why": "grammar: a length in words comes in the nominative (\"1 хвилина\", \"2 хвилини\"), which this preposition would need in the genitive; \"від позначки … до позначки\" takes both as they are"
+    },
+    {
+     "key": "Show an alert when a refresh brings new episodes",
+     "id": "feedSettings.refreshAlert",
+     "english": "Show an alert when a refresh brings new episodes",
+     "before": "Показувати сповіщення, коли оновлення приносить нові епізоди",
+     "after": "Показувати повідомлення, коли оновлення приносить нові епізоди",
+     "why": "meaning: an alert, not a notification (\"сповіщення\" is the switch beside it); its hint says \"повідомлення\""
+    },
+    {
+     "key": "Shows length, file, and edits; sets what happens to the original audio.",
+     "id": "audioEditor.explanation.editorInfo",
+     "english": "Shows length, file, and edits; sets what happens to the original audio.",
+     "before": "Показує тривалість, файл і правки; задає, що робити з оригіналом аудіо.",
+     "after": "Показує тривалість, файл і правки; задає, що робити з оригінальним аудіо.",
+     "why": "term: the glossary's \"Оригінальне аудіо\" for Original audio, as the setting's label says it"
+    },
+    {
+     "key": "Stopped. Back at %@.",
+     "id": "audioEditor.stopped",
+     "english": "Stopped. Back at %@.",
+     "before": "Зупинено. Повернення на %@.",
+     "after": "Зупинено. Повернення на позначку %@.",
+     "why": "grammar: a length in words comes in the nominative (\"1 секунда\"), which this slot would need in the accusative; \"на позначку\" takes it as it is, as \"на позначці\" does elsewhere"
+    },
+    {
+     "key": "Subscribes to this podcast and fills the address field",
+     "id": "feed.subscribeToResultHint",
+     "english": "Subscribes to this podcast and fills the address field",
+     "before": "Підписується на цей подкаст і заповнює поле адреси.",
+     "after": "Оформлює підписку на цей подкаст і заповнює поле адреси.",
+     "why": "natural: reflexive \"Підписується\" says the button subscribes itself"
+    },
+    {
+     "key": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "id": "duplicateCopy.answerUnderWay",
+     "english": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "before": "TextMouth ще виконує вашу попередню відповідь. Зачекайте, поки вона завершиться.",
+     "after": "TextMouth ще обробляє вашу попередню відповідь. Зачекайте, поки він закінчить.",
+     "why": "natural: an answer is not \"виконує\", and \"поки вона завершиться\" made the answer the one that finishes"
+    },
+    {
+     "key": "TextMouth makes a folder named after the feed in %@, and its episodes and articles download into it.",
+     "id": "feed.folderHelp",
+     "english": "TextMouth makes a folder named after the feed in %@, and its episodes and articles download into it.",
+     "before": "TextMouth створює в %@ папку з назвою стрічки, і її епізоди та статті завантажуються до неї.",
+     "after": "TextMouth створює в папці «%@» папку з назвою стрічки, і туди завантажуються її епізоди та статті.",
+     "why": "grammar: a folder name cannot take the locative after \"в\"; \"в папці «…»\" carries the case"
+    },
+    {
+     "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "id": "duplicateCopy.unansweredTrashed.other",
+     "english": {
+      "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+      "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
+     },
+     "before": {
+      "few": "TextMouth перемістив до Кошика %lld нові копії дублікатів книг, бо питання, чи зберігати їх як дублікати, лишилися без відповіді до закриття TextMouth. Щоб їх повернути, відкрийте Кошик і виберіть «Повернути на місце».",
+      "many": "TextMouth перемістив до Кошика %lld нових копій дублікатів книг, бо питання, чи зберігати їх як дублікати, лишилися без відповіді до закриття TextMouth. Щоб їх повернути, відкрийте Кошик і виберіть «Повернути на місце».",
+      "one": "TextMouth перемістив до Кошика %lld нову копію дубліката книги, бо питання, чи зберігати її як дублікат, лишилося без відповіді до закриття TextMouth. Щоб її повернути, відкрийте Кошик і виберіть «Повернути на місце».",
+      "other": "TextMouth перемістив до Кошика %lld нової копії дублікатів книг, бо питання, чи зберігати їх як дублікати, лишилися без відповіді до закриття TextMouth. Щоб їх повернути, відкрийте Кошик і виберіть «Повернути на місце»."
+     },
+     "after": {
+      "one": "TextMouth перемістив до Кошика %lld нову копію наявної книги, бо питання, чи зберігати її як дублікат, лишилося без відповіді до закриття TextMouth. Щоб її повернути, відкрийте Кошик і виберіть «Повернути на місце».",
+      "few": "TextMouth перемістив до Кошика %lld нові копії наявних книг, бо питання, чи зберігати їх як дублікати, лишилися без відповіді до закриття TextMouth. Щоб їх повернути, відкрийте Кошик і виберіть «Повернути на місце».",
+      "many": "TextMouth перемістив до Кошика %lld нових копій наявних книг, бо питання, чи зберігати їх як дублікати, лишилися без відповіді до закриття TextMouth. Щоб їх повернути, відкрийте Кошик і виберіть «Повернути на місце».",
+      "other": "TextMouth перемістив до Кошика %lld нової копії наявних книг, бо питання, чи зберігати їх як дублікати, лишилися без відповіді до закриття TextMouth. Щоб їх повернути, відкрийте Кошик і виберіть «Повернути на місце»."
+     },
+     "why": "meaning: \"копії дублікатів книг\" said copies of duplicates; these are new copies of books already in the library"
+    },
+    {
+     "key": "TextMouth's converter stopped before the end of “%@”, so it could not be imported.",
+     "id": "ffmpegImport.endedEarly",
+     "english": "TextMouth's converter stopped before the end of “%@”, so it could not be imported.",
+     "before": "Перетворювач TextMouth зупинився до кінця «%@», тож файл не вдалося імпортувати.",
+     "after": "Перетворювач TextMouth зупинився, не дійшовши до кінця «%@», тож файл не вдалося імпортувати.",
+     "why": "meaning: \"зупинився до кінця\" also reads as \"stopped at the end\""
+    },
+    {
+     "key": "The cue sheet “%@” names none of the audio beside it, so its headings were not used.",
+     "id": "cueSheet.sheetUnused.names",
+     "english": "The cue sheet “%@” names none of the audio beside it, so its headings were not used.",
+     "before": "Файл CUE «%@» не називає жодного аудіо поруч, тож його заголовки не використано.",
+     "after": "У файлі CUE «%@» не вказано жодного з аудіофайлів поруч, тож його заголовки не використано.",
+     "why": "natural: a file does not \"називає\"; Ukrainian says what is given in it"
+    },
+    {
+     "key": "The existing copy's files go to the Trash, but putting them back won't return that copy to your library.",
+     "id": "importDecision.replacedCopySentence.putting",
+     "english": "The existing copy's files go to the Trash, but putting them back won't return that copy to your library.",
+     "before": "Файли наявної копії потрапляють до Кошика, але їх повернення не поверне цю копію до вашої бібліотеки.",
+     "after": "Файли наявної копії потрапляють до Кошика, але якщо повернути їх на місце, ця копія не з’явиться у вашій бібліотеці знову.",
+     "why": "natural: \"їх повернення не поверне\" repeated the verb"
+    },
+    {
+     "key": "The feed leaves your library, with its list of articles and its settings.",
+     "id": "feed.sentences.articles",
+     "english": "The feed leaves your library, with its list of articles and its settings.",
+     "before": "Стрічка залишає вашу бібліотеку разом зі списком статей і налаштуваннями.",
+     "after": "Стрічка зникає з вашої бібліотеки разом зі списком статей і налаштуваннями.",
+     "why": "meaning: \"залишає вашу бібліотеку\" (leaves) is a near twin of Unsubscribe's \"залишається у вашій бібліотеці\" (stays)"
+    },
+    {
+     "key": "The feed leaves your library, with its list of episodes and its settings.",
+     "id": "feed.sentences.episodes",
+     "english": "The feed leaves your library, with its list of episodes and its settings.",
+     "before": "Стрічка залишає вашу бібліотеку разом зі списком епізодів і налаштуваннями.",
+     "after": "Стрічка зникає з вашої бібліотеки разом зі списком епізодів і налаштуваннями.",
+     "why": "meaning: \"залишає вашу бібліотеку\" (leaves) is a near twin of Unsubscribe's \"залишається у вашій бібліотеці\" (stays)"
+    },
+    {
+     "key": "The feed leaves your library, with its list of items and its settings.",
+     "id": "feed.sentences.items",
+     "english": "The feed leaves your library, with its list of items and its settings.",
+     "before": "Стрічка залишає вашу бібліотеку разом зі списком елементів і налаштуваннями.",
+     "after": "Стрічка зникає з вашої бібліотеки разом зі списком елементів і налаштуваннями.",
+     "why": "meaning: \"залишає вашу бібліотеку\" (leaves) is a near twin of Unsubscribe's \"залишається у вашій бібліотеці\" (stays)"
+    },
+    {
+     "key": "The feed stays in your library with its settings and %@, and %@ checks it again.",
+     "id": "feed.unsubscribeMessage.staysLibrarySettings",
+     "english": "The feed stays in your library with its settings and %1$@, and %2$@ checks it again.",
+     "before": "Стрічка залишається у вашій бібліотеці з налаштуваннями та такими завантаженнями: %1$@; %2$@ знову перевіряє її.",
+     "after": "Стрічка залишається у вашій бібліотеці з налаштуваннями та такими завантаженнями: %1$@; щоб відновити її перевірку, виберіть «%2$@».",
+     "why": "natural: the command name as subject read \"Підписатися знову знову перевіряє її\""
+    },
+    {
+     "key": "The feed stays in your library with its settings, and %@ checks it again.",
+     "id": "feed.unsubscribeMessage.staysLibrary",
+     "english": "The feed stays in your library with its settings, and %@ checks it again.",
+     "before": "Стрічка залишається у вашій бібліотеці з налаштуваннями, а %@ знову перевіряє її.",
+     "after": "Стрічка залишається у вашій бібліотеці з налаштуваннями; щоб відновити її перевірку, виберіть «%@».",
+     "why": "natural: the command name as subject read \"а Підписатися знову знову перевіряє її\""
+    },
+    {
+     "key": "The original audio was deleted on %@, so edits saved before then can't be undone.",
+     "id": "audioEdit.undoLimit.originalDeleted",
+     "english": "The original audio was deleted on %@, so edits saved before then can't be undone.",
+     "before": "Оригінал аудіо видалено %@, тому правки, збережені до цього, скасувати не можна.",
+     "after": "Оригінальне аудіо видалено %@, тому правки, збережені до цього, скасувати не можна.",
+     "why": "term: the glossary's \"Оригінальне аудіо\" for Original audio, as the setting's label says it"
+    },
+    {
+     "key": "The place, bookmarks, and transcript kept for it are deleted too.",
+     "id": "feed.deleteItemMessage.bookmarks",
+     "english": "The place, bookmarks, and transcript kept for it are deleted too.",
+     "before": "Збережені для нього місце, закладки та транскрипція також видаляються.",
+     "after": "Збережені місце, закладки та транскрипція також видаляються.",
+     "why": "grammar: one sentence serves an episode and an article, and \"для нього\" is wrong for an article"
+    },
+    {
+     "key": "The transcript runs to %@, past the audio's end at %@, so it is for other audio.",
+     "id": "outsideTranscriptError.runsPastTheEnd",
+     "english": "The transcript runs to %1$@, past the audio's end at %2$@, so it is for other audio.",
+     "before": "Транскрипція триває до %1$@, за кінцем аудіо на позначці %2$@, тож вона для іншого аудіо.",
+     "after": "Транскрипція триває до позначки %1$@, за кінцем аудіо на позначці %2$@, тож вона для іншого аудіо.",
+     "why": "grammar: a time in words comes in the nominative, which \"до\" would need in the genitive; \"до позначки\" takes it as it is"
+    },
+    {
+     "key": "This book keeps its original audio for %lld days after it was saved or last edited.",
+     "id": "audioEditor.policyChanged.deleteAfter",
+     "english": {
+      "one": "This book keeps its original audio for %lld day after it was saved or last edited.",
+      "other": "This book keeps its original audio for %lld days after it was saved or last edited."
+     },
+     "before": {
+      "few": "Ця книга зберігає оригінал аудіо протягом %lld днів після збереження або останнього редагування.",
+      "many": "Ця книга зберігає оригінал аудіо протягом %lld днів після збереження або останнього редагування.",
+      "one": "Ця книга зберігає оригінал аудіо протягом %lld дня після збереження або останнього редагування.",
+      "other": "Ця книга зберігає оригінал аудіо протягом %lld дня після збереження або останнього редагування."
+     },
+     "after": {
+      "one": "Ця книга зберігає оригінальне аудіо протягом %lld дня після збереження або останнього редагування.",
+      "few": "Ця книга зберігає оригінальне аудіо протягом %lld днів після збереження або останнього редагування.",
+      "many": "Ця книга зберігає оригінальне аудіо протягом %lld днів після збереження або останнього редагування.",
+      "other": "Ця книга зберігає оригінальне аудіо протягом %lld дня після збереження або останнього редагування."
+     },
+     "why": "term: the glossary's \"Оригінальне аудіо\" for Original audio, as the setting's label says it"
+    },
+    {
+     "key": "This book keeps its original audio until the book is removed.",
+     "id": "audioEditor.policyChanged.keep",
+     "english": "This book keeps its original audio until the book is removed.",
+     "before": "Ця книга зберігає оригінал аудіо, доки книгу не вилучено.",
+     "after": "Ця книга зберігає оригінальне аудіо, доки книгу не вилучено.",
+     "why": "term: the glossary's \"Оригінальне аудіо\" for Original audio, as the setting's label says it"
+    },
+    {
+     "key": "This book keeps no original audio: saved edits change its audio in place, and can't be undone after.",
+     "id": "audioEditor.policyChanged.delete",
+     "english": "This book keeps no original audio: saved edits change its audio in place, and can't be undone after.",
+     "before": "Ця книга не зберігає оригінал аудіо: збережені правки змінюють її аудіо на місці й надалі їх скасувати не можна.",
+     "after": "Ця книга не зберігає оригінальне аудіо: збережені правки змінюють її аудіо на місці й надалі їх скасувати не можна.",
+     "why": "term: the glossary's \"Оригінальне аудіо\" for Original audio, as the setting's label says it"
+    },
+    {
+     "key": "To download it again, choose %@ on its row.",
+     "id": "feedDownloadProgress.comingBack.chooseRow",
+     "english": "To download it again, choose %@ on its row.",
+     "before": "Щоб завантажити його знову, виберіть %@ у його рядку.",
+     "after": "Щоб завантажити його знову, виберіть «%@» у його рядку.",
+     "why": "punctuation: a command name inside a sentence takes «», as the catalog quotes command names it spells out"
+    },
+    {
+     "key": "To download the other %lld again, choose %@ on their rows.",
+     "id": "feedDownloadProgress.comingBack.other",
+     "english": {
+      "one": "To download the other %lld again, choose %@ on its row.",
+      "other": "To download the other %lld again, choose %@ on their rows."
+     },
+     "before": {
+      "few": "Щоб знову завантажити решту (%lld), виберіть %@ у їхніх рядках.",
+      "many": "Щоб знову завантажити решту (%lld), виберіть %@ у їхніх рядках.",
+      "one": "Щоб знову завантажити решту (%lld), виберіть %@ у їхніх рядках.",
+      "other": "Щоб знову завантажити решту (%lld), виберіть %@ у їхніх рядках."
+     },
+     "after": {
+      "one": "Щоб знову завантажити решту (%lld), виберіть «%@» у їхніх рядках.",
+      "few": "Щоб знову завантажити решту (%lld), виберіть «%@» у їхніх рядках.",
+      "many": "Щоб знову завантажити решту (%lld), виберіть «%@» у їхніх рядках.",
+      "other": "Щоб знову завантажити решту (%lld), виберіть «%@» у їхніх рядках."
+     },
+     "why": "punctuation: a command name inside a sentence takes «», as the catalog quotes command names it spells out"
+    },
+    {
+     "key": "To download the other one again, choose %@ on its row.",
+     "id": "feedDownloadProgress.comingBack.otherOne",
+     "english": "To download the other one again, choose %@ on its row.",
+     "before": "Щоб знову завантажити інший, виберіть %@ у його рядку.",
+     "after": "Щоб знову завантажити інше, виберіть «%@» у його рядку.",
+     "why": "grammar: \"the other one\" is a download (\"завантаження\", neuter), so \"інше\"; the command name in «»"
+    },
+    {
+     "key": "To download them again, choose %@ on their rows.",
+     "id": "feedDownloadProgress.comingBack.rows",
+     "english": "To download them again, choose %@ on their rows.",
+     "before": "Щоб завантажити їх знову, виберіть %@ у їхніх рядках.",
+     "after": "Щоб завантажити їх знову, виберіть «%@» у їхніх рядках.",
+     "why": "punctuation: a command name inside a sentence takes «», as the catalog quotes command names it spells out"
+    },
+    {
+     "key": "To keep an article, choose %@ on its row first.",
+     "id": "feed.keepArticleChoose",
+     "english": "To keep an article, choose %@ on its row first.",
+     "before": "Щоб зберегти статтю, спершу виберіть %@ у її рядку.",
+     "after": "Щоб зберегти статтю, спершу виберіть «%@» у її рядку.",
+     "why": "punctuation: a command name inside a sentence takes «», as the catalog quotes command names it spells out"
+    },
+    {
+     "key": "To keep an episode, choose %@ on its row first.",
+     "id": "feed.keepEpisodeChoose",
+     "english": "To keep an episode, choose %@ on its row first.",
+     "before": "Щоб зберегти епізод, спершу виберіть %@ у його рядку.",
+     "after": "Щоб зберегти епізод, спершу виберіть «%@» у його рядку.",
+     "why": "punctuation: a command name inside a sentence takes «», as the catalog quotes command names it spells out"
+    },
+    {
+     "key": "To keep an item, choose %@ on its row first.",
+     "id": "feed.keepItemChoose",
+     "english": "To keep an item, choose %@ on its row first.",
+     "before": "Щоб зберегти елемент, спершу виберіть %@ у його рядку.",
+     "after": "Щоб зберегти елемент, спершу виберіть «%@» у його рядку.",
+     "why": "punctuation: a command name inside a sentence takes «», as the catalog quotes command names it spells out"
+    },
+    {
+     "key": "To use it, choose %@ on the Text tab in Settings.",
+     "id": "playlistImport.pronunciationLexicon.settings",
+     "english": "To use it, choose %@ on the Text tab in Settings.",
+     "before": "Щоб ним скористатися, виберіть %@ на вкладці «Текст» у налаштуваннях.",
+     "after": "Щоб ним скористатися, виберіть «%@» на вкладці «Текст» у налаштуваннях.",
+     "why": "punctuation: a command name inside a sentence takes «», as the catalog quotes command names it spells out"
+    },
+    {
+     "key": "Transcribed %@: %@ in %@.",
+     "id": "transcription.finished",
+     "english": "Transcribed %1$@: %2$@ in %3$@.",
+     "before": "Транскрибовано %1$@: %2$@ за %3$@.",
+     "after": "Транскрибовано %1$@: %2$@, час: %3$@.",
+     "why": "grammar: a length in words comes in the nominative (\"1 секунда\"), which this slot would need in the accusative; \"за 51 секунда\" was wrong; a label takes it as it is"
+    },
+    {
+     "key": "Transcribing it takes %@.",
+     "id": "transcription.offerMessage.transcribing",
+     "english": "Transcribing it takes %@.",
+     "before": "Транскрибування займе %@.",
+     "after": "Транскрибування триватиме: %@.",
+     "why": "grammar: a length in words comes in the nominative (\"1 секунда\"), which this slot would need in the accusative; \"займе приблизно 1 хвилина\" was wrong; the colon takes it as it is"
+    },
+    {
+     "key": "Trimmed to the selection: %@ kept.",
+     "id": "audioEditor.trimmed",
+     "english": "Trimmed to the selection: %@ kept.",
+     "before": "Обрізано до виділення: залишено %@.",
+     "after": "Обрізано до виділення, залишено: %@.",
+     "why": "grammar: a length in words comes in the nominative (\"1 секунда\"), which this slot would need in the accusative; \"залишено 1 хвилина\" was wrong; the colon takes it as it is"
+    },
+    {
+     "key": "Undid %@.",
+     "id": "audioEditor.undid",
+     "english": "Undid %@.",
+     "before": "Скасовано %@.",
+     "after": "Скасовано «%@».",
+     "why": "natural: an edit name is a command (\"Вирізати …\"), so the frame read \"Скасувати Вирізати …\"; quoted as a name"
+    },
+    {
+     "key": "Undo %@",
+     "id": "audioEditor.undoTitle",
+     "english": "Undo %@",
+     "before": "Скасувати %@",
+     "after": "Скасувати «%@»",
+     "why": "natural: an edit name is a command (\"Вирізати …\"), so the frame read \"Скасувати Вирізати …\"; quoted as a name"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new articles%@.",
+     "id": "feed.unsubscribed.articles",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new articles%2$@.",
+     "before": "Підписку на %1$@ скасовано: TextMouth більше не перевіряє її на нові статті%2$@.",
+     "after": "Підписку на %1$@ скасовано: TextMouth більше не перевіряє цю стрічку на нові статті%2$@.",
+     "why": "grammar: \"її\" after \"Підписку … скасовано\" pointed at the subscription, not the feed"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new episodes%@.",
+     "id": "feed.unsubscribed.episodes",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new episodes%2$@.",
+     "before": "Підписку на %1$@ скасовано: TextMouth більше не перевіряє її на нові епізоди%2$@.",
+     "after": "Підписку на %1$@ скасовано: TextMouth більше не перевіряє цю стрічку на нові епізоди%2$@.",
+     "why": "grammar: \"її\" after \"Підписку … скасовано\" pointed at the subscription, not the feed"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new items%@.",
+     "id": "feed.unsubscribed.items",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new items%2$@.",
+     "before": "Підписку на %1$@ скасовано: TextMouth більше не перевіряє її на нові елементи%2$@.",
+     "after": "Підписку на %1$@ скасовано: TextMouth більше не перевіряє цю стрічку на нові елементи%2$@.",
+     "why": "grammar: \"її\" after \"Підписку … скасовано\" pointed at the subscription, not the feed"
+    },
+    {
+     "key": "Wait until the transcription ends, or cancel it",
+     "id": "feedBookUse.remedy.transcribing",
+     "english": "Wait until the transcription ends, or cancel it",
+     "before": "Дочекайтеся завершення транскрибування або скасуйте її",
+     "after": "Дочекайтеся завершення транскрибування або скасуйте його",
+     "why": "grammar: \"транскрибування\" is neuter, so \"його\", not \"її\""
+    },
+    {
+     "key": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "id": "feed.useGlobalHint",
+     "english": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "before": "Коли позначено, ця стрічка дотримується налаштування в «Налаштуваннях», %@; зніміть позначку, щоб дати стрічці власне.",
+     "after": "Коли позначено, ця стрічка дотримується налаштування з вкладки «%@» у налаштуваннях; зніміть позначку, щоб задати для стрічки власне.",
+     "why": "punctuation: the tab name takes «» and reads as a tab of Settings; \"дати стрічці власне\" was a literal \"give\""
+    },
+    {
+     "key": "by %@",
+     "ids": [
+      "feed.byPublisher",
+      "librarySubview.byAuthor"
+     ],
+     "english": "by %@",
+     "before": "від %@",
+     "after": "автор: %@",
+     "why": "grammar: \"від\" needs the genitive and a name comes in the nominative; \"автор:\" as \"%1$@, автор: %2$@\" says it"
+    },
+    {
+     "key": "choose %@ again",
+     "id": "feed.deleteFeedRefused.downloadInUse",
+     "english": "choose %@ again",
+     "before": "виберіть %@ знову",
+     "after": "виберіть «%@» знову",
+     "why": "punctuation: a command name inside a sentence takes «», as the catalog quotes command names it spells out"
+    },
+    {
+     "key": "is open in a reader",
+     "id": "feedBookUse.clause.openInReader",
+     "english": "is open in a reader",
+     "before": "відкрито у вікні читання",
+     "after": "відкрита у вікні читання",
+     "why": "grammar: follows the book title or \"Вона\", as the other two clauses do; impersonal \"відкрито\" needed \"Її\""
+    },
+    {
+     "key": "the feed “%@”",
+     "id": "feed.deletedFeed",
+     "english": "the feed “%@”",
+     "before": "стрічку «%@»",
+     "after": "стрічка «%@»",
+     "why": "grammar: first of a list after \"Видалено:\", where the other parts are nominative"
+    },
+    {
+     "key": "“%@” is still working. Quit once the change is done.",
+     "id": "audioEditor.quitWhileWorking",
+     "english": "“%@” is still working. Quit once the change is done.",
+     "before": "«%@» ще виконує роботу. Вийдіть, коли зміну буде завершено.",
+     "after": "Редактор аудіо для «%@» ще працює. Вийдіть, коли зміну буде завершено.",
+     "why": "natural: the book itself does not \"виконує роботу\"; its editor is working, as \"Редактор аудіо для %@\" says elsewhere"
+    },
+    {
+     "key": "“%@” no longer waits to download; it downloads when you choose %@.",
+     "id": "feed.waitingDownloadCancelled",
+     "english": "“%1$@” no longer waits to download; it downloads when you choose %2$@.",
+     "before": "«%1$@» більше не чекає на завантаження; воно завантажиться, коли ви виберете %2$@.",
+     "after": "«%1$@» більше не чекає на завантаження; завантаження почнеться, коли ви виберете «%2$@».",
+     "why": "grammar: \"воно\" cannot follow a title of unknown gender; the command name in «»"
+    },
+    {
+     "key": "“%@” uses %@ samples, which TextMouth can't play.",
+     "id": "audioSampleForm.refusal",
+     "english": "“%1$@” uses %2$@ samples, which TextMouth can't play.",
+     "before": "«%1$@» використовує %2$@ семпли, які TextMouth не може відтворити.",
+     "after": "Семпли у файлі «%1$@» — %2$@, а такі TextMouth не може відтворити.",
+     "why": "natural: \"32-бітні з плаваючою комою семпли\" put a prepositional phrase before its noun; the sample form now follows it"
+    }
+   ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ can't open while its edited text can't be used: %@",
+     "id": "bookTextEdit.held",
+     "english": "%1$@ can't open while its edited text can't be used: %2$@",
+     "before": "%1$@ не відкривається, поки його відредагований текст непридатний: %2$@",
+     "after": "%1$@ не відкривається, поки її відредагований текст непридатний: %2$@",
+     "why": "grammar: the title stands for the book, which is feminine (її), as part 1 chose"
+    },
+    {
+     "key": "%@ has its default, %@",
+     "id": "shortcutsSettings.defaultsHeldElsewhere",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%1$@ має типову комбінацію: %2$@",
+     "after": "«%1$@» має типову комбінацію цієї дії: %2$@",
+     "why": "meaning: its default is this row's action's key, which the other action now holds; the name is quoted since it is an infinitive"
+    },
+    {
+     "key": "%@ reset to default: %@",
+     "id": "shortcutsSettings.resetAnnouncement",
+     "english": "%1$@ reset to default: %2$@",
+     "before": "%1$@ повернуто до типового: %2$@",
+     "after": "«%1$@» скинуто до типових: %2$@",
+     "why": "natural: повернуто до типового lacks its noun; now matches the Reset to Default button (Скинути до типових)"
+    },
+    {
+     "key": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "id": "bookTextEdit.addBackNoCopyKept",
+     "english": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "before": "%@ не додано назад: не вдалося спершу зберегти копію тексту з його пакета, тому TextMouth залишив текст без змін.",
+     "after": "%@ не додано назад: не вдалося спершу зберегти копію тексту з її пакета, тому TextMouth залишив текст без змін.",
+     "why": "grammar: the title stands for the book, which is feminine (її), as part 1 chose"
+    },
+    {
+     "key": "%lld books were not in it.",
+     "id": "readingList.removedAnnouncement.were",
+     "english": {
+      "one": "%lld book was not in it.",
+      "other": "%lld books were not in it."
+     },
+     "before": {
+      "few": "%lld книг не було в ньому.",
+      "many": "%lld книг не було в ньому.",
+      "one": "%lld книги не було в ньому.",
+      "other": "%lld книги не було в ньому."
+     },
+     "after": {
+      "one": "%lld книга не була в ньому.",
+      "few": "%lld книги не були в ньому.",
+      "many": "%lld книг не було в ньому.",
+      "other": "%lld книги не було в ньому."
+     },
+     "why": "grammar: 1 книги and 2 книг did not agree with the number; each form now agrees, as the forms of Book was already in it do"
+    },
+    {
+     "key": "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol.",
+     "id": "repeatedSymbolsSettingsView.explanation",
+     "english": "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol.",
+     "before": "Послідовність — це один символ, що повторюється окремо або через одинарні пробіли, наприклад * * * * чи ====. Озвучення переписує послідовності перед правилами вище; екран і брайль зберігають кожен символ.",
+     "after": "Послідовність — це один символ, що повторюється окремо або через одинарні пробіли, наприклад * * * * чи ====. Озвучення переписує послідовності до застосування правил, наведених вище; екран і брайль зберігають кожен символ.",
+     "why": "natural: перед правилами вище copied before the rules above and read as a place in the list"
+    },
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "id": "bookExport.settingHint",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "Додає кнопку «Експортувати» на панель інструментів кожного вікна читання. Команда «Файл» > «Експортувати» працює в обох випадках.",
+     "after": "Додає кнопку «Експортувати» на панель інструментів кожного вікна читання. Команда «Експортувати» в меню «Файл» працює в обох випадках.",
+     "why": "voiceover: VoiceOver reads > as більше; the menu path is said in words"
+    },
+    {
+     "key": "Also write to the library's copy of the EPUB file",
+     "id": "epubMetadataSave.writeBackToggleTitle",
+     "english": "Also write to the library's copy of the EPUB file",
+     "before": "Також записати в копію файлу EPUB у бібліотеці",
+     "after": "Також записувати в копію файлу EPUB у бібліотеці",
+     "why": "natural: a switch's label is a standing setting, so imperfective (записувати), as part 1 chose"
+    },
+    {
+     "key": "At Sign",
+     "id": "keyBinding.localizedKeyWords.sign",
+     "english": "At Sign",
+     "before": "Знак at",
+     "after": "Символ електронної пошти",
+     "why": "term: Apple's Ukrainian VoiceOver names @ символ електронної пошти; Знак at mixed in a Latin word"
+    },
+    {
+     "key": "Caret",
+     "id": "keyBinding.localizedKeyWords.caret",
+     "english": "Caret",
+     "before": "Карет",
+     "after": "Символ вставки",
+     "why": "term: Apple's Ukrainian VoiceOver names ^ символ вставки; Карет is not a Ukrainian word"
+    },
+    {
+     "key": "Choose the app to edit the manifest of %@ with.",
+     "id": "bookManifestEdit.appPanelMessage",
+     "english": "Choose the app to edit the manifest of %@ with.",
+     "before": "Виберіть програму, якою редагувати маніфест «%@».",
+     "after": "Виберіть програму для редагування маніфесту «%@».",
+     "why": "natural: програму, якою редагувати copies the English with"
+    },
+    {
+     "key": "Choose the app to edit the text of %@ with.",
+     "id": "bookTextEdit.appPanelMessage",
+     "english": "Choose the app to edit the text of %@ with.",
+     "before": "Виберіть програму, якою редагувати текст «%@».",
+     "after": "Виберіть програму для редагування тексту «%@».",
+     "why": "natural: програму, якою редагувати copies the English with"
+    },
+    {
+     "key": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "id": "shortcutsSettings.worksInHint",
+     "english": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "before": "Вибір робить комбінацію вашою; «Скинути до типових» відновлює типове місце її дії.",
+     "after": "Ваш вибір замінює типове значення; «Скинути до типових» відновлює вікна, де комбінація діє типово.",
+     "why": "natural: Вибір робить комбінацію вашою and типове місце її дії were literal copies"
+    },
+    {
+     "key": "Close All",
+     "id": "keyBinding.localizedSystemCommand.close",
+     "english": "Close All",
+     "before": "Закрити все",
+     "after": "Закрити всі",
+     "why": "term: the File menu macOS shows in Ukrainian says Закрити всі (SwiftUI and AppKit menus)"
+    },
+    {
+     "key": "Copies the whole report as plain text",
+     "id": "speechRefusal.copyHint",
+     "english": "Copies the whole report as plain text",
+     "before": "Копіює весь звіт як звичайний текст.",
+     "after": "Копіює весь звіт як простий текст.",
+     "why": "term: Apple's Ukrainian calls plain text простий текст (TextEdit), not звичайний текст"
+    },
+    {
+     "key": "Display",
+     "id": "common.display",
+     "english": "Display",
+     "before": "Показ",
+     "after": "Показувати",
+     "why": "natural: a picker that chooses what is shown is Показувати, as Apple labels such pickers; Показ is a noun for a showing"
+    },
+    {
+     "key": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "id": "bookExport.chapterListChoiceHint.exports",
+     "english": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "before": "Назва й початок кожного заголовка як аркуш CUE, що називає аудіо так, як його експортує «Аудіо».",
+     "after": "Назва й початок кожного заголовка як файл CUE, що називає аудіо так, як його експортує «Аудіо».",
+     "why": "meaning: a CUE sheet is a file, not the window sheet Аркуш names"
+    },
+    {
+     "key": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "id": "bookTextEdit.stoppedBookReplaced.since",
+     "english": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "before": "Редагування тексту «%@» зупинено, бо його замінила нова копія.",
+     "after": "Редагування тексту «%@» зупинено, бо її замінила нова копія.",
+     "why": "grammar: the title stands for the book, which is feminine (її), as part 1 chose"
+    },
+    {
+     "key": "Edit Text has stopped for %@, since its file was read again.",
+     "id": "bookTextEdit.stoppedBookReadAgain.since",
+     "english": "Edit Text has stopped for %@, since its file was read again.",
+     "before": "Редагування тексту «%@» зупинено, бо його файл було прочитано ще раз.",
+     "after": "Редагування тексту «%@» зупинено, бо її файл було прочитано ще раз.",
+     "why": "grammar: the title stands for the book, which is feminine (її), as part 1 chose"
+    },
+    {
+     "key": "Editable",
+     "id": "metadataEditor.editableHeading",
+     "english": "Editable",
+     "before": "Редаговані",
+     "after": "Можна редагувати",
+     "why": "meaning: Редаговані reads as edited (fields already changed), not as fields that can be changed"
+    },
+    {
+     "key": "Enable Sound Effects",
+     "id": "soundEffectsSettings.enableTitle",
+     "english": "Enable Sound Effects",
+     "before": "Увімкнути звукові ефекти",
+     "after": "Відтворювати звукові ефекти",
+     "why": "natural: a switch's label is a standing setting, so imperfective, as Apple's Відтворювати звукові ефекти інтерфейсу and part 1 have it"
+    },
+    {
+     "key": "Enhanced",
+     "id": "avSpeechSynthesisVoice.qualityLabel.enhanced",
+     "english": "Enhanced",
+     "before": "Покращена",
+     "after": "Вдосконалена",
+     "why": "term: Apple's Ukrainian names the Enhanced voice tier вдосконалений (TextToSpeech); feminine to agree with якість"
+    },
+    {
+     "key": "Exported %@ to %@.",
+     "id": "bookExport.finished.exported",
+     "english": "Exported %1$@ to %2$@.",
+     "before": "Експортовано %1$@ до %2$@.",
+     "after": "Експортовано %1$@ до папки «%2$@».",
+     "why": "grammar: до needs the genitive, which a folder name as Finder shows it cannot take; it is named as папка and quoted"
+    },
+    {
+     "key": "Exporting %lld of %@…",
+     "id": "bookExport.progress.exportingCount",
+     "english": "Exporting %1$lld of %2$@…",
+     "before": "Експортується %1$lld з %2$@…",
+     "after": "Експортовано %1$lld, усього %2$@…",
+     "why": "grammar: з needs the genitive, but the count comes in the nominative (з 3 елементи); the total now follows усього"
+    },
+    {
+     "key": "Exports the checked items once the braille table just chosen is checked.",
+     "id": "bookExport.exportWaitsHint",
+     "english": "Exports the checked items once the braille table just chosen is checked.",
+     "before": "Експортує позначені елементи, щойно буде перевірено щойно вибрану брайлівську таблицю.",
+     "after": "Експортує позначені елементи після перевірки щойно вибраної брайлівської таблиці.",
+     "why": "natural: щойно ... щойно used the same word for as soon as and just"
+    },
+    {
+     "key": "Failed to load book",
+     "id": "readerView.failedToLoad",
+     "english": "Failed to load book",
+     "before": "Не вдалося завантажити книгу",
+     "after": "Не вдалося відкрити книгу",
+     "why": "meaning: завантажити is the glossary's Download; a book that loads is opened (Відкриття), as part 1 chose"
+    },
+    {
+     "key": "For trying out with a braille display.",
+     "id": "phoneSettings.followInBrailleHint.display",
+     "english": "For trying out with a braille display.",
+     "before": "Для спроби з брайлівським дисплеєм.",
+     "after": "Для випробування з брайлівським дисплеєм.",
+     "why": "natural: Для спроби з is a literal copy of for trying out"
+    },
+    {
+     "key": "Hide Others",
+     "id": "keyBinding.localizedSystemCommand.others",
+     "english": "Hide Others",
+     "before": "Сховати інші",
+     "after": "Сховати решту",
+     "why": "term: the application menu macOS shows in Ukrainian says Сховати решту"
+    },
+    {
+     "key": "Hide TextMouth",
+     "id": "keyBinding.localizedSystemCommand.hide",
+     "english": "Hide TextMouth",
+     "before": "Сховати TextMouth",
+     "after": "Сховати програму TextMouth",
+     "why": "term: the application menu macOS shows in Ukrainian says Сховати програму «TextMouth»; the inner quotes are left out since the sentence quotes the command"
+    },
+    {
+     "key": "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.",
+     "id": "shortcutsSettings.letterNavigationNote",
+     "english": "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.",
+     "before": "У вікнах бібліотеки літера без інших клавіш переходить до першої книги або папки, що починається з неї, тому комбінація з однієї літери, як-от W, працює лише в інших вікнах.",
+     "after": "У вікнах бібліотеки натискання самої літери переводить до першої книги або папки, що починається з неї, тому комбінація з однієї літери, як-от W, працює лише в інших вікнах.",
+     "why": "natural: a letter does not go anywhere; pressing a letter alone moves to the book"
+    },
+    {
+     "key": "Jumped to %@ in the recording.",
+     "id": "readerTime.jumped.recording",
+     "english": "Jumped to %@ in the recording.",
+     "before": "Перехід до %@ у записі.",
+     "after": "Перехід у записі: %@.",
+     "why": "grammar: до needs the genitive, but the time comes in the nominative (2 години, 13 хвилин), so it follows a colon"
+    },
+    {
+     "key": "Jumped to %@ percent.",
+     "id": "readerTime.jumped",
+     "english": "Jumped to %@ percent.",
+     "before": "Перехід, відсоток: %@.",
+     "after": "Перехід до %@ відсотка.",
+     "why": "natural: Перехід, відсоток: was a list, not a sentence; a number with a decimal takes відсотка"
+    },
+    {
+     "key": "Jumped to %@.",
+     "id": "readerTime.jumped.words",
+     "english": "Jumped to %@.",
+     "before": "Перехід до %@.",
+     "after": "Перехід: %@.",
+     "why": "grammar: до needs the genitive, but the time comes in the nominative (2 години, 13 хвилин), so it follows a colon"
+    },
+    {
+     "key": "Loading",
+     "id": "phoneApp.loading",
+     "english": "Loading",
+     "before": "Завантаження",
+     "after": "Відкриття",
+     "why": "meaning: завантажити is the glossary's Download; a book that loads is opened (Відкриття), as part 1 chose"
+    },
+    {
+     "key": "Loading %@",
+     "id": "readerView.loading",
+     "english": "Loading %@",
+     "before": "Завантаження: %@",
+     "after": "Відкриття: %@",
+     "why": "meaning: завантажити is the glossary's Download; a book that loads is opened (Відкриття), as part 1 chose"
+    },
+    {
+     "key": "Loading book...",
+     "id": "readerView.loadingBook",
+     "english": "Loading book...",
+     "before": "Завантаження книги...",
+     "after": "Відкриття книги...",
+     "why": "meaning: завантажити is the glossary's Download; a book that loads is opened (Відкриття), as part 1 chose"
+    },
+    {
+     "key": "Manifest not updated: %@ Fix it in your editor and save again; until then, %@ keeps its headings.",
+     "id": "bookManifestEdit.notTaken",
+     "english": "Manifest not updated: %1$@ Fix it in your editor and save again; until then, %2$@ keeps its headings.",
+     "before": "Маніфест не оновлено: %1$@ Виправте його в редакторі й збережіть знову; до того «%2$@» зберігає свої заголовки.",
+     "after": "Маніфест не оновлено: %1$@ Виправте його в редакторі й збережіть знову; до того часу «%2$@» зберігає свої заголовки.",
+     "why": "natural: до того alone reads as before that; until then is до того часу"
+    },
+    {
+     "key": "Media controls not released: this book does not hold them.",
+     "id": "mediaControls.notHeld",
+     "english": "Media controls not released: this book does not hold them.",
+     "before": "Елементи керування медіа не віддано: ця книга їх не утримує.",
+     "after": "Керування медіа не звільнено: ця книга його не утримує.",
+     "why": "natural: matches the command Звільнити керування медіа, which gives the media keys back"
+    },
+    {
+     "key": "Media controls released",
+     "id": "mediaControls.released",
+     "english": "Media controls released",
+     "before": "Елементи керування медіа віддано",
+     "after": "Керування медіа звільнено",
+     "why": "natural: matches the command Звільнити керування медіа, which gives the media keys back"
+    },
+    {
+     "key": "Minimize All",
+     "id": "keyBinding.localizedSystemCommand.minimizeAll",
+     "english": "Minimize All",
+     "before": "Згорнути все",
+     "after": "Згорнути всі",
+     "why": "term: the Window menu macOS shows in Ukrainian says Згорнути всі"
+    },
+    {
+     "key": "Next",
+     "id": "keyBinding.localizedKeyWords.next",
+     "english": "Next",
+     "before": "Наступна",
+     "after": "Далі",
+     "why": "term: AppKit's Ukrainian key names call the Next key Далі; Наступна had no noun to agree with"
+    },
+    {
+     "key": "No book is loaded.",
+     "id": "readerViewModel.speakWhereAmISummary",
+     "english": "No book is loaded.",
+     "before": "Жодної книги не завантажено.",
+     "after": "Жодної книги не відкрито.",
+     "why": "meaning: завантажити is the glossary's Download; a book that loads is opened (Відкриття), as part 1 chose"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "id": "speechExportError.noVoice",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "Жодного голосу не встановлено. Додайте голос: Системні налаштування, Універсальний доступ, Вимовлений вміст, а потім експортуйте знову.",
+     "after": "Жодного голосу не встановлено. Додайте голос: Системні налаштування, Універсальний доступ, Усний вміст, а потім експортуйте знову.",
+     "why": "term: Apple's Ukrainian names the Spoken Content pane Усний вміст"
+    },
+    {
+     "key": "Number Sign",
+     "id": "keyBinding.localizedKeyWords.number",
+     "english": "Number Sign",
+     "before": "Знак номера",
+     "after": "Решітка",
+     "why": "meaning: Знак номера is the numero sign №; # is решітка, as Apple's Ukrainian VoiceOver says it"
+    },
+    {
+     "key": "Paste and Match Style",
+     "id": "keyBinding.localizedSystemCommand.paste",
+     "english": "Paste and Match Style",
+     "before": "Вставити та узгодити стиль",
+     "after": "Вставити і допасувати стиль",
+     "why": "term: the Edit menu macOS shows in Ukrainian says Вставити і допасувати стиль"
+    },
+    {
+     "key": "Release Media Controls",
+     "id": "shortcutAction.title.releaseMediaControls",
+     "english": "Release Media Controls",
+     "before": "Відпустити елементи керування медіа",
+     "after": "Звільнити керування медіа",
+     "why": "natural: Відпустити елементи керування reads as letting go of controls by hand; the command gives the media keys back to other apps"
+    },
+    {
+     "key": "Remove shortcut %@ from %@",
+     "id": "shortcutsSettings.removeShortcutLabel",
+     "english": "Remove shortcut %1$@ from %2$@",
+     "before": "Вилучити комбінацію %1$@ з %2$@",
+     "after": "Вилучити комбінацію %1$@ з дії «%2$@»",
+     "why": "grammar: an action name (an infinitive phrase) cannot take the genitive after з, so it is named as дія and quoted"
+    },
+    {
+     "key": "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.",
+     "id": "rtfExportWriter.hint",
+     "english": "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.",
+     "before": "Форматований текст із заголовками на їхніх рівнях структури, для Word, Pages і TextEdit.",
+     "after": "Форматований текст із заголовками на їхніх рівнях структури, для Word, Pages і Мініредактора.",
+     "why": "term: Apple's Ukrainian names TextEdit Мініредактор"
+    },
+    {
+     "key": "Save your rules as a pronunciation lexicon file.",
+     "id": "pronunciationLexicon.exportPanelMessage",
+     "english": "Save your rules as a pronunciation lexicon file.",
+     "before": "Збережіть ваші правила як файл словника вимови.",
+     "after": "Збережіть свої правила як файл словника вимови.",
+     "why": "natural: Ukrainian uses the reflexive свої for the subject's own things; ваші copies your"
+    },
+    {
+     "key": "Say how many",
+     "id": "repeatedSymbolStyle.title.sayCount",
+     "english": "Say how many",
+     "before": "Казати кількість",
+     "after": "Називати кількість",
+     "why": "natural: a reading style says the count; Казати is colloquial beside Повторювати and Пропускати"
+    },
+    {
+     "key": "Stop At",
+     "id": "sleepTimerView.stopAtHeading",
+     "english": "Stop At",
+     "before": "Зупинити на",
+     "after": "Місце зупинки",
+     "why": "natural: Зупинити на left its preposition hanging before the choices Кінець книги and Кінець заголовка"
+    },
+    {
+     "key": "Tab",
+     "id": "keyBinding.localizedKeyWords.tab",
+     "english": "Tab",
+     "before": "Tab",
+     "after": "Табуляція",
+     "why": "term: Apple's Ukrainian VoiceOver and AppKit key names call the Tab key табуляція"
+    },
+    {
+     "key": "Text as plain text",
+     "id": "bookExport.name.plainText",
+     "english": "Text as plain text",
+     "before": "Текст як звичайний текст",
+     "after": "Текст як простий текст",
+     "why": "term: Apple's Ukrainian calls plain text простий текст (TextEdit), not звичайний текст"
+    },
+    {
+     "key": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "id": "bookTextEdit.stoppedBookGone",
+     "english": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "before": "Текст не оновлено: «%@» вилучено або його завантаження видалено, тому редагування тексту для нього зупинено.",
+     "after": "Текст не оновлено: «%@» вилучено або її завантаження видалено, тому редагування тексту для неї зупинено.",
+     "why": "grammar: the title stands for the book, which is feminine (її), as part 1 chose"
+    },
+    {
+     "key": "Text not updated: chapter %@ of the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.nestedTooDeeply.chapter",
+     "english": "Text not updated: chapter %1$@ of the edited text of %2$@ %3$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "before": "Текст не оновлено: у розділі %1$@ відредагованого тексту «%2$@» — %3$@; TextMouth не може безпечно його прочитати. Спростіть структуру й збережіть знову або скасуйте зміну; до того книга зберігає старий текст.",
+     "after": "Текст не оновлено: у розділі %1$@ відредагованого тексту «%2$@» — %3$@; TextMouth не може безпечно його прочитати. Спростіть структуру й збережіть знову або скасуйте зміну; до того часу книга зберігає старий текст.",
+     "why": "natural: до того alone reads as before that; until then is до того часу"
+    },
+    {
+     "key": "Text not updated: the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.nestedTooDeeply.updated",
+     "english": "Text not updated: the edited text of %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "before": "Текст не оновлено: відредагований текст «%1$@» — %2$@; TextMouth не може безпечно його прочитати. Спростіть структуру й збережіть знову або скасуйте зміну; до того книга зберігає старий текст.",
+     "after": "Текст не оновлено: відредагований текст «%1$@» — %2$@; TextMouth не може безпечно його прочитати. Спростіть структуру й збережіть знову або скасуйте зміну; до того часу книга зберігає старий текст.",
+     "why": "natural: до того alone reads as before that; until then is до того часу"
+    },
+    {
+     "key": "Text not updated: the edited text of %@ has no chapter with any text. Undo the change and save again; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.noChapters",
+     "english": "Text not updated: the edited text of %@ has no chapter with any text. Undo the change and save again; the book keeps its old text until then.",
+     "before": "Текст не оновлено: у відредагованому тексті «%@» немає жодного розділу з текстом. Скасуйте зміну й збережіть знову; до того книга зберігає старий текст.",
+     "after": "Текст не оновлено: у відредагованому тексті «%@» немає жодного розділу з текстом. Скасуйте зміну й збережіть знову; до того часу книга зберігає старий текст.",
+     "why": "natural: до того alone reads as before that; until then is до того часу"
+    },
+    {
+     "key": "Text not updated: the edited text of %@ isn't UTF-8 text. Save it as UTF-8; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.notText",
+     "english": "Text not updated: the edited text of %@ isn't UTF-8 text. Save it as UTF-8; the book keeps its old text until then.",
+     "before": "Текст не оновлено: відредагований текст «%@» не є текстом UTF-8. Збережіть його як UTF-8; до того книга зберігає старий текст.",
+     "after": "Текст не оновлено: відредагований текст «%@» не є текстом UTF-8. Збережіть його як UTF-8; до того часу книга зберігає старий текст.",
+     "why": "natural: до того alone reads as before that; until then is до того часу"
+    },
+    {
+     "key": "Text not updated: the edited transcript of %@ adds words to a chapter with no speech, where they can't be kept. Remove them and save again; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.wordsWithoutSentences",
+     "english": "Text not updated: the edited transcript of %@ adds words to a chapter with no speech, where they can't be kept. Remove them and save again; the book keeps its old text until then.",
+     "before": "Текст не оновлено: у відредагованій транскрипції «%@» додано слова до розділу без мовлення, де їх не можна зберегти. Вилучіть їх і збережіть знову; до того книга зберігає старий текст.",
+     "after": "Текст не оновлено: у відредагованій транскрипції «%@» додано слова до розділу без мовлення, де їх не можна зберегти. Вилучіть їх і збережіть знову; до того часу книга зберігає старий текст.",
+     "why": "natural: до того alone reads as before that; until then is до того часу"
+    },
+    {
+     "key": "Text not updated: the edited transcript of %@ changes a chapter's heading, which comes from its audio. Put it back and save again; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.headingChanged",
+     "english": "Text not updated: the edited transcript of %@ changes a chapter's heading, which comes from its audio. Put it back and save again; the book keeps its old text until then.",
+     "before": "Текст не оновлено: відредагована транскрипція «%@» змінює заголовок розділу, який береться з його аудіо. Поверніть його й збережіть знову; до того книга зберігає старий текст.",
+     "after": "Текст не оновлено: відредагована транскрипція «%@» змінює заголовок розділу, який береться з його аудіо. Поверніть його й збережіть знову; до того часу книга зберігає старий текст.",
+     "why": "natural: до того alone reads as before that; until then is до того часу"
+    },
+    {
+     "key": "Text not updated: the edited transcript of %@ has %@, but the audiobook has %@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.chaptersChanged",
+     "english": "Text not updated: the edited transcript of %1$@ has %2$@, but the audiobook has %3$@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then.",
+     "before": "Текст не оновлено: кількість розділів у відредагованій транскрипції «%1$@» (%2$@) не збігається з аудіокнигою (%3$@). Залиште кожен рядок, що починається з <!-- chapter:, і збережіть знову; до того книга зберігає старий текст.",
+     "after": "Текст не оновлено: кількість розділів у відредагованій транскрипції «%1$@» (%2$@) не збігається з аудіокнигою (%3$@). Залиште кожен рядок, що починається з <!-- chapter:, і збережіть знову; до того часу книга зберігає старий текст.",
+     "why": "natural: до того alone reads as before that; until then is до того часу"
+    },
+    {
+     "key": "TextMouth can't use the braille table chosen in Settings, “%@”, so this export starts from %@.",
+     "id": "brailleExport.startsFromDefault",
+     "english": "TextMouth can't use the braille table chosen in Settings, “%1$@”, so this export starts from %2$@.",
+     "before": "TextMouth не може використати брайлівську таблицю, вибрану в Налаштуваннях, «%1$@», тому цей експорт починається з %2$@.",
+     "after": "TextMouth не може використати брайлівську таблицю «%1$@», вибрану в Налаштуваннях, тому цей експорт починається з %2$@.",
+     "why": "natural: the table's name follows the noun it names, not the participle phrase, as the English order had it"
+    },
+    {
+     "key": "TextMouth kept the text you changed in %@.",
+     "id": "bookTextEdit.keptOnReRead.changed",
+     "english": "TextMouth kept the text you changed in %@.",
+     "before": "TextMouth залишив без змін текст, який ви змінили в «%@».",
+     "after": "TextMouth зберіг змінений вами текст «%@».",
+     "why": "natural: залишив без змін текст, який ви змінили sounded self-contradictory; the rebuild kept the edited text"
+    },
+    {
+     "key": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "id": "brailleSettings.fileCodeCaption",
+     "english": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "before": "TextMouth читає файли BRF і BRL, які ви додаєте відтепер, із цими символами та сам розпізнає брайлівські шаблони Unicode. Діалог експорту починає BRF з них. Книга зберігає символи свого імпорту, які можна змінити у вікні «Інформація про книгу».",
+     "after": "TextMouth читає файли BRF і BRL, які ви додаєте відтепер, із цими символами та сам розпізнає брайлівські шаблони Unicode. Діалог експорту типово використовує їх для BRF. Книга зберігає символи свого імпорту, які можна змінити у вікні «Інформація про книгу».",
+     "why": "natural: починає BRF з них copied starts a BRF with them; the dialog uses these characters by default"
+    },
+    {
+     "key": "The %lld selected books are already in the reading list.",
+     "id": "readingList.addRefusal.selected",
+     "english": "The %lld selected books are already in the reading list.",
+     "before": "Усі %lld вибраних книг уже є у списку читання.",
+     "after": "Вибрані книги (%lld) уже є у списку читання.",
+     "why": "grammar: Усі 3 вибраних книг did not agree with 2 to 4; the count now stands apart"
+    },
+    {
+     "key": "The words TextMouth reads aloud, as plain text, each chapter under its title.",
+     "id": "bookExport.hint.plainText",
+     "english": "The words TextMouth reads aloud, as plain text, each chapter under its title.",
+     "before": "Слова, які TextMouth читає вголос, як звичайний текст, кожен розділ під своєю назвою.",
+     "after": "Слова, які TextMouth читає вголос, як простий текст, кожен розділ під своєю назвою.",
+     "why": "term: Apple's Ukrainian calls plain text простий текст (TextEdit), not звичайний текст"
+    },
+    {
+     "key": "There is nothing to export.",
+     "id": "bookExport.nothingToExport",
+     "english": "There is nothing to export.",
+     "before": "Немає що експортувати.",
+     "after": "Немає чого експортувати.",
+     "why": "grammar: the Ukrainian construction is немає чого + infinitive; Немає що is a calque"
+    },
+    {
+     "key": "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file.",
+     "id": "failure.notAWebArchive",
+     "english": "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file.",
+     "before": "Цей файл — не веб-архів, який може прочитати TextMouth. Він може бути пошкоджений або іншого типу.",
+     "after": "Цей файл — не вебархів, який може прочитати TextMouth. Він може бути пошкоджений або іншого типу.",
+     "why": "punctuation: the 2019 spelling joins веб (вебархів), as Apple's TextEdit and the rest of the catalog write it"
+    },
+    {
+     "key": "This web archive holds a file of the type “%@”, not a web page or text, so it has nothing to read.",
+     "id": "failure.notAPage",
+     "english": "This web archive holds a file of the type “%@”, not a web page or text, so it has nothing to read.",
+     "before": "Цей веб-архів містить файл типу «%@», а не вебсторінку чи текст, тому читати нічого.",
+     "after": "Цей вебархів містить файл типу «%@», а не вебсторінку чи текст, тому читати нічого.",
+     "why": "punctuation: the 2019 spelling joins веб (вебархів), as Apple's TextEdit and the rest of the catalog write it"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "id": "bookManifestEdit.explanation.quotation",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "Вводьте прямі лапки: у TextEdit вимкніть «Розумні лапки» в меню «Редагувати» > «Заміни».",
+     "after": "Вводьте прямі лапки: у Мініредакторі вимкніть «Динамічні лапки» (меню «Редагування», підменю «Підстановки»).",
+     "why": "term: Apple's Ukrainian names TextEdit Мініредактор and its items Редагування, Підстановки, Динамічні лапки; no > for VoiceOver to read as більше"
+    },
+    {
+     "key": "Use Global Default",
+     "id": "readerView.useGlobalDefaultTitle",
+     "english": "Use Global Default",
+     "before": "Використовувати глобальне типове",
+     "after": "Використовувати глобальне налаштування",
+     "why": "natural: глобальне типове lacks its noun; the button uses the global end of book setting"
+    },
+    {
+     "key": "What a book of this kind moves by until it has a unit of its own.",
+     "id": "phoneSettings.navigationUnitHint",
+     "english": "What a book of this kind moves by until it has a unit of its own.",
+     "before": "На що переходить книга такого виду, доки не має власної одиниці.",
+     "after": "На яку одиницю переходить книга цього типу, доки не має власної.",
+     "why": "natural: На що переходить книга read as what the book turns into; it is the unit it moves by"
+    },
+    {
+     "key": "Whether each page's last line carries its braille page number.",
+     "id": "brailleExport.numbersHint",
+     "english": "Whether each page's last line carries its braille page number.",
+     "before": "Чи несе останній рядок кожної сторінки її брайлівський номер.",
+     "after": "Чи містить останній рядок кожної сторінки її брайлівський номер.",
+     "why": "natural: несе copied carries; a line містить its number"
+    },
+    {
+     "key": "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning.",
+     "id": "endOfBook.playOnAFinishedBookCaption",
+     "english": "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning.",
+     "before": "З «%1$@» «Відтворити» для завершеної книги повідомляє, що вона завершена; із «%2$@» «Відтворити» починає її знову з початку.",
+     "after": "Якщо вибрано «%1$@», «Відтворити» для завершеної книги повідомляє, що вона завершена; якщо вибрано «%2$@», «Відтворити» починає її знову з початку.",
+     "why": "natural: З «X» copied the English with; the choice is Якщо вибрано «X»"
+    },
+    {
+     "key": "it does not load in TextMouth's liblouis %@",
+     "id": "refusal.reason.doesNotLoad",
+     "english": "it does not load in TextMouth's liblouis %@",
+     "before": "вона не завантажується в liblouis %@ у TextMouth",
+     "after": "liblouis %@ у TextMouth не може її зчитати",
+     "why": "meaning: a braille table that does not load is not read (зчитати), never downloaded, as part 1 chose"
+    },
+    {
+     "key": "the audiobook's audio changed since it was transcribed, so its transcript no longer fits it.",
+     "id": "bookTextEdit.transcriptStaleReason",
+     "english": "the audiobook's audio changed since it was transcribed, so its transcript no longer fits it.",
+     "before": "аудіо аудіокниги змінилося після транскрибування, тому її транскрипція більше не відповідає йому.",
+     "after": "звук аудіокниги змінився після транскрибування, тому її транскрипція йому більше не відповідає.",
+     "why": "natural: аудіо аудіокниги repeated the same word; звук аудіокниги"
+    },
+    {
+     "key": "the edited transcript can't be laid over the audiobook's audio.",
+     "id": "bookTextEdit.transcriptUnindexable",
+     "english": "the edited transcript can't be laid over the audiobook's audio.",
+     "before": "відредаговану транскрипцію не вдається накласти на аудіо аудіокниги.",
+     "after": "відредаговану транскрипцію не вдається накласти на звук аудіокниги.",
+     "why": "natural: аудіо аудіокниги repeated the same word; звук аудіокниги"
+    },
+    {
+     "key": "“%@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "id": "speechExportError.personalVoice",
+     "english": "“%1$@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %2$@ button in the reader, then export again.",
+     "before": "«%1$@» — це Особистий голос, який macOS не може записати у файл. Виберіть інший голос кнопкою «%2$@» у вікні читання, а потім експортуйте знову.",
+     "after": "«%1$@» — це Власний голос, який macOS не може записати у файл. Виберіть інший голос кнопкою «%2$@» у вікні читання, а потім експортуйте знову.",
+     "why": "term: Apple's Ukrainian names Personal Voice Власний голос (Accessibility settings)"
+    },
+    {
+     "key": "“%@” is not a complete, valid XML file.",
+     "id": "pronunciationLexicon.importFailure.notXML",
+     "english": "“%@” is not a complete, valid XML file.",
+     "before": "«%@» — не повний чи чинний файл XML.",
+     "after": "«%@» не є повним і коректним файлом XML.",
+     "why": "meaning: чинний means in legal force; a valid XML file is коректний"
+    }
+   ]
+  },
+  {
+   "part": 4,
+   "areas": [
+    "the whole app: words carried across the three parts"
+   ],
+   "reviewer": "Claude Sonnet 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ tries again, %@ quits without saving, %@ keeps TextMouth open.",
+     "id": "unsavedChangesPrompt.choices",
+     "english": "%1$@ tries again, %2$@ quits without saving, %3$@ keeps TextMouth open.",
+     "before": "%1$@ — повторити спробу, %2$@ — вийти без збереження, %3$@ — залишити TextMouth відкритим.",
+     "after": "%1$@ — повторити спробу, %2$@ — завершити без збереження, %3$@ — залишити TextMouth відкритим.",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    },
+    {
+     "key": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "id": "transcriptCleanup.applyHint",
+     "english": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "before": "Вносить ці виправлення. Попередню транскрипцію збережено, тож «Скасувати очищення» поверне її.",
+     "after": "Вносить ці виправлення. Попередню транскрипцію збережено, тож «Відмінити очищення» поверне її.",
+     "why": "term: Apple's current Ukrainian name (AppKit MenuCommands.loctable)"
+    },
+    {
+     "key": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "id": "audioEditor.revertNoOriginal",
+     "english": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "before": "Оригінал не збережено, тому повернутися до нього не можна. «Скасувати дію» скасовує правки від останнього збереження.",
+     "after": "Оригінал не збережено, тому повернутися до нього не можна. «Відмінити» скасовує правки від останнього збереження.",
+     "why": "term: Apple's current Ukrainian name (AppKit MenuCommands.loctable)"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "id": "speechExportError.noVoice",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "Жодного голосу не встановлено. Додайте голос: Системні налаштування, Універсальний доступ, Усний вміст, а потім експортуйте знову.",
+     "after": "Жодного голосу не встановлено. Додайте голос: Системні параметри, Доступність, Усний вміст, а потім експортуйте знову.",
+     "why": "term: Apple's current Ukrainian name (AccessibilitySettingsExtension UniversalAccess.searchTerms)"
+    },
+    {
+     "key": "Open Privacy Settings",
+     "id": "recording.privacySettingsTitle",
+     "english": "Open Privacy Settings",
+     "before": "Відкрити налаштування конфіденційності",
+     "after": "Відкрити параметри приватності",
+     "why": "term: Apple's current Ukrainian name (System Settings Localizable.loctable, SecurityPrivacyExtension InfoPlist.loctable)"
+    },
+    {
+     "key": "Opens the Microphone privacy settings in System Settings.",
+     "id": "recording.privacySettingsHint",
+     "english": "Opens the Microphone privacy settings in System Settings.",
+     "before": "Відкриває налаштування конфіденційності мікрофона в системних налаштуваннях.",
+     "after": "Відкриває параметри приватності мікрофона в Системних параметрах.",
+     "why": "term: Apple's current Ukrainian name (System Settings.app InfoPlist.loctable)"
+    },
+    {
+     "key": "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
+     "id": "readerViewModel.audioStoppedRespondingMessage",
+     "english": "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
+     "before": "Відтворення зупинено: аудіо перестало відповідати. Натисніть «Відтворити», щоб спробувати знову; якщо воно знову зупиниться, вийдіть із TextMouth і відкрийте його знову.",
+     "after": "Відтворення зупинено: аудіо перестало відповідати. Натисніть «Відтворити», щоб спробувати знову; якщо воно знову зупиниться, завершіть TextMouth і відкрийте його знову.",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    },
+    {
+     "key": "Quit Anyway",
+     "id": "unsavedChangesPrompt.quitAnywayTitle",
+     "english": "Quit Anyway",
+     "before": "Усе одно вийти",
+     "after": "Все одно завершити",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    },
+    {
+     "key": "Quit TextMouth",
+     "id": "common.quitTextmouth",
+     "english": "Quit TextMouth",
+     "before": "Вийти з TextMouth",
+     "after": "Завершити TextMouth",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    },
+    {
+     "key": "Quit TextMouth and open it again.",
+     "id": "libraryViewModel.quitOpenAgain",
+     "english": "Quit TextMouth and open it again.",
+     "before": "Вийдіть із TextMouth і відкрийте його знову.",
+     "after": "Завершіть TextMouth і відкрийте його знову.",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    },
+    {
+     "key": "Quits TextMouth without changing anything in the library's location.",
+     "id": "dataDirectoryUnavailable.quitHint",
+     "english": "Quits TextMouth without changing anything in the library's location.",
+     "before": "Виходить із TextMouth, не змінюючи розташування бібліотеки.",
+     "after": "Завершує TextMouth, не змінюючи розташування бібліотеки.",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    },
+    {
+     "key": "Quits TextMouth without writing the library index, so you can restore the file and open TextMouth again.",
+     "id": "libraryIndexRecovery.quit",
+     "english": "Quits TextMouth without writing the library index, so you can restore the file and open TextMouth again.",
+     "before": "Виходить із TextMouth, не записуючи індекс бібліотеки, щоб ви могли відновити файл і знову відкрити TextMouth.",
+     "after": "Завершує TextMouth, не записуючи індекс бібліотеки, щоб ви могли відновити файл і знову відкрити TextMouth.",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "id": "feed.notificationsRefused",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "TextMouth не має дозволу надсилати сповіщення. Увімкніть їх: Системні налаштування, Сповіщення, TextMouth.",
+     "after": "TextMouth не має дозволу надсилати сповіщення. Увімкніть їх: Системні параметри, Сповіщення, TextMouth.",
+     "why": "term: Apple's current Ukrainian name (System Settings.app InfoPlist.loctable)"
+    },
+    {
+     "key": "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone.",
+     "id": "audioInputPermissionError.denied",
+     "english": "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone.",
+     "before": "TextMouth не має дозволу користуватися мікрофоном. Увімкніть його: Системні налаштування, Конфіденційність і безпека, Мікрофон.",
+     "after": "TextMouth не має дозволу користуватися мікрофоном. Увімкніть його: Системні параметри, Приватність і безпека, Мікрофон.",
+     "why": "term: Apple's current Ukrainian name (System Settings Localizable.loctable, SecurityPrivacyExtension InfoPlist.loctable)"
+    },
+    {
+     "key": "Undo",
+     "id": "common.undo",
+     "english": "Undo",
+     "before": "Скасувати дію",
+     "after": "Відмінити",
+     "why": "term: Apple's current Ukrainian name (AppKit MenuCommands.loctable)"
+    },
+    {
+     "key": "Undo %@",
+     "id": "audioEditor.undoTitle",
+     "english": "Undo %@",
+     "before": "Скасувати «%@»",
+     "after": "Відмінити «%@»",
+     "why": "term: Apple's current Ukrainian name (AppKit MenuCommands.loctable)"
+    },
+    {
+     "key": "Undo Cleanup",
+     "id": "transcriptCleanup.undoTitle",
+     "english": "Undo Cleanup",
+     "before": "Скасувати очищення",
+     "after": "Відмінити очищення",
+     "why": "term: Apple's current Ukrainian name (AppKit MenuCommands.loctable)"
+    },
+    {
+     "key": "Undo Cleanup puts back the transcript from before.",
+     "id": "transcriptCleanup.alreadyCleanedUp.before",
+     "english": "Undo Cleanup puts back the transcript from before.",
+     "before": "«Скасувати очищення» повертає транскрипцію, яка була раніше.",
+     "after": "«Відмінити очищення» повертає транскрипцію, яка була раніше.",
+     "why": "term: Apple's current Ukrainian name (AppKit MenuCommands.loctable)"
+    },
+    {
+     "key": "You edited the transcript on %@, after the cleanup. Undo Cleanup undoes those edits too.",
+     "id": "transcriptCleanup.editedSinceCleanup",
+     "english": "You edited the transcript on %@, after the cleanup. Undo Cleanup undoes those edits too.",
+     "before": "Ви відредагували транскрипцію %@, після очищення. «Скасувати очищення» скасовує й ці правки.",
+     "after": "Ви відредагували транскрипцію %@, після очищення. «Відмінити очищення» скасовує й ці правки.",
+     "why": "term: Apple's current Ukrainian name (AppKit MenuCommands.loctable)"
+    },
+    {
+     "key": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "id": "audioEditor.quitWhileRecording",
+     "english": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "before": "Триває запис «%@». Зупиніть його або відхиліть командою «Зняти виділення», потім вийдіть.",
+     "after": "Триває запис «%@». Зупиніть його або відхиліть командою «Зняти виділення», потім завершіть TextMouth.",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    },
+    {
+     "key": "“%@” is still working. Quit once the change is done.",
+     "id": "audioEditor.quitWhileWorking",
+     "english": "“%@” is still working. Quit once the change is done.",
+     "before": "Редактор аудіо для «%@» ще працює. Вийдіть, коли зміну буде завершено.",
+     "after": "Редактор аудіо для «%@» ще працює. Завершіть TextMouth, коли зміну буде виконано.",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    }
+   ]
+  }
+ ]
+}

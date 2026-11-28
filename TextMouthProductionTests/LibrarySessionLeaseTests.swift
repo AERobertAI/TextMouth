@@ -123,32 +123,50 @@ final class LibrarySessionLeaseTests: XCTestCase {
     /// file that work writes, once it is written, and the refresh publishes
     /// nothing: no file is left, none is held, and no warning comes.
     ///
-    /// Synchronous, so that the main run loop, turned while the test waits,
-    /// runs the refresh's main-actor steps.
-    func testALeaseEndedDuringARefreshKeepsNoFile() throws {
+    /// The test waits for the refresh's own events, not for a time: its disk
+    /// work's question, and its end. The end comes once the disk work's
+    /// continuation has had a thread of Swift's cooperative pool
+    /// (`OffMainWork.run` is not isolated to the main actor) and the main
+    /// actor has run the refresh's last steps, which GitHub's runner once
+    /// took longer than the 5 seconds this test used to allow. The test
+    /// suspends meanwhile, leaving the main actor free for those steps.
+    func testALeaseEndedDuringARefreshKeepsNoFile() async throws {
         let itemStatus = RecordingItemStatus()
         let gate = DispatchSemaphore(value: 0)
         // Opened when the test ends too, so no thread is left waiting.
         addTeardownBlock { gate.signal() }
         itemStatus.waitBeforeAnswering(at: gate)
+        let asked = expectation(description: "the refresh's disk work asked where the library lives")
+        // Any later question finds it fulfilled already, and never traps.
+        asked.assertForOverFulfill = false
+        itemStatus.whenAsked { asked.fulfill() }
         let harness = try LeaseHarness(test: self, itemStatus: itemStatus)
         try harness.writeOtherMac(named: "Galley", activeSecondsAgo: 30)
-        let refreshed = OSAllocatedUnfairLock(initialState: false)
+        let ended = expectation(description: "the refresh ended")
+        // A refresh that ends only after its wait has timed out fulfils it
+        // then, which must never trap the test host.
+        ended.assertForOverFulfill = false
 
         Task {
             await harness.lease.refresh()
-            refreshed.withLock { $0 = true }
+            ended.fulfill()
         }
-        XCTAssertTrue(waitUntil(timeout: 5) { !itemStatus.askedOnTheMainThread.isEmpty }, "the refresh never began")
+        await fulfillment(of: [asked], timeout: Self.hangLimit)
         // The disk work goes on a moment after the lease ends.
         DispatchQueue.global().asyncAfter(deadline: .now() + 0.2) { gate.signal() }
         harness.lease.end()
-        XCTAssertTrue(waitUntil(timeout: 5) { refreshed.withLock { $0 } }, "the refresh never ended")
+        await fulfillment(of: [ended], timeout: Self.hangLimit)
 
         XCTAssertNil(try harness.ownRecord(), "the lease written as the lease ended was left")
         XCTAssertNil(harness.lease.heldRoot)
         XCTAssertEqual(harness.warnings, [], "a refresh begun before the end warned after it")
     }
+
+    /// How long a wait for one of a refresh's events may last: long enough
+    /// that only a refresh that never gets there reaches it, as no timing of
+    /// the runner's should, and short enough that two such waits end before
+    /// the runner's 2-minute allowance for a test.
+    private static let hangLimit: TimeInterval = 30
 
     // MARK: - Other Macs
 
@@ -374,6 +392,8 @@ private final class RecordingItemStatus: CloudItemStatusProviding {
     private let questions = OSAllocatedUnfairLock<[Bool]>(initialState: [])
     /// The gate each answer waits at, if any.
     private let gate = OSAllocatedUnfairLock<DispatchSemaphore?>(initialState: nil)
+    /// What each question calls before its answer waits at the gate, if any.
+    private let questionHandler = OSAllocatedUnfairLock<(@Sendable () -> Void)?>(initialState: nil)
 
     /// Whether each question of where a folder lives came on the main
     /// thread, in order.
@@ -386,8 +406,15 @@ private final class RecordingItemStatus: CloudItemStatusProviding {
         self.gate.withLock { $0 = gate }
     }
 
+    /// Has each question call `handler` as it comes, before its answer
+    /// waits at the gate, so a test can wait for the question itself.
+    func whenAsked(_ handler: @escaping @Sendable () -> Void) {
+        questionHandler.withLock { $0 = handler }
+    }
+
     func location(of folder: URL) -> StorageLocation {
         questions.withLock { $0.append(pthread_main_np() != 0) }
+        questionHandler.withLock { $0 }?()
         gate.withLock { $0 }?.wait()
         return .cloud(.iCloudDrive)
     }

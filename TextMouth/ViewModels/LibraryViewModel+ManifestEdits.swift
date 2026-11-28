@@ -8,15 +8,24 @@ extension LibraryViewModel {
     /// (`BookManifestEditSessions`): the book's row takes the edit's
     /// analysis (its duration, its counts, and its index version), which
     /// its list shows, and the moves of its places the record took, and is
-    /// saved; then its title and author take the manifest's, when it gives
-    /// them, through the one write of a manifest book's title and author;
-    /// then the book's open readers show the new arrangement as they play
-    /// on (`LibraryBookEvent.tracksRearranged`). The row's changes reach the
+    /// saved; then its row takes the title and author the manifest gives,
+    /// and the manifest is written nothing (`setRowTitleAndAuthor`); then
+    /// the book's open readers show the new arrangement as they play on
+    /// (`LibraryBookEvent.tracksRearranged`). The row's changes reach the
     /// readers first, through the usual updates, so their copies of the book
     /// agree with the headings they show.
+    ///
+    /// The manifest holds the title and author already, since the take read
+    /// them from it. A write of them queued now would run only after this
+    /// main-thread turn and the manifest queue's earlier work. It would put
+    /// the values the take read over any save the user made in between, and
+    /// TextMouth would never take that save (Q16). A field the manifest is
+    /// owed (`ManifestOwedFields`), which the edit leaves out, stays owed,
+    /// and is written as every owed field is: before the next look
+    /// compares, or by the next retitle.
     func commitManifestEdit(_ edit: BookManifestEdit) {
         applyAnalysisSummaries([ContentAnalysisSummary(committed: edit.committed, movedPlaces: edit.movedPlaces)])
-        setTitleAndAuthor(ofManifestBook: edit.committed.id, title: edit.title, author: edit.author)
+        setRowTitleAndAuthor(of: edit.committed.id, title: edit.title, author: edit.author)
         bookUpdates.tracksRearranged(bookID: edit.committed.id, by: edit)
     }
 
@@ -145,7 +154,9 @@ extension LibraryViewModel {
         }
         let sessions = editor.sessions
         let isDataless = access.isDataless
-        DispatchQueue.global(qos: .utility).async {
+        // Weak here too: a strong capture would hold the library until the
+        // looks end, though the closure below is written for its going.
+        DispatchQueue.global(qos: .utility).async { [weak self] in
             let found = books.map { book in
                 (bookID: book.id, found: sessions.look(at: book, isDataless: isDataless))
             }
@@ -170,15 +181,17 @@ extension LibraryViewModel {
     /// someone confused."
     ///
     /// The book's row, and so its record, takes `title` and `author` now,
-    /// nil leaving either; then its manifest takes them, as storage work on
-    /// the manifest sessions' queue, in the order they were given
-    /// (`BookManifestFile.keepTitleAndAuthor`). Every path through which a
-    /// manifest book's title or author changes calls this: an edited
-    /// manifest taken (`commitManifestEdit`), whose manifest holds them
-    /// already, and a metadata editor's save (`updateBookMetadata`), whose
-    /// row holds them already. The launch's metadata refresh reads no tags
-    /// from a folder of tracks, so it changes neither. A book that is no
-    /// audiobook of tracks has only its row changed.
+    /// nil leaving either (`setRowTitleAndAuthor`); then its manifest takes
+    /// them, as storage work on the manifest sessions' queue, in the order
+    /// they were given (`BookManifestFile.keepTitleAndAuthor`). A metadata
+    /// editor's save (`updateBookMetadata`) changes a manifest book's title
+    /// or author through this, its row holding them already. An edited
+    /// manifest taken (`commitManifestEdit`) changes only the row
+    /// (`setRowTitleAndAuthor`), since the manifest holds them already, and
+    /// a write of them would land on any save the user made since (Q16).
+    /// The launch's metadata refresh reads no tags from a folder of tracks,
+    /// so it changes neither. A book that is no audiobook of tracks has only
+    /// its row changed.
     ///
     /// A title or author the manifest cannot take now (it is only in the
     /// cloud, or is midway through an edit) is kept as owed to it, on this
@@ -197,19 +210,8 @@ extension LibraryViewModel {
         written: (@MainActor @Sendable (Bool) -> Void)? = nil,
         isDataless: @escaping @Sendable (URL) -> Bool = { DatalessFiles.isDataless($0) }
     ) {
-        guard let row = bookByID(bookID), title != nil || author != nil else {
-            written?(false)
-            return
-        }
-        let newTitle = title ?? row.title
-        let newAuthor = author ?? row.author
-        if newTitle != row.title || newAuthor != row.author {
-            updateBook(id: bookID) { book in
-                book.title = newTitle
-                book.author = newAuthor
-            }
-        }
-        guard let book = bookByID(bookID), BookManifestEditing.canEditManifest(of: book, isTrackFolder: true) else {
+        guard let book = setRowTitleAndAuthor(of: bookID, title: title, author: author),
+              BookManifestEditing.canEditManifest(of: book, isTrackFolder: true) else {
             written?(false)
             return
         }
@@ -225,5 +227,25 @@ extension LibraryViewModel {
                 written?(didWrite)
             }
         }
+    }
+
+    /// The row's half of a manifest book's title and author: the row of the
+    /// book `bookID`, and so its record (`updateBook`), takes `title` and
+    /// `author`, nil leaving either, and is saved only when one differs.
+    /// Writes nothing into the manifest.
+    /// - Returns: The row as it is now; nil, with nothing changed, for a
+    ///   book not in the library, or when neither is given.
+    @discardableResult
+    private func setRowTitleAndAuthor(of bookID: UUID, title: String?, author: String?) -> Book? {
+        guard let row = bookByID(bookID), title != nil || author != nil else { return nil }
+        let newTitle = title ?? row.title
+        let newAuthor = author ?? row.author
+        if newTitle != row.title || newAuthor != row.author {
+            updateBook(id: bookID) { book in
+                book.title = newTitle
+                book.author = newAuthor
+            }
+        }
+        return bookByID(bookID)
     }
 }

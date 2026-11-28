@@ -337,7 +337,7 @@ private enum FolderContents {
             return
         }
         do {
-            self = .folder(try listing(url).sorted())
+            self = .folder(try listing(url).sortedStably())
         } catch where DatalessFiles.isDownloadRefusal(error) {
             self = .onlyInCloud
         } catch {
@@ -347,7 +347,10 @@ private enum FolderContents {
 
     /// A failed call's `code` in plain words, such as "permission denied".
     private static func reason(_ code: Int32) -> String {
-        code == EACCES || code == EPERM ? "permission denied" : String(cString: strerror(code)).lowercased()
+        code == EACCES || code == EPERM
+            // Translators: A reason in a few words, with no full stop, that a folder can't be read: the Mac refused TextMouth access. It follows a colon in a sentence about the folder.
+            ? InterfaceText.line("common.permissionDenied", "permission denied")
+            : String(cString: strerror(code)).lowercased()
     }
 }
 
@@ -392,8 +395,11 @@ enum StorageChoice: Equatable {
     }
 
     /// The choice offered for `assessment`, with `current` the library in
-    /// use.
-    init(for assessment: StorageDestinationAssessment, current: CurrentLibrary) {
+    /// use. For a folder holding another copy of that library, `comparison`
+    /// is what comparing the two copies found (`LibraryCopyReader`), which
+    /// the confirmation says in words (`StorageWording.copyOfCurrentLibrarySentence`);
+    /// nil when no comparison was made.
+    init(for assessment: StorageDestinationAssessment, current: CurrentLibrary, comparison: LibraryComparisonOutcome? = nil) {
         let path = assessment.folder.path
         switch assessment.verdict {
         case .moveHere:
@@ -402,22 +408,26 @@ enum StorageChoice: Equatable {
                 StorageWording.moveLocationSentence(assessment.location, size: assessment.librarySize),
             ]
             self = .confirm(
-                title: "Move Library Here?",
-                message: message.compactMap { $0 }.joined(separator: " "),
-                button: "Move Library Here",
+                // Translators: Title of the question asked before copying the library into the folder the listener chose.
+                title: InterfaceText.line("storageChoice.moveHere.question", "Move Library Here?"),
+                message: SentenceWording.joined(message.compactMap { $0 }),
+                // Translators: Button of the question that confirms copying the library into the chosen folder.
+                button: InterfaceText.line("storageChoice.moveHere.button", "Move Library Here"),
                 action: .move(to: assessment.folder)
             )
         case .useLibrary(let found):
             let message = [
                 StorageWording.useSentence(of: path, current: current),
-                found.isCopyOfCurrentLibrary ? StorageWording.copyOfCurrentLibrarySentence : nil,
+                found.isCopyOfCurrentLibrary ? StorageWording.copyOfCurrentLibrarySentence(comparison) : nil,
                 StorageWording.useLocationSentence(assessment.location),
                 StorageWording.unsavedSentence(current),
             ]
             self = .confirm(
-                title: "Use This Library?",
-                message: message.compactMap { $0 }.joined(separator: " "),
-                button: "Use This Library",
+                // Translators: Title of the question asked before using the library the chosen folder holds.
+                title: InterfaceText.line("storageChoice.useLibrary.question", "Use This Library?"),
+                message: SentenceWording.joined(message.compactMap { $0 }),
+                // Translators: Button of the question that confirms using the library the chosen folder holds.
+                button: InterfaceText.line("storageChoice.useLibrary.button", "Use This Library"),
                 action: .useLibrary(at: assessment.folder)
             )
         case .startNewLibrary:
@@ -426,13 +436,17 @@ enum StorageChoice: Equatable {
                 StorageWording.unsavedSentence(current),
             ]
             self = .confirm(
-                title: "Start a New Library?",
-                message: message.compactMap { $0 }.joined(separator: " "),
-                button: "Start New Library",
+                // Translators: Title of the question asked before starting a new, empty library in the default location.
+                title: InterfaceText.line("storageChoice.startNewLibrary.question", "Start a New Library?"),
+                message: SentenceWording.joined(message.compactMap { $0 }),
+                // Translators: Button of the question that confirms starting a new, empty library.
+                button: InterfaceText.line("storageChoice.startNewLibrary.button", "Start New Library"),
                 action: .useLibrary(at: assessment.folder)
             )
         case .currentLibrary:
-            self = .report("This is the library TextMouth is using: \(path).", isRefusal: false)
+            // Translators: Status line when the listener chose the folder that already holds the library in use. %@ is the folder's path.
+            self = .report(InterfaceText.line("storageChoice.currentLibrary", "This is the library TextMouth is using: \(path)."),
+                           isRefusal: false)
         case .refused(let refusal):
             self = .report(
                 StorageWording.refusal(
@@ -456,8 +470,12 @@ enum StorageWording {
 
     /// What a move does, in the words Storage settings have always used.
     static func moveSentence(to path: String) -> String {
-        "Copy all TextMouth data to \(path), validate it, and use the new location? "
-            + "The current directory will be retained as recovery data."
+        SentenceWording.joined([
+            // Translators: First sentence of the question asked before moving the library. %@ is the new folder's path.
+            InterfaceText.line("storage.moveSentence.validate", "Copy all TextMouth data to \(path), validate it, and use the new location?"),
+            // Translators: Last sentence of the question asked before moving the library: the old folder is kept.
+            InterfaceText.line("storage.moveSentence.directory", "The current directory will be retained as recovery data."),
+        ])
     }
 
     /// What a library moved to `location` means: uploading in the
@@ -471,10 +489,18 @@ enum StorageWording {
         case .otherVolume(let name):
             return driveSentence(name)
         case .cloud(let provider):
-            let library = size.map { "Your library (\(Self.size($0)))" } ?? "Your library"
-            return "\(library) will upload to \(provider.displayName) in the background. Books stay on this Mac "
-                + "until you remove their downloads or macOS needs space. A book that's only in the cloud needs an "
-                + "internet connection to open."
+            let uploading = size.map {
+                // Translators: First sentence of what moving the library into a cloud folder means. %1$@ is the library's size, such as "5.5 GB"; %2$@ is the cloud service's name.
+                InterfaceText.line("storage.moveLocationSentence.cloud.uploadNamed", "Your library (\(Self.size($0))) will upload to \(provider.displayName) in the background.")
+            // Translators: First sentence of what moving the library into a cloud folder means, when its size is not known. %@ is the cloud service's name.
+            } ?? InterfaceText.line("storage.moveLocationSentence.cloud.libraryUpload", "Your library will upload to \(provider.displayName) in the background.")
+            return SentenceWording.joined([
+                uploading,
+                // Translators: Second sentence of what moving the library into a cloud folder means.
+                InterfaceText.line("storage.moveLocationSentence.cloud.downloads", "Books stay on this Mac until you remove their downloads or macOS needs space."),
+                // Translators: Last sentence of what moving the library into a cloud folder means.
+                InterfaceText.line("storage.moveLocationSentence.cloud.connection", "A book that's only in the cloud needs an internet connection to open."),
+            ])
         }
     }
 
@@ -486,48 +512,80 @@ enum StorageWording {
         case .otherVolume(let name):
             return driveSentence(name)
         case .cloud(let provider):
-            return "A book that's only in \(provider.displayName) needs an internet connection to open."
+            // Translators: What using a library in a cloud folder means. %@ is the cloud service's name.
+            return InterfaceText.line("storage.useLocationSentence.cloud", "A book that's only in \(provider.displayName) needs an internet connection to open.")
         }
     }
 
     /// The drive a library on another volume needs, named as Finder names it.
     static func driveSentence(_ name: String) -> String {
-        "TextMouth needs the drive “\(name)” connected to open the library."
+        // Translators: What using a library on another drive means. %@ is the drive's name.
+        InterfaceText.line("storage.driveSentence", "TextMouth needs the drive “\(name)” connected to open the library.")
     }
 
     /// What using the library in `path` does, naming the library in use
     /// and, while it is available, how many books it lists.
     static func useSentence(of path: String, current: StorageChoice.CurrentLibrary) -> String {
         guard current.isAvailable else {
-            return "TextMouth will open the library in \(path) instead of the one in \(current.folder), which isn't "
-                + "available. Nothing is copied, and nothing is created in \(current.folder). TextMouth will quit and "
-                + "open again to load it."
+            return SentenceWording.joined([
+                // Translators: First sentence of the question asked before using another library while the one in use is not available. %1$@ is the chosen folder's path; %2$@ is the path of the library in use.
+                InterfaceText.line("storage.useSentence.available", "TextMouth will open the library in \(path) instead of the one in \(current.folder), which isn't available."),
+                // Translators: Second sentence of the question asked before using another library while the one in use is not available. %@ is the path of the library in use.
+                InterfaceText.line("storage.useSentence.created", "Nothing is copied, and nothing is created in \(current.folder)."),
+                // Translators: Last sentence of the question asked before using another library: TextMouth opens again.
+                InterfaceText.line("storage.useSentence.again", "TextMouth will quit and open again to load it."),
+            ])
         }
         let counts = CountWording.booksAndFeeds(books: current.bookCount, feeds: current.feedCount)
-        return "TextMouth will stop using the library in \(current.folder) (\(counts)) "
-            + "and open the library in \(path) instead. Nothing is copied, and the library in \(current.folder) stays "
-            + "as it is. TextMouth will quit and open again to load it."
+        return SentenceWording.joined([
+            // Translators: First sentence of the question asked before using another library. %1$@ is the path of the library in use; %2$@ is what it holds, such as "743 books, 2 feeds"; %3$@ is the chosen folder's path.
+            InterfaceText.line("storage.useSentence.using", "TextMouth will stop using the library in \(current.folder) (\(counts)) and open the library in \(path) instead."),
+            // Translators: Second sentence of the question asked before using another library. %@ is the path of the library in use.
+            InterfaceText.line("storage.useSentence.stays", "Nothing is copied, and the library in \(current.folder) stays as it is."),
+            // Translators: Last sentence of the question asked before using another library: TextMouth opens again.
+            InterfaceText.line("storage.useSentence.again", "TextMouth will quit and open again to load it."),
+        ])
     }
 
     /// Said of a folder holding another copy of the library in use, by its
-    /// identity, such as the folder an earlier move left behind.
-    static let copyOfCurrentLibrarySentence =
-        "This folder holds another copy of the library TextMouth is using, which may not have its latest changes."
+    /// identity, such as the folder an earlier move left behind: which copy
+    /// is newer, from comparing the two (Compare Libraries), or that this
+    /// could not be told, and why. `comparison` is nil when none was made.
+    static func copyOfCurrentLibrarySentence(_ comparison: LibraryComparisonOutcome?) -> String {
+        switch comparison {
+        case .compared(let found):
+            return LibraryComparisonWording.newerCopySentence(found, reason: nil)
+        case .notComparable(let unread):
+            let reason = unread.first.map { LibraryComparisonWording.shortReason(for: $0) }
+            return LibraryComparisonWording.newerCopySentence(nil, reason: reason)
+        case .cancelled:
+            // Translators: A reason, in a clause with no capital letter and no full stop, that Use This Library could not tell which copy of the library is newer: the listener cancelled the comparison.
+            return LibraryComparisonWording.newerCopySentence(nil, reason: InterfaceText.line("storage.copyOfCurrentLibrarySentence.cancelled", "you stopped the comparison"))
+        case .differentLibraries, nil:
+            return LibraryComparisonWording.newerCopySentence(nil, reason: nil)
+        }
+    }
 
     /// What starting a new library in the default location, `path`, does
     /// while the library in use isn't available.
     static func startNewLibrarySentence(in path: String, current: StorageChoice.CurrentLibrary) -> String {
-        "TextMouth will start a new, empty library in the default location, \(path), instead of the library in "
-            + "\(current.folder), which isn't available. Nothing is created in \(current.folder). TextMouth will quit "
-            + "and open again to start it."
+        SentenceWording.joined([
+            // Translators: First sentence of the question asked before starting a new library. %1$@ is the default location's path; %2$@ is the path of the library in use, which is not available.
+            InterfaceText.line("storage.startNewLibrarySentence.available", "TextMouth will start a new, empty library in the default location, \(path), instead of the library in \(current.folder), which isn't available."),
+            // Translators: Second sentence of the question asked before starting a new library. %@ is the path of the library in use.
+            InterfaceText.line("storage.startNewLibrarySentence.nothing", "Nothing is created in \(current.folder)."),
+            // Translators: Last sentence of the question asked before starting a new library: TextMouth opens again.
+            InterfaceText.line("storage.startNewLibrarySentence.again", "TextMouth will quit and open again to start it."),
+        ])
     }
 
     /// What switching away from a library that isn't available loses, or
     /// nil when nothing is unsaved.
     static func unsavedSentence(_ current: StorageChoice.CurrentLibrary) -> String? {
         guard !current.unsavedChanges.isEmpty else { return nil }
-        let lead = "Switching loses the changes TextMouth couldn't save while the library isn't available."
-        return ([lead] + current.unsavedChanges).joined(separator: " ")
+        // Translators: Sentence in the question asked before switching libraries: changes that could not be saved are lost. The failure notices follow.
+        let lead = InterfaceText.line("storage.unsavedSentence", "Switching loses the changes TextMouth couldn't save while the library isn't available.")
+        return SentenceWording.joined([lead] + current.unsavedChanges)
     }
 
     /// Why nothing can be done with the folder at `path`, in `location`.
@@ -540,35 +598,63 @@ enum StorageWording {
         libraryIsAvailable: Bool
     ) -> String {
         let instead = libraryIsAvailable
-            ? "Choose an empty folder, or one that holds a TextMouth library."
-            : "Choose a folder that holds a TextMouth library, or use the default location."
+            // Translators: Last sentence of why the chosen folder can't be used, while the library in use is available: what to choose instead.
+            ? InterfaceText.line("storage.instead.empty", "Choose an empty folder, or one that holds a TextMouth library.")
+            // Translators: Last sentence of why the chosen folder can't be used, while the library in use is not available: what to choose instead.
+            : InterfaceText.line("storage.instead.location", "Choose a folder that holds a TextMouth library, or use the default location.")
         switch refusal {
         case .notAFolder:
-            return "There is a file at \(path), not a folder. Choose a folder."
+            return SentenceWording.joined([
+                // Translators: First sentence of why the chosen location can't be used: a file is there. %@ is the path.
+                InterfaceText.line("common.thereIsAFileAtValue", "There is a file at \(path), not a folder."),
+                // Translators: Last sentence of why the chosen location can't be used because it is a file.
+                InterfaceText.line("storage.chooseFolder", "Choose a folder."),
+            ])
         case .otherItems(let names):
-            let count = CountWording.phrase(names.count, singular: "other item", plural: "other items")
-            return "The folder \(path) holds \(count): \(DataDirectoryDestinationChange.listing(names)). \(instead)"
+            return SentenceWording.joined([
+                // Translators: First sentence of why the chosen folder can't be used: it holds other items. %1$@ is the folder's path; %2$lld is how many items; %3$@ is their names as a short list.
+                InterfaceText.line("storage.folderHoldsOther", "The folder \(path) holds \(number: names.count) other items: \(DataDirectoryDestinationChange.listing(names))."),
+                instead,
+            ])
         case .overlap(_, let explanation):
             return explanation
         case .inTrash:
-            return "The folder \(path) is in the Trash. Choose a folder outside it."
+            return SentenceWording.joined([
+                // Translators: First sentence of why the chosen folder can't be used: it is in the Trash. %@ is the folder's path.
+                InterfaceText.line("storage.folderTrash", "The folder \(path) is in the Trash."),
+                // Translators: Last sentence of why the chosen folder can't be used because it is in the Trash. "It" is the Trash.
+                InterfaceText.line("storage.chooseFolderOutside", "Choose a folder outside it."),
+            ])
         case .unreadable(let reason):
-            return "TextMouth can't read the folder \(path): \(reason)."
+            // Translators: Why the chosen folder can't be used: it can't be read. %1$@ is the folder's path; %2$@ is the reason in a few words, such as "permission denied", with no full stop.
+            return InterfaceText.line("common.textmouthCantReadTheFolderValue", "TextMouth can't read the folder \(path): \(reason).")
         case .notDownloaded:
-            let service = location.provider?.displayName ?? "the cloud"
-            return "The folder \(path) is in \(service) and isn't on this Mac yet. Open it in Finder to download it, "
-                + "then choose it again."
+            return SentenceWording.joined([
+                // Translators: First sentence of why the chosen folder can't be used: it is only in the cloud. %1$@ is the folder's path; %2$@ is the cloud service's name, or "the cloud" when it is unknown.
+                InterfaceText.line("storage.folderIsntMac", "The folder \(path) is in \(DataDirectoryUnavailability.service(location.provider)) and isn't on this Mac yet."),
+                // Translators: Last sentence of why the chosen folder can't be used because it is only in the cloud: what to do. "It" is the folder.
+                InterfaceText.line("storage.openFinderDownload", "Open it in Finder to download it, then choose it again."),
+            ])
         case .parentMissing:
             let parent = URL(fileURLWithPath: path).deletingLastPathComponent().path
-            return "\(path) can't be made, because the folder that would hold it, \(parent), can't be found."
+            // Translators: Why the chosen location can't be used: the folder that would hold it is missing. %1$@ is the chosen path; %2$@ is the missing folder's path.
+            return InterfaceText.line("storage.cantMadeBecause", "\(path) can't be made, because the folder that would hold it, \(parent), can't be found.")
         case .notWritable(let folder):
-            return "TextMouth isn't allowed to make changes in \(folder). Choose another folder."
+            return SentenceWording.joined([
+                // Translators: First sentence of why the chosen location can't be used: macOS does not let TextMouth write there. %@ is the folder's path.
+                InterfaceText.line("storage.isntAllowedMake", "TextMouth isn't allowed to make changes in \(folder)."),
+                // Translators: Last sentence of why the chosen location can't be used: what to do.
+                InterfaceText.line("storage.chooseAnotherFolder", "Choose another folder."),
+            ])
         case .notEnoughSpace(let needed, let available):
-            return "There isn't enough free space for the library there: it needs \(size(needed)), "
-                + "and \(size(available)) is free."
+            // Translators: Why the chosen location can't be used: the disk is too full. %1$@ is the size the library needs, such as "5.5 GB"; %2$@ is the free space.
+            return InterfaceText.line("storage.thereIsntEnough", "There isn't enough free space for the library there: it needs \(size(needed)), and \(size(available)) is free.")
         case .nothingToMove:
-            return "There's no library in \(path) to use, and none to move there while the library isn't available. "
-                + instead
+            return SentenceWording.joined([
+                // Translators: First sentence of why the chosen folder can't be used: it holds no library and there is none to move. %@ is the folder's path.
+                InterfaceText.line("storage.thereNoLibrary", "There's no library in \(path) to use, and none to move there while the library isn't available."),
+                instead,
+            ])
         }
     }
 }

@@ -16,7 +16,7 @@ The user is a VoiceOver and braille user. Everything in this feature must be ope
 
 ## Phase A: the design (no build), then report it and go on
 
-Before any code, write `LIBRARY-VIEWS-RESEARCH-2026-10-30.md` in your worktree's root, commit it on `team/views` with `git add -f`, post `design ready: <hash>` to `orchestrator`, and write it also to `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/oct30/views-design.md`. Then start phase B at once; the orchestrator reads the design while your first worker runs, and messages you if anything should change. Make the document navigable for VoiceOver and a braille display: headings, short paragraphs, lists.
+Before any code, write `LIBRARY-VIEWS-RESEARCH-2026-10-30.md` in your worktree's root, commit it on `team/views` with `git add -f`, post `design ready: <hash>` to `orchestrator`, and write it also to `<main checkout>/build/orchestrator/oct30/views-design.md`. Then start phase B at once; the orchestrator reads the design while your first worker runs, and messages you if anything should change. Make the document navigable for VoiceOver and a braille display: headings, short paragraphs, lists.
 
 ### What to read (by line range; do not read whole large files twice)
 - `TextMouth/ViewModels/LibraryViewModel.swift:1-95`: `LibraryCategory` (raw values are saved names; `sortSettingsKey`; `defaultSortSetting`; the decoder's former names).

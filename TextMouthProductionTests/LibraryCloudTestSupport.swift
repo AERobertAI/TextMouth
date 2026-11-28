@@ -126,6 +126,11 @@ final class CountingBookCloudStorage: BookCloudStorage, @unchecked Sendable {
         return fake.state(of: package)
     }
 
+    /// The fake's scripted size.
+    func bytesToDownload(of package: BookPackage) -> Int64? {
+        fake.bytesToDownload(of: package)
+    }
+
     /// The fake's download.
     func download(_ package: BookPackage) -> AsyncThrowingStream<BookDownloadProgress, Error> {
         noteThread()
@@ -290,12 +295,36 @@ extension XCTestCase {
     /// previous poster is put back afterwards.
     @MainActor
     func announcements(during body: () async -> Void) async -> [String] {
+        await announcementsWithPriority(during: body).map(\.message)
+    }
+
+    /// The announcements VoiceOver was asked to make while `body` ran, with
+    /// the priority of each, as `announcements(during:)` records them.
+    @MainActor
+    func announcementsWithPriority(during body: () async -> Void) async -> [VoiceOverAnnouncement] {
         let previousPoster = VoiceOverAnnouncer.poster
         VoiceOverAnnouncer.poster = VoiceOverAnnouncer.makePoster(delivering: .record)
         defer { VoiceOverAnnouncer.poster = previousPoster }
         let alreadyRecorded = VoiceOverAnnouncer.recordedAnnouncements.count
         await body()
-        return VoiceOverAnnouncer.recordedAnnouncements.dropFirst(alreadyRecorded).map(\.message)
+        return Array(VoiceOverAnnouncer.recordedAnnouncements.dropFirst(alreadyRecorded))
+    }
+
+    /// Waits until `commands` has read the sizes and the free space for
+    /// every download it planned (`downloadEvictedKeptBooks(in:)` and the
+    /// reading list's), so that whatever it announces about them has been
+    /// announced and the downloads it chose have been started. Fails the
+    /// test after `timeout` seconds rather than waiting forever.
+    @MainActor
+    func waitForPlanning(of commands: LibraryCloudCommands, timeout: TimeInterval = 10) async {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !commands.booksBeingPlanned.isEmpty {
+            guard Date() < deadline else {
+                XCTFail("The downloads were never planned")
+                return
+            }
+            try? await Task.sleep(for: .milliseconds(5))
+        }
     }
 
     /// Waits until `states` records `state` for the book `bookID`, as soon

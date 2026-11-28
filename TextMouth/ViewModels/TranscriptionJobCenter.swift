@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 import Foundation
 
@@ -72,16 +76,36 @@ enum TranscriptionLog {
     /// ending measured), "TRANSCRIPTION_CANCELLED: Harbor Notes: after 1.0
     /// seconds", or "TRANSCRIPTION_FAILED: Harbor Notes: after 0.3 seconds:
     /// Transcription stopped: the recognizer stopped."
-    static func ended(_ ending: TranscriptionJobEnding, bookTitle: String, elapsed: TimeInterval) -> String {
+    ///
+    /// The log is English whatever language the interface speaks, so a
+    /// failure is written as `failureLog`, the error's English words
+    /// (`failureLog(for:)`), and only when none is given as the `reason` the
+    /// ending carries, which is the interface's own sentence.
+    static func ended(
+        _ ending: TranscriptionJobEnding,
+        bookTitle: String,
+        elapsed: TimeInterval,
+        failureLog: String? = nil
+    ) -> String {
         switch ending {
         case .finished(let wordCount, let seconds):
-            let words = CountWording.phrase(wordCount, singular: "word", plural: "words")
+            // The log's own English count words, never the interface's.
+            let words = wordCount == 1 ? "1 word" : "\(wordCount) words"  // l10n: no (debug log)
             return "TRANSCRIPTION_FINISHED: \(bookTitle): \(words) in \(formatted(seconds)) seconds"
         case .cancelled:
             return "TRANSCRIPTION_CANCELLED: \(bookTitle): after \(formatted(elapsed)) seconds"
         case .failed(let reason):
-            return "TRANSCRIPTION_FAILED: \(bookTitle): after \(formatted(elapsed)) seconds: \(reason)"
+            return "TRANSCRIPTION_FAILED: \(bookTitle): after \(formatted(elapsed)) seconds: \(failureLog ?? reason)"
         }
+    }
+
+    /// `error` in the English the log writes: a `TranscriptionError`'s
+    /// `logDescription`, or another error's own description.
+    static func failureLog(for error: Error) -> String {
+        if let described = error as? any LogDescribing {
+            return described.logDescription
+        }
+        return "Transcription stopped: \(error.localizedDescription)"  // l10n: no (debug log)
     }
 
     /// `seconds` to a tenth of a second, as "2.4".
@@ -149,7 +173,7 @@ final class TranscriptionJobCenter: ObservableObject {
     private var task: Task<Void, Never>?
     /// The window that started the transcription under way, where what
     /// VoiceOver hears of it is announced from.
-    private weak var announcingWindow: NSWindow?
+    private weak var announcingWindow: PlatformWindow?
     /// The quarters of the transcription under way already announced.
     private var announcedMilestones: Set<Int> = []
     /// When the transcription's progress was last shown.
@@ -183,7 +207,7 @@ final class TranscriptionJobCenter: ObservableObject {
     /// - Returns: Whether it started: false while another transcription is
     ///   under way, which the sheet says before Transcribe is offered.
     @discardableResult
-    func start(_ book: Book, language: String, library: LibraryViewModel, window: NSWindow?) -> Bool {
+    func start(_ book: Book, language: String, library: LibraryViewModel, window: PlatformWindow?) -> Bool {
         guard current == nil else { return false }
         let job = TranscriptionJob(id: UUID(), bookID: book.id, bookTitle: book.title, startedAt: Date())
         current = job
@@ -208,7 +232,12 @@ final class TranscriptionJobCenter: ObservableObject {
             let clock = ContinuousClock()
             let started = clock.now
             let ending: TranscriptionJobEnding
+            // The English the log writes if the transcription fails.
+            var failureLog: String?
             do {
+                // A removal of the book's download whose last look has said yes ends first (FR46): the audio is never
+                // read as it goes. The book is marked being transcribed already, so no later removal begins.
+                await library?.booksBeingFreed.waitUntilFreed([book.id])
                 let transcript = try await service.transcribe(book, language: language, progress: report)
                 // The book as the library holds it now: a transcription
                 // takes minutes, and the book may have moved meanwhile.
@@ -233,8 +262,9 @@ final class TranscriptionJobCenter: ObservableObject {
                 ending = .finished(wordCount: transcript.wordCount, seconds: Self.seconds(clock.now - started))
             } catch {
                 ending = .ending(for: error)
+                failureLog = TranscriptionLog.failureLog(for: error)
             }
-            self?.finish(job, ending)
+            self?.finish(job, ending, failureLog: failureLog)
         }
         return true
     }
@@ -287,14 +317,19 @@ final class TranscriptionJobCenter: ObservableObject {
     /// Ends `job` as `ending` says: no transcription is under way any more,
     /// the end is logged and announced, and published for the sheet showing
     /// it.
-    private func finish(_ job: TranscriptionJob, _ ending: TranscriptionJobEnding) {
+    private func finish(_ job: TranscriptionJob, _ ending: TranscriptionJobEnding, failureLog: String? = nil) {
         guard current?.id == job.id else { return }
         current = nil
         task = nil
         transcribedBooks.setTranscribing(nil)
         DiagnosticLog.event(
             .storage,
-            TranscriptionLog.ended(ending, bookTitle: job.bookTitle, elapsed: Date().timeIntervalSince(job.startedAt))
+            TranscriptionLog.ended(
+                ending,
+                bookTitle: job.bookTitle,
+                elapsed: Date().timeIntervalSince(job.startedAt),
+                failureLog: failureLog
+            )
         )
         VoiceOverAnnouncer.announce(ending.announcement(bookTitle: job.bookTitle), from: announcingWindow)
         announcingWindow = nil

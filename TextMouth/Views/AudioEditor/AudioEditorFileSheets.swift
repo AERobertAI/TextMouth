@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -34,9 +38,11 @@ struct AudioEditorProgressSheet: View {
 // MARK: - Export
 
 /// Export (FR04): the formats TextMouth can write the edited audio in, MP3
-/// among them, which TextMouth writes itself, then Export…, which asks where
-/// in a save panel and writes the file there, the book's own file left as
-/// it is. VoiceOver starts on the Format pop-up.
+/// among them, which TextMouth writes itself, a checkbox that writes the
+/// markers beside it as Audacity labels too (FMT06), then Export…, which
+/// asks where in a save panel and writes the file there, the book's own
+/// file left as it is. VoiceOver starts on the Format pop-up; Tab reaches
+/// the checkbox, which VoiceOver reads with its hint.
 struct AudioEditorExportSheet: View {
     /// The window's model.
     @ObservedObject var model: AudioEditorModel
@@ -66,6 +72,12 @@ struct AudioEditorExportSheet: View {
             .pickerStyle(.menu)
             .accessibilityLabel(AudioEditorWording.formatLabel)
             .modifier(InitialVoiceOverFocusModifier(isTarget: true))
+            // The markers as an Audacity label file beside the audio (FMT06);
+            // its hint says when there is none to write.
+            Toggle(AudioEditorWording.exportLabelsToggle, isOn: $model.exportsLabels)
+                .accessibilityHint(
+                    model.labelEntries.isEmpty ? AudioEditorWording.exportLabelsNothingHint : AudioEditorWording.exportLabelsHint
+                )
             Text(AudioEditorWording.exportButtonHint)
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -86,6 +98,7 @@ struct AudioEditorExportSheet: View {
     /// Asks where to export to, in a save panel named for the book, then
     /// closes the sheet and exports there.
     private func chooseDestination() {
+        #if os(macOS)
         let panel = NSSavePanel()
         panel.title = AudioEditorWording.exportTitle
         panel.nameFieldStringValue = model.exportFileName(for: format)
@@ -95,6 +108,10 @@ struct AudioEditorExportSheet: View {
         let chosen = format
         model.sheet = nil
         Task { await model.export(as: chosen, to: url) }
+        #else
+        // Phase 1 asks where to export with a file exporter; until then the
+        // button does nothing on iOS.
+        #endif
     }
 }
 
@@ -153,7 +170,7 @@ struct AudioEditorInfoSheet: View {
                     }),
                     in: Int(SettingsPolicy.recordingOriginalDays.range.lowerBound)...Int(SettingsPolicy.recordingOriginalDays.range.upperBound)
                 ) {
-                    Text("\(AudioEditingSettingsWording.daysLabel): \(AudioEditingSettingsWording.days(days))")
+                    Text(AudioEditingSettingsWording.daysTitle(days))
                 }
                 // A stepper's title does not become its accessibility label.
                 .accessibilityLabel(AudioEditingSettingsWording.daysLabel)
@@ -175,7 +192,7 @@ struct AudioEditorInfoSheet: View {
 
     /// One fact: its label and value, read by VoiceOver as one element.
     private func fact(_ label: String, _ value: String) -> some View {
-        Text("\(label): \(value)")
+        Text(AudioEditorWording.labeled(label, value))
             .textSelection(.enabled)
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityElement(children: .ignore)

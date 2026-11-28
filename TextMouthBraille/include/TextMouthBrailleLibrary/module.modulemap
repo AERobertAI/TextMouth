@@ -1,0 +1,18 @@
+// The Clang module of the braille translation's interface (DR34),
+// ../TextMouthBrailleLibrary.h, which only the iPhone's code imports
+// (BrailleTranslator, under #if os(iOS)): the iPhone app links the library
+// (TextMouthBrailleLibrary_iOS and liblouis_iOS in project.yml) and calls it in
+// its own process, while the Mac app links neither, since its helper program
+// runs the same code.
+//
+// It has a map of its own, in a folder named after the module, where Clang
+// looks for it on the include path the apps already search
+// (TextMouthBraille/include), so that ../module.modulemap, from which the
+// braille protocol's module is built, is left as it was: GitHub's runners keep
+// the modules built from that map and its header between runs, and a change to
+// either fails the next build with a stale module ("has been modified since
+// the module file").
+module TextMouthBrailleLibrary {
+    header "../TextMouthBrailleLibrary.h"
+    export *
+}

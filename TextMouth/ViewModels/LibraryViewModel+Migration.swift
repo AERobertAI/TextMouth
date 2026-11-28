@@ -155,7 +155,7 @@ extension LibraryViewModel {
         let adopted = Self.adoptNewerRecordedPositions(in: &books, journaled: journaled, access: access, skips: skips)
         guard adopted > 0 else { return false }
         library.books = books
-        let phrase = CountWording.phrase(adopted, singular: "book", plural: "books")
+        let phrase = CountWording.phrase(adopted, singular: "book", plural: "books") // l10n: no (debug log text)
         DiagnosticLog.event(
             .storage,
             "LIBRARY_INDEX: took the reading positions of \(phrase) from their records, "
@@ -247,8 +247,8 @@ extension LibraryViewModel {
             DiagnosticLog.event(
                 .storage,
                 "FEED_INDEX: took the reading positions of "
-                    + "\(CountWording.phrase(adopted, singular: "feed item", plural: "feed items")) from their records, "
-                    + "which held checkpoints saved after their feeds' indexes"
+                    + "\(CountWording.phrase(adopted, singular: "feed item", plural: "feed items")) from their records, " // l10n: no (debug log text)
+                    + "which held checkpoints saved after their feeds' indexes" // l10n: no (debug log text)
             )
         }
         let joiningIDs = Set(rows.map(\.id))
@@ -295,6 +295,9 @@ extension LibraryViewModel {
                 return found
             }
             guard presence(of: book.bookFileURL) == .absent else { continue }
+            // A book another device has, not fetched yet, has no file to
+            // find (FR43): its package is where it is.
+            if SyncPlaceholder.isPlaceholder(package: book.tmbDirectory, contentFile: book.bookFileURL) { continue }
             let fileName = book.bookFileURL.lastPathComponent
 
             // First try the expected folder location
@@ -429,10 +432,10 @@ extension LibraryViewModel {
         )
         guard added > 0 else { return false }
         library = repaired
-        let rows = CountWording.phrase(added, singular: "folder row", plural: "folder rows")
+        let rows = CountWording.phrase(added, singular: "folder row", plural: "folder rows") // l10n: no (debug log text)
         let source = includingFoldersOnDisk
-            ? "the folders on disk and the folders books are in, since the library began with no books or folders"
-            : "folders books are in that had none"
+            ? "the folders on disk and the folders books are in, since the library began with no books or folders" // l10n: no (debug log text)
+            : "folders books are in that had none" // l10n: no (debug log text)
         logFolderRepair("added \(rows) for \(source)")
         return true
     }
@@ -652,11 +655,14 @@ extension LibraryViewModel {
     }
 
     nonisolated static func needsContentAnalysis(_ book: Book) -> Bool {
-        book.contentIndexVersion != BookContentIndex.currentVersion
+        // The cheap checks first; the protection check, which looks at the
+        // file, last (FR41).
+        (book.contentIndexVersion != BookContentIndex.currentVersion
             || book.totalWordCount == nil
             || book.totalCharacterCount == nil
             || (book.format.isAudio && book.audioDuration == nil)
-            || needsTextCacheFingerprint(book)
+            || needsTextCacheFingerprint(book))
+            && !book.isPasswordProtected
     }
 
     /// Whether `book` has a current text cache that was written before
@@ -737,13 +743,18 @@ extension LibraryViewModel {
             books.filter { book in
                 guard !book.format.isAudio, !book.tmbDirectoryName.isEmpty else { return false }
                 // Needs cache if missing or if the stored version is outdated
-                if !MarkdownCacheService.cacheExists(for: book) { return true }
-                if MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion) { return true }
-                // Its format gained pages since content.md was written, and
-                // the launch re-read is switched on (PG09).
-                if PageReaderVersions.isDueForPages(book) { return true }
-                return hasResizedTextCacheFile(book, isDataless: access.isDataless)
-                    || hasRedatedTextCache(book, isDataless: access.isDataless)
+                let needsUpdate: Bool = {
+                    if !MarkdownCacheService.cacheExists(for: book) { return true }
+                    if MarkdownCacheService.isCacheOutdated(stored: book.cacheFormatVersion) { return true }
+                    // Its format gained pages since content.md was written, and
+                    // the launch re-read is switched on (PG09).
+                    if PageReaderVersions.isDueForPages(book) { return true }
+                    return hasResizedTextCacheFile(book, isDataless: access.isDataless)
+                        || hasRedatedTextCache(book, isDataless: access.isDataless)
+                }()
+                // A protected book has no cache to keep up to date (FR41);
+                // asked last, since it looks at the file.
+                return needsUpdate && !book.isPasswordProtected
             }
         }
     }
@@ -855,19 +866,18 @@ extension LibraryViewModel {
     nonisolated static func textReextractionOutcome(skippedInCloud: Int, heldByEdits: Int = 0) -> OperationOutcome {
         var sentences: [String] = []
         if skippedInCloud > 0 {
-            let books = CountWording.phrase(skippedInCloud, singular: "book in the cloud was", plural: "books in the cloud were")
-            sentences.append("\(books) skipped.")
+            // Translators: Part of the message after Redo Text Extraction finished: books whose files are only in the cloud were left out. %lld is how many books.
+            sentences.append(InterfaceText.line("libraryViewModel.textReextractionOutcome.cloud", "\(number: skippedInCloud) books in the cloud were skipped."))
         }
         if heldByEdits > 0 {
-            let books = CountWording.phrase(
-                heldByEdits,
-                singular: "book whose edited text can't be used yet was",
-                plural: "books whose edited text can't be used yet were"
-            )
-            sentences.append("\(books) skipped.")
+            // Translators: Part of the message after Redo Text Extraction finished: books whose edited text is not taken yet were left out. %lld is how many books.
+            sentences.append(InterfaceText.line("libraryViewModel.textReextractionOutcome.edited", "\(number: heldByEdits) books whose edited text can't be used yet were skipped."))
         }
         guard !sentences.isEmpty else { return .success(nil) }
-        return .success((["Done."] + sentences).joined(separator: " "))
+        return .success(SentenceWording.joined([
+            // Translators: First sentence of the message after Redo Text Extraction finished with some books skipped.
+            InterfaceText.line("common.doneSentence", "Done."),
+        ] + sentences))
     }
 
     /// Share automatic and manual extraction, releasing large parser results per
@@ -895,7 +905,14 @@ extension LibraryViewModel {
             return
         }
 
-        textExtraction.begin(force ? "Re-extracting text" : "Updating text cache", total: books.count)
+        textExtraction.begin(
+            force
+                // Translators: Title of the progress shown while Redo Text Extraction reads every book's text again.
+                ? InterfaceText.line("libraryViewModel.reExtractingText", "Re-extracting text")
+                // Translators: Title of the progress shown while TextMouth brings every book's text cache up to date.
+                : InterfaceText.line("libraryViewModel.updatingTextCache", "Updating text cache"),
+            total: books.count
+        )
 
         let updateProgress: @MainActor @Sendable (TextCacheUpdate) -> Void = { [weak self] update in
             guard let self else { return }
@@ -917,7 +934,7 @@ extension LibraryViewModel {
         let activity = audioEditActivity
         let isOpenInReader: @Sendable (UUID) -> Bool = { activity.isOpenInReader($0) }
 
-        TextCacheUpdateQueue.run(books: Self.openBooksFirst(books, open: openBookIDs), update: { book in
+        TextCacheUpdateQueue.run(books: Self.openBooksFirst(books, open: openBookIDsNow), update: { book in
             let update = autoreleasepool {
                 Self.updateTextCache(
                     of: book, force: force, reading: files, access: access, skips: skips, held: held, pages: pages,
@@ -960,7 +977,7 @@ extension LibraryViewModel {
     /// for it has gone first, so none lands over it afterwards.
     func applyTextCacheUpdate(_ update: TextCacheUpdate, atOnce: Bool = false) {
         guard let summary = update.summary else { return }
-        let textForReader = openBookIDs.contains(summary.bookID) ? update.textForOpenReader : nil
+        let textForReader = isBookOpenNow(summary.bookID) ? update.textForOpenReader : nil
         if atOnce {
             analysisSummaries.flush()
         }
@@ -1251,7 +1268,7 @@ extension LibraryViewModel {
         let sourceURL = book.bookFileURL
         guard FileStamp(of: cacheURL) != nil else { return .readAgain }
         guard FileManager.default.fileExists(atPath: sourceURL.path) else {
-            return .unreadable(why: "its file is missing", missingFile: true)
+            return .unreadable(why: "its file is missing", missingFile: true) // l10n: no (debug log text)
         }
         // Whether content.md holds other bytes than its record describes.
         var contentChanged = false
@@ -1297,6 +1314,21 @@ extension LibraryViewModel {
             }
             if withoutPages?.bytes == kept {
                 return .readAgain
+            }
+            // A Kindle book stored before .mobi had a page reader (it has no stamp) holds what the
+            // MOBI 6 half of a hybrid file read, which is not what the KF8 half reads now: the same
+            // words, with the book's own headings and pages. Compared with the half it was stored
+            // from, it is TextMouth's own text, and is read again without a copy (S6).
+            if book.format == .mobi, book.pageReaderVersion == nil {
+                let storedHalf: MarkdownCacheService.ExtractedText?
+                do {
+                    storedHalf = try MarkdownCacheService.extractedText(for: book, includesPages: false, kindleHalf: .mobi6)
+                } catch where !DatalessFiles.isDownloadRefusal(error) {
+                    return .unreadable(why: error.localizedDescription, missingFile: false)
+                }
+                if storedHalf?.bytes == kept {
+                    return .readAgain
+                }
             }
         }
         let withPages: MarkdownCacheService.ExtractedText?
@@ -1504,9 +1536,17 @@ extension LibraryViewModel {
     // run the same work.
 
     /// Words that begin each maintenance failure, before the reason.
-    private static let rebuildFailureContext = "Failed to rebuild directory"
-    private static let resetFailureContext = "Failed to rebuild to default"
-    private static let moveFailureContext = "Failed to move directory"
+    private static var rebuildFailureContext: String {
+        // Translators: Begins the message when Rebuild Directory failed; the reason follows after a colon.
+        InterfaceText.line("libraryViewModel.rebuildFailureContext", "Failed to rebuild directory")
+    }
+    private static var resetFailureContext: String {
+        // Translators: Begins the message when Reset to Default failed; the reason follows after a colon.
+        InterfaceText.line("libraryViewModel.resetFailureContext", "Failed to rebuild to default")
+    }
+    private static var moveFailureContext: String {
+        StorageSettingsWording.moveFailureContext
+    }
 
     /// Rebuild the .TextMouth directory structure, migrate all books,
     /// adopt orphaned .tmb packages, and extract missing content caches.
@@ -1544,7 +1584,8 @@ extension LibraryViewModel {
     /// library.", counting the library's own books, never a feed's items
     /// (FR11), which the rebuild leaves where they are.
     nonisolated static func rebuildDirectoryDoneMessage(_ library: Library) -> String {
-        "Done. \(CountWording.books(library.libraryBookCount)) in library."
+        // Translators: Message after Rebuild Directory finished. %@ is a count of the library's books, such as "743 books".
+        InterfaceText.line("libraryViewModel.rebuildDirectoryDoneMessage", "Done. \(CountWording.books(library.libraryBookCount)) in library.")
     }
 
     /// The work of Rebuild Directory: the legacy migration report, or the
@@ -1755,6 +1796,20 @@ extension LibraryViewModel {
     /// (`copyAndPublish`). The held work goes on once `body` returns or
     /// throws, under whichever generation is current then.
     ///
+    /// Two of those files can be saved again while the move copies, from
+    /// outside the storage work: the substitution rules, from the rules
+    /// editor, and the statistics. Such a save writes the data directory
+    /// being copied, which the copy may have passed, and is not reported
+    /// saved (`StorageBoundary.isProvisionalSave(of:rewrite:)`), from the
+    /// flushes on (`beginProvisionalSaves()`): a save made while the move
+    /// only waits for other work is copied with the library, so it is
+    /// final, as a quit that does not wait for a move not yet copying must
+    /// find it. Once the
+    /// hold is released, however the operation ended, each such file is
+    /// saved again as it stands, in the data directory the library lives
+    /// in then (`StorageBoundary.rewriteFilesSavedDuringTheMove()`), as
+    /// config.json and library.json are saved by `body`.
+    ///
     /// Only one operation holds the storage work at a time: while another
     /// does (a move, a rebuild, or a folder edit moving books between
     /// folders), this throws `StorageBusyError`, saying which (#673).
@@ -1769,6 +1824,19 @@ extension LibraryViewModel {
         // An operation that moves the data directory holds the work as a
         // move; every other one here rebuilds the directory where it is.
         let hold = try StorageBoundary.shared.holdWork(for: move == nil ? .rebuildingDirectory : .movingDataDirectory)
+        // However the operation ends, the files saved from outside the
+        // storage work while a move copied the library (the rules, the
+        // statistics) are saved again, in the data directory the library
+        // lives in then. Declared before the release below, so it runs
+        // after it: the saves are final then, not provisional again. The
+        // statistics are written on a queue of their own, so the move waits
+        // for that write before its outcome is judged: a failure the write
+        // settles is never reported unsaved just before it does.
+        defer {
+            if StorageBoundary.shared.rewriteFilesSavedDuringTheMove() > 0 {
+                Self.waitForQueuedStatisticsSaves()
+            }
+        }
         defer { hold.release() }
         let progress = move.map { DataDirectoryMoveProgress(destination: $0.destination, isResetToDefault: $0.isResetToDefault) }
         if let progress {
@@ -1781,12 +1849,16 @@ extension LibraryViewModel {
             if let progress {
                 dataDirectoryMove = nil
                 progress.end()
+                // The library is in another folder: the sync is installed
+                // again for it, which checks it afresh (FR43, R6) and joins
+                // only a folder whose Sync/ holds this store's files.
+                SyncCenter.shared.install(host: self, dataDirectory: TextMouthPaths.root)
             }
         }
         var waited = false
         await hold.waitForWorkUnderWay { work in
             waited = true
-            DiagnosticLog.event(.storage, "DATA_DIRECTORY_MOVE: \(work.waitingMessage)")
+            DiagnosticLog.event(.storage, "DATA_DIRECTORY_MOVE: \(work.logWaitingMessage)")
             progress?.wait(for: work)
             await waiting(work)
         }
@@ -1797,6 +1869,11 @@ extension LibraryViewModel {
         configService.flushScheduledSave()
         Self.waitForQueuedStatisticsSaves()
         TextMouthPaths.flushLogs()
+        if move != nil {
+            // From here the copy is taken: a rules or statistics save made
+            // before this was written in time to be copied with the library.
+            StorageBoundary.shared.beginProvisionalSaves()
+        }
         if let move, let progress {
             try await copyAndPublish(move, showing: progress)
         }
@@ -1830,7 +1907,7 @@ extension LibraryViewModel {
             Self.countBooksOnlyInCloud(books, in: root, access: access)
         }
         guard notDownloaded == 0 else {
-            let count = CountWording.phrase(notDownloaded, singular: "book is", plural: "books are")
+            let count = CountWording.phrase(notDownloaded, singular: "book is", plural: "books are") // l10n: no (debug log text)
             DiagnosticLog.event(.storage, "DATA_DIRECTORY_MOVE: refused, since \(count) only in the cloud")
             throw DataDirectoryMoveRefusal.booksNotDownloaded(notDownloaded)
         }
@@ -1884,8 +1961,8 @@ extension LibraryViewModel {
         kept.feedShelf.changeRows { $0 = StorageBoundary.shared.rebasedToCurrent($0) }
         DiagnosticLog.event(
             .storage,
-            "DATA_DIRECTORY_MOVE: the library changed while it was copied; kept the change, "
-                + "\(CountWording.phrase(moved, singular: "book path", plural: "book paths")) moved"
+            "DATA_DIRECTORY_MOVE: the library changed while it was copied; kept the change, " // l10n: no (debug log text)
+                + "\(CountWording.phrase(moved, singular: "book path", plural: "book paths")) moved" // l10n: no (debug log text)
         )
         return kept
     }
@@ -1895,8 +1972,9 @@ extension LibraryViewModel {
     /// book in the data directory, which must not change while it is copied
     /// (FR02). Storage settings ask before offering a move.
     var openBooksRefusal: DataDirectoryMoveRefusal? {
-        guard !openBookIDs.isEmpty else { return nil }
-        let titles = library.books.filter { openBookIDs.contains($0.id) }.map(\.title).sorted()
+        let open = openBookIDsNow
+        guard !open.isEmpty else { return nil }
+        let titles = library.books.filter { open.contains($0.id) }.map(\.title).sortedStably()
         return .booksOpen(titles)
     }
 
@@ -1994,7 +2072,10 @@ extension LibraryViewModel {
     // MARK: - Using Another Library (FR02)
 
     /// Words that begin each Use This Library failure, before the reason.
-    private static let switchFailureContext = "Failed to switch libraries"
+    private static var switchFailureContext: String {
+        // Translators: Begins the message when Use This Library failed; the reason follows after a colon.
+        InterfaceText.line("libraryViewModel.switchFailureContext", "Failed to switch libraries")
+    }
 
     /// Use This Library, and Start New Library while the library isn't
     /// available (FR02): makes the library in `folder` the one TextMouth
@@ -2039,11 +2120,18 @@ extension LibraryViewModel {
         let unsaved = failureCenter.unsavedFailures()
         if dataDirectoryUnavailability == nil, !unsaved.isEmpty {
             let reasons = PersistenceBannerRow.rows(for: unsaved).map(\.text)
-            let message = ["\(Self.switchFailureContext): Some changes are not saved, and switching libraries would lose them."]
-                + reasons + ["Choose Retry Saving, then try again."]
-            return .failure(message.joined(separator: " "))
+            // Translators: First sentence of why Use This Library was refused: changes could not be saved yet. %@ is the failure's lead-in, "Failed to switch libraries".
+            let message = [InterfaceText.line("libraryViewModel.message.switching", "\(Self.switchFailureContext): Some changes are not saved, and switching libraries would lose them.")]
+                // Translators: Last sentence of why Use This Library was refused. Retry Saving is the name of a button on the failure banner.
+                + reasons + [InterfaceText.line("libraryViewModel.message.choose", "Choose Retry Saving, then try again.")]
+            return .failure(SentenceWording.joined(message))
         }
 
+        // A fetch of the old library's files is dropped first: its passes
+        // would otherwise check the old folder against the new library's
+        // expectations, while TextMouth waits to open again.
+        let droppedFetch = cancelLibraryFetch()
+        librarySwitchPending = true
         TextMouthPaths.setCustomRoot(
             TextMouthPaths.isDefaultLocation(folder) ? nil : folder,
             in: dataDirectoryEnvironment.preferences
@@ -2056,10 +2144,16 @@ extension LibraryViewModel {
             try await relauncher.openNewInstance()
         } catch {
             DiagnosticLog.event(.storage, "DATA_DIRECTORY_SWITCH: TextMouth couldn't open again: \(error.localizedDescription)")
-            return .failure(
-                "TextMouth will open the library in \(folder.path) the next time it opens, but it couldn't open again "
-                    + "by itself: \(error.localizedDescription) Quit TextMouth and open it again."
-            )
+            librarySwitchPending = false
+            if droppedFetch {
+                recheckAfterDroppedLibraryFetch()
+            }
+            return .failure(SentenceWording.joined([
+                // Translators: First part of the message when Use This Library could not open TextMouth again. %1$@ is the library's folder; %2$@ is the system's reason, a sentence.
+                InterfaceText.line("libraryViewModel.openNextTime", "TextMouth will open the library in \(folder.path) the next time it opens, but it couldn't open again by itself: \(error.localizedDescription)"),
+                // Translators: Last sentence of the message when Use This Library could not open TextMouth again: what to do.
+                InterfaceText.line("libraryViewModel.quitOpenAgain", "Quit TextMouth and open it again."),
+            ]))
         }
         // The changes a library that isn't available couldn't take are given
         // up, as the confirmation said, so quitting doesn't ask about them.
@@ -2067,7 +2161,8 @@ extension LibraryViewModel {
             failureCenter.withdraw(failure.key)
         }
         relauncher.quit()
-        return .success("Opening the library in \(folder.path)…")
+        // Translators: Message after Use This Library succeeded: TextMouth opens again on the library. %@ is the library's folder.
+        return .success(InterfaceText.line("libraryViewModel.opening", "Opening the library in \(folder.path)…"))
     }
 
     // MARK: - Finished Books at Their Ends (TODO P07)
@@ -2187,10 +2282,12 @@ extension LibraryViewModel {
         let candidates = Self.finishedBooksShortOfTheirEnds(library.books, counted: counted)
         // A book a reader window has open keeps its place: the reader holds
         // the cursor, and its next save would put it back.
-        let open = openBookIDs
+        let open = openBookIDsNow
         let readable = candidates.filter { !open.contains($0.id) }
         let openCount = candidates.count - readable.count
-        DispatchQueue.global(qos: .utility).async {
+        // Weak here too: a strong capture would hold the library until the
+        // pass ends, though the closure below is written for its going.
+        DispatchQueue.global(qos: .utility).async { [weak self] in
             var moves: [FinishedBookEndMove] = []
             var inCloud = 0
             var unplaced = 0
@@ -2214,7 +2311,7 @@ extension LibraryViewModel {
                     // A row that moved while the pass read, or a book a
                     // reader opened meanwhile, keeps its place for later.
                     guard self.bookByID(move.bookID)?.readingPosition == move.from,
-                          !self.openBookIDs.contains(move.bookID) else {
+                          !self.isBookOpenNow(move.bookID) else {
                         outcome.waiting += 1
                         continue
                     }
@@ -2486,6 +2583,7 @@ struct TextMouthRelauncher {
                 quit: {}
             )
         }
+        #if os(macOS)
         return TextMouthRelauncher(
             openNewInstance: {
                 let configuration = NSWorkspace.OpenConfiguration()
@@ -2501,7 +2599,16 @@ struct TextMouthRelauncher {
                     }
                 }
             },
-            quit: { NSApplication.shared.terminate(nil) }
+            quit: { QuitRequest.ask() }
         )
+        #else
+        // iOS cannot open a second instance of the app, nor quit this one
+        // (phase 0): opening throws, so Use This Library reports it, and
+        // quitting does nothing, so this instance carries on.
+        return TextMouthRelauncher(
+            openNewInstance: { throw IOSUnavailable.feature("Opening TextMouth again") }, // l10n: no (a feature name in an error the iPhone never shows)
+            quit: {}
+        )
+        #endif
     }
 }

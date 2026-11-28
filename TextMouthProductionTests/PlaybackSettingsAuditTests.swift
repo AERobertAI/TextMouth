@@ -133,6 +133,21 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         XCTAssertEqual(text.speedStepButtonLabel(forward: false), "Decrease speed by 25 words per minute")
     }
 
+    /// What VoiceOver hears as the voice, speed, pitch, and skipped sections
+    /// change: each is one whole localized sentence (FR34), in English word
+    /// for word as before.
+    func testVoiceAndSpeedAnnouncementsAreWholeSentences() {
+        typealias Words = VoiceAndSpeedWording
+        XCTAssertEqual(Words.speedAnnouncement(wordsPerMinute: 225), "225 words per minute")
+        XCTAssertEqual(Words.pitchAnnouncement("1.2"), "Pitch 1.2")
+        XCTAssertEqual(Words.voiceChanged(to: "Samantha"), "Voice changed to Samantha")
+        XCTAssertEqual(Words.appliedAsGlobalDefaults, "Settings applied as global defaults")
+        XCTAssertEqual(Words.audioSpeedReset(to: "1.0 times speed"), "Audio speed reset to 1.0 times speed")
+        XCTAssertEqual(Words.sectionIncluded("Prologue"), "Section included: Prologue")
+        XCTAssertEqual(Words.sectionSkipped("Prologue"), "Section skipped: Prologue")
+        XCTAssertEqual(AudioSpeed.spokenLabel(for: 1.25), "1.25 times speed")
+    }
+
     /// Preserve the existing 25 WPM increment for text books.
     func testTextSpeedCommandsKeepWPMUnits() {
         let reader = makeReader(format: .txt)
@@ -500,13 +515,14 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         withHostedView(
             MiscellaneousSettingsView().environmentObject(settings),
             size: NSSize(width: 600, height: 1200),
-            until: { popUpButtons(in: $0).count == 3 }
+            until: { popUpButtons(in: $0).count == 4 }
         ) { hostingView in
+            // The Interface Language pop-up (FR39) comes first on the tab; the three step pickers follow it.
             let found = popUpButtons(in: hostingView)
-            XCTAssertEqual(found.map(\.label), ["Step 1", "Step 2", "Step 3"])
+            XCTAssertEqual(found.map(\.label), ["Interface Language", "Step 1", "Step 2", "Step 3"])
             XCTAssertEqual(
                 found.map { $0.element.accessibilityValue() as? String },
-                ["Previous track", "Next track", "Play/Pause toggle"]
+                ["System (English)", "Previous track", "Next track", "Play/Pause toggle"]
             )
         }
     }

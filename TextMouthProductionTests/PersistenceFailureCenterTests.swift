@@ -12,6 +12,14 @@ final class PersistenceFailureCenterTests: XCTestCase {
     /// This test's center.
     private let center = PersistenceFailureCenter()
 
+    /// A center whose waiting retries wait for the holds of a boundary of
+    /// the test's own, and that boundary, so the app's storage work is never
+    /// held.
+    private func centerOverItsOwnBoundary() throws -> (PersistenceFailureCenter, StorageBoundary) {
+        let boundary = StorageBoundary(root: try makeSandboxDirectory("FailureCenterBoundary"))
+        return (PersistenceFailureCenter(boundary: boundary), boundary)
+    }
+
     // MARK: - Keeping and Settling Failures
 
     /// A write that keeps failing holds one entry, the latest, with its
@@ -148,6 +156,254 @@ final class PersistenceFailureCenterTests: XCTestCase {
         XCTAssertEqual(retried.calls, [.libraryIndex, .substitutions])
         XCTAssertEqual(center.failures.map(\.subsystem), [.substitutions])
         XCTAssertTrue(center.hasUnsavedChanges)
+    }
+
+    // MARK: - Retries Waiting for Storage Work
+
+    /// A retry that must wait for the storage work never runs while an
+    /// operation holds it: its row says when the save comes, VoiceOver hears
+    /// that, and the change is still unsaved. Once the operation ends, the
+    /// retry runs by itself, for the failure outstanding then, and settles it.
+    func testARetryThatWaitsForStorageWorkRunsOnlyOnceTheOperationEnds() async throws {
+        let (center, boundary) = try centerOverItsOwnBoundary()
+        let attempts = CallLog<PersistenceFailure.ID>()
+        center.recordFailure(.statistics, path: "/data/reading_stats.json", error: WriteRefused(), waitsForStorageWork: true) { id in
+            attempts.record(id)
+            center.recordSuccess(.statistics)
+        }
+        recordingAnnouncements { center.publish() }
+        let hold = try boundary.holdWork(for: .movingDataDirectory)
+        defer { hold.release() }
+
+        let pressed = recordingAnnouncements { center.retry(.statistics) }
+
+        let waiting = "Listening statistics could not be saved: TextMouth saves them once the move of its data directory ends."
+        XCTAssertEqual(attempts.calls, [], "the retry ran while a move held the storage work")
+        XCTAssertEqual(center.bannerRows.map(\.text), [waiting])
+        XCTAssertEqual(pressed.announcements.map(\.message), ["Retry did not succeed. \(waiting)"])
+        XCTAssertTrue(center.hasUnsavedChanges, "a change waiting for the move was called saved")
+        XCTAssertTrue(try XCTUnwrap(center.outstandingFailures().first).waitsForStorageWork)
+        let kept = try XCTUnwrap(center.outstandingFailures().first?.id)
+
+        hold.release()
+        await waitForKeptRetries(of: center)
+
+        XCTAssertEqual(attempts.calls, [kept], "the retry did not run once the move ended, for the failure outstanding then")
+        XCTAssertFalse(center.hasUnsavedChanges)
+    }
+
+    /// The kept retries are heard once they have run, in one announcement:
+    /// each subsystem saved, or the rows of those that failed again, now
+    /// with their own reason in place of the wait's. They run once only,
+    /// however many times Retry was pressed while they waited.
+    func testKeptRetriesAreHeardOnceTheyHaveRunAndRunOnce() async throws {
+        let (center, boundary) = try centerOverItsOwnBoundary()
+        let attempts = CallLog<PersistenceSubsystem>()
+        center.recordFailure(.statistics, path: "/data/reading_stats.json", error: WriteRefused(), waitsForStorageWork: true) { _ in
+            attempts.record(.statistics)
+            center.recordSuccess(.statistics)
+        }
+        center.recordFailure(.configuration, path: "/data/config.json", error: WriteRefused(), waitsForStorageWork: true) { _ in
+            attempts.record(.configuration)
+            center.recordFailure(.configuration, path: "/data/config.json", error: WriteRefused(), waitsForStorageWork: true)
+        }
+        recordingAnnouncements { center.publish() }
+        let hold = try boundary.holdWork(for: .movingBooksBetweenFolders)
+        defer { hold.release() }
+        recordingAnnouncements {
+            center.retry(.statistics)
+            center.retry(.statistics)
+            center.retry(.configuration)
+        }
+
+        hold.release()
+        let ran = recordingAnnouncements { center.runRetriesKeptForStorageWork() }
+        await waitForKeptRetries(of: center)
+
+        XCTAssertEqual(attempts.calls, [.statistics, .configuration], "the kept retries did not each run once")
+        XCTAssertEqual(ran.announcements.map(\.message), [
+            "Retry did not succeed. Settings could not be saved: The volume is read-only.",
+        ])
+        XCTAssertEqual(center.failures.map(\.subsystem), [.configuration])
+    }
+
+    /// Storage settings' Retry Saving while a move copies the data directory
+    /// keeps the retries that write into it, runs the rest at once, and says
+    /// which wait; once the move ends, the kept ones run, heard together.
+    func testRetryingUnsavedChangesKeepsOnlyTheRetriesThatWait() async throws {
+        let (center, boundary) = try centerOverItsOwnBoundary()
+        let retried = CallLog<PersistenceSubsystem>()
+        // The library index's retry never waits: its write is safe across a move.
+        center.recordFailure(.libraryIndex, path: "/data/library.json", error: WriteRefused()) { _ in
+            retried.record(.libraryIndex)
+            center.recordSuccess(.libraryIndex)
+        }
+        for (subsystem, subject, file) in [
+            (PersistenceSubsystem.statistics, PersistenceFailure.Subject.statistics, "reading_stats.json"),
+            (.configuration, .configuration, "config.json"),
+            (.substitutions, .substitutions, "substitutions.json"),
+        ] {
+            center.recordFailure(subject, path: "/data/\(file)", error: WriteRefused(), waitsForStorageWork: true) { _ in
+                retried.record(subsystem)
+                center.recordSuccess(subject.key)
+            }
+        }
+        recordingAnnouncements { center.publish() }
+        let hold = try boundary.holdWork(for: .movingDataDirectory)
+        defer { hold.release() }
+
+        let pressed = recordingAnnouncements { center.retryUnsavedChanges(announcing: true) }
+
+        XCTAssertEqual(retried.calls, [.libraryIndex], "a retry ran across the move, or the index's did not run")
+        let once = "TextMouth saves them once the move of its data directory ends."
+        XCTAssertEqual(pressed.announcements.map(\.message), [
+            "Retry did not succeed. Listening statistics could not be saved: \(once) "
+                + "Settings could not be saved: \(once) Text substitution rules could not be saved: \(once)",
+        ])
+
+        hold.release()
+        let ran = recordingAnnouncements { center.runRetriesKeptForStorageWork() }
+        await waitForKeptRetries(of: center)
+
+        XCTAssertEqual(retried.calls, [.libraryIndex, .statistics, .configuration, .substitutions])
+        XCTAssertEqual(ran.announcements.map(\.message), [
+            "Listening statistics saved. Settings saved. Text substitution rules saved.",
+        ])
+        XCTAssertFalse(center.hasUnsavedChanges)
+    }
+
+    /// A retry that need not wait, such as a feed record's, whose store
+    /// waits by itself, runs at once while storage work is held.
+    func testARetryThatNeedNotWaitRunsWhileStorageWorkIsHeld() throws {
+        let (center, boundary) = try centerOverItsOwnBoundary()
+        let attempts = CallLog<PersistenceFailure.ID>()
+        let feedID = UUID()
+        center.recordFailure(.feedRecord(feedID: feedID, title: "Tide Tables"), path: "/data/Feeds/a.json", error: WriteRefused()) { id in
+            attempts.record(id)
+        }
+        let failureID = try XCTUnwrap(center.outstandingFailures().first?.id)
+        let hold = try boundary.holdWork(for: .rebuildingDirectory)
+        defer { hold.release() }
+
+        recordingAnnouncements { center.retry(.feedRecords) }
+
+        XCTAssertEqual(attempts.calls, [failureID])
+        XCTAssertFalse(try XCTUnwrap(center.outstandingFailures().first).waitsForStorageWork)
+    }
+
+    /// An operation that takes the storage work before a kept retry's turn,
+    /// as a second folder edit right after the first can, is waited for
+    /// too, and the row then names it; the retry runs once that one ends.
+    func testAnOperationThatTakesTheWorkBeforeTheKeptRetrysTurnIsWaitedForToo() async throws {
+        let (center, boundary) = try centerOverItsOwnBoundary()
+        let attempts = CallLog<PersistenceFailure.ID>()
+        center.recordFailure(.substitutions, path: "/data/substitutions.json", error: WriteRefused(), waitsForStorageWork: true) { id in
+            attempts.record(id)
+            center.recordSuccess(.substitutions)
+        }
+        let first = try boundary.holdWork(for: .movingBooksBetweenFolders)
+        defer { first.release() }
+        recordingAnnouncements { center.retry(.substitutions) }
+
+        // In one turn of the main actor, as a second operation would.
+        first.release()
+        let second = try boundary.holdWork(for: .rebuildingDirectory)
+        defer { second.release() }
+        // The wait saw the first release; it returns having found the second
+        // hold and kept the retry for it, which the row then says. Nothing
+        // ran, so VoiceOver is told nothing: no "Retry did not succeed." for
+        // a Retry nobody pressed. A hosted test's announcements are recorded.
+        let heardBefore = VoiceOverAnnouncer.recordedAnnouncements.count
+        await waitForKeptRetries(of: center)
+
+        XCTAssertEqual(attempts.calls, [], "the kept retry ran while the second operation held the work")
+        XCTAssertEqual(center.bannerRows.map(\.text), [
+            "Text substitution rules could not be saved: TextMouth saves them once it has finished rebuilding its data directory.",
+        ])
+        let heardMeanwhile = VoiceOverAnnouncer.recordedAnnouncements.dropFirst(heardBefore).map(\.message)
+        XCTAssertEqual(
+            heardMeanwhile.filter { $0.contains("Text substitution rules") },
+            [],
+            "VoiceOver heard about the kept retry when the first operation ended"
+        )
+
+        second.release()
+        await waitForKeptRetries(of: center)
+
+        XCTAssertEqual(attempts.calls.count, 1, "the kept retry did not run once the second operation ended")
+        XCTAssertFalse(center.hasUnsavedChanges)
+    }
+
+    /// Reset drops the kept retries along with the failures: nothing runs
+    /// when the operation ends.
+    func testResetDropsTheKeptRetries() async throws {
+        let (center, boundary) = try centerOverItsOwnBoundary()
+        let attempts = CallLog<PersistenceFailure.ID>()
+        center.recordFailure(.configuration, path: "/data/config.json", error: WriteRefused(), waitsForStorageWork: true) { id in
+            attempts.record(id)
+        }
+        let hold = try boundary.holdWork(for: .movingDataDirectory)
+        defer { hold.release() }
+        recordingAnnouncements { center.retry(.configuration) }
+
+        center.reset()
+        hold.release()
+        await waitForKeptRetries(of: center)
+        recordingAnnouncements { center.runRetriesKeptForStorageWork() }
+
+        XCTAssertEqual(attempts.calls, [], "a retry ran after the center was reset")
+        XCTAssertTrue(center.outstandingFailures().isEmpty)
+    }
+
+    /// A kept retry whose failure is withdrawn, as a book that leaves the
+    /// library withdraws its record's, runs nothing when the operation
+    /// ends, and VoiceOver is not told it was saved: nothing was. It used to
+    /// hear "Listening statistics saved."
+    func testAWithdrawnFailuresKeptRetryIsNotHeardAsSaved() throws {
+        let (center, boundary) = try centerOverItsOwnBoundary()
+        let attempts = CallLog<PersistenceFailure.ID>()
+        center.recordFailure(.statistics, path: "/data/reading_stats.json", error: WriteRefused(), waitsForStorageWork: true) { id in
+            attempts.record(id)
+        }
+        let hold = try boundary.holdWork(for: .movingDataDirectory)
+        defer { hold.release() }
+        recordingAnnouncements { center.retry(.statistics) }
+
+        center.withdraw(.statistics)
+        hold.release()
+        let heard = recordingAnnouncements { center.runRetriesKeptForStorageWork() }
+
+        XCTAssertEqual(attempts.calls, [], "the withdrawn failure's retry ran")
+        XCTAssertEqual(heard.announcements.map(\.message), [], "VoiceOver was told a withdrawn change was saved")
+    }
+
+    /// What a kept retry's row says, for each operation that can hold the
+    /// storage work and each thing a retry does: when it runs, or, for a
+    /// switch of libraries, which ends with TextMouth opening again
+    /// elsewhere, what stays as it is here. A stranded package is moved
+    /// back; everything else is saved. The saving words are a feed record's
+    /// for the same wait.
+    func testAKeptRetrySaysWhenItRuns() {
+        let said = StorageHoldReason.allCases.flatMap { operation in
+            [StorageWorkWaitWording.Action.save, .moveBack].map {
+                RetryWaitsForStorageWork(operation: operation, action: $0).localizedDescription
+            }
+        }
+
+        XCTAssertEqual(said, [
+            "TextMouth saves them once the move of its data directory ends.",
+            "TextMouth moves them back once the move of its data directory ends.",
+            "TextMouth saves them once it has finished rebuilding its data directory.",
+            "TextMouth moves them back once it has finished rebuilding its data directory.",
+            "TextMouth saves them once it has finished moving books between folders.",
+            "TextMouth moves them back once it has finished moving books between folders.",
+            "TextMouth is opening again on another library, so they stay unsaved in this one.",
+            "TextMouth is opening again on another library, so they stay where they are in this one.",
+        ])
+        let stranded = PersistenceFailure.Subject.strandedPackage(bookID: UUID(), title: "Atlas", location: "/a", home: "/b")
+        XCTAssertEqual(StorageWorkWaitWording.Action(for: stranded), .moveBack)
+        XCTAssertEqual(StorageWorkWaitWording.Action(for: .statistics), .save)
+        XCTAssertEqual(StorageWorkWaitWording.Action(for: .bookRecord(bookID: UUID(), title: "Atlas")), .save)
     }
 
     // MARK: - Publishing and VoiceOver

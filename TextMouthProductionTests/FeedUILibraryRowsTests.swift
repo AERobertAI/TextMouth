@@ -119,8 +119,9 @@ final class FeedUILibraryRowsTests: XCTestCase {
         XCTAssertEqual(size(0, FeedEntryTotal(count: 1)), "0 of 1 episode listed")
         XCTAssertEqual(size(10, FeedEntryTotal(count: 381), .article), "10 of 381 articles listed")
         XCTAssertEqual(size(10, FeedEntryTotal(count: 381), .item), "10 of 381 items listed")
-        XCTAssertEqual(size(10, FeedEntryTotal(count: 2_000, listsMore: true)), "10 of more than 2000 episodes listed")
-        XCTAssertEqual(size(2_000, FeedEntryTotal(count: 2_000, listsMore: true)), "2000 of more than 2000 episodes listed")
+        // Counts are grouped for the region ("2,000"), as every count is.
+        XCTAssertEqual(size(10, FeedEntryTotal(count: 2_000, listsMore: true)), "10 of more than 2,000 episodes listed")
+        XCTAssertEqual(size(2_000, FeedEntryTotal(count: 2_000, listsMore: true)), "2,000 of more than 2,000 episodes listed")
         // Every entry listed, more listed than the feed lists now, or the
         // size not known yet.
         XCTAssertEqual(size(12, FeedEntryTotal(count: 12)), "12 episodes")
@@ -129,8 +130,7 @@ final class FeedUILibraryRowsTests: XCTestCase {
         XCTAssertEqual(size(12, nil), "12 episodes")
         XCTAssertEqual(size(1, nil, .article), "1 article")
         XCTAssertEqual(size(0, nil), "0 episodes")
-        XCTAssertEqual(FeedWording.listedNote, "listed")
-        XCTAssertEqual(FeedWording.moreThanNote, "more than")
+
 
         let counts = FeedItemCounts(listed: 10, total: FeedEntryTotal(count: 381), downloaded: 3, downloading: 1, new: 2, noun: .episode)
         XCTAssertEqual(FeedWording.sizePhrase(counts), "10 of 381 episodes listed")
@@ -576,7 +576,7 @@ final class FeedUILibraryRowsTests: XCTestCase {
         XCTAssertEqual(FeedWording.sectionTitle(.item, count: 3, total: FeedEntryTotal(count: 2)), "Items (3)")
         XCTAssertEqual(
             FeedWording.sectionTitle(.episode, count: 10, total: FeedEntryTotal(count: 2_000, listsMore: true)),
-            "Episodes (10 of more than 2000 listed)"
+            "Episodes (10 of more than 2,000 listed)"
         )
         XCTAssertEqual(FeedWording.countsPhrase(FeedItemCounts(listed: 2, unplayed: 1, noun: .article)), "2 articles, 1 unread")
         XCTAssertEqual(FeedWording.countsPhrase(FeedItemCounts(listed: 3, unplayed: 3, noun: .item)), "3 items, 3 unplayed")

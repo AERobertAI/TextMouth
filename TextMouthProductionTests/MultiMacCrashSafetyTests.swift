@@ -329,7 +329,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         let theirs = halfOf(try ConfigService.fileData(for: ConfigService.AppConfig()))
         let copies = try writeConflictCopies(of: file, holding: theirs)
 
-        let service = ConfigService(fileURL: file)
+        let service = makeConfigService(fileURL: file)
         service.config.wordsPerMinute = 333
         service.saveToDisk()
 
@@ -347,7 +347,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         let half = halfOf(try ConfigService.fileData(for: ConfigService.AppConfig()))
         try half.write(to: file)
 
-        let service = ConfigService(fileURL: file)
+        let service = makeConfigService(fileURL: file)
 
         XCTAssertEqual(service.loadedFile, .unreadable)
         XCTAssertEqual(try Data(contentsOf: file), half)
@@ -361,7 +361,7 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         let theirs = try ConfigService.fileData(for: ConfigService.AppConfig())
         try theirs.write(to: file)
         let writes = WriteCounter()
-        let service = ConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
+        let service = makeConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
             write: { data, url in
                 writes.count += 1
                 try data.write(to: url, options: .atomic)
@@ -436,6 +436,74 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         XCTAssertEqual(service.stats.totalListeningSeconds, 9_180)
         XCTAssertEqual(service.stats.bookListeningSeconds[book.uuidString], 180)
         XCTAssertEqual(try decodedStats(at: file).totalListeningSeconds, 9_180)
+    }
+
+    /// Statistics found only in the cloud are taken up the moment the library's
+    /// fetch brings the file (`fileMayHaveArrived()`), without waiting for a
+    /// save: nothing is written over the file meanwhile or by the hook, and
+    /// the listening credited meanwhile is added to what the file holds.
+    func testStatisticsThatArriveAreTakenUpByTheFetchWithoutASave() throws {
+        let file = try makeSandboxDirectory("StatsArrive").appendingPathComponent("reading_stats.json")
+        let theirs = try statsData(totalSeconds: 9_000)
+        try theirs.write(to: file)
+        installItemStatus(FakeCloudItemStatusProvider())
+        let reader = CloudFileReader()
+        let service = ReadingStatsService(fileURL: file, readFile: { try reader.read($0) })
+        addTeardownBlock { @MainActor in service.shutdown() }
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+        service.startSession(bookID: UUID(), at: start)
+        service.endSession(at: start.addingTimeInterval(120))
+        ReadingStatsService.waitForQueuedSaves()
+
+        service.fileMayHaveArrived()
+
+        XCTAssertTrue(service.statsAwaitFileInCloud, "the file is still in the cloud")
+        XCTAssertEqual(try Data(contentsOf: file), theirs)
+
+        reader.isInCloud = false
+        service.fileMayHaveArrived()
+
+        XCTAssertFalse(service.statsAwaitFileInCloud)
+        XCTAssertEqual(service.stats.totalListeningSeconds, 9_120)
+        XCTAssertEqual(try Data(contentsOf: file), theirs, "taking the file up wrote over it")
+    }
+
+    /// A settings file found only in the cloud is merged by the fetch's hook
+    /// once it arrives, without a restart: a setting changed here meanwhile
+    /// keeps its new value, every other one takes the file's, and until then
+    /// nothing is written over the file.
+    func testSettingsThatArriveAreMergedByTheFetchWithoutARestart() throws {
+        let file = try makeSandboxDirectory("ConfigArrive").appendingPathComponent("config.json")
+        var theirConfig = ConfigService.AppConfig()
+        theirConfig.pitchMultiplier = 1.5
+        let theirs = try ConfigService.fileData(for: theirConfig)
+        try theirs.write(to: file)
+        let inCloud = CloudFlag()
+        let service = makeConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
+            write: { data, url in try data.write(to: url, options: .atomic) },
+            openForEvents: { _ in -1 },
+            close: { _ in },
+            read: { url in
+                if inCloud.value { throw POSIXError(.EDEADLK) }
+                return try Data(contentsOf: url)
+            }
+        ))
+        // The very first change is made while the file is in the cloud, with
+        // no save attempted before it: loading the file recorded the
+        // settings then in use as what it held.
+        service.config.wordsPerMinute = 333
+        service.saveToDisk()
+        service.fileMayHaveArrived()
+        XCTAssertEqual(try Data(contentsOf: file), theirs, "the file in the cloud was written over")
+
+        inCloud.value = false
+        service.fileMayHaveArrived()
+
+        XCTAssertEqual(service.config.wordsPerMinute, 333, "the change made meanwhile was lost")
+        XCTAssertEqual(service.config.pitchMultiplier, 1.5, "the file's setting was not taken up")
+        let saved = try ConfigService.decode(Data(contentsOf: file))
+        XCTAssertEqual(saved.wordsPerMinute, 333)
+        XCTAssertEqual(saved.pitchMultiplier, 1.5)
     }
 
     /// Statistics cut short, as a write interrupted on another Mac leaves
@@ -690,7 +758,250 @@ final class MultiMacCrashSafetyTests: XCTestCase {
         XCTAssertEqual(model.library.books, [here, notHere])
     }
 
+    // MARK: - Small Files That Arrive Apart (Risk 5)
+
+    // A sync service can bring a library's small files down one at a time
+    // (risk 5 of LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md). In a cloud
+    // location a file not here beside the others is waited for, or stood in
+    // for, and never made afresh in its place; in a folder elsewhere it is
+    // what it always was.
+
+    /// The identity marker without library.json beside it, in a cloud
+    /// location, is waited for as a file only in the cloud is, not opened
+    /// as a library with no index; nothing is made. Elsewhere, or once the
+    /// listener has chosen to open without the index, it opens as before.
+    func testAnIdentityWithoutItsIndexInTheCloudIsWaitedFor() throws {
+        let root = try makeSandboxDirectory("IdentityWithoutIndex")
+        let identity = try LibraryIdentity.adopt(in: root).identity
+        let provider = FakeCloudItemStatusProvider()
+        provider.setLocation(.cloud(.googleDrive), of: root)
+        let check = DataDirectoryCheck(root: root, isDefaultLocation: false, expectedIdentity: identity.id, bookmark: nil)
+
+        let (outcome, pending) = check.runNamingPending(itemStatus: provider)
+
+        XCTAssertEqual(outcome, .unavailable(.notDownloaded(.googleDrive, folder: root.path)))
+        XCTAssertEqual(pending.map(\.lastPathComponent), ["library.json"])
+        XCTAssertEqual(DataDirectoryCheck.awaitedFile(among: pending, in: root), .index)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("library.json").path))
+        XCTAssertEqual(check.run(itemStatus: FakeCloudItemStatusProvider()), .available(identity, relocatedTo: nil),
+                       "a folder elsewhere opens without its index, as before")
+        var chosen = check
+        chosen.opensWithoutItsIndex = true
+        XCTAssertEqual(chosen.run(itemStatus: provider), .available(identity, relocatedTo: nil))
+    }
+
+    /// library.json without its identity marker, in a cloud location, is
+    /// waited for and never given a new identity, whether or not this Mac
+    /// knows the library's identity: a Mac given the folder knows none while
+    /// the file is still coming. A folder elsewhere opens it as before, and
+    /// so does the library once the listener chose to open it without the
+    /// file.
+    func testAnIndexWithoutItsIdentityInTheCloudIsWaitedFor() throws {
+        let root = try makeSandboxDirectory("IndexWithoutIdentity")
+        try Data("{\"books\":[]}".utf8).write(to: root.appendingPathComponent("library.json"))
+        let provider = FakeCloudItemStatusProvider()
+        provider.setLocation(.cloud(.iCloudDrive), of: root)
+        for expected in [UUID(), nil] {
+            let check = DataDirectoryCheck(root: root, isDefaultLocation: false, expectedIdentity: expected, bookmark: nil)
+
+            let (outcome, pending) = check.runNamingPending(itemStatus: provider)
+
+            XCTAssertEqual(outcome, .unavailable(.notDownloaded(.iCloudDrive, folder: root.path)), "expecting \(String(describing: expected))")
+            XCTAssertEqual(pending.map(\.lastPathComponent), ["library-identity.json"])
+            XCTAssertNil(try LibraryIdentity.read(in: root), "the library was given an identity")
+            XCTAssertEqual(check.run(itemStatus: FakeCloudItemStatusProvider()), .available(nil, relocatedTo: nil), "a folder elsewhere waited")
+        }
+        // The file awaited is the one to restore where this Mac knows the
+        // identity, and the one to give anew where it knows none.
+        let pending = [LibraryIdentity.markerURL(in: root)]
+        XCTAssertEqual(DataDirectoryCheck.awaitedFile(among: pending, in: root), .identity)
+        XCTAssertEqual(DataDirectoryCheck.awaitedFile(among: pending, in: root, expectingIdentity: false), .identityNotKnown)
+        // The listener's choice to open without the identity file lets it open.
+        var chosen = DataDirectoryCheck(root: root, isDefaultLocation: false, expectedIdentity: nil, bookmark: nil)
+        chosen.opensWithoutItsIdentity = true
+        XCTAssertEqual(chosen.run(itemStatus: provider), .available(nil, relocatedTo: nil))
+    }
+
+    /// Only a file missing beside the other is the one awaited: not an index
+    /// only in the cloud, nor a file missing with the other missing too, nor
+    /// more files than one.
+    func testOnlyAFileMissingBesideTheOtherIsAwaited() throws {
+        let root = try makeSandboxDirectory("AwaitedFile")
+        let index = root.appendingPathComponent("library.json")
+        let marker = LibraryIdentity.markerURL(in: root)
+
+        XCTAssertNil(DataDirectoryCheck.awaitedFile(among: [index], in: root), "neither file is here")
+        _ = try LibraryIdentity.adopt(in: root)
+        XCTAssertEqual(DataDirectoryCheck.awaitedFile(among: [index], in: root), .index)
+        XCTAssertNil(DataDirectoryCheck.awaitedFile(among: [index, marker], in: root), "two files pending")
+        try Data("{}".utf8).write(to: index)
+        XCTAssertNil(DataDirectoryCheck.awaitedFile(among: [index], in: root), "the index is here, only in the cloud")
+    }
+
+    /// In a cloud location, statistics not on this Mac at all may not have
+    /// arrived yet: fresh ones stand in, a look as the file may have come
+    /// keeps waiting and writes nothing, and once the other Mac's file is
+    /// here the next save adds this session's listening to it.
+    func testStatisticsNotHereYetInTheCloudAreTakenUpAndNeverWrittenOver() throws {
+        let folder = try makeSandboxDirectory("StatsNotHereYet")
+        let file = folder.appendingPathComponent("reading_stats.json")
+        let provider = FakeCloudItemStatusProvider()
+        provider.setLocation(.cloud(.googleDrive), of: folder)
+        installItemStatus(provider)
+        let service = ReadingStatsService(fileURL: file)
+        addTeardownBlock { @MainActor in service.shutdown() }
+
+        XCTAssertTrue(service.statsAwaitFileInCloud)
+        service.fileMayHaveArrived()
+        XCTAssertTrue(service.statsAwaitFileInCloud, "a look that found nothing ended the wait")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path), "the stand-ins were written in the file's place")
+
+        try statsData(totalSeconds: 9_000).write(to: file)
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+        service.startSession(bookID: UUID(), at: start)
+        service.endSession(at: start.addingTimeInterval(120))
+        ReadingStatsService.waitForQueuedSaves()
+
+        XCTAssertFalse(service.statsAwaitFileInCloud)
+        XCTAssertEqual(service.stats.totalListeningSeconds, 9_120)
+        XCTAssertEqual(try decodedStats(at: file).totalListeningSeconds, 9_120)
+    }
+
+    /// Statistics that never come, as in a library new to the cloud, are
+    /// saved once there is listening to keep.
+    func testStatisticsThatNeverComeAreSavedOnceThereIsListening() throws {
+        let folder = try makeSandboxDirectory("StatsNeverCome")
+        let file = folder.appendingPathComponent("reading_stats.json")
+        let provider = FakeCloudItemStatusProvider()
+        provider.setLocation(.cloud(.dropbox), of: folder)
+        installItemStatus(provider)
+        let service = ReadingStatsService(fileURL: file)
+        addTeardownBlock { @MainActor in service.shutdown() }
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+
+        service.startSession(bookID: UUID(), at: start)
+        service.endSession(at: start.addingTimeInterval(120))
+        ReadingStatsService.waitForQueuedSaves()
+
+        XCTAssertFalse(service.statsAwaitFileInCloud)
+        XCTAssertEqual(try decodedStats(at: file).totalListeningSeconds, 120)
+    }
+
+    /// One Mac, a folder elsewhere: statistics with no file start fresh,
+    /// waiting for nothing, and are saved as before.
+    func testStatisticsWithNoFileElsewhereStartFreshAsBefore() throws {
+        let file = try makeSandboxDirectory("StatsLocal").appendingPathComponent("reading_stats.json")
+        installItemStatus(FakeCloudItemStatusProvider())
+        let service = ReadingStatsService(fileURL: file)
+        addTeardownBlock { @MainActor in service.shutdown() }
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+
+        XCTAssertFalse(service.statsAwaitFileInCloud)
+        service.startSession(bookID: UUID(), at: start)
+        service.endSession(at: start.addingTimeInterval(60))
+        ReadingStatsService.waitForQueuedSaves()
+
+        XCTAssertEqual(try decodedStats(at: file).totalListeningSeconds, 60)
+    }
+
+    /// In a cloud location, a config.json not on this Mac at all is not
+    /// written from this Mac's settings by the launch's save; once it is
+    /// here, the library's fetch hook merges it, the other Mac's settings
+    /// standing, and nothing was written over its place meanwhile.
+    func testSettingsNotHereYetInTheCloudAreNotWrittenAtLaunch() throws {
+        let folder = try makeSandboxDirectory("ConfigNotHereYet")
+        let file = folder.appendingPathComponent("config.json")
+        let provider = FakeCloudItemStatusProvider()
+        provider.setLocation(.cloud(.googleDrive), of: folder)
+        installItemStatus(provider)
+        let service = makeConfigService(at: file)
+
+        service.saveToDisk(creatingAwaitedFile: false)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path), "the launch wrote this Mac's settings in the file's place")
+
+        var theirs = ConfigService.AppConfig()
+        theirs.wordsPerMinute = 222
+        let theirBytes = try ConfigService.fileData(for: theirs)
+        try theirBytes.write(to: file)
+        service.fileMayHaveArrived()
+
+        XCTAssertEqual(service.config.wordsPerMinute, 222, "the other Mac's settings did not stand")
+        XCTAssertEqual(try Data(contentsOf: file), theirBytes)
+    }
+
+    /// A setting changed while config.json is awaited is saved, making the
+    /// file, as substitutions.json is made once a rule changes.
+    func testASettingChangedWhileTheSettingsAreAwaitedIsSaved() throws {
+        let folder = try makeSandboxDirectory("ConfigChangedWhileAwaited")
+        let file = folder.appendingPathComponent("config.json")
+        let provider = FakeCloudItemStatusProvider()
+        provider.setLocation(.cloud(.googleDrive), of: folder)
+        installItemStatus(provider)
+        let service = makeConfigService(at: file)
+        service.saveToDisk(creatingAwaitedFile: false)
+
+        service.config.wordsPerMinute = 300
+        service.saveToDisk()
+
+        XCTAssertEqual(try ConfigService.decode(Data(contentsOf: file)).wordsPerMinute, 300)
+    }
+
+    /// A reader opening a book, a window restored at launch included, notes
+    /// it as the last book opened, but never makes a config.json that has
+    /// not arrived in a cloud location: the guard lasts past the first
+    /// book. A setting changed afterwards, which a save merged with it, does
+    /// write the file.
+    func testOpeningABookNeverMakesTheSettingsFileThatHasNotArrived() async throws {
+        let folder = try makeSandboxDirectory("ConfigOpenBook")
+        let file = folder.appendingPathComponent("config.json")
+        let provider = FakeCloudItemStatusProvider()
+        provider.setLocation(.cloud(.googleDrive), of: folder)
+        installItemStatus(provider)
+        let service = makeConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
+            write: { data, url in try data.write(to: url, options: .atomic) },
+            openForEvents: { _ in -1 },
+            close: { _ in }
+        ), saveDelay: .milliseconds(20))
+        service.saveToDisk(creatingAwaitedFile: false)
+        let model = LibraryViewModel(initializeServices: false)
+
+        model.registerOpenBook(UUID(), config: service)
+        // Well past the save's delay.
+        try await Task.sleep(for: .milliseconds(400))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: file.path), "opening a book wrote this Mac's settings in the file's place")
+
+        // A changed setting's save, merged with the open's, makes the file.
+        model.registerOpenBook(UUID(), config: service)
+        service.config.wordsPerMinute = 310
+        service.scheduleSave()
+        try await Task.sleep(for: .milliseconds(400))
+        XCTAssertEqual(try ConfigService.decode(Data(contentsOf: file)).wordsPerMinute, 310, "a changed setting was not written")
+    }
+
+    /// One Mac, a folder elsewhere: the launch's save writes a missing
+    /// config.json from the settings, as before.
+    func testSettingsWithNoFileElsewhereAreWrittenAtLaunchAsBefore() throws {
+        let file = try makeSandboxDirectory("ConfigLocal").appendingPathComponent("config.json")
+        installItemStatus(FakeCloudItemStatusProvider())
+        let service = makeConfigService(at: file)
+        service.config.wordsPerMinute = 260
+
+        service.saveToDisk(creatingAwaitedFile: false)
+
+        XCTAssertEqual(try ConfigService.decode(Data(contentsOf: file)).wordsPerMinute, 260)
+    }
+
     // MARK: - Fixtures
+
+    /// A settings service for `file`, writing as the app does and watching
+    /// nothing.
+    private func makeConfigService(at file: URL) -> ConfigService {
+        makeConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
+            write: { data, url in try data.write(to: url, options: .atomic) },
+            openForEvents: { _ in -1 },
+            close: { _ in }
+        ))
+    }
 
     /// A file's state as a sync service reports a file only in the cloud.
     private let onlyInTheCloud = CloudItemStatus(
@@ -830,6 +1141,13 @@ final class MultiMacCrashSafetyTests: XCTestCase {
             TextSubstitutionService.shared.loadRules()
         }
     }
+}
+
+/// A flag a test's file operations read, set from the test.
+@MainActor
+private final class CloudFlag {
+    /// Whether the file is only in the cloud.
+    var value = true
 }
 
 /// Counts the writes a test's file operations make.

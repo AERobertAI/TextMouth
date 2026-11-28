@@ -263,7 +263,7 @@ final class ShortcutsSettingsTabTests: XCTestCase {
     func testTheLetterNavigationNoteIsPinned() {
         XCTAssertEqual(
             ShortcutsSettingsWording.letterNavigationNote,
-            "In Library windows, a letter pressed alone moves to the first book or folder whose name starts with it, "
+            "In Library windows, a letter alone moves to the first book or folder starting with it, "
                 + "so a shortcut that is a letter alone, such as W, works only in other windows."
         )
     }
@@ -285,8 +285,8 @@ final class ShortcutsSettingsTabTests: XCTestCase {
         XCTAssertEqual(ShortcutsSettingsWording.doublePressTimeLabel, "Double press time")
         XCTAssertEqual(
             ShortcutsSettingsWording.doublePressTimeHint,
-            "How soon a second press must follow the first to make a double press. "
-                + "A key with a different action for each waits this long before its single press acts."
+            "How soon a second press must follow the first. "
+                + "A key with different single and double press actions waits this long before its single press acts."
         )
     }
 
@@ -477,7 +477,7 @@ final class ShortcutsSettingsTabTests: XCTestCase {
         XCTAssertEqual(ShortcutsSettingsWording.tryDoublePressTitle, "Try a Double Press")
         XCTAssertEqual(
             ShortcutsSettingsWording.tryDoublePressHint,
-            "For five seconds, the next two presses of any key are no shortcuts, and TextMouth says whether they make a double press."
+            "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press."
         )
         XCTAssertEqual(ShortcutsSettingsWording.tryDoublePressPrompt, "Press a key twice.")
         let said: [(DoublePressTrial.Outcome, String)] = [
@@ -488,7 +488,7 @@ final class ShortcutsSettingsTabTests: XCTestCase {
             (.tooFarApart(1.94), "Two presses, 1.9 seconds apart. Set the time above 1.9 seconds to count them as one."),
             (.tooFarApart(1.96), "Two presses, 2 seconds apart. The double press time goes up to 2 seconds."),
             (.tooFarApart(3.42), "Two presses, 3.4 seconds apart. The double press time goes up to 2 seconds."),
-            (.differentKeys, "Two different keys. A double press is one key pressed twice."),
+            (.differentKeys, "Two different keys, not a double press."),
             (.noSecondPress, "No key was pressed twice."),
         ]
         for (outcome, words) in said {
@@ -605,5 +605,157 @@ final class RecorderHarness {
     /// Fires every timer started and not cancelled.
     func fireTimers() {
         timers.forEach { $0.fire() }
+    }
+}
+
+// MARK: - The Shortcuts and Menus in the String Catalog (FR34)
+
+/// The keyboard shortcuts' and menus' words in the String Catalog: an action's
+/// raw value stays the stored id that config.json and the record of edits
+/// keep, so a shortcut a listener saved loads in every language, while the
+/// name every screen, menu, and VoiceOver shows is the localized `title`.
+/// The tests run in English, where each localized text equals the English it
+/// replaced, so they pin that English too.
+@MainActor
+final class ShortcutLocalizationTests: XCTestCase {
+    /// The key a saved shortcut holds in these tests.
+    private let shiftR = KeyBinding(key: "r", shift: true)
+
+    /// A shortcut saved under each action's stored name (its raw value) still
+    /// loads, and config.json's names still name each action: nothing of the
+    /// stored form changed when the titles became localized.
+    func testASavedShortcutStillLoadsUnderEveryRawValue() throws {
+        var saved: [String: [KeyBinding]] = [:]
+        for action in ShortcutAction.allCases {
+            saved[action.rawValue] = [shiftR]
+        }
+        let reading = ShortcutEdits.reading(try JSONEncoder().encode(saved))
+        XCTAssertEqual(reading.skipped, [])
+        XCTAssertEqual(Set(reading.edits.editedActions), Set(ShortcutAction.allCases))
+        for action in ShortcutAction.allCases {
+            XCTAssertEqual(ShortcutAction(rawValue: action.rawValue), action)
+            XCTAssertEqual(ShortcutAction.named(action.rawValue), action, action.rawValue)
+            XCTAssertEqual(reading.edits.keys(of: action), [shiftR], action.rawValue)
+        }
+        // A name an older release wrote is still read.
+        XCTAssertEqual(ShortcutAction.exactlyNamed("Add Bookmark"), .addBookmark)
+    }
+
+    /// In English an action's `title` is its raw value without the name of
+    /// the group the audio editor's and the Record window's actions begin
+    /// with, and its `fullTitle` is the raw value: the words every screen,
+    /// menu, and announcement said before the titles were localized.
+    func testEnglishTitlesAreTheRawValuesAsTheyWere() {
+        for action in ShortcutAction.allCases {
+            var expected = action.rawValue
+            for group in ["Audio Editor: ", "New Recording: "] where expected.hasPrefix(group) {
+                expected = String(expected.dropFirst(group.count))
+            }
+            XCTAssertEqual(action.title, expected, action.rawValue)
+            XCTAssertEqual(action.fullTitle, action.rawValue, action.rawValue)
+        }
+        XCTAssertEqual(ShortcutAction.editorStop.title, "Stop")
+        XCTAssertEqual(ShortcutAction.editorStop.fullTitle, "Audio Editor: Stop")
+        XCTAssertEqual(ShortcutAction.recordingStop.fullTitle, "New Recording: Stop")
+    }
+
+    /// Every group's heading is its English id in English, so Settings lists
+    /// the groups as it did, and the id itself is what `category` returns.
+    func testGroupHeadingsAreTheirEnglishIDsInEnglish() {
+        for action in ShortcutAction.allCases {
+            XCTAssertEqual(ShortcutAction.title(ofCategory: action.category), action.category)
+        }
+        XCTAssertEqual(ShortcutAction.title(ofCategory: "Not a group"), "Not a group")
+    }
+
+    /// A scope is written into config.json in English whatever the language,
+    /// and read back by that name, by the name Settings shows, and by its
+    /// short name.
+    func testAScopeIsWrittenToConfigInEnglishAndReadBack() {
+        let names: [ShortcutScope: String] = [
+            .app: "Every window", .library: "Library windows", .reader: "Reader windows",
+            .audioEditor: "The audio editor", .recording: "The recording window",
+        ]
+        for scope in ShortcutScope.allCases {
+            XCTAssertEqual(scope.configName, names[scope], "\(scope)")
+            XCTAssertEqual(scope.title, scope.configName, "In English the pop-up says what config.json writes")
+            XCTAssertEqual(ShortcutScope.named(scope.configName), scope)
+            XCTAssertEqual(ShortcutScope.named(scope.title), scope)
+            XCTAssertEqual(ShortcutScope.named(scope.rawValue), scope)
+            XCTAssertEqual(ShortcutListing.edited([shiftR], worksIn: scope), .object(keys: ["shift+r"], worksIn: scope.configName))
+        }
+        XCTAssertEqual(ShortcutScope.library.inSentence, "Library windows")
+        XCTAssertEqual(ShortcutScope.reader.inSentence, "reader windows")
+        XCTAssertEqual(ShortcutScope.reader.configInSentence, "reader windows")
+        XCTAssertEqual(ShortcutListing.followingDefaults([shiftR], worksIn: .reader), .text("default in reader windows: shift+r"))
+    }
+
+    /// A double press is "twice" in config.json whatever the language, and
+    /// the words of the screen and VoiceOver say it in the language's own.
+    func testADoublePressIsTwiceInConfigAndInEnglishWords() {
+        let double = KeyBinding(key: "w", isDoublePress: true)
+        XCTAssertEqual(double.configText, "w twice")
+        XCTAssertEqual(double.displayString, "W twice")
+        XCTAssertEqual(double.accessibleDisplayString, "W twice")
+        XCTAssertEqual(KeyBinding(configText: "w twice"), double)
+        XCTAssertEqual(KeyBinding(key: "i", command: true, shift: true, isDoublePress: true).accessibleDisplayString, "Shift + Command + I twice")
+    }
+
+    /// Every key's name is its English id in English, and the keys a listing
+    /// shows are the same names as before; "No shortcut" and the "or" of two
+    /// keys are the words they were.
+    func testKeyNamesAreTheEnglishWordsInEnglish() {
+        for name in KeyBinding.keyNames {
+            XCTAssertEqual(name.words, name.englishWords, name.configName)
+            XCTAssertEqual(KeyBinding.words(forKey: name.key), name.englishWords, name.configName)
+            XCTAssertEqual(name.shown, name.symbol ?? name.englishWords, name.configName)
+        }
+        XCTAssertEqual(KeyBinding.accessibleDisplayString(for: []), "No shortcut")
+        XCTAssertEqual(KeyBinding.accessibleDisplayString(for: [KeyBinding(key: "space")]), "Space")
+        XCTAssertEqual(KeyBinding.accessibleDisplayString(for: [KeyBinding(key: "space"), KeyBinding(key: "k")]), "Space or K")
+        XCTAssertEqual(KeyBinding.accessibleDisplayString(for: [KeyBinding(key: "a"), KeyBinding(key: "b"), KeyBinding(key: "c")]), "A or B or C")
+        XCTAssertEqual(ShortcutAction.noneName, "None")
+    }
+
+    /// A refusal says the same in English as it did, and the log and
+    /// config.json's repair log say it in English always (`logReason`).
+    func testARefusalSaysTheSameInEnglishAndTheLogIsEnglish() {
+        let commandQ = KeyBinding(key: "q", command: true)
+        let notOnePress = ShortcutRefusal.notOnePressWithCommandOrControl(shiftR)
+        let secondKey = ShortcutRefusal.secondKeyEquivalent(shiftR)
+        let editsText = ShortcutRefusal.editsText(shiftR)
+        let systemCommand = ShortcutRefusal.systemCommand(commandQ, command: "Quit TextMouth")
+        XCTAssertEqual(notOnePress.reason, notOnePress.logReason)
+        XCTAssertEqual(secondKey.reason, secondKey.logReason)
+        // The listener's words were cut shorter; the log keeps its English.
+        XCTAssertEqual(editsText.reason, "text fields use it for editing")
+        XCTAssertEqual(editsText.logReason, "a text field edits with it, and a menu command's shortcut would take it from the field")
+        XCTAssertEqual(systemCommand.reason, "Quit TextMouth uses it in the menus")
+        XCTAssertEqual(systemCommand.logReason, "Quit TextMouth has it in the menus, and no shortcut may take it")
+        // Every system command's localized name is its English id in English.
+        for command in Set(KeyBinding.systemCommands.values) {
+            XCTAssertEqual(KeyBinding.localizedSystemCommand(command), command)
+        }
+    }
+
+    /// Each menu's title is one `MenuVisibilityManager` hides it by: the
+    /// reader's four and the Library's one, in English exactly the titles, and
+    /// the Edit menu's Find submenu is neither's, so it is never hidden.
+    func testEachMenuTitleIsAKeyTheVisibilityManagerHidesBy() {
+        let reader = MenuVisibilityManager.titles(for: MenuVisibilityManager.readerMenuWording, languages: ["en"])
+        let library = MenuVisibilityManager.titles(for: MenuVisibilityManager.libraryMenuWording, languages: ["en"])
+        for title in [MenuWording.playback, MenuWording.navigate, MenuWording.bookmarks, MenuWording.book] {
+            XCTAssertTrue(MenuVisibilityManager.readerMenuTitles.contains(title), title)
+            XCTAssertTrue(reader.contains(title), title)
+            XCTAssertFalse(library.contains(title), title)
+        }
+        XCTAssertTrue(MenuVisibilityManager.libraryMenuTitles.contains(MenuWording.library))
+        XCTAssertTrue(library.contains(MenuWording.library))
+        XCTAssertFalse(reader.contains(MenuWording.library))
+        XCTAssertFalse(MenuVisibilityManager.allContextMenuTitles.contains(MenuWording.find))
+        XCTAssertEqual(reader, ["Playback", "Navigate", "Bookmarks", "Book"])
+        XCTAssertEqual(library, ["Library"])
+        XCTAssertEqual(MenuWording.moveToFolder, "Move to Folder...")
+        XCTAssertEqual(SceneWording.bookReaderTitle, "Book Reader")
     }
 }

@@ -1,90 +1,232 @@
 # Testing TextMouth
+<!-- id: testing-textmouth; keys: unit tests, test suite, how to test; src: -->
 
 Part of [TextMouth's documentation](../../README.md).
 
 ## The hosted test suite
+<!-- id: hosted-test-suite; keys: test host, hosted tests, unit tests, test bundle; src: project.yml, TextMouthProductionTests/Info.plist -->
 
-The tests are one XCTest bundle, TextMouthProductionTests, hosted by the app itself: Xcode launches TextMouth.app and runs the tests inside it, so they exercise the real code through `@testable import TextMouth`. New tests belong in TextMouthProductionTests/. The files under TextMouthTests/Sources/Tests are older scenario groups that project.yml lists one by one.
+The tests are one XCTest bundle, TextMouthProductionTests, hosted by the app itself: Xcode launches TextMouth.app and runs the tests inside it, so they exercise the real code through `@testable import TextMouth`.
+New tests belong in TextMouthProductionTests/.
+The files under TextMouthTests/Sources/Tests are older scenario groups that project.yml lists one by one.
 
-A process hosting tests never touches your data. When the XCTestConfigurationFilePath environment variable is set, as XCTest sets it, TextMouth keeps its data directory, this Mac's own folders (its Logs folder, its folders in Application Support, and its caches), and its preferences in a sandbox folder named TextMouthTests- followed by the process number, in the temporary directory. In that process, VoiceOver announcements made through the app's announcer are recorded instead of spoken, macOS is never asked for the microphone unless you run the microphone test (below), and a test that leaves a reader window open fails. That process also takes no part in the system's media session: it never registers for the commands of headphones and media keys, nor tells the system it is playing, so a suite running while you listen can't take those commands from the TextMouth you are listening to. Nor does it reach the network: its feed connections refuse every request, the feed tests answer theirs from a stub server of their own, and the feed engine never refreshes, downloads, or deletes anything by itself there. Nor does that process post a notification, or ask permission for one.
+### Hosted tests touch no user data
+<!-- id: hosted-tests-touch-no-user; keys: isHostedTest, test isolation, no user data, TextMouthRuntime, notifications, media keys; src: TextMouth/App/TextMouthRuntime.swift, TextMouth/Services/VoiceOverAnnouncer.swift, TextMouth/Services/AudioInputPermission.swift, TextMouth/Services/NowPlayingService.swift, TextMouth/Services/Feeds/FeedNetwork.swift, TextMouth/Services/Feeds/FeedCenter.swift, TextMouth/Views/Feeds/FeedArrivals.swift, TextMouthProductionTests/HostedTestIsolationTests.swift, TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/HostedTestObservers.swift, TextMouth/Platform/macOS/Services/FolderPanelSettings.swift -->
 
-Each run deletes its sandbox as it finishes, and, as it starts, deletes in the background the sandboxes that earlier runs left behind, such as one that crashed. The system reuses process numbers, so a sandbox counts as left behind once no process with its number is running, or the one running started more than an hour after the sandbox was made. With TEST_RUNNER_TEXTMOUTH_KEEP_SANDBOX=1, a run keeps its sandbox for you to look inside, with a KEPT-SANDBOX.txt file in it that keeps later sweeps away; a later run given the same process number moves it aside, adding -kept- and a short suffix to its name. Delete a kept sandbox when you are done with it.
+A process hosting tests never touches your data.
+When the XCTestConfigurationFilePath environment variable is set, as XCTest sets it, TextMouth keeps these in a sandbox folder named TextMouthTests- followed by the process number, in the temporary directory:
 
-- `make test` runs the whole suite. It runs `swift run` in TextMouthTests/, whose small runner calls:
+- its data directory,
+- this Mac's own folders (its Logs folder, its folders in Application Support, and its caches), and
+- its preferences.
+
+In that process, VoiceOver announcements made through the app's announcer are recorded instead of spoken, macOS is never asked for the microphone unless you run the microphone test (below), and a test that leaves a reader window open fails.
+That process also takes no part in the system's media session: it never registers for the commands of headphones and media keys, nor tells the system it is playing, so a suite running while you listen can't take those commands from the TextMouth you are listening to.
+Nor does it reach the network: its feed connections refuse every request, the feed tests answer theirs from a stub server of their own, and the feed engine never refreshes, downloads, or deletes anything by itself there.
+Nor does that process post a notification, or ask permission for one.
+A test reads a folder panel's settings as a value (`FolderPanelSettings`) and never builds a real `NSOpenPanel`: in a sandboxed host that starts the open-and-save panel service, which can take the person's keyboard focus.
+
+### Test sandboxes
+<!-- id: test-sandboxes; keys: temporary directory, sandbox sweep, abandonedSandboxes, TEXTMOUTH_KEEP_SANDBOX, leftover sandboxes; src: TextMouth/App/TextMouthRuntime.swift, TextMouthProductionTests/HostedTestIsolationTests.swift, TextMouthProductionTests/HostedTestObservers.swift -->
+
+Each run deletes its sandbox as it finishes, and, as it starts, deletes in the background the sandboxes that earlier runs left behind, such as one that crashed.
+The system reuses process numbers, so a sandbox counts as left behind once no process with its number is running, or the one running started more than an hour after the sandbox was made.
+With TEST_RUNNER_TEXTMOUTH_KEEP_SANDBOX=1, a run keeps its sandbox for you to look inside, with a KEPT-SANDBOX.txt file in it that keeps later sweeps away; a later run given the same process number moves it aside, adding -kept- and a short suffix to its name.
+Delete a kept sandbox when you are done with it.
+
+### Running the suite
+<!-- id: running-suite; keys: ProductionTestRunner, test runner, Package.swift, DerivedData, parallel testing, one test class; src: Makefile, project.yml, TextMouthTests/Package.swift, TextMouthTests/ProductionTestRunner/main.swift, Scripts/test/run-area.py, Scripts/test/areas.conf -->
+
+- `make test` runs the whole suite.
+  It runs `swift run` in TextMouthTests/, whose small runner calls:
   - With `TEST_DERIVED_DATA=<folder>`, as in `make test TEST_DERIVED_DATA=build/DerivedData`, the runner builds in that folder, counted from the repository root, instead of Xcode's default DerivedData folder.
   - `xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO`
-- Every target compiles in the Swift 6 language mode: `project.yml` sets `SWIFT_VERSION` to `6.0` for the whole project, beside `SWIFT_STRICT_CONCURRENCY` set to `complete`, and TextMouthTests/Package.swift builds the test runner in the same mode, so Xcode, `make build`, `make test`, and `make check` all report the same diagnostics, and a data race the compiler can find is an error. The mode also checks at run time that main-actor code called from Objective-C, such as a closure handed to a framework callback, runs on the main thread, and stops the app if it does not. The project's coding agents run the suite without parallel testing and with a build folder of their own; the `SWIFT_STRICT_CONCURRENCY=complete` in their command is redundant, and harmless:
+- Every target compiles in the Swift 6 language mode: `project.yml` sets `SWIFT_VERSION` to `6.0` for the whole project, beside `SWIFT_STRICT_CONCURRENCY` set to `complete`, and TextMouthTests/Package.swift builds the test runner in the same mode.
+  So Xcode, `make build`, `make test`, and `make check` all report the same diagnostics, and a data race the compiler can find is an error.
+  The mode also checks at run time that main-actor code called from Objective-C, such as a closure handed to a framework callback, runs on the main thread, and stops the app if it does not.
+  The project's coding agents run the suite without parallel testing and with a build folder of their own; the `SWIFT_STRICT_CONCURRENCY=complete` in their command is redundant, and harmless:
   - `xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO SWIFT_STRICT_CONCURRENCY=complete -derivedDataPath /tmp/TextMouth-DerivedData`
-- To run one test class, add `-only-testing:TextMouthProductionTests/` followed by the class name, such as `-only-testing:TextMouthProductionTests/CountWordingTests`. To run several classes, or whole areas, in one build, use `Scripts/test/run-area.py` (see Reusable test tools, below).
-- A full run compiles the app and runs every test; Reusable test tools, below, gives how long that takes. Some tests skip in an ordinary run:
-  - Opt-in tests that need a copied book or a library to profile, set up as TextMouthTests/README.md describes. That file also explains the playback profiling script, Scripts/profile-production-playback.sh.
+- To run one test class, add `-only-testing:TextMouthProductionTests/` followed by the class name, such as `-only-testing:TextMouthProductionTests/CountWordingTests`.
+  To run several classes, or whole areas, in one build, use `Scripts/test/run-area.py` (see [Reusable test tools](testing-tools.md)).
+
+### Tests that skip in an ordinary run
+<!-- id: tests-that-skip-ordinary-run; keys: XCTSkip, skipped tests, accessibility permission, SwiftUI elements, profiling, opt-in tests; src: TextMouthTests/README.md, Scripts/profile-production-playback.sh, TextMouthProductionTests/ProductionPlaybackProfilingTests.swift, TextMouthProductionTests/EPUBHeadingRecoveryTests.swift, TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/BookmarkKeyboardAccessTests.swift, TextMouthProductionTests/RecordingEndToEndTests.swift, TextMouthProductionTests/RecordingPermissionTests.swift, TextMouth/Services/AudioInputPermission.swift -->
+
+- A full run compiles the app and runs every test; [Reusable test tools](testing-tools.md) gives how long that takes.
+  Some tests skip in an ordinary run:
+  - Opt-in tests that need a copied book or a library to profile, set up as TextMouthTests/README.md describes.
+    That file also explains the playback profiling script, Scripts/profile-production-playback.sh.
   - Tests that read the accessibility structure SwiftUI builds, which it builds only while an assistive client such as VoiceOver is running.
-  - Tests that read, through accessibility, the AppKit controls SwiftUI draws in a hosted window, such as steppers, sliders, and pop-up buttons, in a session that exposes none of them. Each run looks once, at a stepper of its own, and where it finds none exposed, every such test skips with one message, "This session exposes no accessibility elements for the AppKit controls in a hosted window", and the test log has one HOSTED_ACCESSIBILITY_UNAVAILABLE line. Where the controls are exposed, as on the development Mac, a control missing from a view, or left without its label, still fails its test.
-  - 33 hosted VoiceOver tests, in 29 classes, which read the accessibility elements of SwiftUI's own texts and buttons. The test host is built with CODE_SIGNING_ALLOWED=NO and lacks Accessibility permission (AXIsProcessTrusted() is false), and SwiftUI exposes those elements only to an accessibility client, never to a test reading them in the same process. Each of the 33 skips at once with one message, "SwiftUI exposes the accessibility elements of its own texts and buttons only to an accessibility client, never to a test reading them in-process", where it once looked for the elements and then skipped, and the log has SWIFTUI_ELEMENTS_UNEXPOSED lines; the 29 classes went from 164 to 68 seconds. Running them would take a test host signed with a developer identity and granted Accessibility once in System Settings, or a trusted helper that reads the window as a client (a follow-up of the tests team of October 30, 2026).
+  - Tests that read, through accessibility, the AppKit controls SwiftUI draws in a hosted window, such as steppers, sliders, and pop-up buttons, in a session that exposes none of them.
+    Each run looks once, at a stepper of its own, and where it finds none exposed, every such test skips with one message, "This session exposes no accessibility elements for the AppKit controls in a hosted window", and the test log has one HOSTED_ACCESSIBILITY_UNAVAILABLE line.
+    Where the controls are exposed, as on the development Mac, a control missing from a view, or left without its label, still fails its test.
+  - 33 hosted VoiceOver tests, in 29 classes, which read the accessibility elements of SwiftUI's own texts and buttons.
+    The test host is built with CODE_SIGNING_ALLOWED=NO and lacks Accessibility permission (AXIsProcessTrusted() is false), and SwiftUI exposes those elements only to an accessibility client, never to a test reading them in the same process.
+    Each of the 33 skips at once with one message, "SwiftUI exposes the accessibility elements of its own texts and buttons only to an accessibility client, never to a test reading them in-process", and the log has SWIFTUI_ELEMENTS_UNEXPOSED lines.
+    Running them would take a test host signed with a developer identity and granted Accessibility once in System Settings, or a trusted helper that reads the window as a client.
   - The bookmark keyboard tests, which need Keyboard navigation turned on in System Settings.
-  - The microphone test, which records about three seconds, with a pause, from this Mac's default microphone, and runs only with TEST_RUNNER_TEXTMOUTH_MICROPHONE=1; its first run may show macOS's microphone prompt. Every other recording test uses a stand-in microphone and an answer of its own to the permission question, so the suite never shows the prompt.
-  - The real-drive tests, which run only when you name folders on cloud drives for them (see Testing on real cloud drives).
-  - The transcription tests that use this Mac's own speech recognizer (TranscriptionFixtureTests), which run only on macOS 26 or later, on a Mac that can run the recognizer, with the English speech model installed, and in a checkout whose TestData holds the two untracked DAISY audio ZIPs; each transcribes one short file. With TEST_RUNNER_TEXTMOUTH_TRANSCRIPTION_LONG=1 they also transcribe both books whole, about a minute and a half more. No test downloads a speech model.
-  - The measurement behind TRANSCRIPT-CLEANUP-RESEARCH-2026-10-04.md (TranscriptAccuracyMeasurementTests), which runs only when `TEST_RUNNER_TEXTMOUTH_TRANSCRIPT_MEASUREMENT` names a folder, on a Mac that can transcribe, with the English speech model installed, and takes minutes. It measures the recognizer on the two DAISY audio ZIPs a checkout keeps, against their books' text, and on each audio file in the folder's audio folder, named as in `audio/<text>--<voice>.m4a` (or .wav, .caf, or .aiff), against `texts/<text>.txt`, the text it was made from. It keeps each transcript in the folder's transcripts folder, so a second run doesn't transcribe again, and writes measurement.md, the document's tables, and differences.json, every difference with its confidences and context. `TEST_RUNNER_TEXTMOUTH_TRANSCRIPT_MEASUREMENT_LOCALE=en-US,en-GB` measures in both Englishes. It downloads and plays nothing.
-  - The two tests that need an installed ffmpeg, which TextMouth looks for in Homebrew's and MacPorts' folders and along PATH: one that writes MP3 through it, the route MP3 takes only should the LAME built in fail to start, and one that runs every premade filter preset through it and through TextMouth's own filters and compares them. They skip on a Mac without ffmpeg.
-  - The opt-in benchmarks of the performance work (below).
-  - The sweeps of the reusable test tools (VoiceSweepTests, ImportFuzzTests, StorageDrillTests, and CorpusReportTests), which run only from their scripts (see Reusable test tools, below).
-  - The performance baselines tests, while the Mac is busy, and on a Mac model or in a build configuration other than their baselines' (see The performance baselines).
-- GitHub's macOS runner, where `make check` runs for every push to main and every pull request (see [The make check gate](building.md#the-make-check-gate)), skips more tests than the development Mac. There SwiftUI builds no accessibility structure, a hosted window exposes none of its AppKit controls to accessibility, and keyboard navigation is off, so the three kinds of test above that read accessibility or need keyboard navigation skip rather than fail, as do the opt-in tests and benchmarks, and the performance baselines tests, whose baselines belong to the development Mac's model.
-- The benchmarks of the performance work of October 3, 2026, time what each change made faster and print their figures in the test log. They are opt-in, since they take minutes or need a run of their own, and each group runs when its variable is 1; xcodebuild hands a variable whose name starts with TEST_RUNNER_ to the test host without that prefix:
-  - TEST_RUNNER_TEXTMOUTH_LARGE_BENCHMARKS: the speech-preparation benchmarks at the sizes too slow to time in every run, and four that time the system synthesizer, muted, and the first speech engine. Three of those four mean something only when each runs alone, named with -only-testing, in a process of its own.
-  - TEST_RUNNER_TEXTMOUTH_VIEW_BENCHMARKS: ViewsAndWindowsBenchmarks, which measure what a change of the library costs the list, what a playing reader costs its sheets, what a closed reader still holds, and how many test sandboxes the temporary folder holds, and DuplicateFinderTests.testMeasureWhatAnAuthorScansResultsCost, which measures what Find Duplicate Books' results cost to show, every group at once and the first page.
-  - TEST_RUNNER_TEXTMOUTH_BENCHMARKS: TextPipelineBenchmarkTests, which time the text pipeline's old and new code side by side, best in a Release build, as in `xcodebuild test -configuration Release ENABLE_TESTABILITY=YES -only-testing:TextMouthProductionTests/TextPipelineBenchmarkTests` with the rest of the usual arguments.
-  - TEST_RUNNER_TEXTMOUTH_RENDER_BENCHMARK: what rendering a chapter's speech costs in memory and main-thread time. It takes about half a minute, and nothing is heard.
+  - The microphone test, which records about three seconds, with a pause, from this Mac's default microphone, and runs only with TEST_RUNNER_TEXTMOUTH_MICROPHONE=1; its first run may show macOS's microphone prompt.
+    Every other recording test uses a stand-in microphone and an answer of its own to the permission question, so the suite never shows the prompt.
+
+### More tests that skip in an ordinary run
+<!-- id: more-tests-that-skip-ordinary; keys: XCTSkip, opt-in tests, speech recognition, LAME, sweeps, TestMachine; src: TextMouthProductionTests/TranscriptionFixtureTests.swift, TextMouthProductionTests/TranscriptAccuracyMeasurementTests.swift, TextMouthProductionTests/LibraryTypeSelectProbeTests.swift, TextMouthProductionTests/LibraryTypeSelectBehaviorTests.swift, TextMouthProductionTests/LibraryTitleTypingTests.swift, TextMouthProductionTests/TitleTypingTests.swift, TextMouthProductionTests/MP3EncoderTests.swift, TextMouthProductionTests/AudioFilterTests.swift, TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/VoiceSweepTests.swift, TextMouthProductionTests/ImportFuzzTests.swift, TextMouthProductionTests/StorageDrillTests.swift, TextMouthProductionTests/CorpusReportTests.swift, Scripts/agents/run-on-runner.py, Scripts/agents/github_run.py, Scripts/test/voice-sweep.sh, Scripts/test/import-fuzz.sh, Scripts/test/storage-drill.sh, Scripts/test/corpus-report.sh -->
+
+- The real-drive tests, which run only when you name folders on cloud drives for them (see Testing on real cloud drives).
+- The transcription tests that use this Mac's own speech recognizer (TranscriptionFixtureTests), which run only on macOS 26 or later, on a Mac that can run the recognizer, with the English speech model installed, and in a checkout whose TestData holds the two untracked DAISY audio ZIPs.
+  Each transcribes one short file.
+  With TEST_RUNNER_TEXTMOUTH_TRANSCRIPTION_LONG=1 they also transcribe both books whole, about a minute and a half more.
+  No test downloads a speech model.
+- The measurement behind research/TRANSCRIPT-CLEANUP-RESEARCH-2026-10-04.md (TranscriptAccuracyMeasurementTests), which runs only when `TEST_RUNNER_TEXTMOUTH_TRANSCRIPT_MEASUREMENT` names a folder, on a Mac that can transcribe, with the English speech model installed, and takes minutes.
+  It measures the recognizer on the two DAISY audio ZIPs a checkout keeps, against their books' text, and on each audio file in the folder's audio folder, named as in `audio/<text>--<voice>.m4a` (or .wav, .caf, or .aiff), against `texts/<text>.txt`, the text it was made from.
+  It keeps each transcript in the folder's transcripts folder, so a second run doesn't transcribe again, and writes measurement.md, the document's tables, and differences.json, every difference with its confidences and context.
+  `TEST_RUNNER_TEXTMOUTH_TRANSCRIPT_MEASUREMENT_LOCALE=en-US,en-GB` measures in both Englishes.
+  It downloads and plays nothing.
+- The two tests that need an installed ffmpeg, which TextMouth looks for in Homebrew's and MacPorts' folders and along PATH, skip on a Mac without it, as they do on GitHub's runners, which have none:
+  - one that writes MP3 through it, the route MP3 takes only should the LAME built in fail to start;
+  - and one that runs every premade filter preset through it and through TextMouth's own filters and compares them.
+  Only a run on a Mac with ffmpeg proves them, so the full Mac suite at a merge is their gate.
+  The import's tests need none, since the app carries its own FFmpeg helper (see [Formats only ffmpeg reads](testing-formats.md#formats-only-ffmpeg-reads)).
+- The opt-in benchmarks of the performance work (below).
+- `LibraryTypeSelectProbeTests`, which types into hosted lists to find out what AppKit's type select does (for the Leading articles setting), runs only on request and only on GitHub's runner.
+  It skips unless the test host has both `TEXTMOUTH_TEST_TIME_SCALE`, which marks the runner, and `TEXTMOUTH_TYPE_SELECT_PROBE`, since a key AppKit turned down would make the Mac beep, and no test may make a sound.
+  No train or suite runs it: it takes about 72 seconds of a runner's time, and its findings are settled.
+  To run it, send a request by hand through `github_run.run_remotely` with `"classes": ["LibraryTypeSelectProbeTests"]` and `"type_select_probe": true`.
+  `Scripts/agents/run-on-runner.py` hands that flag to the test host as `TEST_RUNNER_TEXTMOUTH_TYPE_SELECT_PROBE=1` (a Python test pins it, and a request without the flag, or with it false, sets nothing), and each finding is a line beginning `TYPE-SELECT-PROBE:` in the run's `run.log`.
+  The probe asserts only what must hold for it to mean anything (a list was drawn, its table took the keyboard), never a finding, so a finding cannot fail a run.
+  Its timing test writes `InitialKeyRepeat` and `com.apple.mouse.doubleClickThreshold` into the app's own defaults domain, which is safe only on a fresh runner.
+- `LibraryTypeSelectBehaviorTests` holds the probe's findings that can be asserted, and runs in every run (about 17 seconds, in real time, since AppKit reads the clock).
+  In the first choice of the Leading articles setting, which the tests rely on and do not write (they skip while another is in force), AppKit's type select starts a new search at the row after the selected one and wraps.
+  Letters typed 0.2 seconds apart add up, and a letter typed after the longer of 2.5 seconds and four times this Mac's Delay Until Repeat starts afresh.
+  AppKit's own interval was 1.2 to 1.3 seconds on the runner and under 1 second on the development Mac, so the tests keep far from the edge.
+  They skip where this macOS gives an offscreen window's list no keyboard focus.
+  LibraryTitleTypingTests, TitleTypingTests, and the other Leading articles classes are ordinary tests (see [Windows](../architecture/state/windows.md), letter navigation in the Library list).
+- The sweeps of the reusable test tools (VoiceSweepTests, ImportFuzzTests, StorageDrillTests, and CorpusReportTests), which run only from their scripts (see [Reusable test tools](testing-tools.md)).
+- The performance baselines tests, while the Mac is busy, and on a Mac model or in a build configuration other than their baselines' (see The performance baselines).
+
+### The tests on GitHub's macOS runner
+<!-- id: tests-github-macos-runner; keys: GitHub Actions, check gate, runner skips, CI; src: .github/workflows/check.yml, Scripts/agents/runner-skips.conf, Scripts/agents/runner_skips.py, TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/PerformanceBaselineSupport.swift -->
+
+- GitHub's macOS runner, where the gate's suite runs for every push to main and every pull request from this repository, skips more tests than the development Mac.
+  [The make check gate](building.md#the-make-check-gate) says in what ways that suite is weaker than `make check` here.
+  It skips the 14 of `Scripts/agents/runner-skips.conf` (see [Tests on GitHub Actions](testing-github.md)), and the following.
+  There SwiftUI builds no accessibility structure, a hosted window exposes none of its AppKit controls to accessibility.
+  Keyboard navigation is off there until `Scripts/agents/runner_settings.py` turns it on, so most tests that need it run.
+  So the kinds of test above that read accessibility skip rather than fail, as do the opt-in tests and benchmarks.
+  The performance baselines tests skip too, since their baselines belong to the development Mac's model (so a request for strict baselines checks no baseline on a runner).
+
+### A test that may crash the host
+<!-- id: test-may-crash-host; keys: skipUnlessGitHubRunner, isGitHubRunner, TEXTMOUTH_TEST_TIME_SCALE, Objective-C exception, stack overflow, crash report, no-crash rule; src: TextMouthProductionTests/HostedTestIsolationSupport.swift, TextMouthProductionTests/ObjCExceptionTests.swift, TextMouthProductionTests/AudioEditRenderingTests+WideSamples.swift, TextMouthProductionTests/MarkdownDepthLimitTests.swift, TextMouthProductionTests/ExportDocumentWalkerNestingTests.swift, Scripts/agents/run-on-runner.py, TextMouthProductionTests/StackProbe.swift, TextMouthProductionTests/FFmpegHelperHostileFileTests.swift; status: incomplete; issues: B20 -->
+
+- A test that crashes the test host when the code it checks is broken runs on GitHub's runner only, because a crash on the user's Mac puts macOS's crash report on their screen, and on a runner it is only a failed run.
+  Such a test raises an Objective-C exception on purpose with only the code under test to catch it, or fills a thread's stack with a pattern to measure how much of it a walk of a deep tree uses.
+- `TestMachine.skipUnlessGitHubRunner(_:)` (HostedTestIsolationSupport.swift) is the one way to keep it off the user's Mac: the test calls it first, and it skips with the reason it is given anywhere but on a runner.
+  It keys on `TEXTMOUTH_TEST_TIME_SCALE`, which `Scripts/agents/run-on-runner.py` sets for every test host it starts and nothing sets on the Mac (`TestMachine.isGitHubRunner`).
+  In the iPhone bundle, which shares the file and runs only on GitHub, it is always true.
+- Its users: the two raising tests of `ObjCExceptionTests` and of `AudioEditRenderingTests+WideSamples`, the stack tests of `MarkdownDepthLimitTests` and `ExportDocumentWalkerNestingTests`, and `FFmpegHelperHostileFileTests`, which give the FFmpeg helper damaged media.
+  The same tests run the helper's Debug-only `signalcheck` mode, which crashes it on purpose to test its signal guard, on GitHub only.
+  The helper ends itself with _exit on a fatal signal, which should leave no crash report, but that is only tried on a runner.
+  The type-select probe uses it too, though for a beep and not a crash.
+  StackProbe (TextMouthProductionTests/StackProbe.swift) measures a walk's stack use instead of surviving an overflow: it runs the code on a thread of 8 MiB whose unused stack it filled with a pattern, and says how far the code wrote past a margin.
+  A fix for a crash is shown by a break proof on GitHub: a scratch branch with the fix removed, sent by hand, never run on the Mac.
+- **No test may let a real liblouis call be abandoned,** on any platform: liblouis is not thread-safe, and an abandoned call runs on beside the next test's call, which crashed a train's iPhone run with SIGSEGV.
+  The test of the iPhone's abandonment sentence for braille waits for a stand-in for the liblouis call, a seam like FFmpeg's `openSession` (B20).
+
+### Benchmarks of the performance work
+<!-- id: benchmarks-performance-work; keys: opt-in benchmarks, timing tests, speed tests, Release build, TEST_RUNNER prefix; src: TextMouthProductionTests/ViewsAndWindowsBenchmarks.swift, TextMouthProductionTests/DuplicateFinderTests.swift, TextMouthProductionTests/TextPipelineBenchmarkTests.swift, TextMouthProductionTests/PersistenceCostTests.swift, TextMouthProductionTests/LibraryModelBenchmarkTests.swift, TextMouthProductionTests/SpeechPreparationBenchmarkSupport.swift, TextMouthProductionTests/SpeechEngineCreationTests.swift, TextMouthProductionTests/SpeechVoiceWarmUpTests.swift, TextMouthProductionTests/AudioEngineBehaviorTests.swift, TextMouthProductionTests/CompletionGenerationTests.swift -->
+
+- The benchmarks of the performance work time what each change made faster and print their figures in the test log.
+  They are opt-in, since they take minutes or need a run of their own, and each group runs when its variable is 1; xcodebuild hands a variable whose name starts with TEST_RUNNER_ to the test host without that prefix:
+  - TEST_RUNNER_TEXTMOUTH_LARGE_BENCHMARKS: the speech-preparation benchmarks at the sizes too slow to time in every run, and four that time the system synthesizer, muted, and the first speech engine.
+    Three of those four mean something only when each runs alone, named with -only-testing, in a process of its own.
+  - TEST_RUNNER_TEXTMOUTH_VIEW_BENCHMARKS:
+    - ViewsAndWindowsBenchmarks, which measure what a change of the library costs the list, what a playing reader costs its sheets, what a closed reader still holds, and how many test sandboxes the temporary folder holds, and
+    - DuplicateFinderTests.testMeasureWhatAnAuthorScansResultsCost, which measures what Find Duplicate Books' results cost to show, every group at once and the first page.
+  - TEST_RUNNER_TEXTMOUTH_BENCHMARKS: TextPipelineBenchmarkTests, which time the text pipeline's old and new code side by side.
+    They run best in a Release build, as in `xcodebuild test -configuration Release ENABLE_TESTABILITY=YES -only-testing:TextMouthProductionTests/TextPipelineBenchmarkTests` with the rest of the usual arguments.
+  - TEST_RUNNER_TEXTMOUTH_RENDER_BENCHMARK: what rendering a chapter's speech costs in memory and main-thread time.
+    It takes about half a minute, and nothing is heard.
   - TEST_RUNNER_TEXTMOUTH_TRACK_CHANGE_BENCHMARK: how long an audiobook's next file takes to start playing, timed with silent files.
-  - PersistenceCostTests and LibraryModelBenchmarkTests run in every run instead. They check what a change costs in counts that follow from the code alone, such as bytes written, file-system calls, and publishes of the library, never in time, which a busy Mac would change, and print their figures on lines beginning PERSISTENCE_COST: and PERFMODEL:.
+  - PersistenceCostTests and LibraryModelBenchmarkTests run in every run instead.
+    They check what a change costs in counts that follow from the code alone, such as bytes written, file-system calls, and publishes of the library, never in time, which a busy Mac would change, and print their figures on lines beginning PERSISTENCE_COST: and PERFMODEL:.
 
-## Reusable test tools
+### Tests of the audit's small runtime fixes
+<!-- id: tests-audit-small-runtime-fixes; keys: timer tolerance, countdown timer, leading edge refresh, time remaining tally, speech position tick; src: TextMouthProductionTests/TimerCoalescingTests.swift, TextMouth/Services/SleepTimerService.swift, TextMouthProductionTests/ReaderRefreshLeadingEdgeTests.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouthProductionTests/TimeRemainingTallyTests.swift, TextMouth/ViewModels/TimeRemainingTally.swift, TextMouth/ViewModels/LiveReadingPositions.swift, TextMouthProductionTests/PlaybackLifecyclePolicyTests.swift, TextMouth/Services/SpeechService.swift -->
 
-The scripts in `Scripts/test/` run part of the hosted suite, check what a branch adds to it, read its logs, and try the importers and the voices on documents and voices the suite doesn't hold. They need only the Mac's own tools and Python 3, print their usage with `-h`, and never launch the app outside the test host that `xcodebuild` starts. Among its checks, `make check-selftest` runs every Python tool's selftest, and the storage drill script's, in about 30 seconds, without building. The times below leave out the build, which takes about 5 minutes when nothing is built yet, and longer while agents hold all three build slots.
+- The tests of the audit's small runtime fixes run in every run, with nothing heard and no waiting on a real clock:
+  - `TimerCoalescingTests` (area `playback-end`) reads each loosened timer's tolerance, a tenth of its interval: the statistics checkpoint, the session lease, and the speech watchdog.
+    It pins the sleep countdown's timer at no tolerance, which was already so, so that test guards against a later change and does not prove the fix.
+    The test that does is `testTheSleepCountdownTickActsAtOnce`: firing the countdown's timer (`SleepTimerService._fireCountdownTimerForTesting()`) counts one second down in the same turn.
+  - `ReaderRefreshLeadingEdgeTests` (area `playback-end`) gives the reader its own clock (`playbackUIRefreshNow`), so ten seconds of an audiobook's quarter-second cursor take a moment.
+    It checks
+    - that each of the 40 changes is shown on the main queue's next turn with no delayed work item (`delayedPlaybackUIRefreshCount` stays 0),
+    - that a chapter and an offset set together are shown together,
+    - that changes inside the interval wait out what is left of it and show the last, and
+    - that a clock set back still refreshes within one interval.
+  - `TimeRemainingTallyTests` (area `library`) checks
+    - that the tally's figures equal a full addition's to the last bit with no live position, one, several, and after they go;
+    - that the bar's spoken summary follows a live position;
+    - that ten live updates of 1,500 books estimate ten books (`estimateCount`), not fifteen thousand;
+    - that a changed list or speed is added up again; and
+    - that `LiveReadingPositions.liveBookIDs` names the books with a live position as readers report and close.
+  - `LookAheadLeadTests` (area `speech`) tests the look-ahead's lead and the long-pause watch as plain rules, with nothing rendered, spoken, or waited for: the lead's floor and growth, `isReached`, and `LongPauseWatch`'s delay, its end, and being watched again.
+    `PreRenderedSpeechInvalidationTests` tests the reader's side: nothing renders short of the lead, crossing it asks once, a seek in asks once and a seek back keeps the render, a short chapter renders at once, and a long pause lets the audio go and keeps the speech.
+  - A new stored field needs its key, its encoder line, its entry in StoredKeyScan's schema, and its place in the plain twin that `UnknownKeysTests` holds each hand-written encoder to; a setting added since v0.4.11 goes in `settingsAddedSince0411`.
+  - The speech position tick (`publishRenderedPosition`) is tested in `PlaybackLifecyclePolicyTests`, through `SpeechService._setTextForTesting(_:)`, which gives the service a text without rendering any speech:
+    - a position that did not move publishes nothing,
+    - a stale generation publishes nothing, and
+    - white space, a place past the end, and one before the start publish a range and no word.
+  - The audio-engine tests skip on GitHub's runner, so only the Mac suite covers them.
 
-- The load-sensitive tests of the October 30, 2026 audit are no longer load-sensitive, each made to wait for the thing it checks rather than for a moment, and shown to fail when its app code is broken and to pass 5 to 20 times of 5 to 20 under a busy Mac:
-  - BookSearchModelTests.testCancelledSearchPublishesNothing and its sibling, whose fake now waits for the cancellation itself.
-  - FeedDownloadTests.testADownloadThatStopsPartwayGoesOnFromWhereItStopped, whose stub drops the connection only once the app has written the first half.
-  - StorageGenerationMoveTests and DataDirectoryMoveTests.testAMoveShowsItsProgressWhileItCopies: the cause was in the app, a reading-statistics save queued before a move that wrote during its copy, and the move now waits for it.
-  - ViewsAndWindowsReaderSheetTests' redraw count, which publishes until three in a row draw nothing and then counts, since SwiftUI compares a re-made sheet by == only after AttributeGraph has worked out its type off the main thread, which load starves.
-  - IntegrationSleepTimerTests, ContinueToNextBookTests, BookmarkKeyboardAccessTests, ReadingCheckpointTests, ShortcutConfigFileTests, PlaybackSettingsAuditTests, and FeedUICommandsTests.testCancelDownloadStopsIt, whose checks wait for their condition with 30-second deadlines that end when it holds.
-  - Still load-sensitive, by design: the performance baselines and the audiobook-open benchmark; five classes keep fixed warm-ups with the same risk.
-- The build train, `Scripts/agents/build-train.py`, is how agents build. On October 31, 2026 the Mac froze under the agents' builds, so agents no longer build on their own: an agent commits its work on its branch and asks the train to test it (`build-train.py request --agent SLUG --branch BRANCH [--classes A,B] [--areas x,y] [--note TEXT]`), and one scheduled build every 30 minutes (`build-train.py loop`, or `run` for one) pools every waiting branch.
-  - Each train merges every requested branch onto a shared base, `train/base`, in a worktree of its own; builds once, in one build folder of its own that is kept between trains, so each build is incremental, with two jobs, which needs about half the memory; runs the union of the classes and areas asked for; and posts each agent its result on the message board. A branch that conflicts with the base, or with a branch merged before it, is left out of that train, and its agent is told which files conflicted. `status` shows the queue. A train starts only with at least 3 GB free on the data volume.
-  - The train checks the test names against the merged tree before the run, leaving out and reporting the names it does not know, since run-area.py refuses a whole run for one unknown name, so one agent's typo, or a file name given for a class, never sinks every agent's train. A request with names the main branch lacks gets a warning when it is queued.
-- Run only some tests: `python3 Scripts/test/run-area.py feeds bookmarks`, or `make test-area AREAS="feeds bookmarks"`, where `AREA_ARGS` passes options, as in `make test-area AREAS=feeds AREA_ARGS=--dry-run`.
-  - Each name is an area from `Scripts/test/areas.conf` or a test class. On October 21, 2026 the file has 31 areas, such as `feeds`, `bookmarks`, `export`, `braille`, `playback-end`, and `shortcuts`, which between them place all 578 hosted test classes. `--list` prints the areas, and `all` is every runnable class, those no area lists last. A merge that adds test classes should place them: `--unassigned` lists the classes no area names, and ends "0 unassigned classes" when every class is placed.
-  - Name every area in one command. One `xcodebuild` runs them all, through the build-slot wrapper, so no registration on the agents' message board is needed (an agent sets `BBS_AGENT=<name>` to report to the board). Each launch of the test host leaves about 23 MB in a system cache only you can purge, so never run the areas one after another.
-  - While it runs nothing is printed. Afterwards it prints one fact per line: the last `Executed N tests` line, each failed test with its file and line, each compile error (20 at most), each Swift warning inside the repository, a CRASH line when the test host crashed or restarted, the log's path, and PASSED or FAILED with the time taken. The exit status is 0 for PASSED, 1 for FAILED, 2 for a usage or setup error, and 130 when you interrupt it with Control-C, which keeps the log.
-  - Options: `--classes A,B` adds classes; `--env NAME=VALUE` passes `TEST_RUNNER_NAME=VALUE` to the test host; `--dry-run` prints the command without running it; `--summarize LOG` prints the summary of an existing log; `--changed` picks the classes whose file mentions a type declared in a file changed since the merge-base with `--base REF` (default `main`), and runs them, with `--explain` naming the matching types, `--limit N` keeping the first N classes, and `--list` printing the picks without running them (it is a heuristic, so run the area or `all` before a merge); `--repeat N` builds once, runs the classes N times, and ends with a report of the tests that changed outcome, for a suspected flaky test; `--clean` unregisters the build folder's app and deletes the folder; and `--selftest` checks the script against canned logs. `-h` lists the rest.
-  - A small area takes a few seconds of tests. The testkit team's lead measured the whole suite, `all`, at about 16 minutes of test time on October 17, 2026.
-- Check the lines a branch adds, without building, in seconds. They compare against `main`; `LINT_BASE=REF` on the `make` line compares against another branch point.
-  - `make lint-tests` runs `trap-lint.py`, which flags test lines that can crash the test host (a `try!`, a force unwrap, a literal subscript, a `.wait()`), play sound, record, or touch the real library, and `test-diff.py`, which lists what the branch did to tests that already existed: removed, renamed, or moved a test, removed or changed an assertion, added a skip or an expected failure, raised a timeout, commented out test code, or changed a fixture.
-  - `make lint-a11y` runs `a11y-lint.py`, which flags SwiftUI lines that VoiceOver or the keyboard cannot use: a control with no VoiceOver label or action, a tap with no VoiceOver action, a drag with no keyboard alternative, and the like.
-  - `make lint-ogg` runs `ogg-lint.py`, which flags new calls that open audio with an Apple reader (`AVURLAsset`, `AVAssetReader`, `AVAudioFile`, an `AVPlayer`, or `AudioFileOpenURL`). Each must refuse every format the import converts first (`ImportAudioConverter.isNeverDecodedInApp`; see A note on Ogg audio, in README.md), and a new call of `isOgg(` is flagged too, since a guard of that name refuses Ogg alone. The lint's own selftest runs with the others in `make check-selftest`.
-  - `trap-lint.py`, `a11y-lint.py`, and `ogg-lint.py` report each finding as an error, which fails the run, or as one to review, which a person judges and which fails the run only with `--strict`; `test-diff.py` fails only with `--strict`, when it has any finding. A line already reviewed ends with `// lint-ok: <the reason>`, and the linters pass it; a `lint-ok` with no reason is not accepted. On those three linters, `--all` audits every line of the tree instead and exits 0, `--counts` with it prints only the counts, and `--rule NAME` shows one rule's hits.
-- Read logs: `python3 Scripts/test/test-logs.py slowest LOG` lists the slowest tests of a log (`-n N` sets how many, 20 by default, and `--classes` adds the 10 slowest classes), `compare OLD NEW` lists what changed between two logs (a test now failing, new, gone, or slower, meaning it takes more than `--slower` seconds, 2 by default, and more than 1.5 times its old time), and `flaky LOG LOG...` lists the tests that differ in outcome or time across two or more logs. `compare` exits 1 when a test is now failing, is new and failing, or is gone. A 22 MB log takes under a second.
-- Document goldens: `DocumentGoldenTests` compares every document in TestData with `TestData/golden/<file name>.golden`, and names every difference in words. A golden records the file's format, title, author, chapter and word counts, the length and checksum of its reading text, the first and last 300 characters of that text, its headings with their levels, and, for a book with audio, its tracks. The test takes about 1 second.
-  - The format samples in `TestData/format-samples` that TextMouth reads as text have goldens too: the 24 samples of the rich text, RTFD, Word 97-2003, Word template, OpenDocument, Word 2003 XML, web archive, SSML, and DTBook folders, each named by its path inside that folder with every `/` written `__`, as in `rtf__headings.rtf.golden`. `TextPipelineFixtures.formatSampleNames` lists them, and `DocumentGoldenTests` fails when a sample of those folders is missing from it. `TextPipelineFixtures.formatSamplesHeldBack` names any sample whose golden showed a reader bug, which is neither recorded nor compared until the bug is fixed; it is empty. `Scripts/test/update-goldens.sh` records these goldens with the others. The 14 samples that textutil reads add one run of it each.
-  - `Scripts/test/update-goldens.sh` records new goldens after a deliberate change to what a parser, the text pipeline, or heading detection produces. It runs `DocumentGoldenTests` alone with `TEXTMOUTH_UPDATE_GOLDENS=1`, which writes the goldens into the source tree instead of comparing, and then lists the goldens that changed. Review the diff of `TestData/golden` and commit it with the change it records; a golden that looks wrong, such as a missing heading or a wrong title, is a bug to report, not a record to commit. The two large optional DAISY books are never recorded.
-  - A PDF's golden notes the macOS version it was recorded on, and its test skips on a Mac of another major version, since PDFKit and Vision change what they read with macOS. So do the goldens of the format samples that Apple's textutil reads (the rtf, rtfd, doc, dot, odt, ott, and wordml folders), recorded on macOS 26.3; the other format samples, which TextMouth's own readers read, are compared on every Mac.
-- Documents to try:
-  - `python3 Scripts/test/make-corpus.py [--out DIR] [--seed N] [--large]` writes 24 deterministic documents, in EPUB, DOCX, Markdown, text, HTML, and PDF, each valid but awkward in a way its file name says, about 66 KB in all, in seconds. A `corpus-manifest.json` beside them records each file's hazard and what it should show. `--large` adds three heavy files: a 5 MB Markdown file, a 3 MB text file of one line, and a 40-chapter EPUB. One seed makes the same files each time. It has no generator yet for rich text, Word 97-2003, OpenDocument, web archive, SSML, or DTBook files, whose samples are in `TestData/format-samples`.
-  - `Scripts/test/corpus-report.sh <folder> [report.md]` imports a copy of every file in a folder, searched recursively, and writes a Markdown report of what the importers made of each: its format, title, author, headings and their levels, text length, first lines, every warning or refusal, and a checksum of its reading text. The report is plain words, headings, and bullet lists, written to be read with VoiceOver and a braille display; whether the reading order is right is still for a person to judge. The folder is only read. Ogg audio, and a ZIP holding it, is never decoded, and its section says `skipped`. The report is rewritten after every file, so a crash leaves it complete up to the last file that finished. At most 200 files are read, each given 180 seconds (`TEXTMOUTH_CORPUS_MAX_FILES` and `TEXTMOUTH_CORPUS_FILE_SECONDS` change them). `report.md` must be outside the repository, which ignores `*.md` files; the default is `textmouth-corpus-report.md` in the temporary folder. It takes about 7 seconds of test time on TestData and 2 minutes on the generated corpus.
-- Matrices, always on, each with its table in its file's header comment:
-  - `EndBehaviorMatrixTests` pins what a book does when it ends, for each of 4 end-of-book behaviors, 5 kinds of content (text, single-file audio, chaptered audio, multi-file audio, and DAISY), and 5 sleep timer states (none; End of book; End of heading; minutes still running at the end; minutes that ran out before it): 100 cells, each with a test, 80 of them in this class and 20 in other classes that the table names. It takes about 52 seconds in a full run; it took about 154 seconds before October 17, 2026. Its audio cells still play a book out in real time, but the book is saved 0.3 seconds short of its end (`offsetBeforeTheEnd(ofChapterOf:)`), `waitForTheEndToSettle(of:reports:)` waits only for the player's reports that follow an end, and `nextBookAsked(for:…)` waits for the ask of the next book only in a cell that expects one.
-  - `WindowsMatrixTests` pins what Book A keeps doing while Book B is edited, moved, closed, or timed, and while the Library windows close: 117 of the 120 cells (12 states of Book A by 10 things that happen to Book B or to the library), the other 3 being covered by older tests that its table names. It takes about 8 seconds.
-- Keyboard: `KeyboardReachabilityTests`, which takes under a second, checks that every action has a way in (a default key or a menu item, or an entry in its `unboundActions` list with the reason), that no two default keys collide where both act, that every menu item is an action or is accounted for, that every default key can be spoken, and that no default key is one the shortcut rules refuse.
-- Playback fuzz: `PlaybackFuzzTests` applies seeded random operations (play, pause, seeks, skips, headings, voice and speed changes, route losses, media commands, stale renders, sleep timers, and time passing) to a silent reader of each of three kinds of book, a text book, a one-file audiobook, and a three-file audiobook, and after each operation checks what a listener depends on (P09 in TODO-2026-09-04.md). Nothing is heard. By default it runs 5 sequences of 30 operations for each kind, in about 37 seconds. A failure's message starts with the seed, the step, and the operations so far, and the seed alone reruns the sequence. For a long run: `python3 Scripts/test/run-area.py --classes PlaybackFuzzTests --env TEXTMOUTH_PLAYBACK_FUZZ_SEQUENCES=200 --env TEXTMOUTH_PLAYBACK_FUZZ_SEED=N`, which takes about 26 minutes; `TEXTMOUTH_PLAYBACK_FUZZ_LENGTH` sets the operations in a sequence.
-- Opt-in sweeps: each skips unless its script sets its environment variable, and each script runs its test class through `run-area.py`, which builds first.
-  - `Scripts/test/voice-sweep.sh [report.md]` renders one fixed sample with every voice installed on this Mac, offline, with the call the app uses (nothing is played or recorded), and writes a Markdown report of what each voice did: whether it produced audio, how long the audio is, how long the render took, and whether the voice hung or refused. A watchdog stops a voice after 20 seconds (`TEXTMOUTH_VOICE_SWEEP_SECONDS`), and three timeouts in a row stop the sweep. `VOICE_SWEEP_LANGUAGE=en` keeps the voices whose language starts with it. On the development Mac, 181 voices took 73 seconds of tests, and the English ones 25.
-  - `Scripts/test/import-fuzz.sh [--seed N] [--docs a,b] [--pdf]` damages each book in TestData under 300 KB in seeded ways (truncated, emptied, bytes flipped, a window zeroed, removed, or doubled, random bytes added, a ZIP's ends corrupted, NULs or invalid UTF-8 put into text, a megabyte line, deeply nested HTML) and imports every copy as the library does: 103 copies of 6 books, in 3 seconds of tests. It damages the format samples that are single files under 300 KB in the same ways, 21 of the 24 (the RTFD and NIMAS folder samples are left out, since a folder has no bytes to damage), taking rich text, SSML, and XML for text and the Word templates and OpenDocument files for ZIPs; a damaged copy keeps the sample's import name, the Word 2003 XML sample's being an .xml file, and `--docs` names such a sample by its path, as in `format-samples/rtf/headings.rtf`. The textfmt team's run over those 21 made 351 damaged copies, and no check broke. It checks that each import finishes, refuses cleanly, or gives a book that loads, that a refused import leaves nothing behind, and that the damaged file is left alone. `--pdf` adds the two small PDFs. A crash of the test host is a finding, not a script failure; the script exits 1 when a case breaks one of those checks and 3 when the test host crashed or the sweep did not finish.
-  - `Scripts/test/storage-drill.sh` unplugs or fills a small disk image part-way through an import, a library save, and a data-directory move, checks by checksum that the original files and the previous library survive every reported failure, and says whether any image is left attached: about 20 seconds of tests. Each test makes a disk image of 3 to 16 MB in the test host's sandbox, in the temporary folder, and deletes it when the test ends. It never touches `~/.TextMouth`, the preferences, or any volume but its own images: the fill that makes a disk full writes only to an image's own mounted volume, and throws when the image is not attached. Its last line is the verdict. `Storage drill: PASSED` means at least one drill test ran and not every one skipped, none failed, and no image is left attached. `Storage drill: FAILED` means a test failed or an image is left attached. `Storage drill: NOT RUN: ...` means no drill test ran, as with `--dry-run`, `--list`, or `--clean`, or when every test skipped. It exits 0 only for PASSED, 1 for FAILED, and 2 for a setup error and for NOT RUN. `Scripts/test/storage-drill-selftest.sh`, which `make check-selftest` runs, tests those verdicts in a second, without building, with stand-ins for `run-area.py` and `hdiutil`.
+### Reader shown state tests
+<!-- id: reader-shown-state-tests; keys: shown state, reader announcements, sleep timer countdown, view body count, hand check; src: TextMouthProductionTests/ReaderShownStateTests.swift, TextMouth/ViewModels/ReaderShownState.swift, TextMouth/Views/ViewBodyCounter.swift, TextMouth/ViewModels/ReaderViewModel.swift, TextMouth/Views/Reader/SleepTimerStatusLabel.swift, TextMouthProductionTests/AccessibilityTestSupport.swift -->
+
+- `ReaderShownStateTests` (area `sheets`) tests the reader window's shown state (`ReaderShownState`):
+  - `testTheStateEqualsWhatTheViewsBuildFromTheCursorAtEveryStep` walks the cursor and builds each label and value the views draw from the raw cursor, then compares them with what the shown state holds.
+    `testAStepThatChangesASpokenLabelChangesTheState`, `testAStepThatChangesOnlyTheHeadingOrOnlyThePageIsAnnounced`, and `testABookmarkComingNearIsAnnounced` pin the steps a view would otherwise miss.
+  - `testOnlyAChangeInWhatIsShownIsAnnounced` counts the reader's announcements, and `testMovesWithinWhatIsShownDrawNoView` counts view-body runs (`ViewBodyCounter`), so a move within what is shown draws none; `testBecomingKeyStillAnnouncesToTheViews` checks `windowBecameKey()`.
+  - `testTheCountdownMovesEverySecondPlayingAndPaused` and `testTheCountdownLabelComesAndGoesWithTheTimer` check `SleepTimerStatusLabel` as the timer ticks, starts, and stops.
+  - `testTheReadersOwnCountdownLabelsSpeakEachSecondPlayingAndPaused` reads the status row's and the playback bar's labels, "Sleep timer: 4:59 remaining", from the hosted views' accessibility tree.
+    It skips (`skipUnlessSwiftUIExposesItsOwnElements()`) on this Mac and on GitHub, since SwiftUI builds its own elements only for an accessibility client such as VoiceOver.
+    Only `testTheReadersCountdownLabelsAreDrawnByTheTimersOwnLabel`, which reads the two views' sources for `SleepTimerStatusLabel`, guards the production labels where it skips.
+    So the countdown needs a hand check with VoiceOver: a 15-minute timer, both labels changing each second, playing and paused, and gone when the timer stops.
+
+### A hosted failure with exit code 0
+<!-- id: hosted-failure-exit-code-0; keys: host quit, system log, XCTest failure, own TextMouth running; src: -->
+
+- A hosted test that fails with the message `The test runner exited with code 0` may be the user's own TextMouth starting beside the host, which shares its bundle identifier.
+  Read the system log for `terminate:`, and run the class alone before calling it a fault; a run cut short by an ordinary quit the host received while frontmost is settled the same way.
+
+### Tests in Spanish
+<!-- id: tests-in-spanish; keys: SpanishLocalizationTests, SpanishUITests, Strings.pack, AppleLanguages, localization test, FR34; status: incomplete; issues: FR34, TL14; src: TextMouthProductionTests/SpanishLocalizationTests.swift, TextMouthiOSUITests/SpanishUITests.swift, TextMouthProductionTests/LanguagePackTests.swift, TextMouthiOSUITests/TextMouthUITestCase.swift, TextMouthProductionTests/AccessibilityTestSupport.swift, TextMouthProductionTests/RunLoopWaiting.swift -->
+
+- The suite runs in English.
+  `SpanishLocalizationTests` (the Mac app) reads the Spanish entries of the app's own `Strings.pack` by ID, and asks the engine for a line in Spanish (`InterfaceText.line(_:_:language:)`).
+  It checks each pilot area's strings in Spanish, every plural string in its three categories, that no text is empty, and that a bookmark's number is never grouped.
+- `SpanishUITests` (the iPhone interface tests, on GitHub) starts the app with `-AppleLanguages (es) -AppleLocale es_ES` and compares what VoiceOver is given, in order, with the catalog's Spanish.
+  Each expected word has its English beside it, so a failure shows an English start at once.
+  They check the Sleep Timer and Bookmarks sheets.
+- `InterfaceTextShippedPackTests`, in both apps, compares every entry and lookup of the shipped pack with the catalog, plurals at 13 counts ([what the apps ship](localization.md#what-the-apps-ship)).
+- `AccessibleControl.title` is a hosted control's accessibility title, which VoiceOver reads beside its label.
+  A test can require it empty, because a hidden title that repeats the label is read twice ("Adjust minutes, Adjust minutes").
+- `RunLoopWaiting.swift`, shared with the iPhone's unit tests, has `waitForMainQueueTurn()`, and `waitForMainQueueTurnAsync()` for a test that is `async`.
+  Each returns once everything queued on the main queue before the call has run, with a limit, as `openBookIDs` follows a reader's registration a turn later.
+  The async one suspends, since the blocking wait cannot run on the main actor there.
+
+### Outside constants in tests
+<!-- id: outside-constants-tests; keys: SDK constant, quit reason, wrong value pinned; src: -->
+
+- A test takes an outside constant, such as a quit-reason keyword, from the SDK and not from the code it tests: a test and its code that pin the same wrong value both pass.
 
 ## The performance baselines
+<!-- id: performance-baselines; keys: PerformanceBaselineTests, speed regression, performance tests; src: TextMouthProductionTests/PerformanceBaselineTests.swift -->
 
-PerformanceBaselineTests keep what the performance work of October 3, 2026 made faster from slipping back. They measure a library and books generated to the size of the developer's, never your own library, and run in every run of the suite, in about half a minute. They measure:
+PerformanceBaselineTests keep what the performance work made faster from slipping back.
+They measure a library and books generated to the size of the developer's, never your own library, and run in every run of the suite, in about half a minute.
+
+### What the baselines measure
+<!-- id: what-baselines-measure; keys: launch time, sort time, speech preparation, memory peak, 643-book library; src: TextMouthProductionTests/PerformanceBaselineTests.swift, TextMouthProductionTests/PerformanceBaselineFixtures.swift, TextMouthProductionTests/performance-substitutions.json -->
+
+They measure:
 
 - launch with a 643-book library: reading library.json, the startup repair, and finding the text caches that need rebuilding;
 - the first sort of the library by File Size, and one derivation of the All Items list for each of the six sorts;
@@ -96,48 +238,63 @@ PerformanceBaselineTests keep what the performance work of October 3, 2026 made 
 - the processor time of one cloud refresh of a library outside the cloud;
 - the main-thread time one reader publish costs the open Headings sheet.
 
+### How the baselines judge
+<!-- id: how-baselines-judge; keys: warning threshold, twice the baseline, median of five, busy Mac, load average, Mac15,12, recorded baselines; src: TextMouthProductionTests/PerformanceBaselineSupport.swift, TextMouthProductionTests/performance-baselines.json, Makefile, Scripts/check.sh -->
+
 How they judge:
 
-- Each number is the median of five runs, after one more that warms caches and is not counted. TextMouthProductionTests/performance-baselines.json holds each one's baseline, with the Mac model, build configuration, and date they were recorded on.
-- A number more than twice its baseline is measured five times more, and the test fails only when the lower median is still more than twice its baseline. A number at 1.5 times its baseline or more prints a line beginning PERFORMANCE WARNING:, and one at half its baseline or less a line beginning PERFORMANCE NOTE:, since new baselines would tighten the check. Every number is printed on a line beginning PERFORMANCE:.
-- The tests skip, printing PERFORMANCE SKIPPED: and why, while the Mac is busy (its one-minute load average above its number of cores), so other work cannot fail them, and on any Mac model or build configuration other than the baselines', where the numbers say nothing. With TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1 a busy Mac measures anyway: `make test PERFORMANCE_STRICT=1` sets it, and `make check` uses it. A baselines file that is missing or can't be read fails the tests rather than skipping them.
+- Each number is the median of five runs, after one more that warms caches and is not counted.
+  TextMouthProductionTests/performance-baselines.json holds each one's baseline, with the Mac model, build configuration, and date they were recorded on.
+- A number more than twice its baseline is measured five times more, and the test fails only when the lower median is still more than twice its baseline.
+  A number at 1.5 times its baseline or more prints a line beginning PERFORMANCE WARNING:, and one at half its baseline or less a line beginning PERFORMANCE NOTE:, since new baselines would tighten the check.
+  Every number is printed on a line beginning PERFORMANCE:.
+- The tests skip, printing PERFORMANCE SKIPPED: and why, while the Mac is busy (its one-minute load average above its number of cores), so other work cannot fail them, and on any Mac model or build configuration other than the baselines', where the numbers say nothing.
+  With TEST_RUNNER_TEXTMOUTH_PERFORMANCE_STRICT=1 a busy Mac measures anyway: `make test PERFORMANCE_STRICT=1` sets it, and `make check` uses it.
+  A baselines file that is missing or can't be read fails the tests rather than skipping them.
+
+### Recording new baselines
+<!-- id: recording-new-baselines; keys: make perf-baselines, PERFORMANCE_RECORD, rewrite baselines, quiet Mac; src: Makefile, Scripts/perf-baselines.sh, TextMouthProductionTests/performance-baselines.json, TextMouthProductionTests/PerformanceBaselineSupport.swift -->
 
 Recording new baselines:
 
-- After a deliberate change to what they measure, run `make perf-baselines` on an otherwise idle Mac, adding `TEST_DERIVED_DATA=<folder>` to build in a folder of your own. It runs the tests alone with TEST_RUNNER_TEXTMOUTH_PERFORMANCE_RECORD=1: each test waits, for up to five minutes, until the Mac is quiet, and once every number is measured the file is rewritten with this Mac's model and today's date.
-- It prints each old and new number, keeps xcodebuild's output in build/perf-baselines.log, and ends with PASSED or FAILED. Nothing changes unless the whole run succeeds. Review the file's diff and commit it with the change it records.
-- The baselines recorded on October 3, 2026, on the development Mac (a Mac15,12: Apple M3, 8 cores, 8 GB), in a Debug build, each the median of five runs:
-  - Launch with 643 books: 134.252 milliseconds.
-  - First sort by File Size: 26.243 milliseconds.
-  - One list derivation, in milliseconds: Title 4.221, Author 4.453, Date Added 1.090, Last Opened 2.893, File Size 2.811, Manual Order 4.230.
-  - One live reading position update: 145.621 microseconds.
-  - One 30-second checkpoint: 851 bytes.
-  - Opening the 1 MB EPUB to its first chapter's speech, the first time: 207.571 milliseconds; again, from its kept text: 11.799 milliseconds.
-  - Opening the 3-file audiobook: 4.539 milliseconds.
-  - Speech for the 1,000,000-character chapter with the 16 rules: 235.522 milliseconds.
-  - Rendered speech of a 40,000-character chapter: 43.358 megabytes at its peak, 43.354 megabytes kept.
-  - Extracting the 1 MB EPUB: 1,193.865 milliseconds.
-  - One cloud refresh of a local library: 0.178 milliseconds of processor time.
-  - One reader publish to the Headings sheet: 1.652 milliseconds of main-thread time.
+- After a deliberate change to what they measure, run `make perf-baselines` on an otherwise idle Mac, adding `TEST_DERIVED_DATA=<folder>` to build in a folder of your own.
+  It runs the tests alone with TEST_RUNNER_TEXTMOUTH_PERFORMANCE_RECORD=1: each test waits, for up to five minutes, until the Mac is quiet, and once every number is measured the file is rewritten with this Mac's model and today's date.
+- It prints each old and new number, keeps xcodebuild's output in build/perf-baselines.log, and ends with PASSED or FAILED.
+  Nothing changes unless the whole run succeeds.
+  Review the file's diff and commit it with the change it records.
 
 ## Testing on real cloud drives
+<!-- id: testing-real-cloud-drives; keys: File Provider, evict, dataless file, cloud fetch, real drive, sync service; src: TextMouthProductionTests/CloudDriveIntegrationTests.swift, TextMouthProductionTests/CloudDriveTestSupport.swift, TextMouthProductionTests/CloudDriveTestSupportTests.swift, TextMouthProductionTests/LibraryCloudFetchTests.swift, TextMouthProductionTests/LibraryLaunchFilesTests.swift, TextMouth/Services/BookCloudStorageService.swift, research/CLOUD-STORAGE-MANUAL-TESTS-2026-10-03.md -->
 
-CloudDriveIntegrationTests runs the cloud services against real sync services. It is opt-in: its tests skip unless the TEXTMOUTH_CLOUD_TEST_ROOTS environment variable lists folders for them.
+CloudDriveIntegrationTests runs the cloud services against real sync services.
+It is opt-in: its tests skip unless the TEXTMOUTH_CLOUD_TEST_ROOTS environment variable lists folders for them.
 
 - Make a folder named TextMouth Cloud Tests in each drive to test, and list the folders' full paths, separated by colons. xcodebuild hands a variable to the test host when you set it with the prefix TEST_RUNNER_, as in:
   - `TEST_RUNNER_TEXTMOUTH_CLOUD_TEST_ROOTS="$HOME/Library/CloudStorage/Dropbox/TextMouth Cloud Tests" xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO -only-testing:TextMouthProductionTests/CloudDriveIntegrationTests`
-- When any entry isn't the full path of an existing folder with that name inside a cloud drive, or is listed twice, the tests fail and use no folder at all. CloudDriveTestSupportTests checks these rules in every ordinary run.
-- Each test works only inside a new folder of its own, writes small files of random bytes there (the small-library test uses the repository's TestData books), and deletes the folder when it ends, even after a failure. Nothing else on the drive is read or changed, and the app's library stays in the test sandbox. With TEST_RUNNER_TEXTMOUTH_CLOUD_TEST_KEEP_SMALL_LIBRARY=1, the small library stays on the drive, for the checks made by hand. A run moves about 36 MB up and 10 MB down for each drive.
-- On October 3, 2026, every test passed against Dropbox, which showed that:
+- When any entry isn't the full path of an existing folder with that name inside a cloud drive, or is listed twice, the tests fail and use no folder at all.
+  CloudDriveTestSupportTests checks these rules in every ordinary run.
+- Each test works only inside a new folder of its own, writes small files of random bytes there (the small-library test uses the repository's TestData books), and deletes the folder when it ends, even after a failure.
+  Nothing else on the drive is read or changed, and the app's library stays in the test sandbox.
+  With TEST_RUNNER_TEXTMOUTH_CLOUD_TEST_KEEP_SMALL_LIBRARY=1, the small library stays on the drive, for the checks made by hand.
+  A run moves about 36 MB up and 10 MB down for each drive.
+- `testTheLibraryFetchBringsAnEvictedFileBackWhole` and `testTheLibraryFetchListsAnEvictedFolder` check the library's fetch from the cloud: a 12 MiB file is removed from the Mac, fetched, and read back with downloads refused, so a partial read can't pass, and a folder is removed and listed.
+  LibraryCloudFetchTests and LibraryLaunchFilesTests cover the rest with a scripted cloud in every ordinary run.
+- Against Dropbox, the tests showed that:
   - Download and removal requests work: a test book's files uploaded within 5 seconds, their downloads were removed at once, and they downloaded again within a second through TextMouth's book service.
   - A file whose download was removed reports its real size, and a clone made before the removal stays readable.
   - A package renamed into the drive, as an import puts a new book in place, syncs as one book, and a hidden folder syncs within 4 seconds.
   - Remove Download refuses a book whose new file hasn't finished uploading.
   - Progress is reported only at 0 and 100 percent for small files, and a file's modification time moves by up to 118 nanoseconds when it downloads again, which is why TextMouth compares the times of a text cache's files to the microsecond.
-- Later that day, after TextMouth learned to treat a book's package that iCloud Drive syncs whole as one item, every test passed against iCloud Drive and Google Drive too. Dropbox, whose files each carry their own flags, was not run again. The runs showed that:
-  - iCloud Drive syncs a book's package as one item: the package carries the sync flags and the files inside it none, and a request to download or remove one of those files is refused as if the file didn't exist. Removing the package's download leaves the whole package in the cloud at once, nothing inside it can be looked up until it downloads again, and TextMouth's book service brought it back within a second. Google Drive syncs each file, as Dropbox does, though its package folders carry sync flags too.
+- TextMouth treats a book's package that iCloud Drive syncs whole as one item.
+  Against iCloud Drive and Google Drive, the tests showed that:
+  - iCloud Drive syncs a book's package as one item: the package carries the sync flags and the files inside it none, and a request to download or remove one of those files is refused as if the file didn't exist.
+    Removing the package's download leaves the whole package in the cloud at once, nothing inside it can be looked up until it downloads again, and TextMouth's book service brought it back within a second.
+    Google Drive syncs each file, as Dropbox does, though its package folders carry sync flags too.
   - iCloud Drive uploaded a test book within 10 seconds, and Google Drive within half a minute, since Google Drive waits 15 to 30 seconds before it starts uploading.
   - iCloud Drive publishes the progress of a package as a whole and none for the files inside it, and Google Drive each file's; on a quick download both reported only 0 and 100 percent.
-  - Google Drive reports an evicted file's real size. iCloud Drive gives a file it downloads again a modification time in whole seconds, so a text book whose package came back has its files read once for their digests when it next opens, before its text cache is trusted; Google Drive moves the time by up to 107 nanoseconds, as Dropbox does.
+  - Google Drive reports an evicted file's real size.
+    iCloud Drive gives a file it downloads again a modification time in whole seconds, so a text book whose package came back has its files read once for their digests when it next opens, before its text cache is trusted.
+    Google Drive moves the time by up to 107 nanoseconds, as Dropbox does.
   - On both, a clone made before a removal stays readable, a package renamed into the drive syncs as one book, a hidden folder syncs within half a minute, and Remove Download refuses a book whose new file hasn't finished uploading.
-- CLOUD-STORAGE-MANUAL-TESTS-2026-10-03.md, in the same folder as this file, gives the commands for every drive and the matrix of checks to make by hand, with VoiceOver steps, for what these tests can't reach: TextMouth's own screens and commands on a real drive, and a drive that is paused, signed out, or offline.
+- [research/CLOUD-STORAGE-MANUAL-TESTS-2026-10-03.md](../../research/CLOUD-STORAGE-MANUAL-TESTS-2026-10-03.md) gives the commands for every drive and the matrix of checks to make by hand, with VoiceOver steps.
+  That file covers what these tests can't reach: TextMouth's own screens and commands on a real drive, and a drive that is paused, signed out, or offline.

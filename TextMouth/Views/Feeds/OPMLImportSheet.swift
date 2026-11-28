@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -37,26 +41,37 @@ struct OPMLImportSummary: Equatable {
     var sentence: String {
         var parts: [String] = []
         parts.append(subscribed.isEmpty
-            ? "No feed was subscribed to."
-            : "Subscribed to \(CountWording.phrase(subscribed.count, singular: "feed", plural: "feeds")).")
+            // Translators: What the Import OPML sheet says once the import ended and no feed was subscribed to.
+            ? InterfaceText.line("opmlImportSummary.sentence.feed", "No feed was subscribed to.")
+            // Translators: What the Import OPML sheet says once the import ended: how many feeds were subscribed to. %lld is how many.
+            : InterfaceText.line("opmlImportSummary.sentence.feeds", "Subscribed to \(number: subscribed.count) feeds."))
         if !alreadySubscribed.isEmpty {
-            parts.append(CountWording.phrase(alreadySubscribed.count, singular: "was", plural: "were") + " subscribed already.")
+            // Translators: What the Import OPML sheet says of the feeds the file lists that were already subscribed to, left as they were. %lld is how many.
+            parts.append(InterfaceText.line("opmlImportSummary.sentence.already", "\(number: alreadySubscribed.count) were subscribed already."))
         }
         if !unsubscribed.isEmpty {
             parts.append(FeedWording.importFoundUnsubscribed(unsubscribed))
         }
         if !failed.isEmpty {
-            let named = failed.map { "\($0.title) (\($0.reason))" }
-            parts.append("Couldn't subscribe to \(CountWording.list(named)).")
+            let named = failed.map {
+                // Translators: A feed that could not be subscribed to, with the reason in parentheses. The first %@ is the feed's title; the second is the reason, in the engine's words.
+                InterfaceText.line("common.valueInParentheses", "\($0.title) (\($0.reason))")
+            }
+            // Translators: What the Import OPML sheet says of the feeds that could not be subscribed to. %@ is a list of them, each with its reason.
+            parts.append(InterfaceText.line("opmlImportSummary.sentence.subscribe", "Couldn't subscribe to \(CountWording.list(named))."))
         }
         if !insecure.isEmpty {
-            let these = insecure.count == 1 ? "\(insecure.first ?? "") uses" : "\(CountWording.list(insecure)) use"
-            parts.append("\(these) plain http, so what is sent can be read or changed on the way; TextMouth still loads it.")
+            parts.append(insecure.count == 1
+                // Translators: What the Import OPML sheet says of one new feed whose address uses plain http, which is not encrypted. %@ is the feed's title.
+                ? InterfaceText.line("opmlImportSummary.sentence.sends", "\(insecure.first ?? "") uses plain http, so others can read or change what it sends; TextMouth still loads it.")
+                // Translators: What the Import OPML sheet says of several new feeds whose addresses use plain http, which is not encrypted. %@ is a list of their titles.
+                : InterfaceText.line("opmlImportSummary.sentence.they", "\(CountWording.list(insecure)) use plain http, so others can read or change what they send; TextMouth still loads it."))
         }
         if stopped {
-            parts.append("The import was stopped before its end.")
+            // Translators: What the Import OPML sheet says once the listener stopped the import before its end.
+            parts.append(InterfaceText.line("opmlImportSummary.sentence.stopped", "The import was stopped before its end."))
         }
-        return parts.joined(separator: " ")
+        return SentenceWording.joined(parts)
     }
 }
 
@@ -273,7 +288,7 @@ struct OPMLImportSheet: View {
 
             HStack {
                 if model.summary == nil {
-                    Button("Cancel") {
+                    Button(FeedWording.cancelTitle) {
                         model.stop()
                         onClose()
                     }
@@ -291,7 +306,7 @@ struct OPMLImportSheet: View {
                     .disabled(model.isRunning)
                 } else {
                     Spacer()
-                    Button("Done", action: onClose)
+                    Button(FeedWording.doneTitle, action: onClose)
                         .keyboardShortcut(.defaultAction)
                 }
             }
@@ -325,6 +340,7 @@ extension LibraryFeedsPresenter {
     /// the window, reads it off the main thread, and opens the Import OPML
     /// sheet with its subscriptions, or says why it can't be read.
     func chooseOPMLFile(in context: FeedCommandContext, parentPath: String) {
+        #if os(macOS)
         let panel = NSOpenPanel()
         panel.allowedContentTypes = OPMLFileType.readable
         panel.allowsMultipleSelection = false
@@ -339,6 +355,9 @@ extension LibraryFeedsPresenter {
         } else {
             panel.begin(completionHandler: finish)
         }
+        #else
+        // Phase 0: iOS has no Open panel, so choosing a file does nothing yet; phase 1 uses a file importer.
+    #endif
     }
 
     /// Reads the OPML file at `url` off the main thread, then opens the
@@ -379,6 +398,7 @@ extension LibraryFeedsPresenter {
     /// listener unsubscribed from, which an export leaves out (REV11, board
     /// #1814). VoiceOver reads the alert as it appears (REV14 feeds 6).
     func chooseOPMLDestination(in context: FeedCommandContext) {
+        #if os(macOS)
         guard context.center.feeds.contains(where: \.isSubscribed) else {
             let message = context.center.feeds.isEmpty ? FeedWording.nothingToExport : FeedWording.nothingSubscribedToExport
             notice = FeedNotice(title: FeedWording.exportFailedTitle, message: message)
@@ -397,6 +417,9 @@ extension LibraryFeedsPresenter {
         } else {
             panel.begin(completionHandler: finish)
         }
+        #else
+        // Phase 0: iOS has no Save panel, so choosing a destination does nothing yet; phase 1 uses a file exporter.
+    #endif
     }
 
     /// Writes every subscription to the OPML file `url`, and says how many
@@ -422,36 +445,71 @@ extension LibraryFeedsPresenter {
 
 extension FeedWording {
     /// Library > Import OPML….
-    static let importCommand = "Import OPML…"
+    static var importCommand: String {
+        // Translators: Title of the Library menu's command that imports an OPML file of subscriptions. The ellipsis says a panel follows. OPML is a file format; keep it.
+        InterfaceText.line("feed.importCommand", "Import OPML…")
+    }
     /// Library > Export OPML….
-    static let exportCommand = "Export OPML…"
+    static var exportCommand: String {
+        // Translators: Title of the Library menu's command that exports the subscriptions as an OPML file. The ellipsis says a panel follows. OPML is a file format; keep it.
+        InterfaceText.line("feed.exportCommand", "Export OPML…")
+    }
     /// The Import OPML sheet's heading.
-    static let importTitle = "Import Subscriptions"
+    static var importTitle: String {
+        // Translators: Heading of the sheet that imports an OPML file of subscriptions. Title case.
+        InterfaceText.line("feed.importTitle", "Import Subscriptions")
+    }
     /// The Open panel's message.
-    static let importPanelMessage = "Choose an OPML file of subscriptions, as another feed reader exports them."
+    static var importPanelMessage: String {
+        // Translators: The message of the Open panel that chooses an OPML file of subscriptions.
+        InterfaceText.line("feed.importPanelMessage", "Choose an OPML file of subscriptions, as another feed reader exports them.")
+    }
     /// The line naming the file and how many feeds it lists.
     static func importLists(fileName: String, count: Int) -> String {
-        "\(fileName) lists \(CountWording.phrase(count, singular: "feed", plural: "feeds")). Each gets a folder of its own, named after it."
+        // Translators: The line of the Import OPML sheet that names the file and how many feeds it lists. %@ is the file's name; %lld is how many feeds.
+        InterfaceText.line("feed.importLists", "\(fileName) lists \(number: count) feeds. Each gets its own folder, named after it.")
     }
     /// The folder picker's caption.
-    static let importFolderCaption = "Put the feeds' folders in"
+    static var importFolderCaption: String {
+        // Translators: Caption of the folder picker of the Import OPML sheet: the library folder that will hold each feed's own folder.
+        InterfaceText.line("feed.importFolderCaption", "Put the feeds' folders in")
+    }
     /// The folder picker's spoken label.
-    static let importFolderLabel = "Folder to hold the imported feeds' folders"
+    static var importFolderLabel: String {
+        // Translators: VoiceOver label of the folder picker of the Import OPML sheet.
+        InterfaceText.line("feed.importFolderLabel", "Folder to hold the imported feeds' folders")
+    }
     /// The Import button.
-    static let importButton = "Import"
+    static var importButton: String {
+        // Translators: Title of the button that starts an import, such as an OPML file of subscriptions.
+        InterfaceText.line("common.import", "Import")
+    }
     /// What the sheet shows, and VoiceOver can read, while it subscribes.
     static func importProgress(_ progress: OPMLImportModel.Progress) -> String {
-        "Subscribing to \(progress.current), \(progress.done + 1) of \(progress.total)…"
+        // Translators: What the Import OPML sheet shows while it subscribes to the feeds. The first %@ is the title of the feed being subscribed to; the first %lld is its number in the file; the second %lld is how many feeds the file lists.
+        InterfaceText.line("feed.importProgress", "Subscribing to \(progress.current), \(number: progress.done + 1) of \(number: progress.total)…")
     }
     /// The title of the alert saying why an OPML file can't be read.
-    static let importFailedTitle = "Couldn't Import Subscriptions"
+    static var importFailedTitle: String {
+        // Translators: Title of the alert that says why an OPML file could not be read. Title case.
+        InterfaceText.line("feed.importFailedTitle", "Couldn't Import Subscriptions")
+    }
     /// The title of the alert saying why the subscriptions can't be exported.
-    static let exportFailedTitle = "Couldn't Export Subscriptions"
+    static var exportFailedTitle: String {
+        // Translators: Title of the alert that says why the subscriptions could not be exported. Title case.
+        InterfaceText.line("feed.exportFailedTitle", "Couldn't Export Subscriptions")
+    }
     /// What Export OPML says with no subscription.
-    static let nothingToExport = "There are no subscriptions to export."
+    static var nothingToExport: String {
+        // Translators: What Export OPML says when the library has no feed.
+        InterfaceText.line("feed.nothingToExport", "There are no subscriptions to export.")
+    }
     /// What Export OPML says when every feed in the library is one the
     /// listener unsubscribed from, which an export leaves out (REV11).
-    static let nothingSubscribedToExport = "There are no subscriptions to export: every feed in your library is unsubscribed."
+    static var nothingSubscribedToExport: String {
+        // Translators: What Export OPML says when every feed in the library is unsubscribed, which an export leaves out.
+        InterfaceText.line("feed.nothingSubscribedToExport", "There are no subscriptions to export: every feed in your library is unsubscribed.")
+    }
     /// What an import's summary says of the feeds it lists that are in the
     /// library already, unsubscribed from (FR11, branch D), named by their
     /// titles there: they stay unsubscribed, as the listener chose, and
@@ -461,32 +519,35 @@ extension FeedWording {
         guard titles.count != 1, !titles.isEmpty else {
             return FeedSubscribeError.unsubscribedAlready(title: titles.first ?? "").message
         }
-        return "\(CountWording.list(titles)) are in your library, unsubscribed. "
-            + "Choose Resubscribe on a feed's row, or in its Feed Info, to check it again."
+        // Translators: What the Import OPML sheet says of several feeds the file lists that are in the library already, unsubscribed. The first %@ is a list of their titles; the second is the name of the Resubscribe command; the third is the name of the Feed Info sheet.
+        return InterfaceText.line("feed.importFoundUnsubscribed", "\(CountWording.list(titles)) are in your library, unsubscribed. Choose \(resubscribeTitle) on a feed's row, or in its \(feedInfoName), to check it again.")
     }
     /// The Save panel's suggested file name.
-    static let exportFileName = "TextMouth Subscriptions.opml"
+    static let exportFileName = "TextMouth Subscriptions.opml" // l10n: no (a suggested file name, which other apps and scripts may look for)
     /// The Save panel's message.
-    static let exportPanelMessage = "Save your subscriptions as an OPML file, which other feed readers import."
+    static var exportPanelMessage: String {
+        // Translators: The message of the Save panel that saves the subscriptions as an OPML file.
+        InterfaceText.line("feed.exportPanelMessage", "Save your subscriptions as an OPML file, which other feed readers import.")
+    }
     /// The exported document's title.
-    static let exportDocumentTitle = "TextMouth Subscriptions"
+    static var exportDocumentTitle: String {
+        // Translators: The title written into an exported OPML file of subscriptions. Title case.
+        InterfaceText.line("feed.exportDocumentTitle", "TextMouth Subscriptions")
+    }
     /// What VoiceOver hears once the subscriptions are exported, with how
     /// many feeds the listener unsubscribed from were left out (REV11):
     /// "Exported 2 subscriptions to Mine.opml. 1 feed you unsubscribed from
     /// was left out."
     static func exported(count: Int, fileName: String, unsubscribedCount: Int = 0) -> String {
-        let exported = "Exported \(CountWording.phrase(count, singular: "subscription", plural: "subscriptions")) to \(fileName)."
-        switch unsubscribedCount {
-        case ...0:
-            return exported
-        case 1:
-            return exported + " 1 feed you unsubscribed from was left out."
-        default:
-            return exported + " \(unsubscribedCount) feeds you unsubscribed from were left out."
-        }
+        // Translators: What VoiceOver says once the subscriptions are exported. %lld is how many; %@ is the file's name.
+        let exported = InterfaceText.line("feed.exported.subscriptions", "Exported \(number: count) subscriptions to \(fileName).")
+        guard unsubscribedCount > 0 else { return exported }
+        // Translators: The end of what VoiceOver says once the subscriptions are exported: feeds the listener unsubscribed from are left out. %lld is how many.
+        return SentenceWording.joined([exported, InterfaceText.line("feed.exported.unsubscribed", "\(number: unsubscribedCount) feeds you unsubscribed from were left out.")])
     }
     /// Why the subscriptions couldn't be written.
     static func exportFailed(_ reason: String) -> String {
-        "The subscriptions couldn't be saved: \(reason)"
+        // Translators: Why the subscriptions could not be exported. %@ is the reason, from the system.
+        InterfaceText.line("feed.exportFailed", "The subscriptions couldn't be saved: \(reason)")
     }
 }

@@ -1,6 +1,50 @@
 import SwiftUI
 import Combine
 
+/// The words of the Library window's frame, and the buttons and alert words
+/// every Library sheet shares (FR34): Cancel, Save, the error alert's title,
+/// its OK button, and its message when nothing more is known. The Mac's views
+/// say them through here, since no file outside the iPhone's folders may name
+/// an iPhone type (`IOSBranchTests`); the iPhone's `PhoneAppWording` says the
+/// same words with the same keys.
+enum LibraryWindowWording {
+    /// The title of the overlay shown while the library's text is extracted.
+    static var extractingTextTitle: String {
+        // Translators: Title of the overlay that shows progress while TextMouth reads the text of the library's books, at launch or after a change. A progress count follows it.
+        InterfaceText.line("libraryWindow.extractingTextTitle", "Extracting Text")
+    }
+
+    /// The button that closes a sheet or answers a question with nothing done.
+    static var cancel: String {
+        // Translators: Button that closes a sheet or answers a question without doing or changing anything.
+        InterfaceText.line("common.cancel", "Cancel")
+    }
+
+    /// The button that saves the changes made in a sheet.
+    static var save: String {
+        // Translators: Button that saves the changes made in a sheet.
+        InterfaceText.line("common.save", "Save")
+    }
+
+    /// The title of the alert about a problem, when it has no more specific title.
+    static var errorTitle: String {
+        // Translators: Title of an alert about a problem, when the problem has no more specific title.
+        InterfaceText.line("common.error", "Error")
+    }
+
+    /// The button that dismisses an alert about a problem.
+    static var errorDismiss: String {
+        // Translators: Button that dismisses an alert about a problem.
+        InterfaceText.line("common.ok", "OK")
+    }
+
+    /// The message of an alert about a problem, when nothing more is known about it.
+    static var unknownError: String {
+        // Translators: Message of an alert about a problem, when nothing more is known about it.
+        InterfaceText.line("common.anUnknownErrorOccurred", "An unknown error occurred.")
+    }
+}
+
 /// Root view for a library window. Each library window has its own navigation state.
 struct LibraryWindowView: View {
     @EnvironmentObject var libraryViewModel: LibraryViewModel
@@ -22,7 +66,12 @@ struct LibraryWindowView: View {
     /// router for File > New from Text....
     @State private var showTextInput = false
     /// The NSWindow hosting this library view, captured via WindowAccessor
-    @State private var hostWindow: NSWindow?
+    @State private var hostWindow: PlatformWindow?
+    /// The app-wide actions that reached this window while the library's
+    /// files were on their way from the cloud, such as books opened from
+    /// Finder, in order: all taken once the library opens, all refused, with
+    /// the books named, if it does not.
+    @State private var heldGlobalActions: [GlobalAction] = []
 
     /// Finder-style folder navigation history (back/forward with Cmd+[ / Cmd+])
     @StateObject private var folderNav = FolderNavigationHistory()
@@ -43,7 +92,16 @@ struct LibraryWindowView: View {
                     notice: libraryViewModel.dataDirectoryRefusalNotice,
                     onAnnounce: { libraryViewModel.announceDataDirectoryUnavailability(from: hostWindow) },
                     onTryAgain: { libraryViewModel.retryDataDirectory() },
-                    onQuit: { NSApplication.shared.terminate(nil) }
+                    onQuit: {
+                        // Quitting is the Mac's; an iPhone app closes from
+                        // the system, so the button does nothing there.
+                        #if os(macOS)
+                        QuitRequest.ask()
+                        #endif
+                    },
+                    // A library file that did not arrive beside the other
+                    // (risk 5): opened without it only as the listener chooses.
+                    onOpenWithoutAwaitedFile: { libraryViewModel.openLibraryWithoutTheAwaitedFile() }
                 )
             } else {
                 LibraryView(
@@ -83,7 +141,7 @@ struct LibraryWindowView: View {
                 ProgressObserver(progress: libraryViewModel.textExtraction) { extraction in
                     if extraction.isExtracting {
                         ProgressOverlay(
-                            title: "Extracting Text",
+                            title: LibraryWindowWording.extractingTextTitle,
                             current: extraction.current,
                             total: extraction.total,
                             message: extraction.message,
@@ -135,11 +193,23 @@ struct LibraryWindowView: View {
             NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
         }
         .onDisappear {
+            refuseHeldGlobalActions()
             if let hostWindow {
                 libraryWindowRouter.unregister(hostWindow)
             }
         }
         .navigationTitle(windowTitle)
+        // A held action is taken when the library opens, or refused when the
+        // fetch ends without it.
+        .onChange(of: libraryViewModel.dataDirectoryUnavailability) {
+            releaseHeldGlobalActions(openingReadersWith: openReaderWindow)
+        }
+        // Nor can they open when another library was chosen.
+        .onChange(of: libraryViewModel.librarySwitchPending) {
+            if libraryViewModel.librarySwitchPending {
+                refuseHeldGlobalActions()
+            }
+        }
         .frame(minWidth: 600, minHeight: 400)
         .fileImporter(
             isPresented: $showFileImporter,
@@ -161,10 +231,10 @@ struct LibraryWindowView: View {
                 libraryViewModel.showError = true
             }
         }
-        .alert(libraryViewModel.errorTitle ?? "Error", isPresented: $libraryViewModel.showError) {
-            Button("OK", role: .cancel) {}
+        .alert(libraryViewModel.errorTitle ?? LibraryWindowWording.errorTitle, isPresented: $libraryViewModel.showError) {
+            Button(LibraryWindowWording.errorDismiss, role: .cancel) {}
         } message: {
-            Text(libraryViewModel.errorMessage ?? "An unknown error occurred.")
+            Text(libraryViewModel.errorMessage ?? LibraryWindowWording.unknownError)
         }
         // Remove book confirmation dialog (supports single or multiple books).
         // Its words say whether the files go to the Trash, are deleted
@@ -192,7 +262,7 @@ struct LibraryWindowView: View {
                     libraryViewModel.pendingRemoveBooks = []
                 }
             }
-            Button("Cancel", role: .cancel) {
+            Button(LibraryWindowWording.cancel, role: .cancel) {
                 libraryViewModel.pendingRemoveBooks = []
             }
         } message: {
@@ -205,6 +275,7 @@ struct LibraryWindowView: View {
         // and are asked one at a time, each in the window its import started
         // in (TODO I01).
         .importDecisionSheet(for: libraryViewModel, in: hostWindow, router: libraryWindowRouter)
+        .importPasswordSheet(for: libraryViewModel)
         // While the library moves, its progress and Cancel, in a sheet that
         // keeps this window's library from changing until the move ends
         // (FR02). It closes by itself when the move does.
@@ -256,8 +327,8 @@ struct LibraryWindowView: View {
     private var windowTitle: String {
         // VoiceOver names the window by its title when moving between
         // windows, so it says why the library isn't shown (FR02).
-        guard libraryViewModel.dataDirectoryUnavailability == nil else {
-            return DataDirectoryUnavailableText.title
+        if let reason = libraryViewModel.dataDirectoryUnavailability {
+            return DataDirectoryUnavailableText.title(for: reason)
         }
         let location = LibraryLocation(view: shownView, folderPath: currentFolderPath)
         return location.windowTitle(sortedBy: libraryViewModel.sortState(at: location))
@@ -314,9 +385,51 @@ struct LibraryWindowView: View {
     ///   - window: This view's hosting window.
     ///   - openReaderWindow: This window's `openWindow` action, read while
     ///     the view was installed, which opens a book's reader window.
-    private func registerForGlobalActions(_ window: NSWindow, openingReadersWith openReaderWindow: OpenWindowAction) {
+    private func registerForGlobalActions(_ window: PlatformWindow, openingReadersWith openReaderWindow: OpenWindowAction) {
         libraryWindowRouter.register(window) { action in
             takeGlobalAction(action, openingReadersWith: openReaderWindow)
+        }
+    }
+
+    /// Refuses `actions` because the library can't be used: the window says
+    /// so, and the requests the actions carried are dropped with them. Actions
+    /// that were held while the files were on their way (`wasHeld`) are
+    /// refused together in one sentence that names the books not opened.
+    private func refuse(_ actions: [GlobalAction], wasHeld: Bool) {
+        let message = wasHeld
+            ? DataDirectoryUnavailableText.heldRefusal(of: actions)
+            : actions.first.flatMap(DataDirectoryUnavailableText.refusal(of:))
+        for action in actions {
+            ReaderOpenRefusal.dropRequests(for: action)
+        }
+        guard let message else { return }
+        libraryViewModel.refuseWhileDataDirectoryUnavailable(message, from: hostWindow)
+    }
+
+    /// Refuses every held action: the fetch failed, the window is closing, or
+    /// another library was chosen. Does nothing when none is held.
+    private func refuseHeldGlobalActions() {
+        guard !heldGlobalActions.isEmpty else { return }
+        let held = heldGlobalActions
+        heldGlobalActions = []
+        refuse(held, wasHeld: true)
+    }
+
+    /// Takes every held action, in order, once the library is open, or
+    /// refuses them all when the library is unavailable and no longer on its
+    /// way. Nothing happens while the files are still arriving.
+    private func releaseHeldGlobalActions(openingReadersWith openReaderWindow: OpenWindowAction) {
+        guard !heldGlobalActions.isEmpty else { return }
+        let reason = libraryViewModel.dataDirectoryUnavailability
+        guard reason?.isGettingFromCloud != true else { return }
+        if reason == nil {
+            let held = heldGlobalActions
+            heldGlobalActions = []
+            for action in held {
+                takeGlobalAction(action, openingReadersWith: openReaderWindow)
+            }
+        } else {
+            refuseHeldGlobalActions()
         }
     }
 
@@ -328,11 +441,16 @@ struct LibraryWindowView: View {
         // Nothing is added to the library or opened from it while it can't
         // be used (FR02): the window comes forward and says so instead, and
         // a refused open's requests are dropped with it.
-        if libraryViewModel.dataDirectoryUnavailability != nil,
-           let refusal = DataDirectoryUnavailableText.refusal(of: action) {
+        // While the library's files are on their way, the action waits for
+        // the library, which opens by itself, instead of being refused.
+        if let reason = libraryViewModel.dataDirectoryUnavailability,
+           DataDirectoryUnavailableText.refusal(of: action) != nil {
             bringToFront()
-            libraryViewModel.refuseWhileDataDirectoryUnavailable(refusal, from: hostWindow)
-            ReaderOpenRefusal.dropRequests(for: action)
+            if reason.isGettingFromCloud {
+                heldGlobalActions.append(action)
+            } else {
+                refuse([action], wasHeld: false)
+            }
             return
         }
         // Nor while it moves (FR02).
@@ -368,11 +486,13 @@ struct LibraryWindowView: View {
     /// Brings this Library window to the front as the key window, out of
     /// the Dock first when it was minimized.
     private func bringToFront() {
+        #if os(macOS)
         guard let hostWindow else { return }
         if hostWindow.isMiniaturized {
             hostWindow.deminiaturize(nil)
         }
         hostWindow.makeKeyAndOrderFront(nil)
+        #endif
     }
 
     // MARK: - While the Library Moves (FR02)
@@ -392,7 +512,7 @@ struct LibraryWindowView: View {
     private func refuseWhileTheLibraryMoves(_ action: GlobalAction) -> Bool {
         guard let move = libraryViewModel.dataDirectoryMove,
               let refusal = DataDirectoryMoveWording.refusal(of: action) else { return false }
-        move.notice = refusal
+        move.refuse { DataDirectoryMoveWording.refusal(of: action) ?? refusal }
         VoiceOverAnnouncer.announce(refusal)
         ReaderOpenRefusal.dropRequests(for: action)
         return true
@@ -404,7 +524,8 @@ struct LibraryWindowView: View {
     /// (TODO I02), or, at the Reading List, into the folder viewed last, the
     /// books then joining the list (FR09).
     private func presentDAISYFolderPanel() {
-        let panel = LibraryViewModel.makeDAISYFolderPanel()
+        #if os(macOS)
+        let panel = LibraryViewModel.makeDAISYFolderPanel().makePanel()
         let destination = currentFolderPath
         let origin = ImportOrigin(window: hostWindow)
         let addsToReadingList = shownView.kind == .readingList
@@ -423,6 +544,11 @@ struct LibraryWindowView: View {
         } else {
             panel.begin(completionHandler: importChosenFolders)
         }
+        #else
+        // Importing folders on iPhone is phase 1's: there is no folder
+        // panel here, so the command does nothing.
+        return
+        #endif
     }
 }
 
@@ -457,13 +583,12 @@ struct ProgressOverlay: View {
     var onCancel: (@MainActor () -> Void)? = nil
 
     /// What VoiceOver calls the Cancel button. Only the import overlay has
-    /// one, so the name says what it cancels.
-    static let cancelButtonLabel = "Cancel Import"
-    /// What VoiceOver says the Cancel button does: it stops the ZIP archive
-    /// imports under way and queued (`LibraryViewModel.cancelImports()`),
-    /// though a book already being imported, such as a single audiobook
-    /// archive, is finished first, and every book already imported stays.
-    static let cancelButtonHint = "Stops importing ZIP archives after the current book. Books already imported stay in the library."
+    /// one, so the name says what it cancels; the words are the import's
+    /// (`ImportProgressWording.cancelButtonLabel`).
+    static let cancelButtonLabel = ImportProgressWording.cancelButtonLabel
+    /// What VoiceOver says the Cancel button does
+    /// (`ImportProgressWording.cancelButtonHint`).
+    static let cancelButtonHint = ImportProgressWording.cancelButtonHint
 
     var body: some View {
         VStack(spacing: 16) {
@@ -498,7 +623,7 @@ struct ProgressOverlay: View {
             }
 
             if let onCancel {
-                Button("Cancel", action: onCancel)
+                Button(LibraryWindowWording.cancel, action: onCancel)
                     .keyboardShortcut(.cancelAction)
                     .accessibilityLabel(Self.cancelButtonLabel)
                     .accessibilityHint(Self.cancelButtonHint)
@@ -525,9 +650,9 @@ struct ProgressOverlay: View {
             return spokenSummary
         }
         if total > 0 {
-            return "\(title): \(CountWording.part(current, of: total, itemNoun))"
+            return SentenceWording.labelled(title, CountWording.part(current, of: total, itemNoun))
         }
-        return message.isEmpty ? title : "\(title): \(message)"
+        return message.isEmpty ? title : SentenceWording.labelled(title, message)
     }
 }
 

@@ -1,14 +1,21 @@
 import Foundation
 import PDFKit
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import os
 
 // MARK: - Error Types
 
 /// Errors that can occur when parsing a PDF file
-enum PDFParserError: LocalizedError {
+enum PDFParserError: LocalizedError, LogDescribing {
     case fileNotFound(String)
     case cannotOpenPDF
+    /// The PDF opens but is locked by a password TextMouth does not have,
+    /// so PDFKit gives its pages neither text nor a drawing.
+    case passwordProtected
     case noTextContent
     /// No page has embedded text, and OCR could not run where it was
     /// needed, for this reason.
@@ -16,11 +23,34 @@ enum PDFParserError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .fileNotFound(let path): return "PDF file not found at: \(path)"
-        case .cannotOpenPDF: return "The PDF file could not be opened."
-        case .noTextContent: return "No text content could be extracted from the PDF."
+        case .fileNotFound(let path):
+            // Translators: Why a PDF could not be imported: there is no file at its path. %@ is the path.
+            return InterfaceText.line("pdfParserError.fileNotFound", "PDF file not found at: \(path)")
+        case .cannotOpenPDF:
+            // Translators: Why a PDF could not be imported: PDFKit could not open it.
+            return InterfaceText.line("pdfParserError.cannotOpenPDF", "The PDF file could not be opened.")
+        case .passwordProtected:
+            // Translators: Why a PDF could not be imported: it is locked with a password TextMouth does not have.
+            return InterfaceText.line("pdfParserError.passwordProtected", "This PDF needs a password to open.")
+        case .noTextContent:
+            // Translators: Why a PDF could not be imported: none of its pages holds text.
+            return InterfaceText.line("pdfParserError.noTextContent", "No text content could be extracted from the PDF.")
         case .ocrFailed(let reason):
-            return "No text could be read from the PDF: it has no embedded text, and OCR could not run (\(reason))."
+            // Translators: Why a PDF could not be imported: its pages are pictures, and text recognition (OCR) could not run. %@ is the reason, a phrase in English with no full stop.
+            return InterfaceText.line("pdfParserError.ocrFailed", "No text could be read from the PDF: it has no embedded text, and OCR could not run (\(reason)).")
+        }
+    }
+
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34).
+    var logDescription: String {
+        switch self {
+        case .fileNotFound(let path): return "PDF file not found at: \(path)" // l10n: no (debug log)
+        case .cannotOpenPDF: return "The PDF file could not be opened." // l10n: no (debug log)
+        case .passwordProtected: return "This PDF needs a password to open." // l10n: no (debug log)
+        case .noTextContent: return "No text content could be extracted from the PDF." // l10n: no (debug log)
+        case .ocrFailed(let reason):
+            return "No text could be read from the PDF: it has no embedded text, and OCR could not run (\(reason))." // l10n: no (debug log)
         }
     }
 }
@@ -94,7 +124,8 @@ enum PDFTextParser {
     ///   `/PageLabels` ("i", "ii", "1", "A-1"), or its number when it has
     ///   none. A page without text keeps its marker. False writes exactly
     ///   what cache format 3.0.7 wrote.
-    /// - Throws: `PDFParserError.ocrFailed` when no page has embedded text
+    /// - Throws: `PDFParserError.passwordProtected` when the PDF is locked
+    ///   by a password, `.ocrFailed` when no page has embedded text
     ///   and OCR could not run, `.noTextContent` when there is no text at
     ///   all, or why the file could not be opened.
     static func extract(
@@ -105,8 +136,15 @@ enum PDFTextParser {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw PDFParserError.fileNotFound(url.path)
         }
-        guard let document = PDFDocument(url: url) else {
+        guard let document = UnlockedSources.openPDF(at: url) else {
             throw PDFParserError.cannotOpenPDF
+        }
+        // A PDF locked by a password opens, but its pages give no text and
+        // cannot be drawn, so without this check it would be reported as a
+        // failure of OCR. Say what is true: it needs a password. (A PDF that
+        // restricts only copying or printing is not locked and reads as usual.)
+        guard !document.isLocked else {
+            throw PDFParserError.passwordProtected
         }
         // However the extraction ends, the outline it read is taken apart
         // before the document is released (`takeApartOutline(of:)`).
@@ -174,12 +212,12 @@ enum PDFTextParser {
                 .joined(separator: "\n\n")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
         }
-        return Extraction(markdown: markdown, report: ExtractionReport(container: "this PDF", pdf: diagnostics))
+        return Extraction(markdown: markdown, report: ExtractionReport(container: "this PDF", pdf: diagnostics)) // l10n: no (a parser's damage reason: finishes a page's reason, inside the pages' translated warning)
     }
 
     /// Read metadata (title, author) from PDF document attributes
     static func readMetadata(from url: URL) -> PDFMetadata? {
-        guard let document = PDFDocument(url: url) else { return nil }
+        guard let document = UnlockedSources.openPDF(at: url) else { return nil }
 
         let attrs = document.documentAttributes ?? [:]
         let title = (attrs[PDFDocumentAttribute.titleAttribute] as? String)?
@@ -365,7 +403,7 @@ enum PDFTextParser {
         }
 
         /// What OCR says when there is no recognizer to ask.
-        static let notAvailable = "text recognition is not available"
+        static let notAvailable = "text recognition is not available" // l10n: no (a parser's damage reason: finishes a page's reason, inside the pages' translated warning)
 
         /// Recognizes text in pictures; nil when this process has no OCR.
         let recognizer: (any PDFPageTextRecognizer)?
@@ -396,7 +434,7 @@ enum PDFTextParser {
                     if case .unavailable(let reason) = error { unavailableReason = reason }
                     result.failure = result.failure ?? error.reason
                 } catch {
-                    result.failure = result.failure ?? "text recognition failed: \(error.localizedDescription)"
+                    result.failure = result.failure ?? "text recognition failed: \(error.localizedDescription)" // l10n: no (a parser's damage reason: finishes a page's reason, inside the pages' translated warning)
                 }
             }
             return result
@@ -422,7 +460,7 @@ enum PDFTextParser {
                 return
             }
 
-            let font = attrs[.font] as? NSFont
+            let font = attrs[.font] as? PlatformFont
             let fontSize = font?.pointSize ?? bodyFontSize
             let isBold = font?.fontDescriptor.symbolicTraits.contains(.bold) ?? false
             let isItalic = font?.fontDescriptor.symbolicTraits.contains(.italic) ?? false
@@ -499,7 +537,7 @@ enum PDFTextParser {
                 return
             }
 
-            let font = attrs[.font] as? NSFont
+            let font = attrs[.font] as? PlatformFont
             let fontSize = font?.pointSize ?? bodyFontSize
             let isBold = font?.fontDescriptor.symbolicTraits.contains(.bold) ?? false
             let isItalic = font?.fontDescriptor.symbolicTraits.contains(.italic) ?? false
@@ -683,7 +721,7 @@ enum PDFTextParser {
         let fullRange = NSRange(location: 0, length: attrString.length)
 
         attrString.enumerateAttribute(.font, in: fullRange, options: []) { value, range, _ in
-            guard let font = value as? NSFont else { return }
+            guard let font = value as? PlatformFont else { return }
             let roundedSize = (font.pointSize * 2).rounded() / 2 // Round to nearest 0.5
             let charCount = range.length
             sizeCounts[roundedSize, default: 0] += charCount

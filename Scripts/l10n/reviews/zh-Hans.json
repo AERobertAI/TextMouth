@@ -1,0 +1,2070 @@
+{
+ "language": "zh-Hans",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ hadn't arrived from the cloud after %lld seconds",
+     "id": "libraryComparison.shortReason.notArrived",
+     "english": {
+      "one": "%@ hadn't arrived from the cloud after %lld second",
+      "other": "%@ hadn't arrived from the cloud after %lld seconds"
+     },
+     "before": {
+      "other": "%@ 在 %lld 秒后仍未从云端到达"
+     },
+     "after": {
+      "other": "%@ 在 %lld 秒后仍未从云端下载完成"
+     },
+     "why": "natural: 到达 copies 'arrived', a file from the cloud is said to finish downloading"
+    },
+    {
+     "key": "%@ is filed %@ in %@ and %@ in %@.",
+     "id": "libraryComparison.sentence.bookFiledDifferently",
+     "english": "%1$@ is filed %2$@ in %3$@ and %4$@ in %5$@.",
+     "before": "%1$@ 在 %3$@ 中归档于%2$@，在 %5$@ 中归档于%4$@。",
+     "after": "%1$@ 在 %3$@ 中存放%2$@，在 %5$@ 中存放%4$@。",
+     "why": "grammar: the second and fourth values already start with 在, so 归档于 gave the broken 于在"
+    },
+    {
+     "key": "%@ set aside a conflicting copy of %@: “%@”, in %@.",
+     "id": "conflictCopy.setAsideConflicting",
+     "english": "%1$@ set aside a conflicting copy of %2$@: “%3$@”, in %4$@.",
+     "before": "%1$@ 已将 %2$@ 的冲突副本搁置为“%3$@”，位于 %4$@。",
+     "after": "%1$@ 已将 %2$@ 的冲突副本另存为“%3$@”，位于 %4$@。",
+     "why": "natural: 搁置 means to shelve or postpone, a file set aside under another name is 另存为"
+    },
+    {
+     "key": "%@ wasn't asked for again, because the drive hasn't answered an earlier read",
+     "id": "libraryComparison.shortReason.stillBeingFetched",
+     "english": "%@ wasn't asked for again, because the drive hasn't answered an earlier read",
+     "before": "%@ 未再次请求读取，因为驱动器尚未响应之前的读取",
+     "after": "未再次请求读取 %@，因为驱动器尚未响应之前的读取请求",
+     "why": "meaning: subject and object swapped, the file was not asked for again, it did not ask"
+    },
+    {
+     "key": "%@, and %lld more",
+     "id": "libraryTransition.feedItemsLeft.more",
+     "english": {
+      "one": "%@, and %lld more",
+      "other": "%@, and %lld more"
+     },
+     "before": {
+      "other": "%@ 等另外 %lld 个"
+     },
+     "after": {
+      "other": "%@，以及另外 %lld 项"
+     },
+     "why": "natural: 等另外 mixes two ways of saying 'and more'"
+    },
+    {
+     "key": "%lld bookmarks the other lacks",
+     "id": "libraryComparison.changesOnly.bookmarks",
+     "english": {
+      "one": "%lld bookmark the other lacks",
+      "other": "%lld bookmarks the other lacks"
+     },
+     "before": {
+      "other": "%lld 个另一个副本没有的书签"
+     },
+     "after": {
+      "other": "另一个副本没有的 %lld 个书签"
+     },
+     "why": "natural: the count goes next to its noun, not before the relative clause"
+    },
+    {
+     "key": "%lld books the other lacks",
+     "id": "libraryComparison.changesOnly.books",
+     "english": {
+      "one": "%lld book the other lacks",
+      "other": "%lld books the other lacks"
+     },
+     "before": {
+      "other": "%lld 本另一个副本没有的图书"
+     },
+     "after": {
+      "other": "另一个副本没有的 %lld 本图书"
+     },
+     "why": "natural: the count goes next to its noun, not before the relative clause"
+    },
+    {
+     "key": "Choose a new location for the library",
+     "id": "storageLocation.chooserLabel.newLibrary",
+     "english": "Choose a new location for the library",
+     "before": "为资料库选取新位置。",
+     "after": "为资料库选取新位置",
+     "why": "voiceover: a button's label takes no full stop, only a hint does"
+    },
+    {
+     "key": "Choose another braille code to read the book's file again with it.",
+     "id": "brailleCode.popUpHint",
+     "english": "Choose another braille code to read the book's file again with it.",
+     "before": "选取另一种盲文码，以用它重新读取图书文件。",
+     "after": "选取另一种盲文码来重新读取图书文件。",
+     "why": "natural: 以用它 is a stilted copy of 'with it'"
+    },
+    {
+     "key": "Choose another encoding to read the book's file again in it.",
+     "id": "textEncoding.popUpHint",
+     "english": "Choose another encoding to read the book's file again in it.",
+     "before": "选取另一种编码，以用它重新读取图书文件。",
+     "after": "选取另一种编码来重新读取图书文件。",
+     "why": "natural: 以用它 is a stilted copy of 'in it'"
+    },
+    {
+     "key": "Choose other characters to read the book's file again with them.",
+     "id": "brailleFileCode.popUpHint",
+     "english": "Choose other characters to read the book's file again with them.",
+     "before": "选取其他字符，以用它们重新读取图书文件。",
+     "after": "选取其他字符来重新读取图书文件。",
+     "why": "natural: 以用它们 is a stilted copy of 'with them'"
+    },
+    {
+     "key": "Condition %@ needs the text to look for.",
+     "id": "libraryViewEditor.textMissing",
+     "english": "Condition %@ needs the text to look for.",
+     "before": "条件 %@ 需要要查找的文本。",
+     "after": "条件 %@ 需要填写要查找的文本。",
+     "why": "natural: 需要要 doubled the verb"
+    },
+    {
+     "key": "Could not relocate folder contents",
+     "id": "libraryViewModel.couldNotRelocateFolderContents",
+     "english": "Could not relocate folder contents",
+     "before": "无法重新安置文件夹内容",
+     "after": "无法重新放置文件夹内容",
+     "why": "term: 重新安置 is for resettling people, Apple's Chinese says 重新放置 for relocated items"
+    },
+    {
+     "key": "Enable restart-timer gesture",
+     "id": "miscellaneousSettings.restartGestureTitle",
+     "english": "Enable restart-timer gesture",
+     "before": "启用重启定时器手势",
+     "after": "启用定时器重启手势",
+     "why": "meaning: 重启定时器手势 reads as restarting a timer gesture, the gesture restarts the timer"
+    },
+    {
+     "key": "Failed to rebuild to default",
+     "id": "libraryViewModel.resetFailureContext",
+     "english": "Failed to rebuild to default",
+     "before": "重建为默认设置失败",
+     "after": "重置为默认位置失败",
+     "why": "meaning: Reset to Default moves the data back to the default location, 重建为默认设置 spoke of rebuilding settings"
+    },
+    {
+     "key": "First in the Sort",
+     "id": "libraryViewEditor.limitOrderName.viewSort",
+     "english": "First in the Sort",
+     "before": "排序中的最前",
+     "after": "排序靠前",
+     "why": "natural: 排序中的最前 is not a phrase, the limit picks the items first in the sort"
+    },
+    {
+     "key": "Go up one folder level",
+     "id": "libraryList.goUpOneFolderLevel",
+     "english": "Go up one folder level",
+     "before": "上移一级文件夹",
+     "after": "前往上一级文件夹",
+     "why": "meaning: 上移一级文件夹 read as moving a folder up, the button goes to the enclosing folder"
+    },
+    {
+     "key": "In this Mac's Logs folder",
+     "id": "logsSettings.machineChoice",
+     "english": "In this Mac's Logs folder",
+     "before": "在这台 Mac 的“日志”文件夹中。",
+     "after": "在这台 Mac 的“日志”文件夹中",
+     "why": "punctuation: a pop-up choice also used inside a sentence and before its path in parentheses takes no full stop"
+    },
+    {
+     "key": "Logs are written to %@.",
+     "id": "logsSettings.status.dataDirectory",
+     "english": "Logs are written to %@.",
+     "before": "日志已写入 %@。",
+     "after": "日志会写入 %@。",
+     "why": "meaning: 已写入 says the logs have been written, the line says where they go"
+    },
+    {
+     "key": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "id": "miscellaneousSettings.patternExplanation",
+     "english": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "before": "触发重启的媒体控制事件。最后一个会被消耗，不会传给播放，因此无法启动音频。",
+     "after": "触发重启的媒体控制事件。最后一个事件会被拦截，不会传给播放功能，因此无法启动音频。",
+     "why": "natural: 被消耗 copies 'consumed', and 传给播放 lacked the noun, an intercepted event is 被拦截"
+    },
+    {
+     "key": "Neither is newer: each has changes the other lacks.",
+     "id": "libraryComparison.newerCopySentence.changes",
+     "english": "Neither is newer: each has changes the other lacks.",
+     "before": "两者都不较新：各自都有对方没有的更改。",
+     "after": "两者都不比对方新：各自都有对方没有的更改。",
+     "why": "natural: 两者都不较新 is a stilted copy of 'neither is newer'"
+    },
+    {
+     "key": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+     "id": "libraryCloud.noneSelectedBooksKeptMacChoice",
+     "english": {
+      "one": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+      "other": "None of the %@ selected books is kept on this Mac by your choice, and %lld are kept for the reading list."
+     },
+     "before": {
+      "other": "所选的 %@ 本图书中，没有一本是按你的选择保留在这台 Mac 上的，另有 %lld 本因阅读列表而保留。"
+     },
+     "after": {
+      "other": "所选的 %@ 本图书中，没有一本是按你的选择保留在这台 Mac 上的，其中 %lld 本因阅读列表而保留。"
+     },
+     "why": "meaning: 另有 means further books, but the ones kept for the reading list are among those selected"
+    },
+    {
+     "key": "Nothing is copied, and nothing is created in %@.",
+     "id": "storage.useSentence.created",
+     "english": "Nothing is copied, and nothing is created in %@.",
+     "before": "没有拷贝任何内容，也没有在 %@ 中创建任何内容。",
+     "after": "不会拷贝任何内容，也不会在 %@ 中创建任何内容。",
+     "why": "meaning: the question comes before the switch, 没有 said it had already happened"
+    },
+    {
+     "key": "Nothing is copied, and the library in %@ stays as it is.",
+     "id": "storage.useSentence.stays",
+     "english": "Nothing is copied, and the library in %@ stays as it is.",
+     "before": "没有拷贝任何内容，%@ 中的资料库保持原样。",
+     "after": "不会拷贝任何内容，%@ 中的资料库会保持原样。",
+     "why": "meaning: the question comes before the switch, 没有 said it had already happened"
+    },
+    {
+     "key": "Open the library without its index?",
+     "id": "libraryFileWait.confirmationTitle.index",
+     "english": "Open the library without its index?",
+     "before": "要不使用索引打开资料库吗？",
+     "after": "要在不使用索引的情况下打开资料库吗？",
+     "why": "meaning: 要不使用 can be heard as 要不 (how about) and so as the opposite question"
+    },
+    {
+     "key": "Opened Last",
+     "id": "libraryViewEditor.limitOrderName.lastOpened",
+     "english": "Opened Last",
+     "before": "最后打开",
+     "after": "最近打开",
+     "why": "term: the same limit order reads 最近打开 in the view's description and beside 最近添加, the pop-up said 最后打开"
+    },
+    {
+     "key": "Pause level",
+     "id": "settings.pauseLevelTitle",
+     "english": "Pause level",
+     "before": "暂停级别",
+     "after": "停顿级别",
+     "why": "meaning: 暂停 is pausing playback, the slider sets the pauses at punctuation, 停顿, as its label 标点停顿级别 says"
+    },
+    {
+     "key": "Read “%@” again as %@?",
+     "id": "textEncoding.confirmTitle",
+     "english": "Read “%1$@” again as %2$@?",
+     "before": "将“%1$@”重新读取为 %2$@？",
+     "after": "按 %2$@ 重新读取“%1$@”？",
+     "why": "meaning: 重新读取为 said the book is turned into the encoding, it is read again in it"
+    },
+    {
+     "key": "Reading list: “%@” is %@ in %@ and %@ in %@.",
+     "id": "libraryComparison.readingListOptionDiffers",
+     "english": "Reading list: “%1$@” is %2$@ in %3$@ and %4$@ in %5$@.",
+     "before": "阅读列表：“%1$@”在 %3$@ 中是%2$@，在 %5$@ 中是%4$@。",
+     "after": "阅读列表：“%1$@”在 %3$@ 中%2$@，在 %5$@ 中%4$@。",
+     "why": "grammar: 是开 and 是关 are not Chinese, the values now read 已开启 and 已关闭 and need no verb"
+    },
+    {
+     "key": "Restart Sleep Timer Gesture",
+     "id": "miscellaneousSettings.restartGestureHeader",
+     "english": "Restart Sleep Timer Gesture",
+     "before": "重新开始睡眠定时器手势",
+     "after": "睡眠定时器重启手势",
+     "why": "meaning: 重新开始睡眠定时器手势 reads as restarting the gesture, the gesture restarts the timer"
+    },
+    {
+     "key": "Stops saying the code was guessed. The book is not read again.",
+     "id": "brailleCode.keepGuessHint",
+     "english": "Stops saying the code was guessed. The book is not read again.",
+     "before": "不再说明此编码为推测所得。不会重新读取图书。",
+     "after": "不再说明此盲文码为推测所得。不会重新读取图书。",
+     "why": "meaning: 编码 is a text encoding, the guessed code here is the braille code (Keep This Code is 保留此盲文码)"
+    },
+    {
+     "key": "Text extraction progress: %lld of %lld",
+     "id": "storageSettings.extractionProgressLabel",
+     "english": "Text extraction progress: %1$lld of %2$lld",
+     "before": "文本提取进度：已完成 %1$lld，共 %2$lld",
+     "after": "文本提取进度：已完成 %1$lld 本，共 %2$lld 本",
+     "why": "grammar: both counts are books and need the measure word 本"
+    },
+    {
+     "key": "TextMouth could not move %@ to the current library format.",
+     "id": "legacyMigrationReport.userSummary.move",
+     "english": "TextMouth could not move %@ to the current library format.",
+     "before": "TextMouth 无法将 %@ 移到当前的资料库格式。",
+     "after": "TextMouth 无法将 %@ 迁移到当前的资料库格式。",
+     "why": "natural: a book is not moved into a format, it is migrated (迁移), as 迁移后的副本 says elsewhere"
+    },
+    {
+     "key": "TextMouth is getting them now, and the library opens when they arrive.",
+     "id": "dataDirectoryUnavailability.gettingFromCloud",
+     "english": "TextMouth is getting them now, and the library opens when they arrive.",
+     "before": "TextMouth 正在获取它们，它们到达后资料库会打开。",
+     "after": "TextMouth 正在获取它们，获取完成后资料库会打开。",
+     "why": "natural: 到达 copies 'arrive', files being fetched are said to finish"
+    },
+    {
+     "key": "TextMouth moved %@ to the current library format, but with a problem:",
+     "id": "legacyMigrationReport.userSummary.problem",
+     "english": "TextMouth moved %@ to the current library format, but with a problem:",
+     "before": "TextMouth 已将 %@ 移到当前的资料库格式，但出现了一个问题：",
+     "after": "TextMouth 已将 %@ 迁移到当前的资料库格式，但出现了一个问题：",
+     "why": "natural: a book is not moved into a format, it is migrated (迁移)"
+    },
+    {
+     "key": "TextMouth moved %@ to the current library format, but with problems:",
+     "id": "legacyMigrationReport.userSummary.problems",
+     "english": "TextMouth moved %@ to the current library format, but with problems:",
+     "before": "TextMouth 已将 %@ 移到当前的资料库格式，但出现了一些问题：",
+     "after": "TextMouth 已将 %@ 迁移到当前的资料库格式，但出现了一些问题：",
+     "why": "natural: a book is not moved into a format, it is migrated (迁移)"
+    },
+    {
+     "key": "TextMouth waited for it.",
+     "id": "libraryFileWait.explanation.waited",
+     "english": "TextMouth waited for it.",
+     "before": "TextMouth 已等待它。",
+     "after": "TextMouth 已等待该文件传来。",
+     "why": "natural: 已等待它 is an unfinished calque, the file was waited for to come over"
+    },
+    {
+     "key": "The book's files aren't on this Mac yet. %@ may still be syncing them.",
+     "id": "bookCloudError.packageMissing",
+     "english": "The book's files aren't on this Mac yet. %@ may still be syncing them.",
+     "before": "这本图书的文件尚未到达这台 Mac。%@ 可能仍在同步它们。",
+     "after": "这本图书的文件尚未传到这台 Mac。%@ 可能仍在同步它们。",
+     "why": "natural: 到达 copies 'arrived', 传到这台 Mac is the wording of the same sentence for one book"
+    },
+    {
+     "key": "The library index could not be read, so library changes are not being saved.",
+     "id": "libraryIndexRecovery.settingsExplanation.changes",
+     "english": "The library index could not be read, so library changes are not being saved.",
+     "before": "无法读取资料库索引，因此资料库更改没有被存储。",
+     "after": "无法读取资料库索引，因此目前不会存储资料库更改。",
+     "why": "meaning: 没有被存储 says past changes were not saved, the line says changes are not being saved from now on"
+    },
+    {
+     "key": "The library's identity file is on this Mac, but its index, %@, hasn't arrived from %@.",
+     "id": "libraryFileWait.explanation.index",
+     "english": "The library's identity file is on this Mac, but its index, %1$@, hasn't arrived from %2$@.",
+     "before": "资料库的标识文件在这台 Mac 上，但其索引 %1$@ 尚未从 %2$@ 到达。",
+     "after": "资料库的标识文件在这台 Mac 上，但其索引 %1$@ 尚未从 %2$@ 传到这台 Mac。",
+     "why": "natural: 到达 copies 'arrived', a file still in the cloud has not come over to this Mac"
+    },
+    {
+     "key": "The library's index is on this Mac, but its identity file, %@, hasn't arrived from %@.",
+     "id": "libraryFileWait.explanation.identity",
+     "english": "The library's index is on this Mac, but its identity file, %1$@, hasn't arrived from %2$@.",
+     "before": "资料库的索引在这台 Mac 上，但其标识文件 %1$@ 尚未从 %2$@ 到达。",
+     "after": "资料库的索引在这台 Mac 上，但其标识文件 %1$@ 尚未从 %2$@ 传到这台 Mac。",
+     "why": "natural: 到达 copies 'arrived', a file still in the cloud has not come over to this Mac"
+    },
+    {
+     "key": "This is a temporary library, and library changes are not being saved.",
+     "id": "libraryIndexRecovery.banner.temporary",
+     "english": "This is a temporary library, and library changes are not being saved.",
+     "before": "这是临时资料库，资料库更改没有被存储。",
+     "after": "这是临时资料库，目前不会存储资料库更改。",
+     "why": "meaning: 没有被存储 says past changes were not saved, the line says changes are not being saved from now on"
+    },
+    {
+     "key": "Unread: %@ hasn't arrived from the cloud after %lld seconds, %@",
+     "id": "libraryComparison.sentence.notArrived",
+     "english": {
+      "one": "Unread: %@ hasn't arrived from the cloud after %lld second, %@",
+      "other": "Unread: %@ hasn't arrived from the cloud after %lld seconds, %@"
+     },
+     "before": {
+      "other": "未读取：%@ 在 %lld 秒后仍未从云端到达，%@"
+     },
+     "after": {
+      "other": "未读取：%@ 在 %lld 秒后仍未从云端下载完成，%@"
+     },
+     "why": "natural: 到达 copies 'arrived', a file from the cloud is said to finish downloading"
+    },
+    {
+     "key": "Unread: %@ wasn't asked for again, because the drive hasn't answered an earlier read, %@",
+     "id": "libraryComparison.sentence.stillBeingFetched",
+     "english": "Unread: %1$@ wasn't asked for again, because the drive hasn't answered an earlier read, %2$@",
+     "before": "未读取：%1$@ 未再次请求读取，因为驱动器尚未响应之前的读取，%2$@",
+     "after": "未读取：未再次请求读取 %1$@，因为驱动器尚未响应之前的读取请求，%2$@",
+     "why": "meaning: subject and object swapped, the file was not asked for again, it did not ask"
+    },
+    {
+     "key": "Up One Level",
+     "id": "common.upOneLevel",
+     "english": "Up One Level",
+     "before": "上移一级",
+     "after": "前往上一级",
+     "why": "meaning: 上移一级 reads as moving something up and sits beside Move Up (上移), the action goes to the enclosing folder"
+    },
+    {
+     "key": "Web Archive",
+     "id": "bookFormat.displayName.webarchive",
+     "english": "Web Archive",
+     "before": "网页存档",
+     "after": "网页归档",
+     "why": "term: Safari's Chinese names the .webarchive format 网页归档"
+    },
+    {
+     "key": "choose Make online-only",
+     "id": "bookCloud.onlineOnlyCommand.dropbox",
+     "english": "choose Make online-only",
+     "before": "选取 Make online-only",
+     "after": "选取“Make online-only”",
+     "why": "punctuation: another app's command named in a sentence is quoted, as its siblings are"
+    },
+    {
+     "key": "choose Remove Download",
+     "id": "bookCloud.onlineOnlyCommand.iCloudDrive",
+     "english": "choose Remove Download",
+     "before": "选取“移除下载”",
+     "after": "选取“移除下载项”",
+     "why": "term: this is the Finder's own iCloud Drive command, which Apple's Chinese Finder names 移除下载项"
+    },
+    {
+     "key": "first in the sort",
+     "id": "libraryViewEditor.viewSort",
+     "english": "first in the sort",
+     "before": "排序中最前的",
+     "after": "排序靠前",
+     "why": "natural: 排序中最前的 is not a phrase, and the pop-up's own name (First in the Sort) now reads 排序靠前"
+    },
+    {
+     "key": "off",
+     "id": "libraryComparison.onOrOff.switchedOff",
+     "english": "off",
+     "before": "关",
+     "after": "已开启",
+     "why": "grammar: the bare 开 cannot follow 在此副本中 in its one sentence, Compare Libraries' Reading List line"
+    },
+    {
+     "key": "on",
+     "id": "libraryComparison.onOrOff.switchedOn",
+     "english": "on",
+     "before": "开",
+     "after": "已关闭",
+     "why": "grammar: the bare 关 cannot follow 在此副本中 in its one sentence, Compare Libraries' Reading List line"
+    },
+    {
+     "key": "use the drive's own command to keep the book only online",
+     "id": "bookCloud.onlineOnlyCommand.other",
+     "english": "use the drive's own command to keep the book only online",
+     "before": "使用该云盘自带的命令，让这本图书仅保留在线",
+     "after": "使用该云盘自带的命令，让这本图书仅保留在云端",
+     "why": "natural: 仅保留在线 is not idiomatic, a book kept only online stays only in the cloud"
+    }
+   ]
+  },
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ are in your library, unsubscribed. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "id": "feed.importFoundUnsubscribed",
+     "english": "%1$@ are in your library, unsubscribed. Choose %2$@ on a feed's row, or in its %3$@, to check it again.",
+     "before": "%1$@ 在你的资料库中，已取消订阅。在订阅源所在行或其 %3$@ 中选取 %2$@，可再次检查。",
+     "after": "%1$@ 在你的资料库中，但已取消订阅。在订阅源所在行或其“%3$@”中选取“%2$@”，即可再次检查。",
+     "why": "punctuation: the command and sheet names were filled in bare between spaces, and Apple's Chinese, like the catalog's other areas, puts a name in “”"
+    },
+    {
+     "key": "%@ for %@ is now in effect: %@.",
+     "id": "feed.itemPolicyApplied.forFeedInEffect",
+     "english": "%1$@ for %2$@ is now in effect: %3$@.",
+     "before": "%2$@ 的%1$@现已生效：%3$@。",
+     "after": "%2$@ 的“%1$@”现已生效：%3$@。",
+     "why": "punctuation: the choice name was bare, and 列出和下载 then read as two verbs, so it is quoted as a name"
+    },
+    {
+     "key": "%@ for %@ now follows the global setting: %@.",
+     "id": "feed.itemPolicyApplied.follows",
+     "english": "%1$@ for %2$@ now follows the global setting: %3$@.",
+     "before": "%2$@ 的%1$@现在遵循全局设置：%3$@。",
+     "after": "%2$@ 的“%1$@”现在遵循全局设置：%3$@。",
+     "why": "punctuation: the choice name quoted, as in entry 11"
+    },
+    {
+     "key": "%@ is in your library, unsubscribed. Choose %@ on its row, or in its %@, to check it again.",
+     "id": "feedSubscribeError.message.unsubscribedAlready",
+     "english": "%1$@ is in your library, unsubscribed. Choose %2$@ on its row, or in its %3$@, to check it again.",
+     "before": "%1$@ 在你的资料库中，已取消订阅。在其所在行或其 %3$@ 中选取 %2$@，可再次检查。",
+     "after": "%1$@ 在你的资料库中，但已取消订阅。在其所在行或其“%3$@”中选取“%2$@”，即可再次检查。",
+     "why": "punctuation: the command and sheet names quoted, as in entry 4"
+    },
+    {
+     "key": "%@ is now in effect: %@.",
+     "id": "feed.itemPolicyApplied.inEffect",
+     "english": "%1$@ is now in effect: %2$@.",
+     "before": "%1$@现已生效：%2$@。",
+     "after": "“%1$@”现已生效：%2$@。",
+     "why": "punctuation: the choice name quoted, as in entry 11"
+    },
+    {
+     "key": "%@ is unsubscribed, so TextMouth doesn't check it. Choose %@ to check it again.",
+     "id": "feed.notChecked",
+     "english": "%1$@ is unsubscribed, so TextMouth doesn't check it. Choose %2$@ to check it again.",
+     "before": "%1$@ 已取消订阅，因此 TextMouth 不会检查它。选取 %2$@ 可再次检查。",
+     "after": "%1$@ 已取消订阅，因此 TextMouth 不会检查它。选取“%2$@”即可再次检查。",
+     "why": "punctuation: the command name quoted, as in entry 4"
+    },
+    {
+     "key": "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder.",
+     "id": "feed.nothingToMoveToLibrary",
+     "english": "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder.",
+     "before": "%@ 用于移动在其订阅源中下载的单集或文章。请在该订阅源的文件夹中选择一项。",
+     "after": "“%@”用于移动在其订阅源中下载的单集或文章。请在该订阅源的文件夹中选择一项。",
+     "why": "punctuation: the command name quoted, as in entry 4"
+    },
+    {
+     "key": "%@ not recording",
+     "id": "recording.levelAnnouncement.idle",
+     "english": "%@ not recording",
+     "before": "%@ 未在录音",
+     "after": "%@，未在录音",
+     "why": "punctuation: the label is Chinese, so the space split two Chinese words, and a comma parts label and state as the screen line does"
+    },
+    {
+     "key": "%@ silent",
+     "id": "recording.levelAnnouncement.silent",
+     "english": "%@ silent",
+     "before": "%@ 无声",
+     "after": "%@，无声",
+     "why": "punctuation: the same as entry 736"
+    },
+    {
+     "key": "%@ was connected; choose it in the %@ pop-up to record from it.",
+     "id": "recording.microphonesConnected.wasChoose",
+     "english": "%1$@ was connected; choose it in the %2$@ pop-up to record from it.",
+     "before": "%1$@ 已连接；请在“%2$@”弹出式菜单中选取它以用其录音。",
+     "after": "%1$@ 已连接；若要用它录音，请在“%2$@”弹出式菜单中选取它。",
+     "why": "natural: 选取它以用其录音 is stilted, and Chinese puts the purpose first"
+    },
+    {
+     "key": "%@ were connected; choose one in the %@ pop-up to record from it.",
+     "id": "recording.microphonesConnected.were",
+     "english": "%1$@ were connected; choose one in the %2$@ pop-up to record from it.",
+     "before": "%1$@ 已连接；请在“%2$@”弹出式菜单中选取其一以用其录音。",
+     "after": "%1$@ 已连接；若要用其中一个录音，请在“%2$@”弹出式菜单中选取它。",
+     "why": "natural: the same as entry 744"
+    },
+    {
+     "key": "%lld books were imported from “%@”.",
+     "id": "importDecision.zipFolderMessage.imported",
+     "english": {
+      "one": "%lld book was imported from “%@”.",
+      "other": "%lld books were imported from “%@”."
+     },
+     "before": {
+      "other": "导入了 %1$lld 本图书，来自“%2$@”。"
+     },
+     "after": {
+      "other": "已从“%2$@”导入 %1$lld 本图书。"
+     },
+     "why": "natural: \"imported N books, from X\" copied the English order, and Chinese puts the source before the verb"
+    },
+    {
+     "key": "%lld edits are undone. Redo brings them back until you make another edit.",
+     "id": "audioEditor.revertExplanation.another",
+     "english": {
+      "one": "%lld edit is undone. Redo brings them back until you make another edit.",
+      "other": "%lld edits are undone. Redo brings them back until you make another edit."
+     },
+     "before": {
+      "other": "将撤销 %lld 项编辑。重做可将其恢复，直到你进行另一项编辑。"
+     },
+     "after": {
+      "other": "将撤销 %lld 项编辑。“重做”可将其恢复，直到你进行另一项编辑。"
+     },
+     "why": "punctuation: Redo is the command name here, so it is quoted as Chinese quotes a command"
+    },
+    {
+     "key": "; %@ stay",
+     "id": "feed.unsubscribed.stay",
+     "english": "; %@ stay",
+     "before": "；%@ 仍保留",
+     "after": "；%@仍保留",
+     "why": "punctuation: the placeholder is always a Chinese phrase such as 其 5 个已下载的单集, so the space split Chinese from Chinese"
+    },
+    {
+     "key": "; %@ stays",
+     "id": "feed.unsubscribed.stays",
+     "english": "; %@ stays",
+     "before": "；%@ 仍保留",
+     "after": "；%@仍保留",
+     "why": "punctuation: the same stray space as entry 75"
+    },
+    {
+     "key": "A feed can have its own %@ choice and its own days before deleting played downloads, in its %@.",
+     "id": "feedSettings.perFeedNote",
+     "english": "A feed can have its own %1$@ choice and its own days before deleting played downloads, in its %2$@.",
+     "before": "每个订阅源都可以在其 %2$@ 中设置自己的 %1$@ 选项，以及删除已播放下载内容前的天数。",
+     "after": "每个订阅源都可以在其“%2$@”中设置自己的“%1$@”选项，以及删除已播放下载内容前的天数。",
+     "why": "punctuation: the sheet and choice names quoted, as in entry 4"
+    },
+    {
+     "key": "A symbolic link cannot be deleted as a managed book package.",
+     "id": "fileImportService.symbolicLinkCannot",
+     "english": "A symbolic link cannot be deleted as a managed book package.",
+     "before": "符号链接不能作为受管理的图书包被删除。",
+     "after": "无法将符号链接作为受管理的图书包删除。",
+     "why": "natural: the 不能…被删除 passive is translationese, and 无法将…删除 is the plain form"
+    },
+    {
+     "key": "After a pause of %@, at %@.",
+     "id": "audioEditor.afterPause",
+     "english": "After a pause of %1$@, at %2$@.",
+     "before": "停顿 %1$@ 之后，位于 %2$@。",
+     "after": "停顿 %1$@之后，位于 %2$@。",
+     "why": "punctuation: a length in words ends in a unit such as 秒, so the space after it split Chinese from Chinese"
+    },
+    {
+     "key": "An article's details come from its feed; %@ makes it a book you can edit.",
+     "id": "feedItemBookInfo.whyReadOnly.article",
+     "english": "An article's details come from its feed; %@ makes it a book you can edit.",
+     "before": "文章的详细信息来自其订阅源；%@ 可将其变为可编辑的图书。",
+     "after": "文章的详细信息来自其订阅源；“%@”可将其变为可编辑的图书。",
+     "why": "punctuation: the command name quoted, as in entry 4"
+    },
+    {
+     "key": "An episode's details come from its feed; %@ makes it a book you can edit.",
+     "id": "feedItemBookInfo.whyReadOnly.episode",
+     "english": "An episode's details come from its feed; %@ makes it a book you can edit.",
+     "before": "单集的详细信息来自其订阅源；%@ 可将其变为可编辑的图书。",
+     "after": "单集的详细信息来自其订阅源；“%@”可将其变为可编辑的图书。",
+     "why": "punctuation: the command name quoted, as in entry 4"
+    },
+    {
+     "key": "Cancel Feed Downloads",
+     "id": "feedDownloadProgress.cancelButtonLabel",
+     "english": "Cancel Feed Downloads",
+     "before": "取消订阅源下载",
+     "after": "取消下载订阅源内容",
+     "why": "meaning: 取消订阅源下载 is heard as 取消订阅 (Unsubscribe) plus 源下载, so Cancel is kept away from 订阅"
+    },
+    {
+     "key": "Every feed is unsubscribed, so none was checked. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "id": "feed.everyFeedUnsubscribed",
+     "english": "Every feed is unsubscribed, so none was checked. Choose %1$@ on a feed's row, or in its %2$@, to check it again.",
+     "before": "所有订阅源都已取消订阅，因此没有检查任何订阅源。在订阅源所在行或其 %2$@ 中选取 %1$@，可再次检查。",
+     "after": "所有订阅源都已取消订阅，因此没有检查任何订阅源。在订阅源所在行或其“%2$@”中选取“%1$@”，即可再次检查。",
+     "why": "punctuation: the command and sheet names quoted, as in entry 4"
+    },
+    {
+     "key": "Exporting %@ of audio as %@ to “%@”.",
+     "id": "audioEditor.exportingDetail",
+     "english": "Exporting %1$@ of audio as %2$@ to “%3$@”.",
+     "before": "正在将 %1$@ 的音频导出为 %2$@，文件为“%3$@”。",
+     "after": "正在将 %1$@的音频导出为 %2$@，文件为“%3$@”。",
+     "why": "punctuation: the same stray space after a length as entry 782"
+    },
+    {
+     "key": "Feeds refresh only at launch, if that is on, and when you choose %@ or %@",
+     "id": "feedThreshold.refreshInterval.choose",
+     "english": "Feeds refresh only at launch, if that is on, and when you choose %1$@ or %2$@",
+     "before": "订阅源仅在启动时（如已开启）以及你选取 %1$@ 或 %2$@ 时刷新。",
+     "after": "订阅源仅在启动时（如已开启）以及你选取“%1$@”或“%2$@”时刷新。",
+     "why": "punctuation: the command names quoted, as in entry 4"
+    },
+    {
+     "key": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each.",
+     "id": "recording.recoveredAnnouncement.recordings",
+     "english": {
+      "one": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each.",
+      "other": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each."
+     },
+     "before": {
+      "other": "找到 %lld 个在 TextMouth 上次退出前留下的录音，位于“%@”下。请存储或放弃每一个。"
+     },
+     "after": {
+      "other": "找到 %lld 个在 TextMouth 上次退出前留下的录音，位于“%@”下。请逐一存储或放弃。"
+     },
+     "why": "natural: 请存储或放弃每一个 copied \"each\" word for word, and Chinese says 逐一"
+    },
+    {
+     "key": "Insert %@ of Audio",
+     "id": "audioEdit.actionName.insert",
+     "english": "Insert %@ of Audio",
+     "before": "插入 %@ 的音频",
+     "after": "插入 %@的音频",
+     "why": "punctuation: the same stray space after a length as entry 782"
+    },
+    {
+     "key": "Insert %@ of Silence",
+     "id": "audioEdit.actionName.insertSilence",
+     "english": "Insert %@ of Silence",
+     "before": "插入 %@ 的静音",
+     "after": "插入 %@的静音",
+     "why": "punctuation: the same stray space after a length as entry 782"
+    },
+    {
+     "key": "Inserted %@ of new recording, which is selected.",
+     "id": "audioEditor.recordingInserted",
+     "english": "Inserted %@ of new recording, which is selected.",
+     "before": "已插入 %@ 的新录音，并已选中。",
+     "after": "已插入 %@的新录音，并已选中。",
+     "why": "punctuation: the same stray space after a length as entry 782"
+    },
+    {
+     "key": "Inserted %@ of silence.",
+     "id": "audioEditor.insertedSilence",
+     "english": "Inserted %@ of silence.",
+     "before": "已插入 %@ 的静音。",
+     "after": "已插入 %@的静音。",
+     "why": "punctuation: the same stray space after a length as entry 782"
+    },
+    {
+     "key": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "id": "feedItemPackageError.staysInItsFeed",
+     "english": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "before": "它在下载期间属于其订阅源。%@ 会移除其文件，但保留其位置和书签。",
+     "after": "它作为下载内容属于其订阅源。“%@”会移除其文件，但保留其位置和书签。",
+     "why": "punctuation: the command name quoted, as in entry 4"
+    },
+    {
+     "key": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "id": "feed.deletesSentence.goes",
+     "english": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "before": "删除%@：它会移到废纸篓，在清倒废纸篓之前你可以将其恢复。",
+     "after": "这会删除%@：它会移到废纸篓，在清倒废纸篓之前你可以将其恢复。",
+     "why": "meaning: without its subject the sentence opened with the command word 删除 (Delete), and 这会 says it describes what Delete Feed removes"
+    },
+    {
+     "key": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "id": "feed.deletesSentence.deletedPermanentlyRecovered",
+     "english": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "before": "删除%@：它会被永久删除，无法恢复。",
+     "after": "这会删除%@：它会被永久删除，无法恢复。",
+     "why": "meaning: the same dropped subject as entry 250"
+    },
+    {
+     "key": "It deletes %@: it stays in the TextMouth library folder.",
+     "id": "feed.deletesSentence.stays",
+     "english": "It deletes %@: it stays in the TextMouth library folder.",
+     "before": "删除%@：它会保留在 TextMouth 资料库文件夹中。",
+     "after": "这会删除%@：它会保留在 TextMouth 资料库文件夹中。",
+     "why": "meaning: the same dropped subject as entry 250"
+    },
+    {
+     "key": "It deletes %@: they are deleted permanently and cannot be recovered.",
+     "id": "feed.deletesSentence.permanentlyRecovered",
+     "english": "It deletes %@: they are deleted permanently and cannot be recovered.",
+     "before": "删除%@：它们会被永久删除，无法恢复。",
+     "after": "这会删除%@：它们会被永久删除，无法恢复。",
+     "why": "meaning: the same dropped subject as entry 250"
+    },
+    {
+     "key": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "id": "feed.deletesSentence.them",
+     "english": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "before": "删除%@：它们会移到废纸篓，在清倒废纸篓之前你可以将其恢复。",
+     "after": "这会删除%@：它们会移到废纸篓，在清倒废纸篓之前你可以将其恢复。",
+     "why": "meaning: the same dropped subject as entry 250"
+    },
+    {
+     "key": "It deletes %@: they stay in the TextMouth library folder.",
+     "id": "feed.deletesSentence.stay",
+     "english": "It deletes %@: they stay in the TextMouth library folder.",
+     "before": "删除%@：它们会保留在 TextMouth 资料库文件夹中。",
+     "after": "这会删除%@：它们会保留在 TextMouth 资料库文件夹中。",
+     "why": "meaning: the same dropped subject as entry 250"
+    },
+    {
+     "key": "Its folder “%@” goes too when nothing else is in it.",
+     "id": "feed.folderGoesToo",
+     "english": "Its folder “%@” goes too when nothing else is in it.",
+     "before": "当其中没有其他内容时，其文件夹“%@”也会一并删除。",
+     "after": "若其文件夹“%@”中没有其他内容，该文件夹也会一并删除。",
+     "why": "natural: 其中 pointed ahead to a folder not yet named, so the condition now names the folder first"
+    },
+    {
+     "key": "Keep Both",
+     "id": "importDecisionChoice.keepBoth.title",
+     "english": "Keep Both",
+     "before": "两者都保留",
+     "after": "保留两者",
+     "why": "term: Finder names this button 保留两者 in its replace dialog"
+    },
+    {
+     "key": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "id": "feed.everyListedNewestDownloaded.article",
+     "english": {
+      "one": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "other": "列出每篇文章，保留最新的 %lld 篇下载内容，并移除它所做的较早下载，同时保留其位置、书签和设置。"
+     },
+     "after": {
+      "other": "列出每篇文章，保留最新的 %lld 篇下载内容，并移除它自动下载的较早内容，同时保留其位置、书签和设置。"
+     },
+     "why": "natural: 它所做的较早下载 copied \"downloads it made\", and Chinese says what it downloaded by itself"
+    },
+    {
+     "key": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "id": "feed.everyListedNewestDownloaded.episodeArticle",
+     "english": {
+      "one": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "other": "列出每个单集和文章，保留最新的 %lld 项下载内容，并移除它所做的较早下载，同时保留其位置、书签和设置。"
+     },
+     "after": {
+      "other": "列出每个单集和文章，保留最新的 %lld 项下载内容，并移除它自动下载的较早内容，同时保留其位置、书签和设置。"
+     },
+     "why": "natural: the same calque as entry 287"
+    },
+    {
+     "key": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "id": "feed.everyListedNewestDownloaded.episode",
+     "english": {
+      "one": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "other": "列出每个单集，保留最新的 %lld 个下载内容，并移除它所做的较早下载，同时保留其位置、书签和设置。"
+     },
+     "after": {
+      "other": "列出每个单集，保留最新的 %lld 个下载内容，并移除它自动下载的较早内容，同时保留其位置、书签和设置。"
+     },
+     "why": "natural: the same calque as entry 287"
+    },
+    {
+     "key": "Marker %@ named %@.",
+     "id": "audioEditor.markerRenamed.named",
+     "english": "Marker %1$@ named %2$@.",
+     "before": "标记 %1$@ 已命名为 %2$@。",
+     "after": "标记 %1$@ 已命名为“%2$@”。",
+     "why": "punctuation: the name the listener typed was bare, and the chapter marker rename beside it quotes the name"
+    },
+    {
+     "key": "Moved %@ to %@.",
+     "id": "audioEditor.moved",
+     "english": "Moved %1$@ to %2$@.",
+     "before": "已将 %1$@ 移到 %2$@。",
+     "after": "已将 %1$@移到 %2$@。",
+     "why": "punctuation: the same stray space after a length as entry 782"
+    },
+    {
+     "key": "No text was found in the one picture of this comic book archive.",
+     "id": "pageImage.noText.oneArchive",
+     "english": "No text was found in the one picture of this comic book archive.",
+     "before": "在此漫画归档的这一张图片中没有找到文本。",
+     "after": "在此漫画归档唯一的图片中没有找到文本。",
+     "why": "meaning: \"the one picture\" is the archive's only picture, which 这一张图片 (this one picture) lost"
+    },
+    {
+     "key": "Not Enough Space to Convert Audio",
+     "id": "oggConversion.notEnoughSpaceTitle",
+     "english": "Not Enough Space to Convert Audio",
+     "before": "没有足够空间来转换音频",
+     "after": "空间不足，无法转换音频",
+     "why": "natural: 没有足够空间来转换音频 copied the English title, and Chinese titles say 空间不足，无法…"
+    },
+    {
+     "key": "Not Now",
+     "id": "transcription.offerNotNowTitle",
+     "english": "Not Now",
+     "before": "稍后再说",
+     "after": "以后",
+     "why": "term: Apple's Chinese names a Not Now button 以后, and 稍后再说 is chat"
+    },
+    {
+     "key": "Pasted %@ back where they were cut.",
+     "id": "audioEditor.pastedBack",
+     "english": "Pasted %@ back where they were cut.",
+     "before": "已将 %@ 粘贴回剪切处。",
+     "after": "已将 %@粘贴回剪切处。",
+     "why": "punctuation: the same stray space after a length as entry 782"
+    },
+    {
+     "key": "Pasted %@ over %@.",
+     "id": "audioEditor.pasted.over",
+     "english": "Pasted %1$@ over %2$@.",
+     "before": "已将 %1$@ 粘贴到 %2$@ 之上。",
+     "after": "已粘贴 %1$@，替换了所选的 %2$@。",
+     "why": "natural: 粘贴到 %2＄@ 之上 copied \"over\", and the paste replaces the selected length"
+    },
+    {
+     "key": "Pastes at the cursor, or over the selection. Right after a cut, it moves the audio.",
+     "id": "audioEditor.explanation.editorPaste",
+     "english": "Pastes at the cursor, or over the selection. Right after a cut, it moves the audio.",
+     "before": "在光标处粘贴，或粘贴到所选内容之上。剪切后立即粘贴会移动音频。",
+     "after": "在光标处粘贴，或替换所选内容。剪切后立即粘贴会移动音频。",
+     "why": "natural: the same \"over the selection\" calque as entry 1028"
+    },
+    {
+     "key": "Presets from another Mac just arrived and replaced these. Make the change again.",
+     "id": "audioFilterPresetError.fileArrived",
+     "english": "Presets from another Mac just arrived and replaced these. Make the change again.",
+     "before": "另一台 Mac 的预设刚刚到达并替换了这些预设。请重新进行更改。",
+     "after": "来自另一台 Mac 的预设刚刚同步过来，并替换了这些预设。请重新进行更改。",
+     "why": "natural: 刚刚到达 (just arrived) is said of people and parcels, and synced data 同步过来"
+    },
+    {
+     "key": "Previewing %@ first. Choose Apply again to apply it.",
+     "id": "audioEditor.previewingBeforeApplying",
+     "english": "Previewing %@ first. Choose Apply again to apply it.",
+     "before": "正在先预览 %@。请再次选取“应用”以应用。",
+     "after": "正在预览 %@。再次选取“应用”即可应用。",
+     "why": "natural: 正在先预览 joins in-progress 正在 with first 先, which clash"
+    },
+    {
+     "key": "Ready to record from %@.",
+     "id": "recording.ready.record",
+     "english": "Ready to record from %@.",
+     "before": "准备好用 %@ 录音。",
+     "after": "已准备好用 %@ 录音。",
+     "why": "grammar: without 已 the status line read as the command get ready to record"
+    },
+    {
+     "key": "Recording over %@ at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "id": "audioEditor.punchInStarting.over",
+     "english": "Recording over %1$@ at %2$@, from %3$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "正在用 %3$@ 覆盖录制 %2$@ 处的 %1$@，提示音之后开始。“覆盖录制”或“停止”会结束录制；“取消选择”会放弃录制。",
+     "after": "正在用 %3$@ 覆盖录制 %2$@处的 %1$@，提示音之后开始。“覆盖录制”或“停止”会结束录制；“取消选择”会放弃录制。",
+     "why": "punctuation: the start time in words ends in 秒, so the space before 处 was stray, and the microphone name keeps its space"
+    },
+    {
+     "key": "Recording to insert at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "id": "audioEditor.punchInStarting.insert",
+     "english": "Recording to insert at %1$@, from %2$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "正在用 %2$@ 录制，将插入到 %1$@ 处，提示音之后开始。“覆盖录制”或“停止”会结束录制；“取消选择”会放弃录制。",
+     "after": "正在用 %2$@ 录制，将插入到 %1$@处，提示音之后开始。“覆盖录制”或“停止”会结束录制；“取消选择”会放弃录制。",
+     "why": "punctuation: the same stray space after a time in words as entry 1064"
+    },
+    {
+     "key": "Recording. Stop or discard it with Clear Selection, then close.",
+     "id": "audioEditor.closeWhileRecording",
+     "english": "Recording. Stop or discard it with Clear Selection, then close.",
+     "before": "正在录音。请先用“取消选择”停止或放弃录音，然后再关闭。",
+     "after": "正在录音。请先停止录音，或用“取消选择”放弃录音，然后再关闭。",
+     "why": "meaning: Clear Selection only discards, as entry 1064 says, but the Chinese had it stop the recording too"
+    },
+    {
+     "key": "Redid %@.",
+     "id": "audioEditor.redid",
+     "english": "Redid %@.",
+     "before": "已重做 %@。",
+     "after": "已重做%@。",
+     "why": "punctuation: an edit name is Chinese, such as 剪切 2.5 秒, so the space split Chinese from Chinese, and Apple writes 重做键入"
+    },
+    {
+     "key": "Redo %@",
+     "id": "audioEditor.redoTitle",
+     "english": "Redo %@",
+     "before": "重做 %@",
+     "after": "重做%@",
+     "why": "punctuation: the same stray space as entry 1072, in the Redo button title"
+    },
+    {
+     "key": "Replaced %@ with %@ of new recording, which is selected.",
+     "id": "audioEditor.punchedIn",
+     "english": "Replaced %1$@ with %2$@ of new recording, which is selected.",
+     "before": "已将 %1$@ 替换为 %2$@ 的新录音，并已选中。",
+     "after": "已将 %1$@替换为 %2$@的新录音，并已选中。",
+     "why": "punctuation: the same stray space after a length as entry 782"
+    },
+    {
+     "key": "Replacing kept the existing copy's transcript.",
+     "id": "transcription.broughtTranscriptNotUsed.replacing",
+     "english": "Replacing kept the existing copy's transcript.",
+     "before": "替换时保留了现有项目自己的文字稿。",
+     "after": "替换时保留了现有副本的文字稿。",
+     "why": "natural: 现有项目自己的 is odd, and the other Replace sentences say 现有副本"
+    },
+    {
+     "key": "Resubscribed to %@. Checking it now…",
+     "id": "feed.resubscribed",
+     "english": "Resubscribed to %@. Checking it now…",
+     "before": "已重新订阅 %@。正在立即检查…",
+     "after": "已重新订阅 %@。正在检查…",
+     "why": "natural: 正在立即检查 joins in-progress 正在 with at-once 立即, which clash"
+    },
+    {
+     "key": "Saved Recording as %@",
+     "id": "recording.savedAnnouncement",
+     "english": "Saved Recording as %@",
+     "before": "已将录音存储为 %@",
+     "after": "已将录音存储为“%@”",
+     "why": "punctuation: the title starts with 录音 itself, so unquoted it ran into the sentence"
+    },
+    {
+     "key": "Saved Recording as %@.",
+     "id": "recording.saved",
+     "english": "Saved Recording as %@.",
+     "before": "已将录音存储为 %@。",
+     "after": "已将录音存储为“%@”。",
+     "why": "punctuation: the same as entry 1105"
+    },
+    {
+     "key": "Saving %@ of audio as %@, the format this book keeps.",
+     "id": "audioEditor.savingDetail.format",
+     "english": "Saving %1$@ of audio as %2$@, the format this book keeps.",
+     "before": "正在将 %1$@ 的音频存储为 %2$@，即此图书所用的格式。",
+     "after": "正在将 %1$@的音频存储为 %2$@，即此图书所用的格式。",
+     "why": "punctuation: the same stray space after a length as entry 782"
+    },
+    {
+     "key": "Saving %@ of audio into the book.",
+     "id": "audioEditor.savingDetail.book",
+     "english": "Saving %@ of audio into the book.",
+     "before": "正在将 %@ 的音频存入图书。",
+     "after": "正在将 %@的音频存入图书。",
+     "why": "punctuation: the same stray space after a length as entry 782"
+    },
+    {
+     "key": "Selection from %@ to %@; %@ long.",
+     "id": "audioEditor.selectionSentence",
+     "english": "Selection from %1$@ to %2$@; %3$@ long.",
+     "before": "所选内容从 %1$@ 到 %2$@；长度 %3$@。",
+     "after": "所选内容从 %1$@到 %2$@；长度 %3$@。",
+     "why": "punctuation: the start in words ends in 秒, so the space before 到 was stray"
+    },
+    {
+     "key": "Stopped. Back at %@.",
+     "id": "audioEditor.stopped",
+     "english": "Stopped. Back at %@.",
+     "before": "已停止。回到 %@。",
+     "after": "已停止并回到 %@。",
+     "why": "natural: the bare second sentence 回到 %@ read as the command go back"
+    },
+    {
+     "key": "TextMouth can't convert %@ files because its converter is missing from the app.",
+     "id": "ffmpegImport.helperMissing",
+     "english": "TextMouth can't convert %@ files because its converter is missing from the app.",
+     "before": "TextMouth 无法转换 %@ 文件，因为其转换器已从 App 中丢失。",
+     "after": "TextMouth 无法转换 %@ 文件，因为 App 中缺少相应的转换器。",
+     "why": "natural: 转换器已从 App 中丢失 says the converter got lost from the app, and Chinese says the app lacks it"
+    },
+    {
+     "key": "TextMouth cannot open copy-protected files.",
+     "id": "refusedFormatAdvice.copyProtected",
+     "english": "TextMouth cannot open copy-protected files.",
+     "before": "TextMouth 无法打开受拷贝保护的文件。",
+     "after": "TextMouth 无法打开受复制保护的文件。",
+     "why": "term: copy protection is 复制保护, and the glossary word 拷贝 is the Copy command, a different sense"
+    },
+    {
+     "key": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "id": "duplicateCopy.answerUnderWay",
+     "english": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "before": "TextMouth 仍在执行你的上一个回答。请等待其完成。",
+     "after": "TextMouth 仍在处理你上一次的回答。请等待其完成。",
+     "why": "natural: 执行…回答 (execute an answer) is not a Chinese pairing, and 处理 is"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "id": "feed.notificationsRefused",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "TextMouth 不被允许发送通知。请在“系统设置”>“通知”>“TextMouth”中打开通知。",
+     "after": "TextMouth 未获准发送通知。请在“系统设置”>“通知”>“TextMouth”中打开通知。",
+     "why": "natural: the passive 不被允许 is translationese, and 未获准 is the plain form"
+    },
+    {
+     "key": "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
+     "id": "convertedOriginal.keepingCaption",
+     "english": "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
+     "before": "TextMouth 会保留导入时转换的音频的原始文件。原始文件占用的磁盘空间与转换后的文件大致相同，未压缩时则为两倍。“导出”提供它作为“原始文件”。订阅源单集的原始文件不会保留：可以再次下载。",
+     "after": "TextMouth 会保留导入时转换的音频的原始文件。原始文件占用的磁盘空间与转换后的文件大致相同，未压缩时则为两倍。导出时，它会作为“原始文件”选项提供。订阅源单集的原始文件不会保留：可以再次下载。",
+     "why": "natural: “导出”提供它作为“原始文件” copied the English order, and the choice name 原始文件 stays as the note asks"
+    },
+    {
+     "key": "That's after the end of the audio, at %@.",
+     "id": "audioEditor.afterTheEnd",
+     "english": "That's after the end of the audio, at %@.",
+     "before": "该时间已超出音频结尾 %@。",
+     "after": "该时间超出了音频的结尾（%@）。",
+     "why": "meaning: 超出音频结尾 %@ read as past the end by that much, but the time is the audio's length"
+    },
+    {
+     "key": "The article leaves the list for good; the book it became in your library stays.",
+     "id": "feed.deleteItemMessage.article",
+     "english": "The article leaves the list for good; the book it became in your library stays.",
+     "before": "该文章会永久从列表中移除；它在你的资料库中变成的图书会保留。",
+     "after": "该文章会永久从列表中移除；由它转成的图书仍会保留在你的资料库中。",
+     "why": "natural: 它在你的资料库中变成的图书 copied \"the book it became in your library\""
+    },
+    {
+     "key": "The book left the library during transcription, so its transcript wasn't saved.",
+     "id": "transcriptionError.bookRemoved",
+     "english": "The book left the library during transcription, so its transcript wasn't saved.",
+     "before": "转录期间这本图书已离开资料库，因此未存储其文字稿。",
+     "after": "转录期间这本图书已从资料库中移除，因此未存储其文字稿。",
+     "why": "natural: 离开资料库 copied \"left the library\", and Chinese says the book was removed"
+    },
+    {
+     "key": "The episode leaves the list for good; the book it became in your library stays.",
+     "id": "feed.deleteItemMessage.episode",
+     "english": "The episode leaves the list for good; the book it became in your library stays.",
+     "before": "该单集会永久从列表中移除；它在你的资料库中变成的图书会保留。",
+     "after": "该单集会永久从列表中移除；由它转成的图书仍会保留在你的资料库中。",
+     "why": "natural: the same calque as entry 494"
+    },
+    {
+     "key": "The feed stays in your library with its settings and %@, and %@ checks it again.",
+     "id": "feed.unsubscribeMessage.staysLibrarySettings",
+     "english": "The feed stays in your library with its settings and %1$@, and %2$@ checks it again.",
+     "before": "该订阅源会连同其设置和%1$@保留在你的资料库中，%2$@ 会再次检查它。",
+     "after": "该订阅源会连同其设置和%1$@保留在你的资料库中，“%2$@”会再次检查它。",
+     "why": "punctuation: the command name quoted, as in entry 4"
+    },
+    {
+     "key": "The feed stays in your library with its settings, and %@ checks it again.",
+     "id": "feed.unsubscribeMessage.staysLibrary",
+     "english": "The feed stays in your library with its settings, and %@ checks it again.",
+     "before": "该订阅源及其设置会保留在你的资料库中，%@ 会再次检查它。",
+     "after": "该订阅源及其设置会保留在你的资料库中，“%@”会再次检查它。",
+     "why": "punctuation: the command name quoted, as in entry 4"
+    },
+    {
+     "key": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "id": "feed.itemPolicyQuietNote",
+     "english": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "before": "列表会随 %@ 的更改立即更新；要下载或移除的内容会等到更改保持十秒后再处理，届时 VoiceOver 会播报。",
+     "after": "列表会随“%@”的更改立即更新；要下载或移除的内容会等到更改保持十秒后再处理，届时 VoiceOver 会播报。",
+     "why": "punctuation: the choice name quoted, as in entry 11"
+    },
+    {
+     "key": "The pauses couldn't be found.",
+     "id": "audioEditor.pausesFailed",
+     "english": "The pauses couldn't be found.",
+     "before": "无法找到停顿。",
+     "after": "无法查找停顿。",
+     "why": "meaning: a reason follows, so the search failed, but 无法找到停顿 also reads as none were found"
+    },
+    {
+     "key": "The podcast directory can't be searched on this network, which limits data.",
+     "id": "feedFetchError.searchMessage.constrainedNetwork",
+     "english": "The podcast directory can't be searched on this network, which limits data.",
+     "before": "无法在此网络上搜索播客目录，因为它限制数据流量。",
+     "after": "此网络限制数据流量，因此无法搜索播客目录。",
+     "why": "meaning: 因为它限制数据流量 let 它 point at the directory, the sentence subject, and not at the network"
+    },
+    {
+     "key": "The recording couldn't be saved: %@ It is kept; choose %@ or %@.",
+     "id": "recording.saveFailed",
+     "english": "The recording couldn't be saved: %1$@ It is kept; choose %2$@ or %3$@.",
+     "before": "无法存储录音：%1$@ 录音已保留；请选取“%2$@”或“%3$@”。",
+     "after": "无法存储录音：%1$@录音已保留；请选取“%2$@”或“%3$@”。",
+     "why": "punctuation: the reason is a sentence ending in 。, so the space after it was a stray one inside Chinese"
+    },
+    {
+     "key": "The transcript runs to %@, past the audio's end at %@, so it is for other audio.",
+     "id": "outsideTranscriptError.runsPastTheEnd",
+     "english": "The transcript runs to %1$@, past the audio's end at %2$@, so it is for other audio.",
+     "before": "文字稿长达 %1$@，超出了音频结尾 %2$@，因此它属于其他音频。",
+     "after": "文字稿长达 %1$@，超出了音频的结尾（%2$@），因此它属于其他音频。",
+     "why": "meaning: 超出了音频结尾 %2＄@ read as past the end by that much, but it is the end's time"
+    },
+    {
+     "key": "To download it again, choose %@ on its row.",
+     "id": "feedDownloadProgress.comingBack.chooseRow",
+     "english": "To download it again, choose %@ on its row.",
+     "before": "要再次下载，请在其所在行选取 %@。",
+     "after": "要再次下载，请在其所在行选取“%@”。",
+     "why": "punctuation: the command name quoted, as in entry 4"
+    },
+    {
+     "key": "To download the other %lld again, choose %@ on their rows.",
+     "id": "feedDownloadProgress.comingBack.other",
+     "english": {
+      "one": "To download the other %lld again, choose %@ on its row.",
+      "other": "To download the other %lld again, choose %@ on their rows."
+     },
+     "before": {
+      "other": "要再次下载其余的 %lld 个，请在它们所在行选取 %@。"
+     },
+     "after": {
+      "other": "要再次下载其余的 %lld 个，请在它们所在行选取“%@”。"
+     },
+     "why": "punctuation: the command name quoted, as in entry 4"
+    },
+    {
+     "key": "To download the other one again, choose %@ on its row.",
+     "id": "feedDownloadProgress.comingBack.otherOne",
+     "english": "To download the other one again, choose %@ on its row.",
+     "before": "要再次下载另外那一个，请在其所在行选取 %@。",
+     "after": "要再次下载另外那一个，请在其所在行选取“%@”。",
+     "why": "punctuation: the command name quoted, as in entry 4"
+    },
+    {
+     "key": "To download them again, choose %@ on their rows.",
+     "id": "feedDownloadProgress.comingBack.rows",
+     "english": "To download them again, choose %@ on their rows.",
+     "before": "要再次下载它们，请在它们所在行选取 %@。",
+     "after": "要再次下载它们，请在它们所在行选取“%@”。",
+     "why": "punctuation: the command name quoted, as in entry 4"
+    },
+    {
+     "key": "To keep an article, choose %@ on its row first.",
+     "id": "feed.keepArticleChoose",
+     "english": "To keep an article, choose %@ on its row first.",
+     "before": "要保留某篇文章，请先在其所在行选取 %@。",
+     "after": "要保留某篇文章，请先在其所在行选取“%@”。",
+     "why": "punctuation: the command name quoted, as in entry 4"
+    },
+    {
+     "key": "To keep an episode, choose %@ on its row first.",
+     "id": "feed.keepEpisodeChoose",
+     "english": "To keep an episode, choose %@ on its row first.",
+     "before": "要保留某个单集，请先在其所在行选取 %@。",
+     "after": "要保留某个单集，请先在其所在行选取“%@”。",
+     "why": "punctuation: the command name quoted, as in entry 4"
+    },
+    {
+     "key": "To keep an item, choose %@ on its row first.",
+     "id": "feed.keepItemChoose",
+     "english": "To keep an item, choose %@ on its row first.",
+     "before": "要保留某个项目，请先在其所在行选取 %@。",
+     "after": "要保留某个项目，请先在其所在行选取“%@”。",
+     "why": "punctuation: the command name quoted, as in entry 4"
+    },
+    {
+     "key": "To use it, choose %@ on the Text tab in Settings.",
+     "id": "playlistImport.pronunciationLexicon.settings",
+     "english": "To use it, choose %@ on the Text tab in Settings.",
+     "before": "要使用它，请在“设置”的“文本”标签页中选取 %@。",
+     "after": "要使用它，请在“设置”的“文本”标签页中选取“%@”。",
+     "why": "punctuation: the button name quoted, as in entry 4"
+    },
+    {
+     "key": "Transcribed on %@, in %@.",
+     "id": "transcription.transcribedOn",
+     "english": "Transcribed on %1$@, in %2$@.",
+     "before": "于 %1$@ 以 %2$@ 转录。",
+     "after": "于 %1$@ 以%2$@转录。",
+     "why": "punctuation: the language name is Chinese, such as 英语, so the spaces split 以英语转录"
+    },
+    {
+     "key": "Undid %@.",
+     "id": "audioEditor.undid",
+     "english": "Undid %@.",
+     "before": "已撤销 %@。",
+     "after": "已撤销%@。",
+     "why": "punctuation: an edit name is Chinese, so the space split it from 撤销, as in entry 1072"
+    },
+    {
+     "key": "Undo %@",
+     "id": "audioEditor.undoTitle",
+     "english": "Undo %@",
+     "before": "撤销 %@",
+     "after": "撤销%@",
+     "why": "punctuation: the same stray space as entry 1314, in the Undo button title, and Apple writes 撤销键入"
+    },
+    {
+     "key": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "id": "feed.useGlobalHint",
+     "english": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "before": "勾选后，此订阅源会遵循“设置”中 %@ 的设置；取消勾选可为该订阅源设置专属选项。",
+     "after": "勾选后，此订阅源会遵循“设置”>“%@”中的设置；取消勾选可为该订阅源设置专属选项。",
+     "why": "punctuation: Settings, Feeds is a path, written “设置”>“…” as the glossary writes settings paths"
+    },
+    {
+     "key": "You will be asked whether to delete the original file permanently after each import.",
+     "id": "originalFileDeletion.asking.permanently",
+     "english": "You will be asked whether to delete the original file permanently after each import.",
+     "before": "每次导入后，系统会询问是否永久删除原始文件。",
+     "after": "每次导入后都会询问你是否要永久删除原始文件。",
+     "why": "meaning: 系统会询问 made macOS the asker, but TextMouth asks"
+    },
+    {
+     "key": "You will be asked whether to move the original file to the Trash after each import.",
+     "id": "originalFileDeletion.askingExplanation.trash",
+     "english": "You will be asked whether to move the original file to the Trash after each import.",
+     "before": "每次导入后，系统会询问是否将原始文件移到废纸篓。",
+     "after": "每次导入后都会询问你是否要将原始文件移到废纸篓。",
+     "why": "meaning: the same added 系统 as entry 642"
+    },
+    {
+     "key": "choose %@ again",
+     "id": "feed.deleteFeedRefused.downloadInUse",
+     "english": "choose %@ again",
+     "before": "再次选取 %@",
+     "after": "再次选取“%@”",
+     "why": "punctuation: the command name quoted, as in entry 4"
+    },
+    {
+     "key": "give a frequency below half the audio's sample rate, %@ Hz",
+     "id": "audioFilterRunner.coefficients.frequency",
+     "english": "give a frequency below half the audio's sample rate, %@ Hz",
+     "before": "请给出低于音频采样率一半的频率，%@ Hz",
+     "after": "请给出低于音频采样率一半（%@ Hz）的频率",
+     "why": "meaning: the trailing ，%@ Hz read as the frequency to give, but it is half the sample rate"
+    },
+    {
+     "key": "keeping the place of your feed downloads for next time",
+     "id": "feedQuitHold.work",
+     "english": "keeping the place of your feed downloads for next time",
+     "before": "为下次保留你的订阅源下载位置",
+     "after": "保留订阅源下载的进度，供下次继续",
+     "why": "meaning: 下载位置 reads as the download location (a folder), but the English means how far the downloads got"
+    },
+    {
+     "key": "none downloaded",
+     "id": "feedDownloadProgress.finished.downloaded",
+     "english": "none downloaded",
+     "before": "没有已下载的",
+     "after": "未下载任何内容",
+     "why": "natural: 没有已下载的 ends on a dangling 的 after 订阅源下载已完成："
+    },
+    {
+     "key": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "id": "audioEditor.quitWhileRecording",
+     "english": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "before": "“%@”正在录音。请用“取消选择”停止或放弃录音，然后再退出。",
+     "after": "“%@”正在录音。请先停止录音，或用“取消选择”放弃录音，然后再退出。",
+     "why": "meaning: Clear Selection only discards, as in entry 1068, but the Chinese had it stop the recording too"
+    },
+    {
+     "key": "“%@” no longer waits to download; it downloads when you choose %@.",
+     "id": "feed.waitingDownloadCancelled",
+     "english": "“%1$@” no longer waits to download; it downloads when you choose %2$@.",
+     "before": "“%1$@”不再等待下载；你选取 %2$@ 时才会下载。",
+     "after": "“%1$@”不再等待下载；你选取“%2$@”时才会下载。",
+     "why": "punctuation: the command name quoted, as in entry 4"
+    },
+    {
+     "key": "“%@” uses %@ samples, which TextMouth can't play.",
+     "id": "audioSampleForm.refusal",
+     "english": "“%1$@” uses %2$@ samples, which TextMouth can't play.",
+     "before": "“%1$@”使用 %2$@ 采样，TextMouth 无法播放。",
+     "after": "“%1$@”使用 %2$@采样，TextMouth 无法播放。",
+     "why": "punctuation: the sample form ends in Chinese, such as 64 位浮点, so the space split 浮点 from 采样"
+    }
+   ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-20",
+   "fixes": [
+    {
+     "key": "%@ has its default, %@",
+     "id": "shortcutsSettings.defaultsHeldElsewhere",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%1$@ 已使用其默认键 %2$@",
+     "after": "%1$@ 已占用此操作的默认键 %2$@",
+     "why": "meaning: 其 read as the new holder’s own default; the key is the default of this row’s action, now held by the other action"
+    },
+    {
+     "key": "%@ sound",
+     "id": "soundEffectsSettings.soundLabel",
+     "english": "%@ sound",
+     "before": "%@ 声音",
+     "after": "“%@”的声音",
+     "why": "meaning: with an event such as 播放, 播放 声音 reads as the command “play a sound”"
+    },
+    {
+     "key": "%@ tries again, %@ quits without saving, %@ keeps TextMouth open.",
+     "id": "unsavedChangesPrompt.choices",
+     "english": "%1$@ tries again, %2$@ quits without saving, %3$@ keeps TextMouth open.",
+     "before": "%1$@ 重试，%2$@ 不存储并退出，%3$@ 保持 TextMouth 打开。",
+     "after": "“%1$@”会再次尝试存储，“%2$@”会退出且不存储，“%3$@”会让 TextMouth 保持打开。",
+     "why": "grammar: with the button names as bare subjects it read 重试 重试; quoted names with 会 make each clause read"
+    },
+    {
+     "key": "%@ uses it in the menus",
+     "id": "shortcutRefusal.reason.systemCommand",
+     "english": "%@ uses it in the menus",
+     "before": "%@ 已在菜单中使用",
+     "after": "菜单命令“%@”已使用此键",
+     "why": "meaning: said the command is used in the menus; it is the command that uses the key"
+    },
+    {
+     "key": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "id": "bookTextEdit.addBackNoCopyKept",
+     "english": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "before": "%@ 未添加回来：无法先保留其包内的文本副本，因此 TextMouth 保持文本不变。",
+     "after": "%@ 未重新添加到资料库：无法先保留其包内文本的副本，因此 TextMouth 未改动文本。",
+     "why": "natural: 添加回来 is a colloquial word-for-word “added back”"
+    },
+    {
+     "key": "%lld words per minute",
+     "id": "common.countWordsPerMinute",
+     "english": {
+      "one": "%lld word per minute",
+      "other": "%lld words per minute"
+     },
+     "before": {
+      "other": "每分钟 %lld 个词"
+     },
+     "after": {
+      "other": "每分钟 %lld 字"
+     },
+     "why": "term: the speed is 每分钟 %lld 字 everywhere else in the reader; 个词 was the only exception"
+    },
+    {
+     "key": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "id": "readerTime.settingHint",
+     "english": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "before": "添加计数所依据的速度，例如不是 1 倍速的有声书的 2.0x，或文本图书的每分钟 500 字，用于阅读器、“我在哪里”、拷贝阅读位置以及章节标题表单的时长。",
+     "after": "注明时间所依据的速度（例如非 1 倍速的有声书为 2.0x，文本图书为每分钟 500 字），用于阅读器、“我在哪里”、“拷贝阅读位置”和章节标题表单中的时长。",
+     "why": "natural: 计数 (counting) misread “the speed they count at”, and the examples copied English order; command name quoted"
+    },
+    {
+     "key": "Afterwards, Play tries the passage again",
+     "id": "speechRefusal.closeHint",
+     "english": "Afterwards, Play tries the passage again",
+     "before": "之后，“播放”会再次尝试该段落。",
+     "after": "之后，“播放”会再次尝试朗读该段落。",
+     "why": "natural: 尝试该段落 (try the passage) leaves out what is tried; 尝试朗读"
+    },
+    {
+     "key": "Artist",
+     "id": "metadataEditor.artistField",
+     "english": "Artist",
+     "before": "艺术家",
+     "after": "艺人",
+     "why": "term: Apple’s Music app calls a track’s artist 艺人"
+    },
+    {
+     "key": "Artist or narrator",
+     "id": "metadataEditor.artistLabel",
+     "english": "Artist or narrator",
+     "before": "艺术家或讲述者",
+     "after": "艺人或讲述者",
+     "why": "term: Apple’s Music app calls a track’s artist 艺人"
+    },
+    {
+     "key": "Changes the speed in steps of %lld words per minute.",
+     "id": "phoneReader.textSpeedHint",
+     "english": {
+      "one": "Changes the speed in steps of %lld word per minute.",
+      "other": "Changes the speed in steps of %lld words per minute."
+     },
+     "before": {
+      "other": "以每分钟 %lld 个词为步进更改速度。"
+     },
+     "after": {
+      "other": "以每分钟 %lld 字为步进更改速度。"
+     },
+     "why": "term: a text book’s speed is 字 everywhere else in the app; 个词 was a second word for it"
+    },
+    {
+     "key": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "id": "shortcutsSettings.worksInHint",
+     "english": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "before": "选取后该快捷键即归你所有；“重置为默认设置”会恢复其默认适用范围。",
+     "after": "选取后，此快捷键即成为你的自定设置；“重置为默认设置”会恢复其默认适用范围。",
+     "why": "natural: 归你所有 (becomes your property) is a literal “yours”; choosing makes it a custom setting"
+    },
+    {
+     "key": "Could not save metadata to the library's copy of “%@”, because that file is missing from the library.",
+     "id": "epubMetadataSave.fileMissing.because",
+     "english": "Could not save metadata to the library's copy of “%@”, because that file is missing from the library.",
+     "before": "无法将元数据存储到资料库中“%@”的副本，因为该文件已从资料库中缺失。",
+     "after": "无法将元数据存储到资料库中“%@”的副本，因为资料库中已没有该文件。",
+     "why": "natural: 已从资料库中缺失 is a literal “is missing from the library”"
+    },
+    {
+     "key": "Decrease speed by %lld words per minute",
+     "id": "voiceAndSpeed.speedStepLabel.decrease",
+     "english": {
+      "one": "Decrease speed by %lld word per minute",
+      "other": "Decrease speed by %lld words per minute"
+     },
+     "before": {
+      "other": "将速度降低每分钟 %lld 个词"
+     },
+     "after": {
+      "other": "将速度降低每分钟 %lld 字"
+     },
+     "why": "term: a text book’s speed is 每分钟 %lld 字 everywhere else in the app; 个词 was a second word for it, and this spoken label takes no 字/分钟, whose slash VoiceOver may read aloud"
+    },
+    {
+     "key": "Each heading's title and start, as Audacity labels, for a book with one audio file.",
+     "id": "bookExport.chapterListChoiceHint.audacity",
+     "english": "Each heading's title and start, as Audacity labels, for a book with one audio file.",
+     "before": "每个章节标题的标题和起点，存为 Audacity 标签，适用于只有一个音频文件的图书。",
+     "after": "每个章节标题的文字和起点，存为 Audacity 标签，适用于只有一个音频文件的图书。",
+     "why": "natural: 章节标题的标题 (the heading’s title) repeats itself; a heading’s 文字"
+    },
+    {
+     "key": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "id": "bookExport.chapterListChoiceHint.exports",
+     "english": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "before": "每个章节标题的标题和起点，存为 CUE 表，按“音频”导出的方式命名音频。",
+     "after": "每个章节标题的文字和起点，存为 CUE 表，按“音频”导出的方式命名音频。",
+     "why": "natural: 章节标题的标题 (the heading’s title) repeats itself; a heading’s 文字"
+    },
+    {
+     "key": "Each line beginning with <!-- chapter: starts a chapter; keep those lines.",
+     "id": "bookTextEdit.explanation.beginning",
+     "english": "Each line beginning with <!-- chapter: starts a chapter; keep those lines.",
+     "before": "每行以 <!-- chapter: 开头的内容开始一个章节；请保留这些行。",
+     "after": "每个以 <!-- chapter: 开头的行标示一个章节的开始；请保留这些行。",
+     "why": "natural: 每行以…开头的内容开始一个章节 garbled the subject; now parallel to the page-marker line"
+    },
+    {
+     "key": "End of the reading list",
+     "id": "readingListReader.endNote.finish",
+     "english": "End of the reading list",
+     "before": "阅读列表结尾",
+     "after": "已到阅读列表结尾",
+     "why": "natural: a bare noun phrase in an announcement; 已到…结尾 as the reader’s End of the book. says"
+    },
+    {
+     "key": "Exporting %lld of %@…",
+     "id": "bookExport.progress.exportingCount",
+     "english": "Exporting %1$lld of %2$@…",
+     "before": "正在导出 %1$lld，共 %2$@…",
+     "after": "正在导出第 %1$lld 个，共 %2$@…",
+     "why": "natural: 正在导出 3，共 40 个项目 left the number without 第…个"
+    },
+    {
+     "key": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "id": "shortcutsSettings.doublePressTimeHint",
+     "english": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "before": "第二次按键必须在多久内跟上第一次。单按和连按有不同操作的键，会等待这么久后才执行单按的操作。",
+     "after": "两次按键之间允许的最长间隔。单按和连按操作不同的键，会等待这段时间后再执行单按操作。",
+     "why": "natural: 跟上第一次 and 这么久 are a colloquial word-for-word copy of the English"
+    },
+    {
+     "key": "ISO 8859-13 (Baltic)",
+     "id": "label.name.iso885913",
+     "english": "ISO 8859-13 (Baltic)",
+     "before": "ISO 8859-13（波罗的海语）",
+     "after": "ISO 8859-13（波罗的海）",
+     "why": "natural: 西欧语, 中欧语, and 波罗的海语 name no language; the encoding is named by its region, as CP850（西欧 DOS） is"
+    },
+    {
+     "key": "ISO 8859-15 (Western European)",
+     "id": "label.name.iso885915",
+     "english": "ISO 8859-15 (Western European)",
+     "before": "ISO 8859-15（西欧语）",
+     "after": "ISO 8859-15（西欧）",
+     "why": "natural: 西欧语, 中欧语, and 波罗的海语 name no language; the encoding is named by its region, as CP850（西欧 DOS） is"
+    },
+    {
+     "key": "ISO 8859-2 (Central European)",
+     "id": "label.name.iso88592",
+     "english": "ISO 8859-2 (Central European)",
+     "before": "ISO 8859-2（中欧语）",
+     "after": "ISO 8859-2（中欧）",
+     "why": "natural: 西欧语, 中欧语, and 波罗的海语 name no language; the encoding is named by its region, as CP850（西欧 DOS） is"
+    },
+    {
+     "key": "Increase speed by %lld words per minute",
+     "id": "voiceAndSpeed.speedStepLabel.increase",
+     "english": {
+      "one": "Increase speed by %lld word per minute",
+      "other": "Increase speed by %lld words per minute"
+     },
+     "before": {
+      "other": "将速度提高每分钟 %lld 个词"
+     },
+     "after": {
+      "other": "将速度提高每分钟 %lld 字"
+     },
+     "why": "term: a text book’s speed is 每分钟 %lld 字 everywhere else in the app; 个词 was a second word for it, and this spoken label takes no 字/分钟, whose slash VoiceOver may read aloud"
+    },
+    {
+     "key": "Its only page is %@.",
+     "id": "readerPage.noSuchPage.only",
+     "english": "Its only page is %@.",
+     "before": "唯一的页是 %@。",
+     "after": "此图书仅有一页：%@。",
+     "why": "natural: 唯一的页是 is a literal copy of “its only page is”"
+    },
+    {
+     "key": "Jumped to page %@, the %@ page labelled %@.",
+     "id": "readerPage.jumped.labelled",
+     "english": "Jumped to page %1$@, the %2$@ page labelled %3$@.",
+     "before": "已跳转到页 %1$@，即标注为 %3$@ 的页面中的%2$@个。",
+     "after": "已跳转到第 %1$@ 页，即标注为 %3$@ 的%2$@个页面。",
+     "why": "natural: 页 %1$@ copied the English order; %2$@ is an ordinal such as 第二, so it goes before 个页面"
+    },
+    {
+     "key": "Jumped to page %@.",
+     "id": "readerPage.jumped.numbered",
+     "english": "Jumped to page %@.",
+     "before": "已跳转到页 %@。",
+     "after": "已跳转到第 %@ 页。",
+     "why": "natural: 页 %@ copied the English order; 第 %@ 页 as elsewhere in the reader"
+    },
+    {
+     "key": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "id": "readingList.keepBooksHint",
+     "english": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "before": "将列表中的图书保留下载在这台 Mac 上；每台 Mac 各自选择。取消勾选不会移除已有的下载。",
+     "after": "让列表中的图书在这台 Mac 上保持下载状态；每台 Mac 各自选择。取消勾选不会移除已有的下载。",
+     "why": "natural: 保留下载在这台 Mac 上 is an ungrammatical copy of “keeps downloaded on”"
+    },
+    {
+     "key": "Mac Central European",
+     "id": "label.name.macCentralEuropean",
+     "english": "Mac Central European",
+     "before": "Mac 中欧语",
+     "after": "Mac 中欧",
+     "why": "natural: 西欧语, 中欧语, and 波罗的海语 name no language; the encoding is named by its region, as CP850（西欧 DOS） is"
+    },
+    {
+     "key": "Mac Roman (Western European)",
+     "id": "label.name.macRoman",
+     "english": "Mac Roman (Western European)",
+     "before": "Mac Roman（西欧语）",
+     "after": "Mac Roman（西欧）",
+     "why": "natural: 西欧语, 中欧语, and 波罗的海语 name no language; the encoding is named by its region, as CP850（西欧 DOS） is"
+    },
+    {
+     "key": "Metadata saved to the library's copy of “%@”.",
+     "id": "epubMetadataSave.savedToFile",
+     "english": "Metadata saved to the library's copy of “%@”.",
+     "before": "元数据已存储到资料库及资料库中“%@”的副本。",
+     "after": "元数据已存储到资料库中“%@”的副本。",
+     "why": "natural: 资料库及资料库中 repeated the library and added what the English does not say"
+    },
+    {
+     "key": "Preview %@ sound",
+     "id": "soundEffectsSettings.previewLabel",
+     "english": "Preview %@ sound",
+     "before": "试听 %@ 声音",
+     "after": "试听“%@”的声音",
+     "why": "meaning: with an event such as 播放, 试听 播放 声音 reads as a run of commands; the sound of that event"
+    },
+    {
+     "key": "Quitting now leaves these changes unsaved:",
+     "id": "unsavedChangesPrompt.quittingLeavesUnsaved",
+     "english": "Quitting now leaves these changes unsaved:",
+     "before": "现在退出会使这些更改不被存储：",
+     "after": "现在退出将不会存储以下更改：",
+     "why": "natural: 会使这些更改不被存储 is a stiff causative copy of “leaves these changes unsaved”"
+    },
+    {
+     "key": "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.",
+     "id": "rtfExportWriter.hint",
+     "english": "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.",
+     "before": "富文本，每个章节标题按其大纲级别保留，适用于 Word、Pages 和“文本编辑”。",
+     "after": "富文本，每个章节标题按其大纲级别保留，适用于 Word、Pages 文稿和“文本编辑”。",
+     "why": "term: Apple’s Chinese name of Pages is Pages 文稿, as TextEdit is 文本编辑"
+    },
+    {
+     "key": "Section included: %@",
+     "id": "voiceAndSpeed.sectionIncluded",
+     "english": "Section included: %@",
+     "before": "已包含章节：%@",
+     "after": "已包含此部分：%@",
+     "why": "term: 章节 is the glossary’s Chapter; a heading’s section is 部分, as the Skip Section and Include Section commands say"
+    },
+    {
+     "key": "Section skipped: %@",
+     "id": "voiceAndSpeed.sectionSkipped",
+     "english": "Section skipped: %@",
+     "before": "已略过章节：%@",
+     "after": "已跳过此部分：%@",
+     "why": "term: 章节 is the glossary’s Chapter; a heading’s section is 部分, as the Skip Section and Include Section commands say"
+    },
+    {
+     "key": "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
+     "id": "readerPage.showInReaderHint",
+     "english": "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
+     "before": "在百分比旁显示正在阅读的页，如第 12 页，共 300 页，适用于多页图书。",
+     "after": "在百分比旁显示正在阅读的页码（如第 12 页，共 300 页），适用于多页图书。",
+     "why": "natural: the example ran into the sentence between commas; parentheses as in the Where Am I? page setting"
+    },
+    {
+     "key": "Sleep timer expired",
+     "id": "endOfBook.sleepTimerExpiredNote",
+     "english": "Sleep timer expired",
+     "before": "睡眠定时器已到时",
+     "after": "睡眠定时器已结束",
+     "why": "natural: 已到时 is not how Chinese says a timer ran out (到时 reads as “when the time comes”); 已结束"
+    },
+    {
+     "key": "Sleep timer expired at the end of the heading. Playback paused.",
+     "id": "readerViewModel.sleepTimerStoppedHeadingEnd",
+     "english": "Sleep timer expired at the end of the heading. Playback paused.",
+     "before": "睡眠定时器已在章节标题结尾到时。播放已暂停。",
+     "after": "睡眠定时器已在章节标题结尾处结束。播放已暂停。",
+     "why": "natural: 已到时 is not how Chinese says a timer ran out (到时 reads as “when the time comes”); 已结束"
+    },
+    {
+     "key": "Sleep timer expired. Playback paused.",
+     "id": "readerViewModel.sleepTimerExpiredAnnouncement",
+     "english": "Sleep timer expired. Playback paused.",
+     "before": "睡眠定时器已到时。播放已暂停。",
+     "after": "睡眠定时器已结束。播放已暂停。",
+     "why": "natural: 已到时 is not how Chinese says a timer ran out (到时 reads as “when the time comes”); 已结束"
+    },
+    {
+     "key": "Speed: %lld words per minute; rate %@, pitch %@, volume %@",
+     "id": "speechRefusal.speed",
+     "english": {
+      "one": "Speed: %lld word per minute; rate %@, pitch %@, volume %@",
+      "other": "Speed: %lld words per minute; rate %@, pitch %@, volume %@"
+     },
+     "before": {
+      "other": "速度：每分钟 %lld 个词；速率 %@，音调 %@，音量 %@"
+     },
+     "after": {
+      "other": "速度：每分钟 %lld 字；速率 %@，音调 %@，音量 %@"
+     },
+     "why": "term: a text book’s speed is 字 everywhere else in the app; 个词 was a second word for it"
+    },
+    {
+     "key": "Start of the book.",
+     "id": "phoneReader.nothingThatWay.start",
+     "english": "Start of the book.",
+     "before": "图书开头。",
+     "after": "已到图书开头。",
+     "why": "natural: a bare noun phrase in an announcement; 已到…, as the reader’s End of the book. says"
+    },
+    {
+     "key": "Start of the reading list",
+     "id": "readingListReader.endNote.start",
+     "english": "Start of the reading list",
+     "before": "阅读列表开头",
+     "after": "已到阅读列表开头",
+     "why": "natural: a bare noun phrase in an announcement; 已到…, as the reader’s End of the book. says"
+    },
+    {
+     "key": "Starting: %@",
+     "id": "endOfBook.starting",
+     "english": "Starting: %@",
+     "before": "正在开始：%@",
+     "after": "开始播放：%@",
+     "why": "natural: 正在开始 (is starting) names no action; the next book starts playing"
+    },
+    {
+     "key": "Still starting: %@",
+     "id": "endOfBook.stillStarting",
+     "english": "Still starting: %@",
+     "before": "仍在开始：%@",
+     "after": "仍在打开：%@",
+     "why": "natural: 仍在开始 names no action; the next book is still opening"
+    },
+    {
+     "key": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "id": "bookTextEdit.stoppedBookGone",
+     "english": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "before": "文本未更新：%@ 已被移除或其下载已删除，因此“编辑文本”已为其停止。",
+     "after": "文本未更新：%@ 已被移除或其下载已删除，因此其“编辑文本”已停止。",
+     "why": "natural: 已为其停止 is a literal “has stopped for it”; worded as the other Edit Text stopped messages"
+    },
+    {
+     "key": "Text not updated: the edited transcript of %@ has %@, but the audiobook has %@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.chaptersChanged",
+     "english": "Text not updated: the edited transcript of %1$@ has %2$@, but the audiobook has %3$@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then.",
+     "before": "文本未更新：%1$@ 编辑后的文字稿有 %2$@，而有声书有 %3$@。请保留每一行以 <!-- chapter: 开头的行，然后再次存储；在此之前，图书保留其旧文本。",
+     "after": "文本未更新：%1$@ 编辑后的文字稿有 %2$@，而有声书有 %3$@。请保留每个以 <!-- chapter: 开头的行，然后再次存储；在此之前，图书保留其旧文本。",
+     "why": "grammar: 保留每一行以…开头的行 repeated 行 and garbled the object"
+    },
+    {
+     "key": "TextMouth is finishing up before it quits: %@. It quits when that is done.",
+     "id": "quitHold.message",
+     "english": "TextMouth is finishing up before it quits: %@. It quits when that is done.",
+     "before": "TextMouth 正在完成收尾工作后退出：%@。完成后会自动退出。",
+     "after": "TextMouth 正在完成退出前的收尾工作：%@。完成后即会退出。",
+     "why": "grammar: 正在完成收尾工作后退出 said it finishes up after quitting"
+    },
+    {
+     "key": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "id": "brailleSettings.fileCodeCaption",
+     "english": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "before": "TextMouth 对此后添加的 BRF 和 BRL 文件使用这些字符读取，并自动识别 Unicode 盲文点型。“导出”对话框用它们开始写 BRF。每本图书保留其导入时的字符，可在“图书信息”中更改。",
+     "after": "TextMouth 会用这些字符读取此后添加的 BRF 和 BRL 文件，并自动识别 Unicode 盲文点型。“导出”对话框导出 BRF 时默认使用这些字符。每本图书保留其导入时的字符，可在“图书信息”中更改。",
+     "why": "meaning: 用它们开始写 BRF (begins writing a BRF with them) misread “starts a BRF with them”, the dialog’s default"
+    },
+    {
+     "key": "The %@ page labelled %@",
+     "id": "readerPage.namedAtStart",
+     "english": "The %1$@ page labelled %2$@",
+     "before": "标注为 %2$@ 的%1$@页",
+     "after": "标注为 %2$@ 的%1$@个页面",
+     "why": "meaning: 第二页 reads as page 2; 第二个页面 is the second of the pages with that label"
+    },
+    {
+     "key": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "id": "ownAudio.sentence.truncated",
+     "english": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "before": "音频文件 %@ 在音频播完之前就结束了，因此无法转换。",
+     "after": "音频文件 %@ 在其音频结束之前就已截断，因此无法转换。",
+     "why": "meaning: 在音频播完之前 (before the audio finished playing) misread a file that is cut short"
+    },
+    {
+     "key": "The file %@ could not be read quickly enough.",
+     "id": "audioPlaybackFailure.message.stalled",
+     "english": "The file %@ could not be read quickly enough.",
+     "before": "无法足够快地读取文件 %@。",
+     "after": "文件 %@ 读取速度过慢。",
+     "why": "natural: 无法足够快地读取 is a word-for-word “could not be read quickly enough”"
+    },
+    {
+     "key": "The heading whose section ends the audio, with its subheadings, or the end of the book.",
+     "id": "speechExport.throughHint",
+     "english": "The heading whose section ends the audio, with its subheadings, or the end of the book.",
+     "before": "其章节标题所属部分结束于音频末尾的章节标题（含其子标题），或图书结尾。",
+     "after": "音频结束的位置：某个章节标题所属部分（含其子标题）的末尾，或图书结尾。",
+     "why": "natural: the hint wound the heading around its own section; now parallel to the From hint (音频开始的位置：…)"
+    },
+    {
+     "key": "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu.",
+     "id": "readingList.emptyList",
+     "english": "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu.",
+     "before": "阅读列表为空。要添加图书，请从其上下文菜单、VoiceOver 操作或“资料库”菜单中选取“添加到阅读列表”。",
+     "after": "阅读列表为空。要添加图书，请从其快捷菜单、VoiceOver 操作或“资料库”菜单中选取“添加到阅读列表”。",
+     "why": "term: Apple’s Chinese calls a context menu 快捷菜单"
+    },
+    {
+     "key": "The recording as it was made, before any edits.",
+     "id": "bookExport.hint.originalRecording",
+     "english": "The recording as it was made, before any edits.",
+     "before": "录音的原始状态，编辑之前。",
+     "after": "录音制作时的原样，未经任何编辑。",
+     "why": "natural: the trailing 编辑之前 dangled after the noun phrase"
+    },
+    {
+     "key": "This Kindle book is copy-protected, and TextMouth can't read copy-protected books.",
+     "id": "mobiError.copyProtected",
+     "english": "This Kindle book is copy-protected, and TextMouth can't read copy-protected books.",
+     "before": "此 Kindle 图书受版权保护，TextMouth 无法读取受版权保护的图书。",
+     "after": "此 Kindle 图书受复制保护，TextMouth 无法读取受复制保护的图书。",
+     "why": "meaning: 受版权保护 means under copyright, as nearly every book is; this is copy protection (DRM), as the Audible message says; then 受复制保护, as part 2's review settled for the other copy-protection message (拷贝 is the Copy command)"
+    },
+    {
+     "key": "This book has no pages.",
+     "id": "readerPage.noPages",
+     "english": "This book has no pages.",
+     "before": "此图书没有页。",
+     "after": "此图书没有页码。",
+     "why": "natural: 没有页 is not idiomatic; a book without page marks has no 页码"
+    },
+    {
+     "key": "This book's only page is %@.",
+     "id": "readerPage.fieldHint.only",
+     "english": "This book's only page is %@.",
+     "before": "此图书唯一的页是 %@。",
+     "after": "此图书仅有一页：%@。",
+     "why": "natural: 唯一的页是 is a literal copy of “only page is”"
+    },
+    {
+     "key": "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file.",
+     "id": "failure.notAWebArchive",
+     "english": "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file.",
+     "before": "此文件不是 TextMouth 可读取的网页档案。它可能已损坏，或是其他类型的文件。",
+     "after": "此文件不是 TextMouth 可读取的网页归档。它可能已损坏，或是其他类型的文件。",
+     "why": "term: Safari calls a .webarchive 网页归档"
+    },
+    {
+     "key": "This web archive holds a file of the type “%@”, not a web page or text, so it has nothing to read.",
+     "id": "failure.notAPage",
+     "english": "This web archive holds a file of the type “%@”, not a web page or text, so it has nothing to read.",
+     "before": "此网页档案中的文件类型为“%@”，不是网页或文本，因此没有可读取的内容。",
+     "after": "此网页归档中的文件类型为“%@”，不是网页或文本，因此没有可读取的内容。",
+     "why": "term: Safari calls a .webarchive 网页归档"
+    },
+    {
+     "key": "Two presses, %@ apart. Set the time above %@ to count them as one.",
+     "id": "shortcutsSettings.trialResult.tooFarApart.above",
+     "english": "Two presses, %1$@ apart. Set the time above %2$@ to count them as one.",
+     "before": "两次按键相隔 %1$@。请将时间设置为高于 %2$@，才会将它们算作一次。",
+     "after": "两次按键相隔 %1$@。若要将它们算作连按两次，请将时间设为高于 %2$@。",
+     "why": "meaning: 算作一次 (count as one time) reads as a single press; they would count as a double press"
+    },
+    {
+     "key": "Voice language filter",
+     "id": "readerView.languageFilterLabel",
+     "english": "Voice language filter",
+     "before": "语音语言过滤器",
+     "after": "按语言筛选语音",
+     "why": "natural: 过滤器 is a filter device; a menu that narrows a list is 筛选"
+    },
+    {
+     "key": "Whether each page's last line carries its braille page number.",
+     "id": "brailleExport.numbersHint",
+     "english": "Whether each page's last line carries its braille page number.",
+     "before": "每页最后一行是否带有该盲文页码。",
+     "after": "每页最后一行是否带有其盲文页码。",
+     "why": "natural: 该盲文页码 (that braille page number) points at nothing; the page’s own number is 其"
+    },
+    {
+     "key": "Windows-1250 (Central European)",
+     "id": "label.name.windows1250",
+     "english": "Windows-1250 (Central European)",
+     "before": "Windows-1250（中欧语）",
+     "after": "Windows-1250（中欧）",
+     "why": "natural: 西欧语, 中欧语, and 波罗的海语 name no language; the encoding is named by its region, as CP850（西欧 DOS） is"
+    },
+    {
+     "key": "Windows-1252 (Western European)",
+     "id": "label.name.windows1252",
+     "english": "Windows-1252 (Western European)",
+     "before": "Windows-1252（西欧语）",
+     "after": "Windows-1252（西欧）",
+     "why": "natural: 西欧语, 中欧语, and 波罗的海语 name no language; the encoding is named by its region, as CP850（西欧 DOS） is"
+    },
+    {
+     "key": "Windows-1257 (Baltic)",
+     "id": "label.name.windows1257",
+     "english": "Windows-1257 (Baltic)",
+     "before": "Windows-1257（波罗的海语）",
+     "after": "Windows-1257（波罗的海）",
+     "why": "natural: 西欧语, 中欧语, and 波罗的海语 name no language; the encoding is named by its region, as CP850（西欧 DOS） is"
+    },
+    {
+     "key": "it has %@, where the audiobook has %@. Keep every line beginning with <!-- chapter: and save again, and the text shows.",
+     "id": "bookTextEdit.heldReason.chaptersChanged",
+     "english": "it has %1$@, where the audiobook has %2$@. Keep every line beginning with <!-- chapter: and save again, and the text shows.",
+     "before": "它有 %1$@，而有声书有 %2$@。请保留每一行以 <!-- chapter: 开头的行，然后再次存储，文本便会显示。",
+     "after": "它有 %1$@，而有声书有 %2$@。请保留每个以 <!-- chapter: 开头的行，然后再次存储，文本便会显示。",
+     "why": "grammar: 保留每一行以…开头的行 repeated 行 and garbled the object"
+    },
+    {
+     "key": "on the %@ page labelled %@",
+     "id": "readerPage.cursorPlace.labelled",
+     "english": "on the %1$@ page labelled %2$@",
+     "before": "位于标注为 %2$@ 的%1$@页",
+     "after": "位于标注为 %2$@ 的%1$@个页面",
+     "why": "meaning: 第二页 reads as page 2; 第二个页面 is the second of the pages with that label"
+    },
+    {
+     "key": "the file %@ could not be read quickly enough",
+     "id": "audioPlaybackFailure.problem.stalled",
+     "english": "the file %@ could not be read quickly enough",
+     "before": "无法足够快地读取文件 %@",
+     "after": "文件 %@ 读取速度过慢",
+     "why": "natural: 无法足够快地读取 is a word-for-word “could not be read quickly enough”"
+    }
+   ]
+  },
+  {
+   "part": 4,
+   "areas": [
+    "the whole app: words carried across the three parts"
+   ],
+   "reviewer": "Claude Sonnet 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "id": "bookExport.settingHint",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "在每个阅读器的工具栏中添加“导出”按钮。使用“文件”>“导出”同样可以导出。",
+     "after": "在每个阅读器的工具栏中添加“导出”按钮。使用“文件”菜单中的“导出”同样可以导出。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "Choose the language in Settings, Playback, Transcription.",
+     "id": "transcription.languageHint",
+     "english": "Choose the language in Settings, Playback, Transcription.",
+     "before": "请在“设置”>“播放功能”>“转录”中选取语言。",
+     "after": "请在“设置”的“播放功能”中，于“转录”选取语言。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "Compare Libraries in Storage settings lists every difference.",
+     "id": "libraryComparison.newerCopySentence.libraries",
+     "english": "Compare Libraries in Storage settings lists every difference.",
+     "before": "“设置”>“存储”中的“比较资料库”会列出每一处差异。",
+     "after": "“设置”的“存储”中的“比较资料库”会列出每一处差异。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings.",
+     "id": "audioEditError.mp3NeedsFFmpeg",
+     "english": "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings.",
+     "before": "无法写入 MP3：TextMouth 的编码器无法启动，并且 ffmpeg 缺失或在“设置”>“存储”中已关闭。",
+     "after": "无法写入 MP3：TextMouth 的编码器无法启动，并且 ffmpeg 缺失或在“设置”的“存储”中已关闭。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "No filter presets. Add some in Storage settings, under Audio Editing.",
+     "id": "audioEditor.noPresets",
+     "english": "No filter presets. Add some in Storage settings, under Audio Editing.",
+     "before": "没有滤波器预设。请在“设置”>“存储”>“音频编辑”下添加。",
+     "after": "没有滤波器预设。请在“设置”的“存储”中，于“音频编辑”下添加。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "id": "speechExportError.noVoice",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "未安装语音。请在“系统设置”>“辅助功能”>“朗读内容”中添加，然后再次导出。",
+     "after": "未安装语音。请在“系统设置”的“辅助功能”中，于“朗读内容”添加，然后再次导出。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "id": "phoneVoice.noVoices",
+     "english": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "before": "未安装语音。请在“设置”>“辅助功能”>“朗读内容”中添加语音。",
+     "after": "未安装语音。请在“设置”的“辅助功能”中，于“朗读内容”添加语音。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "id": "feed.notificationsRefused",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "TextMouth 未获准发送通知。请在“系统设置”>“通知”>“TextMouth”中打开通知。",
+     "after": "TextMouth 未获准发送通知。请在“系统设置”的“通知”中，于“TextMouth”打开通知。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone.",
+     "id": "audioInputPermissionError.denied",
+     "english": "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone.",
+     "before": "TextMouth 无权使用麦克风。请在“系统设置”>“隐私与安全性”>“麦克风”中打开。",
+     "after": "TextMouth 无权使用麦克风。请在“系统设置”的“隐私与安全性”中，于“麦克风”打开。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "To use another folder, open Settings, Storage, and choose %@ or %@.",
+     "id": "dataDirectoryUnavailable.anotherFolderPointer",
+     "english": "To use another folder, open Settings, Storage, and choose %1$@ or %2$@.",
+     "before": "要使用其他文件夹，请打开“设置”>“存储”，然后选取 %1$@ 或 %2$@。",
+     "after": "要使用其他文件夹，请打开“设置”的“存储”，然后选取 %1$@ 或 %2$@。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "id": "bookManifestEdit.explanation.quotation",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "请输入直引号：在“文本编辑”中，到“编辑”>“替换”下关闭“智能引号”。",
+     "after": "请输入直引号：在“文本编辑”中，到“编辑”的“替换”下关闭“智能引号”。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "id": "feed.useGlobalHint",
+     "english": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "before": "勾选后，此订阅源会遵循“设置”>“%@”中的设置；取消勾选可为该订阅源设置专属选项。",
+     "after": "勾选后，此订阅源会遵循“设置”的“%@”中的设置；取消勾选可为该订阅源设置专属选项。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings.",
+     "id": "audioFilterError.ffmpegMissing",
+     "english": "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings.",
+     "before": "无法启动 ffmpeg。请检查是否已安装，或在“设置”>“存储”中关闭“使用 ffmpeg”。",
+     "after": "无法启动 ffmpeg。请检查是否已安装，或在“设置”的“存储”中关闭“使用 ffmpeg”。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    }
+   ]
+  }
+ ]
+}

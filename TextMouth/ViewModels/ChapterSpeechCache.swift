@@ -243,7 +243,7 @@ struct ChapterSpeechCache {
 
     /// Whether speech prepared from exactly `inputs` is kept, asked without
     /// counting a miss or making any kept speech the most recent.
-    private func isKept(_ inputs: ChapterSpeechInputs) -> Bool {
+    func isKept(_ inputs: ChapterSpeechInputs) -> Bool {
         lookAheadSpeech?.inputs == inputs || recent.contains { $0.inputs == inputs }
     }
 

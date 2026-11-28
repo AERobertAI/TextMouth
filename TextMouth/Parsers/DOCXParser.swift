@@ -4,7 +4,7 @@ import ZIPFoundation
 // MARK: - Error Types
 
 /// Errors that can occur when parsing a DOCX file
-enum DOCXParserError: LocalizedError {
+enum DOCXParserError: LocalizedError, LogDescribing {
     case fileNotFound(String)
     case invalidArchive
     case missingEntry(String)
@@ -14,16 +14,40 @@ enum DOCXParserError: LocalizedError {
     /// part's path inside the package; `reason` completes the sentence "The
     /// file is damaged or incomplete: …".
     case malformedXML(file: String, reason: String)
+    /// A part TextMouth will not read although it is not damaged: it defines
+    /// entities of its own, or is written in an encoding the guard cannot see
+    /// through (`XMLInputGuard`). `file` is the part's path inside the package.
+    case unsafeXML(file: String, problem: XMLInputGuard.Problem)
 
     var errorDescription: String? {
         switch self {
-        case .fileNotFound(let path): return "DOCX file not found at: \(path)"
-        case .invalidArchive: return "The DOCX file could not be opened as a ZIP archive."
-        case .missingEntry(let path): return "The DOCX file is missing required entry: \(path)"
+        case .fileNotFound(let path):
+            // Translators: Why a Word document (.docx) could not be imported: there is no file at its path. %@ is the path.
+            return InterfaceText.line("docxParserError.fileNotFound", "DOCX file not found at: \(path)")
+        case .invalidArchive:
+            // Translators: Why a Word document (.docx) could not be imported: it could not be opened as a ZIP archive.
+            return InterfaceText.line("docxParserError.invalidArchive", "The DOCX file could not be opened as a ZIP archive.")
+        case .missingEntry(let path):
+            // Translators: Why a Word document (.docx) could not be imported: a part it needs is not in it. %@ is the part's path inside the document.
+            return InterfaceText.line("docxParserError.missingEntry", "The DOCX file is missing required entry: \(path)")
         case .malformedXML(let file, let reason):
-            return PackageDamage.message(
-                file: file, reason: reason, container: "this document", original: "the document"
-            )
+            return PackageDamage.message(file: file, reason: reason, container: .document)
+        case .unsafeXML(let file, let problem):
+            return XMLInputGuard.refusalSentence(for: problem, file: file, in: .document)
+        }
+    }
+
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34).
+    var logDescription: String {
+        switch self {
+        case .fileNotFound(let path): return "DOCX file not found at: \(path)" // l10n: no (debug log)
+        case .invalidArchive: return "The DOCX file could not be opened as a ZIP archive." // l10n: no (debug log)
+        case .missingEntry(let path): return "The DOCX file is missing required entry: \(path)" // l10n: no (debug log)
+        case .malformedXML(let file, let reason):
+            return PackageDamage.logMessage(file: file, reason: reason, container: .document)
+        case .unsafeXML(let file, let problem):
+            return XMLInputGuard.logRefusalSentence(for: problem, file: file, in: .document) ?? ""
         }
     }
 }
@@ -44,10 +68,16 @@ enum DOCXParser {
         static let styles = "word/styles.xml"
         /// List definitions, which say whether each list is bulleted or numbered.
         static let numbering = "word/numbering.xml"
+        /// The fonts' declared character sets, which say how a symbol is read.
+        static let fontTable = "word/fontTable.xml"
         /// The document's relationships, which hold its hyperlink targets.
         static let documentRelationships = "word/_rels/document.xml.rels"
         /// Core properties: the document's title and author.
         static let coreProperties = "docProps/core.xml"
+        /// The document's footnotes, read after its text.
+        static let footnotes = "word/footnotes.xml"
+        /// The document's endnotes, read after its footnotes.
+        static let endnotes = "word/endnotes.xml"
     }
 
     /// Parse a DOCX file into DocumentContent for reading/playback
@@ -59,8 +89,11 @@ enum DOCXParser {
         let metadata = try? readMetadata(from: url)
 
         // Parse the generated Markdown using the shared Markdown parser
-        let docTitle = metadata?.title ?? title
-        let docAuthor = metadata?.author ?? Book.unknownAuthor
+        // A title or author the core properties leave empty is not a name:
+        // the file's name and the unknown author stand, as for a document
+        // with no core properties at all.
+        let docTitle = metadata?.namedTitle ?? title
+        let docAuthor = metadata?.namedAuthor ?? Book.unknownAuthor
 
         let content = try MarkdownDocParser.parse(markdown: markdown, title: docTitle)
         return DocumentContent(
@@ -82,7 +115,9 @@ enum DOCXParser {
     ///   styles, numbering, or relationships part is present but damaged,
     ///   since reading on would silently turn headings into plain paragraphs,
     ///   numbered steps into bullets, or links into bare text; or when the
-    ///   text part is damaged before any of its text.
+    ///   text part is damaged before any of its text. A damaged notes part
+    ///   refuses nothing: its damage is reported and its notes are left out.
+    ///   `ImportCancelled` when the import running it is cancelled.
     static func extractMarkdown(
         from url: URL,
         includesPages: Bool = true,
@@ -91,13 +126,17 @@ enum DOCXParser {
         let archive = IndexedArchive(try openArchive(at: url))
 
         // Parse styles first so we can identify heading paragraph styles
-        let styles = try parseStyles(from: archive)
+        try ImportCancellation.throwIfCancelled()
+        var styles = try parseStyles(from: archive)
+        styles.fonts = try parseFontTable(from: archive)
 
         // Parse numbering definitions for bullet and numbered lists
+        try ImportCancellation.throwIfCancelled()
         let numbering = try parseNumbering(from: archive)
 
         // Read the main document content. Its raw bytes go to the parser,
         // which honors the declared encoding and reports any invalid byte.
+        try ImportCancellation.throwIfCancelled()
         let documentXML = try extractData(from: archive, path: Part.document)
 
         // Parse relationships for hyperlink targets
@@ -114,7 +153,70 @@ enum DOCXParser {
         if let diagnostic = conversion.diagnostic {
             reportIncompleteContent(diagnostic)
         }
-        return conversion.markdown
+
+        // The footnotes and then the endnotes follow the text, each in the
+        // order its part keeps them (a Word document reads them the same way),
+        // those a read reference points to. A notes part that is damaged, or
+        // larger than a part may be, loses its notes and is reported, but never
+        // refuses the book: the notes change nothing about how the body reads.
+        var markdown = conversion.markdown
+        let references = conversion.references
+        for (notesPart, ids) in [(Part.footnotes, references.footnotes), (Part.endnotes, references.endnotes)] {
+            try ImportCancellation.throwIfCancelled()
+            do {
+                let notes = try convertNotes(
+                    from: archive, at: notesPart, ids: ids, referenceStyles: references.runStyles,
+                    styles: styles, numbering: numbering
+                )
+                if let diagnostic = notes?.diagnostic {
+                    reportIncompleteContent(diagnostic)
+                }
+                if let notesMarkdown = notes?.markdown, !notesMarkdown.isEmpty {
+                    markdown = markdown.isEmpty ? notesMarkdown : markdown + "\n\n" + notesMarkdown
+                }
+            } catch let cancelled as ImportCancelled {
+                throw cancelled
+            } catch let damage as DOCXParserError {
+                reportIncompleteContent(damage)
+            } catch {
+                reportIncompleteContent(.malformedXML(file: notesPart, reason: "it could not be unpacked")) // l10n: no (a parser's damage reason)
+            }
+        }
+        return markdown
+    }
+
+    /// The notes part at `path` as Markdown, or nil when the package has no
+    /// such part. The part goes through the same conversion as the text, with
+    /// these differences: no page begins in it, its text is never a heading,
+    /// only the notes `ids` lists are read (those a read reference points to),
+    /// the notes that are only separators are left out, the marks that stand
+    /// for the notes' numbers (`w:footnoteRef`, `w:endnoteRef`, and a custom
+    /// mark in the style `referenceStyles` names) are not read, and a link in
+    /// it keeps its label alone (its targets are in a part of their own, not
+    /// read). The part is held to the size limit every part is.
+    /// - Throws: `DOCXParserError.malformedXML` naming the part when it holds
+    ///   more than `ArchiveEntryLimits.current` allows, or is damaged before
+    ///   any of its text.
+    private static func convertNotes(
+        from archive: IndexedArchive,
+        at path: String,
+        ids: Set<String>,
+        referenceStyles: Set<String>,
+        styles: DOCXStyles,
+        numbering: DOCXNumbering
+    ) throws -> DOCXConversion? {
+        guard let data = try extractOptionalData(from: archive, path: path) else { return nil }
+        return try DOCXToMarkdownConverter(
+            data: data,
+            file: path,
+            styles: styles,
+            numbering: numbering,
+            relationships: [:],
+            includesPages: false,
+            readsNotes: true,
+            noteIDs: ids,
+            referenceStyles: referenceStyles
+        ).convert()
     }
 
     /// Default report for a document whose text part broke off after some of
@@ -172,13 +274,21 @@ enum DOCXParser {
 
     /// Open the DOCX package at `url` for reading.
     /// - Throws: `DOCXParserError.fileNotFound` when no file is there, or
-    ///   `.invalidArchive` when it cannot be opened as a ZIP archive.
+    ///   `.invalidArchive` when it cannot be opened as a ZIP archive, and
+    ///   `EncryptedArchiveError` when an entry is protected by a password.
     private static func openArchive(at url: URL) throws -> Archive {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw DOCXParserError.fileNotFound(url.path)
         }
+        // A password-protected archive is refused in words that say so (B27).
         do {
-            return try Archive(url: url, accessMode: .read)
+            try UnlockedSources.refuseIfLocked(at: url)
+        } catch is EncryptedArchiveError {
+            // The reader's own refusal for a package with a password.
+            throw PasswordProtectedDocument()
+        }
+        do {
+            return try UnlockedSources.openArchive(at: url)
         } catch {
             throw DOCXParserError.invalidArchive
         }
@@ -197,14 +307,18 @@ enum DOCXParser {
     /// `ArchiveEntryReader`, so a part larger than the most TextMouth reads
     /// from one file is refused rather than read whole into memory (TODO I05).
     /// - Throws: `DOCXParserError.malformedXML` naming the part when it holds
-    ///   more than `ArchiveEntryLimits.current` allows, or the archive's
-    ///   error when the entry exists but cannot be unpacked.
+    ///   more than `ArchiveEntryLimits.current` allows, or when the entry
+    ///   exists but cannot be unpacked (the ZIP damage is then said in plain
+    ///   words, and ZIPFoundation's own error is logged as `DOCX_ZIP_ERROR`).
     private static func extractOptionalData(from archive: IndexedArchive, path: String) throws -> Data? {
         guard let entry = archive[path] else { return nil }
         do {
             return try ArchiveEntryReader.read(entry, in: archive.archive).data
         } catch let overflow as ArchiveEntryOverflow {
             throw DOCXParserError.malformedXML(file: path, reason: overflow.reason)
+        } catch {
+            let reason = ArchiveEntryReader.unreadableReason(of: entry, error: error, tag: "DOCX_ZIP_ERROR")
+            throw DOCXParserError.malformedXML(file: path, reason: reason)
         }
     }
 
@@ -214,7 +328,7 @@ enum DOCXParser {
     /// part's bytes and its path, or return `absent` when the package has no
     /// such part: a document without lists, say, simply has no numbering.
     /// - Throws: `DOCXParserError.malformedXML` naming the part when it is
-    ///   present but damaged, or the archive's error when it cannot be unpacked.
+    ///   present but damaged, or cannot be unpacked.
     private static func parseOptionalPart<Content>(
         _ path: String,
         in archive: IndexedArchive,
@@ -229,6 +343,22 @@ enum DOCXParser {
     private static func parseStyles(from archive: IndexedArchive) throws -> DOCXStyles {
         try parseOptionalPart(Part.styles, in: archive, absent: DOCXStyles()) { data, path in
             try DOCXStylesParser(data: data, file: path).parse()
+        }
+    }
+
+    /// Extract and parse fontTable.xml for the character sets of the fonts.
+    /// A part that is missing, damaged, or refused leaves them out: a symbol
+    /// is then read in its font by name alone, and no book is lost for it.
+    /// - Throws: `ImportCancelled`, and nothing else.
+    private static func parseFontTable(from archive: IndexedArchive) throws -> WordXMLFonts {
+        do {
+            return try parseOptionalPart(Part.fontTable, in: archive, absent: WordXMLFonts()) { data, path in
+                try DOCXFontTableParser(data: data, file: path).parse()
+            }
+        } catch let cancelled as ImportCancelled {
+            throw cancelled
+        } catch {
+            return WordXMLFonts()
         }
     }
 

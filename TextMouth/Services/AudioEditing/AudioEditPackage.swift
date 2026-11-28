@@ -106,6 +106,31 @@ enum AudioEditPackage {
         return AudioOriginal(file: path, lastEditedAt: date)
     }
 
+    /// Removes the podcast chapters set aside in the package at `package`
+    /// (`TextMouthPaths.podcastChaptersSetAsideFileName`), because the audio
+    /// they were timed to, the original of the history that set them aside, is
+    /// no longer what an undo of every edit reaches: the history started
+    /// over. Nothing set aside is no error and says nothing; one that cannot
+    /// be removed is left, with one line in the debug log naming the error's
+    /// code and domain.
+    static func discardSetAsidePodcastChapters(inPackage package: URL) {
+        let url = TextMouthPaths.podcastChaptersSetAsidePath(in: package)
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        do {
+            try FileManager.default.removeItem(at: url)
+            DiagnosticLog.event(
+                .storage,
+                "PODCAST_CHAPTERS_DISCARDED: the audio's edit history started over, so the chapters set aside no longer fit"
+            )
+        } catch {
+            let failure = error as NSError
+            DiagnosticLog.event(
+                .storage,
+                "PODCAST_CHAPTERS_LEFT: the chapters set aside could not be discarded: error \(failure.code) in \(failure.domain)"
+            )
+        }
+    }
+
     /// `path`, or, when something is already there, the first of
     /// "<name> 2.<ext>", "<name> 3.<ext>", … that is free.
     private static func freePath(startingFrom path: String, in package: URL) -> String {

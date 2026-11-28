@@ -8,7 +8,7 @@ Slug `placediff`; branch `feature/place-diff`, from main (branch A merged as 259
 - The anchorengine agent's notes in `AGENT-NOTES-2026-10-04.md`: branch A's `FineWords`, `BookWords`, `TextAnchor`, and `TextAnchorFinder` are on main, and you share their words.
 
 ## The reference and the truth
-- `~/programming/ai/claude/investigate/text-anchors-2026-10-10/addendum/src/hybrid.swift` is the measured program: the diff, its rules, and the fallbacks.
+- `~/…/investigate/text-anchors-2026-10-10/addendum/src/hybrid.swift` is the measured program: the diff, its rules, and the fallbacks.
 - `addendum/truth/`, `addendum/results/`, and the addendum's scripts hold the exact answers for the 26 real version steps and the synthetic cases.
 - `engine-harness/` is branch A's standalone harness. It compiles the app's own engine files and ran the real steps through them.
 Port the relocator's rules faithfully into app code that reads like the app's (comments, naming, DRY); say why wherever you change a rule. Extend the harness to run your `PlaceRelocator` over the real steps (the addendum's result: 0 on wrong words, 0 a few words off) and the synthetic cases with the whole old text (146 on wrong words, 130 of them in moved paragraphs). Report what you get. Read `~/.TextMouth` for counts only, never content.

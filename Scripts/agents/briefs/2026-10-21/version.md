@@ -26,7 +26,7 @@ You are `version`, a Sonnet agent, on the branch `release/version`. TextMouth is
 
    Give it a `--selftest`, run on a copy of `project.yml` in a temporary folder, and add that selftest to `make check-selftest`. Add a Makefile target, `make set-version VERSION=0.2.0`, and list it in `make help`.
 4. **A page for the user,** `docs/user/whats-new.md`, linked from `README.md`'s index of user pages.
-   - Its newest version comes first: "0.2.0 (October 21, 2026)", with one plain sentence per feature set. Write them from the TODO's merge entries since 0.1.1. The TODO is gitignored, so read it at `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/TODO-2026-09-04.md`: `grep -n "^- \[x\] \*\*" TODO-2026-09-04.md`, then by line range.
+   - Its newest version comes first: "0.2.0 (October 21, 2026)", with one plain sentence per feature set. Write them from the TODO's merge entries since 0.1.1. The TODO is gitignored, so read it at `<main checkout>/TODO-2026-09-04.md`: `grep -n "^- \[x\] \*\*" TODO-2026-09-04.md`, then by line range.
    - Keep it to 15 to 25 lines, grouped under a few headings (Reading, Listening, Braille, Export, Library), in the pages' own style.
    - It must work well with VoiceOver and a braille display: headings and lists, nothing visual.
 5. **The developer procedure:** a short "Versions" section in `docs/developer/building.md`, saying what decision 2 says and how to run the script. Add one line about it to `AGENTS.md`'s "How the orchestrator works" section, the bump before an install.

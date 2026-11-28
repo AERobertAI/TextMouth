@@ -25,7 +25,8 @@ extension ReaderViewModel {
     /// places count time in its recording (P08), before the text has
     /// loaded, and for a chapter the text lacks.
     func capturedAnchor(at place: TextPlace) -> TextAnchor? {
-        guard !isAudioBook, let content else { return nil }
+        // A protected book's words are never copied into a record (FR41).
+        guard !isAudioBook, !book.isPasswordProtected, let content else { return nil }
         return content.anchor(at: place, measuredIn: textAnchorMeasure)
     }
 
@@ -89,7 +90,7 @@ extension ReaderViewModel {
     /// copies. The position takes its words from the save the load makes.
     /// Places that have words keep them, and nothing is spoken or shown.
     func captureMissingAnchorsAtLoad() {
-        guard !isAudioBook, let content, let row = libraryViewModel.bookByID(book.id) else { return }
+        guard !isAudioBook, !book.isPasswordProtected, let content, let row = libraryViewModel.bookByID(book.id) else { return }
         let captured = CapturedPlaceAnchors.capturing(
             missingFrom: row,
             in: content,
@@ -100,6 +101,71 @@ extension ReaderViewModel {
         libraryViewModel.adoptCapturedAnchors([book.id: captured])
         bookmarks = libraryViewModel.bookmarksForBook(book.id)
         book.adoptCapturedAnchors(captured)
+    }
+
+    // MARK: A Later Place in the Book's Record (Risk 2)
+
+    /// Takes `recorded`, the reading state that stood between the book's
+    /// row and its record as the book loaded, when the record held the
+    /// later place (`LoadedContent.recordedState`): as another Mac sharing
+    /// the library writes one while this Mac's row lags behind, its listener
+    /// having read the book there since (risk 2 of the local-first
+    /// research). The library's row, this reader's own copy of the book, its
+    /// bookmark list, its cursor, and its voice, speed, and pitch all take
+    /// it, before any move of the places the load made, so the book opens
+    /// where it was read last, with the bookmarks and settings it was left
+    /// with there, and the load's own save keeps that place's date
+    /// (`noteOpenedPlace()`). The row takes it by the same rule
+    /// (`Book.readingState(standingAgainst:)`), so a row that caught up
+    /// meanwhile keeps its own. Nothing is spoken or shown: the book simply
+    /// opens at its place.
+    func takeNewerRecordedState(_ recorded: Book.ReadingState) {
+        libraryViewModel.takeStandingReadingState(recorded, of: book.id)
+        let standing = book.readingState(standingAgainst: recorded)
+        guard standing != book.readingState else { return }
+        let settingsBefore = book.localVoiceSettings
+        book.readingState = standing
+        bookmarks = libraryViewModel.bookByID(book.id) == nil ? book.bookmarks : libraryViewModel.bookmarksForBook(book.id)
+        if let position = standing.readingPosition {
+            currentChapterIndex = position.chapterIndex
+            currentCharacterOffset = position.characterOffset
+        }
+        if book.localVoiceSettings != settingsBefore {
+            applySpeechSettingsOfTheBook()
+        }
+    }
+
+    // MARK: A Later Place From Another Device (FR43)
+
+    /// Takes the reading state a sync merge gave this book, when the reader
+    /// is at rest: it moves to the place, as a later place in the record
+    /// does (`takeNewerRecordedState(_:)`), and says so. A playing reader
+    /// plays on, and its next checkpoint wins; a place that is not the later
+    /// one changes nothing and says nothing.
+    func takeSyncedReadingState(_ synced: SyncedReadingState) {
+        // A reader that plays, or is paused in the middle of its speech, is never moved.
+        guard !isCurrentlyPlaying, !isCurrentlyPaused else { return }
+        let before = book.readingPosition
+        takeNewerRecordedState(synced.state)
+        guard book.readingPosition != before else { return }
+        // The place itself, the chapter and the offset in it, not its date or
+        // anchor: a newer date at the same place moves nothing and says nothing.
+        let moved = book.readingPosition?.chapterIndex != before?.chapterIndex
+            || book.readingPosition?.characterOffset != before?.characterOffset
+        // The place is within the text this reader shows, as a move of the
+        // cursor keeps it.
+        if let chapters = content?.chapters, !chapters.isEmpty {
+            currentChapterIndex = min(max(currentChapterIndex, 0), chapters.count - 1)
+            currentCharacterOffset = min(max(currentCharacterOffset, 0), chapters[currentChapterIndex].text.count)
+        }
+        // The place was saved elsewhere, at its own date: closing the book or
+        // quitting finds the cursor where it was saved and keeps that date,
+        // so it never outranks later reading on the other device (as opening
+        // a book notes its place, `noteOpenedPlace()`).
+        noteOpenedPlace()
+        if moved {
+            VoiceOverAnnouncer.announce(SyncWording.announceMovedToPlace(from: synced.device))
+        }
     }
 
     // MARK: Places Moved by a Rebuild of the Text

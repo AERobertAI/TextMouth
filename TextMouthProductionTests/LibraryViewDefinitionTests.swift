@@ -303,7 +303,9 @@ final class LibraryViewDefinitionTests: XCTestCase {
             #"{"id": "\#(custom)", "name": "Mine", "filter": {"lists": ["books"], "sort": "title"}}"#,
             #"{"id": "\#(custom)", "name": "Mine", "filter": {"lists": ["books"], "conditions": {}}}"#,
             #"{"id": "\#(custom)", "name": "Mine", "filter": {"lists": ["books"], "conditions": [{"test": "duration", "value": 3}]}}"#,
-            #"{"id": "\#(custom)", "name": "Mine", "filter": {"lists": ["books"], "conditions": [{"test": "format", "value": "mobi"}]}}"#,
+            // A format this TextMouth does not know, as one a later version adds
+            // would be. ("mobi" served until Kindle books became a format.)
+            #"{"id": "\#(custom)", "name": "Mine", "filter": {"lists": ["books"], "conditions": [{"test": "format", "value": "not-a-format"}]}}"#,
             #"{"id": "\#(custom)", "name": "Mine", "filter": {"lists": ["books"], "conditions": [{"test": "format"}]}}"#,
             #"{"id": "\#(custom)", "name": "Mine", "filter": {"lists": ["books"], "conditions": [{"test": "readingState", "value": "abandoned"}]}}"#,
             #"{"id": "\#(custom)", "name": "Mine", "filter": {"lists": ["books"], "conditions": [{"test": "folder", "folderID": "Fiction"}]}}"#,

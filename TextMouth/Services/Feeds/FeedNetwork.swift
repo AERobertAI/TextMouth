@@ -39,7 +39,16 @@ struct FeedNetwork: Sendable {
     /// The app's network: the system's reachability, and, in a process
     /// hosting tests, sessions that refuse every request.
     static let app: FeedNetwork = {
-        let refusing: [AnyClass] = TextMouthRuntime.current.isHostedTest ? [FeedNetworkRefusal.self] : []
+        var refusing: [AnyClass] = TextMouthRuntime.current.isHostedTest ? [FeedNetworkRefusal.self] : []
+        #if os(iOS)
+        #if DEBUG
+        // An interface test of the iPhone app (FR53) subscribes to one stand-in feed, which answers its own host and no other,
+        // ahead of the refusal of every request.
+        if PhoneUITestFeedStub.isOn() {
+            refusing.insert(PhoneUITestFeedStub.self, at: 0)
+        }
+        #endif
+        #endif
         return FeedNetwork(protocolClasses: refusing, reachability: .system)
     }()
 
@@ -85,7 +94,7 @@ struct FeedNetwork: Sendable {
     /// "TextMouth/<version>", naming the app to the servers it asks.
     private static func makeUserAgent() -> String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1"
-        return "TextMouth/\(version) (Macintosh; podcast and article reader)"
+        return "TextMouth/\(version) (Macintosh; podcast and article reader)" // l10n: no (the HTTP user agent, which servers read)
     }
 
     /// A GET request for `url` as this network sends it: TextMouth's
@@ -160,34 +169,70 @@ enum FeedFetchError: Error, Equatable, Sendable {
     case cancelled
 
     /// The sentence the library shows and VoiceOver speaks about a feed
-    /// named `name` (its title, or its host).
-    func message(about name: String) -> String {
+    /// named `name` (its title, or its host), naming the device it runs on
+    /// where it names one: "this iPhone" when `isPhone`, else "this Mac".
+    func message(about name: String, isPhone: Bool = ThisDevice.isPhone) -> String {
         switch self {
+        case .offline where isPhone:
+            // Translators: Why a feed could not be refreshed on an iPhone: the iPhone has no internet. %@ is the feed's title or server.
+            return InterfaceText.line("feedFetchError.message.offlinePhone", "This iPhone is offline, so \(name) can't be refreshed. Connect to the internet and try again.")
         case .offline:
-            return "This Mac is offline, so \(name) can't be refreshed. Connect to the internet and try again."
+            // Translators: Why a feed could not be refreshed: this Mac has no internet. %@ is the feed's title or server.
+            return InterfaceText.line("feedFetchError.message.offline", "This Mac is offline, so \(name) can't be refreshed. Connect to the internet and try again.")
         case .hostNotFound(let host):
-            return "The server \(host) couldn't be found. Check the address."
+            // Translators: Why a feed could not be fetched: no server answers at its address. %@ is the server's host name, such as example.com.
+            return InterfaceText.line("feedFetchError.message.hostNotFound", "The server \(host) couldn't be found. Check the address.")
         case .timedOut(let host):
-            return "\(host) didn't answer for \(Int(FeedNetwork.requestTimeout)) seconds."
+            // Translators: Why a feed could not be fetched: the server took too long. The first %@ is the server's host name; %lld is the number of seconds waited.
+            return InterfaceText.line("feedFetchError.didntAnswerSeconds", "\(host) didn't answer for \(number: Int(FeedNetwork.requestTimeout)) seconds.")
         case .notFound:
-            return "There's no feed at that address any more."
+            // Translators: Why a feed could not be fetched: the address answers that nothing is there (error 404).
+            return InterfaceText.line("feedFetchError.message.notFound", "There's no feed at that address any more.")
         case .needsPassword:
-            return "This feed needs a password, which TextMouth can't send yet."
+            // Translators: Why a feed could not be fetched: the server asks for a password.
+            return InterfaceText.line("feedFetchError.message.needsPassword", "This feed needs a password, which TextMouth can't send yet.")
         case .gone:
-            return "The publisher has removed this feed."
+            // Translators: Why a feed could not be fetched: the server says the publisher removed it for good (error 410).
+            return InterfaceText.line("feedFetchError.message.gone", "The publisher has removed this feed.")
         case .serverError(let status, let host):
-            return "\(host) couldn't send the feed (error \(status)). Try again later."
+            // Translators: Why a feed could not be fetched: the server answered with an error. The first %@ is the server's host name; the second is the error's number, an identifier written without digit grouping, such as 503.
+            return InterfaceText.line("feedFetchError.message.serverError", "\(host) couldn't send the feed (error \(String(status))). Try again later.")
         case .tooLarge(let host):
             let megabytes = FeedParser.maximumBytes / 1_048_576
-            return "The feed at \(host) is larger than the \(megabytes) MB TextMouth reads."
+            // Translators: Why a feed could not be read: it is too large. %@ is the server's host name; %lld is the size limit in megabytes.
+            return InterfaceText.line("feedFetchError.message.tooLarge", "The feed at \(host) is larger than the \(number: megabytes) MB TextMouth reads.")
         case .connectionFailed(let host, let reason):
-            return "\(host) couldn't be reached: \(reason)"
+            // Translators: Why a feed could not be fetched: the connection failed. The first %@ is the server's host name; the second is the reason, a phrase from the system or from TextMouth, such as "the server sent no answer".
+            return InterfaceText.line("feedFetchError.couldntReached", "\(host) couldn't be reached: \(reason)")
         case .notAWebAddress:
-            return "That address isn't a web address TextMouth can open."
+            // Translators: Why a feed could not be fetched: its address is not an http or https address.
+            return InterfaceText.line("feedFetchError.message.notAWebAddress", "That address isn't a web address TextMouth can open.")
         case .constrainedNetwork:
-            return "\(name) waits for a network without data limits to refresh by itself."
+            // Translators: Why a feed's automatic refresh did not run now: the network has data limits. %@ is the feed's title or server.
+            return InterfaceText.line("feedFetchError.message.constrainedNetwork", "\(name) waits for a network without data limits to refresh by itself.")
         case .cancelled:
-            return "The refresh of \(name) was stopped."
+            // Translators: Why a feed's refresh ended: it was stopped. %@ is the feed's title or server.
+            return InterfaceText.line("feedFetchError.message.cancelled", "The refresh of \(name) was stopped.")
+        }
+    }
+
+    /// The error in English, for the debug log, which stays English whatever
+    /// the interface language is: a short tag, with the host and no feed
+    /// title.
+    var logName: String {
+        switch self {
+        case .offline: return "offline" // l10n: no (debug log text)
+        case .hostNotFound(let host): return "server \(host) not found" // l10n: no (debug log text)
+        case .timedOut(let host): return "\(host) timed out" // l10n: no (debug log text)
+        case .notFound: return "no feed at that address" // l10n: no (debug log text)
+        case .needsPassword: return "needs a password" // l10n: no (debug log text)
+        case .gone: return "removed by the publisher" // l10n: no (debug log text)
+        case .serverError(let status, let host): return "\(host) answered with error \(status)" // l10n: no (debug log text)
+        case .tooLarge(let host): return "\(host): the feed is too large" // l10n: no (debug log text)
+        case .connectionFailed(let host, let reason): return "\(host) could not be reached: \(reason)" // l10n: no (debug log text)
+        case .notAWebAddress: return "not a web address" // l10n: no (debug log text)
+        case .constrainedNetwork: return "waits for a network without data limits" // l10n: no (debug log text)
+        case .cancelled: return "stopped" // l10n: no (debug log text)
         }
     }
 
@@ -238,7 +283,18 @@ enum FeedFetchError: Error, Equatable, Sendable {
 enum FeedHost {
     /// `url`'s host, or "the server" when it has none.
     static func of(_ url: URL) -> String {
-        url.host ?? "the server"
+        url.host ?? serverName
+    }
+
+    /// `url`'s host in English, for the debug log, which stays English.
+    static func logName(_ url: URL) -> String {
+        url.host ?? "the server" // l10n: no (debug log text)
+    }
+
+    /// What a sentence calls a server whose address names no host.
+    static var serverName: String {
+        // Translators: What a message calls a feed's server when its address names no host, as in "the server sent no answer". Lower case.
+        InterfaceText.line("feedHost.serverName", "the server")
     }
 }
 
@@ -346,7 +402,8 @@ extension FeedNetwork {
         }
 
         guard let response = outcome.response else {
-            throw FeedFetchError.connectionFailed(host: host, reason: "the server sent no answer")
+            // Translators: The reason a connection to a feed's server failed: it sent nothing back. Follows "<server> couldn't be reached:". Lower case, without a full stop.
+            throw FeedFetchError.connectionFailed(host: host, reason: InterfaceText.line("feedNetwork.serverSentNo", "the server sent no answer"))
         }
         let finalHost = response.url.map(FeedHost.of) ?? host
         let finalURL = response.url ?? url
@@ -458,7 +515,7 @@ private final class FeedDataTaskDelegate: NSObject, URLSessionDataDelegate {
     /// Resumes the fetch with what the task produced, or why it failed.
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         let finished = state.withLock { $0 }
-        let host = task.originalRequest?.url.map(FeedHost.of) ?? "the server"
+        let host = task.originalRequest?.url.map(FeedHost.of) ?? FeedHost.serverName
         if finished.exceededLimit {
             continuation.resume(throwing: FeedFetchError.tooLarge(host: host))
         } else if let error {

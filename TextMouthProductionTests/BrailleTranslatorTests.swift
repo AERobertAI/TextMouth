@@ -79,6 +79,8 @@ final class BrailleTranslatorTests: XCTestCase {
         return Array(lines.dropLast(lines.last == "" ? 1 : 0))  // the empty string after the last LF
     }
 
+    // Mac only: stand-in children (a sleep, false) are processes, which the iPhone cannot start.
+    #if os(macOS)
     /// Limits that keep a test short: the watchdog looks every 0.1 second.
     private func limits(seconds: TimeInterval = 5) -> WatchedProcess.Limits {
         WatchedProcess.Limits(
@@ -94,7 +96,7 @@ final class BrailleTranslatorTests: XCTestCase {
             command: { _, _, _, _ in executable.map { (URL(fileURLWithPath: $0), arguments) } },
             limits: { _, _ in limits },
             residentMemory: { _ in nil },
-            tablesFolder: nil
+            tablesFolder: { _ in nil }
         )
     }
 
@@ -102,6 +104,7 @@ final class BrailleTranslatorTests: XCTestCase {
     private func with<T>(_ tool: BrailleTranslator.Tool, _ body: () throws -> T) throws -> T {
         try BrailleTranslator.$tool.withValue(tool, operation: body)
     }
+    #endif
 
     // MARK: - Grade 1 and Grade 2 With the Real Helper
 
@@ -242,10 +245,15 @@ final class BrailleTranslatorTests: XCTestCase {
 
     // MARK: - Tables
 
-    /// Every table the app offers loads: the four of the catalog.
+    /// Every English table the app offers loads: the Mac offers these four of its own pack, and the iPhone's pack has them
+    /// among the rest (`BrailleTablesPackTests` checks every table the iPhone offers).
     func testEveryTableChecks() throws {
         let offered = ["en-ueb-g1.ctb", "en-ueb-g2.ctb", "en-us-g1.ctb", "en_US.tbl"]
+        #if os(macOS)
         XCTAssertEqual(Set(BrailleTableCatalog.bundled.map(\.id)), Set(offered))
+        #else
+        XCTAssertTrue(Set(offered).isSubset(of: BrailleTableCatalog.bundled.map(\.id)), "\(BrailleTableCatalog.bundled.map(\.id))")
+        #endif
         for table in offered {
             XCTAssertNoThrow(try BrailleTranslator.check(table: table, workingIn: work), table)
             assertWorkFolderEmpty()
@@ -270,14 +278,18 @@ final class BrailleTranslatorTests: XCTestCase {
         )
     }
 
+    // Mac only: these tests watch for a stand-in child or run the helper from another folder; the iPhone reads only its bundled folder, whose name holds no comma.
+    #if os(macOS)
     /// A file of the tables folder that the catalog does not offer is
     /// refused by name, from translate and from check (review finding L2):
     /// an edited record naming an include file such as `spaces.uti` would
     /// otherwise load it, and the book would read as liblouis escapes. The
-    /// files exist in the bundle, so only the catalog refuses them; the
-    /// stand-in that would leave a marker is never started.
+    /// files exist in the unpacked folder (the tables that include them
+    /// unpack them), so only the catalog refuses them; the stand-in that
+    /// would leave a marker is never started.
     func testFilesOfTheTablesFolderThatTheCatalogLacksAreRefused() throws {
-        let tables = try XCTUnwrap(BrailleTranslator.Tool.helper.tablesFolder)
+        // Unpacking en-ueb-g2.ctb and en-us-g1.ctb puts the three include files in the folder.
+        let tables = try unpackedAppTables(for: "en-ueb-g2.ctb", "en-us-g1.ctb")
         let marker = work.appendingPathComponent("marker")
         let spy = standIn("/usr/bin/touch", [marker.path])
         try with(spy) {
@@ -331,7 +343,7 @@ final class BrailleTranslatorTests: XCTestCase {
     /// its print, which also shows that translating still works once the
     /// helper has left the folder (liblouis keeps the loaded table by name).
     func testTheHelperWorksFromAFolderWhoseNameHoldsAComma() throws {
-        let bundled = try XCTUnwrap(BrailleTranslator.Tool.helper.tablesFolder)
+        let bundled = try unpackedAppTables(for: "en-ueb-g2.ctb")
         let parent = try makeSandboxDirectory("BrailleComma").appendingPathComponent("Apps, old", isDirectory: true)
         try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
         let tables = parent.appendingPathComponent("tables", isDirectory: true)
@@ -346,7 +358,7 @@ final class BrailleTranslatorTests: XCTestCase {
             },
             limits: { BrailleTranslator.limits(for: $0, bytes: $1) },
             residentMemory: { WatchedProcess.residentMemory(of: $0) },
-            tablesFolder: tables
+            tablesFolder: { _ in tables }
         )
         try with(tool) {
             XCTAssertNoThrow(try BrailleTranslator.check(table: "en-ueb-g2.ctb", workingIn: work))
@@ -355,6 +367,7 @@ final class BrailleTranslatorTests: XCTestCase {
         }
         assertWorkFolderEmpty()
     }
+    #endif
 
     // MARK: - Long Texts and Line Breaks
 
@@ -424,6 +437,8 @@ final class BrailleTranslatorTests: XCTestCase {
         XCTAssertTrue(result == expected, "the joined translations differ from the expected ones")
     }
 
+    // Mac only: the input file and the stand-in that copies it are the helper's; the iPhone sends its records in memory, in batches.
+    #if os(macOS)
     /// The input file holds the protocol's header and then every piece's
     /// record (its text, a line feed, and the empty code line of a piece with
     /// no emphasis), written through a buffer, and the size the watchdog's
@@ -458,7 +473,7 @@ final class BrailleTranslatorTests: XCTestCase {
                 return allowed
             },
             residentMemory: { _ in nil },
-            tablesFolder: nil
+            tablesFolder: { _ in nil }
         )
         let result = try with(tool) {
             try BrailleTranslator.translate(texts, table: "en-ueb-g1.ctb", direction: .brailleToPrint, workingIn: work)
@@ -474,6 +489,7 @@ final class BrailleTranslatorTests: XCTestCase {
         XCTAssertTrue(result.contains { $0.contains(" ") }, "no long text was cut")
         assertWorkFolderEmpty()
     }
+    #endif
 
     /// The preparation of a text: every line break one word break, NUL
     /// gone, and in braille an ASCII space the blank cell.
@@ -536,6 +552,8 @@ final class BrailleTranslatorTests: XCTestCase {
         )
     }
 
+    // Mac only: the stops, failures, and Cancel of the helper's stand-in children; the iPhone's are its engine's (InProcessEngineTests, BrailleLibraryTests).
+    #if os(macOS)
     // MARK: - No Work, Failures, Stops, and Cancel
 
     /// An empty list, and a list of empty texts, run no helper: a stand-in
@@ -698,6 +716,7 @@ final class BrailleTranslatorTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
         assertWorkFolderEmpty()
     }
+    #endif
 
     // MARK: - Limits
 
@@ -726,18 +745,24 @@ final class BrailleTranslatorTests: XCTestCase {
         XCTAssertEqual(BrailleTranslator.limits(for: .printToBraille, bytes: 1_000).maximumOutputBytes, 32 * 1_000 + 1_048_576)
     }
 
-    /// The real tool names the helper and the tables inside the app bundle.
+    // Mac only: the helper and Contents/Resources are the Mac app's.
+    #if os(macOS)
+    /// The real tool names the helper inside the app bundle and the tables in the folder the app unpacks them into,
+    /// under the pack's liblouis version.
     func testTheRealToolIsTheBundledHelper() throws {
         let tool = BrailleTranslator.Tool.helper
-        let tables = try XCTUnwrap(tool.tablesFolder)
-        XCTAssertTrue(tables.path.hasSuffix("Contents/Resources/liblouis/tables"), tables.path)
+        let tables = try XCTUnwrap(try tool.tablesFolder("en-ueb-g1.ctb"))
+        let unpacker = try XCTUnwrap(BrailleTableUnpacker.app)
+        XCTAssertEqual(tables.path, BrailleTableUnpacker.appFolder(for: unpacker.pack).path)
+        XCTAssertEqual(tables.lastPathComponent, BrailleTableCatalog.bundledLiblouisVersion)
         let command = try XCTUnwrap(tool.command("check", "en-ueb-g1.ctb", nil, nil))
         XCTAssertEqual(command.executable.lastPathComponent, "TextMouthBraille")
         XCTAssertEqual(command.arguments, ["check", tables.path, "en-ueb-g1.ctb"])
         let input = URL(fileURLWithPath: "/tmp/in"), output = URL(fileURLWithPath: "/tmp/out")
         XCTAssertEqual(
-            try XCTUnwrap(tool.command("back", "x.ctb", input, output)).arguments,
-            ["back", tables.path, "x.ctb", "/tmp/in", "/tmp/out"]
+            try XCTUnwrap(tool.command("back", "en-ueb-g1.ctb", input, output)).arguments,
+            ["back", tables.path, "en-ueb-g1.ctb", "/tmp/in", "/tmp/out"]
         )
     }
+    #endif
 }

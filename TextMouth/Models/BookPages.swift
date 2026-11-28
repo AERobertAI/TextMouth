@@ -38,8 +38,8 @@ struct PageBreak: Equatable, Hashable, Sendable {
     /// text's end, it stays. An EPUB page-break element often stands just
     /// before the space that begins its page ("end.<span/> The next"), and a
     /// page can begin inside a hyphenated word; either way the page begins, for
-    /// a listener, at its first whole word, so the place Next Page lands on and
-    /// the page shown agree.
+    /// a listener, at its first whole word, so the place a move by page lands
+    /// on and the page shown agree.
     static func firstWordStart(in text: String, at offset: Int) -> Int {
         let length = text.utf16Length
         let clamped = min(max(0, offset), length)
@@ -77,7 +77,7 @@ struct BookPages: Equatable, Sendable {
     init(breaks: [PageBreak]) {
         // Sorting the indices, not the breaks, keeps the given order among
         // equal places without relying on the sort being stable.
-        self.breaks = breaks.indices.sorted { lhs, rhs in
+        self.breaks = breaks.indices.sortedStably { lhs, rhs in
             (breaks[lhs].chapterIndex, breaks[lhs].characterOffset, lhs)
                 < (breaks[rhs].chapterIndex, breaks[rhs].characterOffset, rhs)
         }.map { breaks[$0] }
@@ -156,8 +156,16 @@ struct PagePosition: Equatable, Sendable {
     /// first page, or an empty string for a book without pages (callers drop
     /// empty parts rather than speak them).
     var label: String {
-        if let page { return "Page \(page.label) of \(total)" }
-        if let firstLabel { return "Before page \(firstLabel)" }
+        // The total is written without digit grouping, as a page number is:
+        // "Page 12 of 1200", so both numbers read alike.
+        if let page {
+            // Translators: Where the reader is in a book that has pages. %1$@ is the page's label (a number or a roman numeral, an identifier written without digit grouping); %2$@ is the number of pages, written without digit grouping.
+            return InterfaceText.line("pagePosition.label.numberOfTotal", "Page \(page.label) of \(String(total))")
+        }
+        if let firstLabel {
+            // Translators: Where the reader is before the first page of a book that has pages. %@ is the first page's label, an identifier.
+            return InterfaceText.line("pagePosition.label.before", "Before page \(firstLabel)")
+        }
         return ""
     }
 }

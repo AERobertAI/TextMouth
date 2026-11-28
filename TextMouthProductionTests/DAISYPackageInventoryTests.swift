@@ -490,7 +490,7 @@ final class DAISYPackageInventoryTests: XCTestCase {
                 XCTAssertEqual(error as? DAISYPackageError, .referenceOutsidePackage(reference: reference, file: file), name)
                 XCTAssertEqual(
                     error.localizedDescription,
-                    "The file “\(file)” in this DAISY book refers to “\(reference)”, which is outside the book's folder. "
+                    "The file “\(file)” in this DAISY book refers to “\(reference)”, outside the book's folder. "
                         + "Only files inside the folder can be imported.",
                     name
                 )

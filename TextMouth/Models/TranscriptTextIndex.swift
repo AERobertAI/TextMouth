@@ -78,11 +78,11 @@ struct BookContentTranscriptIndex: Codable, Hashable, Sendable {
     /// and never quotes the book's text.
     func validationFailure(against audio: BookContentIndex) -> String? {
         if !isCurrent {
-            return "transcript.version \(String(reflecting: version)) is not the current "
+            return "transcript.version \(String(reflecting: version)) is not the current "  // l10n: no (an index's damage reason for the debug log, English by question 3)
                 + String(reflecting: Self.currentVersion)
         }
         if chapters.count != audio.chapters.count {
-            return "transcript.chapters has \(chapters.count) entries, but the audio has \(audio.chapters.count) chapters"
+            return "transcript.chapters has \(chapters.count) entries, but the audio has \(audio.chapters.count) chapters"  // l10n: no (an index's damage reason for the debug log, English by question 3)
         }
         if let failure = readingIndex.validationFailure(for: .markdown, audioBaseURL: nil) {
             return "transcript: \(failure)"
@@ -142,12 +142,12 @@ struct BookContentTranscriptChapterIndex: Codable, Hashable, Sendable {
             if sentence.characterCount <= 0 || sentence.characterOffset < previousEnd
                 || sentence.characterCount > text.characterCount
                 || sentence.characterOffset > text.characterCount - sentence.characterCount {
-                return "\(field) starts at character \(sentence.characterOffset) and is \(sentence.characterCount) long, "
-                    + "outside \(previousEnd) through \(text.characterCount)"
+                return "\(field) starts at character \(sentence.characterOffset) and is \(sentence.characterCount) long, "  // l10n: no (an index's damage reason for the debug log, English by question 3)
+                    + "outside \(previousEnd) through \(text.characterCount)"  // l10n: no (an index's damage reason for the debug log, English by question 3)
             }
             if sentence.startMilliseconds < previousStart || sentence.endMilliseconds < sentence.startMilliseconds {
-                return "\(field) runs from \(sentence.startMilliseconds) to \(sentence.endMilliseconds) ms, "
-                    + "before \(previousStart) or backwards"
+                return "\(field) runs from \(sentence.startMilliseconds) to \(sentence.endMilliseconds) ms, "  // l10n: no (an index's damage reason for the debug log, English by question 3)
+                    + "before \(previousStart) or backwards"  // l10n: no (an index's damage reason for the debug log, English by question 3)
             }
             previousEnd = sentence.characterOffset + sentence.characterCount
             previousStart = sentence.startMilliseconds

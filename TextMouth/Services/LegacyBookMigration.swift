@@ -94,7 +94,7 @@ struct FileIdentity: Hashable {
 /// moved into one. In every case its original file is where it was and its
 /// library record is unchanged. The descriptions are sentences about the
 /// book, written to follow its title in a list.
-enum LegacyMigrationError: LocalizedError, Equatable {
+enum LegacyMigrationError: LocalizedError, LogDescribing, Equatable {
     /// Nothing is at the path the library records for the original.
     case originalMissing(path: String)
     /// The original is a folder or a link, so a copy of it cannot be checked.
@@ -118,21 +118,53 @@ enum LegacyMigrationError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .originalMissing(let path):
-            return "The original file is missing from \(path)."
+            // Translators: Why a book could not move into the current library format. %@ is the path where the original file should be.
+            return InterfaceText.line("legacyMigrationError.originalMissing", "The original file is missing from \(path).")
         case .originalNotAFile(let path):
-            return "The original at \(path) is a folder or link, so a copy of it cannot be checked."
+            // Translators: Why a book could not move into the current library format. %@ is the path of the original.
+            return InterfaceText.line("legacyMigrationError.originalNotAFile", "The original at \(path) is a folder or link, so a copy of it cannot be checked.")
         case .originalUnreadable(let path, let reason):
-            return "The original file at \(path) could not be read to check a copy of it. \(reason)"
+            return SentenceWording.joined([
+                // Translators: First sentence of why a book could not move into the current library format. %@ is the path of the original.
+                InterfaceText.line("legacyMigrationError.originalUnreadable", "The original file at \(path) could not be read to check a copy of it."),
+                reason,
+            ])
         case .copyFailed(let reason):
-            return "It could not be copied into the library. \(reason)"
+            return SentenceWording.joined([
+                // Translators: First sentence of why a book could not move into the current library format. "It" is the book's original file.
+                InterfaceText.line("legacyMigrationError.copyFailed", "It could not be copied into the library."),
+                reason,
+            ])
         case .copyDiffers:
-            return "The copy made in the library did not match the original, so the copy was discarded."
+            // Translators: Why a book could not move into the current library format: the copy differed from the original.
+            return InterfaceText.line("legacyMigrationError.copyDiffers", "The copy made in the library did not match the original, so the copy was discarded.")
         case .noUnusedPackageName:
-            return "Its package name was taken by other content, and no unused name could be found."
+            // Translators: Why a book could not move into the current library format. "Its" is the book's.
+            return InterfaceText.line("legacyMigrationError.noUnusedPackageName", "Its package name was taken by other content, and no unused name could be found.")
         case .metadataNotSaved(let reason):
-            return "Its book information file, bookInfo.json, could not be saved. \(reason)"
+            return SentenceWording.joined([
+                // Translators: First sentence of why a book could not move into the current library format. bookInfo.json is a file name and stays as written.
+                InterfaceText.line("legacyMigrationError.metadataNotSaved", "Its book information file, bookInfo.json, could not be saved."),
+                reason,
+            ])
         case .trashPreferenceUnavailable:
-            return "TextMouth could not check whether to move it to the Trash."
+            // Translators: Why a book's original was kept: TextMouth could not read the choice about the Trash. "It" is the original file.
+            return InterfaceText.line("legacyMigrationError.trashPreferenceUnavailable", "TextMouth could not check whether to move it to the Trash.")
+        }
+    }
+
+    /// The error in English for the debug log, which stays English
+    /// whatever language the interface speaks.
+    var logDescription: String {
+        switch self {
+        case .originalMissing: return "the original file is missing" // l10n: no (debug log text)
+        case .originalNotAFile: return "the original is a folder or link" // l10n: no (debug log text)
+        case .originalUnreadable(_, let reason): return "the original could not be read: \(reason)" // l10n: no (debug log text)
+        case .copyFailed(let reason): return "the copy failed: \(reason)" // l10n: no (debug log text)
+        case .copyDiffers: return "the copy differed from the original" // l10n: no (debug log text)
+        case .noUnusedPackageName: return "no unused package name" // l10n: no (debug log text)
+        case .metadataNotSaved(let reason): return "bookInfo.json could not be saved: \(reason)" // l10n: no (debug log text)
+        case .trashPreferenceUnavailable: return "the Trash preference was unavailable" // l10n: no (debug log text)
         }
     }
 }
@@ -148,6 +180,8 @@ struct LegacyBookMigration {
     let removedOriginal: Bool
     /// Plain sentences about problems that did not stop the move.
     let warnings: [String]
+    /// The same warnings in English, one for one, for the debug log.
+    var logWarnings: [String] = []
 }
 
 /// What one pass over the library's legacy books did, for the log and for
@@ -158,6 +192,14 @@ struct LegacyMigrationReport: Equatable {
     struct Issue: Equatable {
         let title: String
         let reason: String
+        /// The reason in English for the debug log; `reason` when none is given.
+        let logReason: String
+
+        init(title: String, reason: String, logReason: String? = nil) {
+            self.title = title
+            self.reason = reason
+            self.logReason = logReason ?? reason
+        }
     }
 
     /// How many books moved into packages, with or without warnings.
@@ -173,14 +215,21 @@ struct LegacyMigrationReport: Equatable {
         if !migration.warnings.isEmpty {
             warnings.append(Issue(
                 title: migration.book.title,
-                reason: migration.warnings.joined(separator: " ")
+                reason: SentenceWording.joined(migration.warnings),
+                logReason: migration.logWarnings.isEmpty
+                    ? SentenceWording.joined(migration.warnings)
+                    : migration.logWarnings.joined(separator: " ") // l10n: no (debug log text)
             ))
         }
     }
 
     /// Lists a book that could not move, with the reason.
     mutating func recordFailure(of book: Book, error: Error) {
-        failures.append(Issue(title: book.title, reason: error.localizedDescription))
+        failures.append(Issue(
+            title: book.title,
+            reason: error.localizedDescription,
+            logReason: (error as? LogDescribing)?.logDescription ?? error.localizedDescription
+        ))
     }
 
     /// The message for the library's error alert, or nil when no book needs
@@ -189,20 +238,22 @@ struct LegacyMigrationReport: Equatable {
     var userSummary: String? {
         var sections: [String] = []
         if !failures.isEmpty {
-            sections.append(
-                "TextMouth could not move \(Self.describe(failures.count)) to the current library format. "
-                    + (failures.count == 1
-                        ? "Its original file was not changed."
-                        : "Their original files were not changed.")
-                    + "\n" + Self.lines(failures)
-            )
+            // Translators: First sentence of the alert about books that could not move into the current library format. %@ is a count of books, such as "3 books".
+            let intro = InterfaceText.line("legacyMigrationReport.userSummary.move", "TextMouth could not move \(CountWording.books(failures.count)) to the current library format.")
+            let unchanged = failures.count == 1
+                // Translators: Second sentence of the alert about one book that could not move into the current library format.
+                ? InterfaceText.line("legacyMigrationReport.userSummary.file", "Its original file was not changed.")
+                // Translators: Second sentence of the alert about several books that could not move into the current library format.
+                : InterfaceText.line("legacyMigrationReport.userSummary.their", "Their original files were not changed.")
+            sections.append(SentenceWording.joined([intro, unchanged]) + "\n" + Self.lines(failures))
         }
         if !warnings.isEmpty {
-            sections.append(
-                "TextMouth moved \(Self.describe(warnings.count)) to the current library format, "
-                    + (warnings.count == 1 ? "but with a problem:" : "but with problems:")
-                    + "\n" + Self.lines(warnings)
-            )
+            let intro = warnings.count == 1
+                // Translators: Lead-in of the alert about one book that moved into the current library format with a problem. %@ is a count of books, such as "1 book". The book's line follows.
+                ? InterfaceText.line("legacyMigrationReport.userSummary.problem", "TextMouth moved \(CountWording.books(warnings.count)) to the current library format, but with a problem:")
+                // Translators: Lead-in of the alert about several books that moved into the current library format with problems. %@ is a count of books, such as "3 books". The books' lines follow.
+                : InterfaceText.line("legacyMigrationReport.userSummary.problems", "TextMouth moved \(CountWording.books(warnings.count)) to the current library format, but with problems:")
+            sections.append(intro + "\n" + Self.lines(warnings))
         }
         return sections.isEmpty ? nil : sections.joined(separator: "\n\n")
     }
@@ -210,14 +261,14 @@ struct LegacyMigrationReport: Equatable {
     /// One line for the debug log, or nil when the pass found nothing to move.
     var logSummary: String? {
         guard migratedCount > 0 || !failures.isEmpty else { return nil }
-        var parts = ["moved \(Self.describe(migratedCount)) into packages"]
+        var parts = ["moved \(Self.describe(migratedCount)) into packages"] // l10n: no (debug log text)
         if !failures.isEmpty {
-            parts.append("could not move \(Self.describe(failures.count)): \(Self.inline(failures))")
+            parts.append("could not move \(Self.describe(failures.count)): \(Self.inline(failures))") // l10n: no (debug log text)
         }
         if !warnings.isEmpty {
-            parts.append("\(Self.describe(warnings.count)) moved with problems: \(Self.inline(warnings))")
+            parts.append("\(Self.describe(warnings.count)) moved with problems: \(Self.inline(warnings))") // l10n: no (debug log text)
         }
-        return "LEGACY_MIGRATION: " + parts.joined(separator: "; ")
+        return "LEGACY_MIGRATION: " + parts.joined(separator: "; ") // l10n: no (debug log text)
     }
 
     /// The most books either part of the alert names. A book that could not
@@ -226,9 +277,9 @@ struct LegacyMigrationReport: Equatable {
     /// the debug log names every book.
     static let booksNamedInAlert = 10
 
-    /// "1 book" or "3 books".
+    /// "1 book" or "3 books", in English, for the debug log.
     private static func describe(_ count: Int) -> String {
-        count == 1 ? "1 book" : "\(count) books"
+        count == 1 ? "1 book" : "\(count) books" // l10n: no (debug log text)
     }
 
     /// One "Title: what happened" line per book, up to `booksNamedInAlert`,
@@ -237,10 +288,8 @@ struct LegacyMigrationReport: Equatable {
         var lines = issues.prefix(booksNamedInAlert).map { "\($0.title): \($0.reason)" }
         let unnamed = issues.count - booksNamedInAlert
         if unnamed > 0 {
-            lines.append(
-                "Plus \(unnamed) more \(unnamed == 1 ? "book" : "books"), "
-                    + "all named in the debug log at \(TextMouthPaths.debugLogFile.path)."
-            )
+            // Translators: Last line of the alert about books that could not move into the current library format: how many more books there are than the alert names, and where the log names them. %1$lld is how many more; %2$@ is the path of the debug log file.
+            lines.append(InterfaceText.line("legacyMigrationReport.lines", "Plus \(number: unnamed) more books, all named in the debug log at \(TextMouthPaths.debugLogFile.path)."))
         }
         return lines.joined(separator: "\n")
     }
@@ -248,7 +297,7 @@ struct LegacyMigrationReport: Equatable {
     /// Every issue on a single line: each title quoted, its reason in
     /// parentheses, and any line break in either flattened to a space.
     private static func inline(_ issues: [Issue]) -> String {
-        issues.map { "\"\($0.title)\" (\($0.reason))" }
+        issues.map { "\"\($0.title)\" (\($0.logReason))" } // l10n: no (debug log text)
             .joined(separator: ", ")
             .replacingOccurrences(of: "\n", with: " ")
     }
@@ -387,32 +436,35 @@ extension FileImportService {
         }
 
         var warnings: [String] = []
+        // The same warnings in English, one for one, for the debug log.
+        var logWarnings: [String] = []
         var removedOriginal = false
         if copy.isOriginal {
             // The record already named the file in its package, so there is
             // no separate original: removing it would remove the only copy.
         } else if let occupiedPackage = copy.occupiedPackage {
-            warnings.append(
-                "The library already had different content under its package name, "
-                    + "\(occupiedPackage.lastPathComponent), so it was stored in a new package, "
-                    + "\(copy.packageName), and its original file was kept at \(original.path)."
-            )
+            // Translators: Warning about a book that moved into the current library format. %1$@ is the name of the package that already held other content; %2$@ is the name of the new package; %3$@ is the path where the original file was kept.
+            warnings.append(InterfaceText.line("fileImportService.libraryAlreadyHad", "The library already had different content under its package name, \(occupiedPackage.lastPathComponent), so it was stored in a new package, \(copy.packageName), and its original file was kept at \(original.path)."))
+            logWarnings.append("the package name \(occupiedPackage.lastPathComponent) was taken; stored in \(copy.packageName)") // l10n: no (debug log text)
         } else if let removeOriginal {
             do {
                 try removeOriginal(original)
                 removedOriginal = true
             } catch {
-                warnings.append(
-                    "Its original file could not be removed, so it was kept at \(original.path). "
-                        + error.localizedDescription
-                )
+                warnings.append(SentenceWording.joined([
+                    // Translators: First sentence of a warning about a book that moved into the current library format. %@ is the path of the original file.
+                    InterfaceText.line("fileImportService.originalNotRemoved", "Its original file could not be removed, so it was kept at \(original.path)."),
+                    error.localizedDescription,
+                ]))
+                logWarnings.append("the original could not be removed: \(error.localizedDescription)") // l10n: no (debug log text)
             }
         }
 
         if !migrated.format.isAudio, let cacheWarning = buildTextCache(for: &migrated) {
-            warnings.append(cacheWarning)
+            warnings.append(cacheWarning.text)
+            logWarnings.append(cacheWarning.logText)
         }
-        return LegacyBookMigration(book: migrated, removedOriginal: removedOriginal, warnings: warnings)
+        return LegacyBookMigration(book: migrated, removedOriginal: removedOriginal, warnings: warnings, logWarnings: logWarnings)
     }
 
     /// Removes a migrated book's original with
@@ -684,7 +736,7 @@ extension FileImportService {
     /// A rebuild over an older content.md moves the book's saved places to
     /// the new text (T06's branch D); the record takes them with the index,
     /// and the copy of the old text goes once that save has succeeded.
-    private static func buildTextCache(for book: inout Book) -> String? {
+    private static func buildTextCache(for book: inout Book) -> (text: String, logText: String)? {
         var cached = book
         let generated: MarkdownCacheService.GeneratedCache?
         do {
@@ -694,7 +746,9 @@ extension FileImportService {
             generated = nil
         }
         guard let generated else {
-            return "Its text could not be prepared for reading yet; TextMouth will try again later."
+            // Translators: Warning about a book that moved into the current library format: its text will be prepared later.
+            return (InterfaceText.line("fileImportService.buildTextCache.prepared", "Its text could not be prepared for reading yet; TextMouth will try again later."),
+                    "the text could not be prepared yet") // l10n: no (debug log text)
         }
         if let movedPlaces = generated.movedPlaces {
             cached.takeMovedPlaces(original: movedPlaces.original, moved: movedPlaces.moved)
@@ -702,8 +756,12 @@ extension FileImportService {
         do {
             try cached.saveBookInfoThrowing(contentIndex: generated.content.contentIndex)
         } catch {
-            return "Its reading index could not be saved, so TextMouth will build it again later. "
-                + error.localizedDescription
+            return (SentenceWording.joined([
+                        // Translators: First sentence of a warning about a book that moved into the current library format: its reading index will be built again later.
+                        InterfaceText.line("fileImportService.buildTextCache.index", "Its reading index could not be saved, so TextMouth will build it again later."),
+                        error.localizedDescription,
+                    ]),
+                    "the reading index could not be saved: \(error.localizedDescription)") // l10n: no (debug log text)
         }
         generated.movedPlaces?.discardSnapshot()
         book = cached

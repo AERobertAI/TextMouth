@@ -152,8 +152,8 @@ final class LibraryFeedFolderDeleteTests: XCTestCase {
                 + "With Move Everything to Trash, the folder and everything in it leave the library, "
                 + "and their files go to the Trash, where you can recover them until the Trash is emptied. "
                 + "It holds the folder of the feed “The Tactile Atlas”. With Move Contents Out, the feed's folder moves "
-                + "with the rest. With Move Everything to Trash, the feed stays, with its downloads, but no folder lists "
-                + "them until Feed Info gives the feed another folder; Delete Feed… on the feed's row deletes a feed."
+                + "with the rest. With Move Everything to Trash, the feed and its downloads stay, listed in no folder "
+                + "until Feed Info gives the feed another; Delete Feed… on its row deletes it."
         )
         XCTAssertEqual(
             one.confirmationMessage,
@@ -165,8 +165,8 @@ final class LibraryFeedFolderDeleteTests: XCTestCase {
         XCTAssertTrue(
             two.choiceMessage.hasSuffix(
                 "It holds the folders of the feeds “Finish It!” and “The Harbour Log”. With Move Contents Out, their folders "
-                    + "move with the rest. With Delete Everything Permanently, each feed stays, with its downloads, but no "
-                    + "folder lists them until Feed Info gives the feed another folder; Delete Feed… on a feed's row deletes a feed."
+                    + "move with the rest. With Delete Everything Permanently, the feeds and their downloads stay, listed in "
+                    + "no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it."
             ),
             two.choiceMessage
         )
@@ -193,8 +193,8 @@ final class LibraryFeedFolderDeleteTests: XCTestCase {
                 + "With Move Contents Out, they stay in the library and only the folder is deleted. "
                 + "With Move Everything to Trash, the folder and everything in it leave the library, "
                 + "and their files go to the Trash, where you can recover them until the Trash is emptied. "
-                + "It is the folder of the feed “Finish It!”: whichever you choose, the feed stays, with its downloads, "
-                + "but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on the feed's row deletes a feed."
+                + "It is the folder of the feed “Finish It!”. Either way, the feed and its downloads stay, "
+                + "listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it."
         )
         XCTAssertEqual(
             own.confirmationMessage,
@@ -211,9 +211,9 @@ final class LibraryFeedFolderDeleteTests: XCTestCase {
         )
         XCTAssertTrue(
             both.choiceMessage.contains(
-                "It is the folder of the feeds “Finish It!” and “The Tactile Atlas”: whichever you choose, each feed stays, "
-                    + "with its downloads, but no folder lists them until Feed Info gives the feed another folder; "
-                    + "Delete Feed… on a feed's row deletes a feed. It holds the folder of the feed “The Harbour Log”."
+                "It is the folder of the feeds “Finish It!” and “The Tactile Atlas”. Either way, the feeds and their downloads stay, "
+                    + "listed in no folder until Feed Info gives each another; "
+                    + "Delete Feed… on a feed's row deletes it. It holds the folder of the feed “The Harbour Log”."
             ),
             both.choiceMessage
         )

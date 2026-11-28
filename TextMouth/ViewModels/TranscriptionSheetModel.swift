@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 import Foundation
 
@@ -66,7 +70,7 @@ struct TranscriptionSheetServices {
     /// Begins the book's Edit Text session again when the deletion failed.
     var resumeTextEdit: @MainActor (Book) async -> Void
     /// Asks VoiceOver to speak a message from a window.
-    var announce: @MainActor (String, NSWindow?) -> Void
+    var announce: @MainActor (String, PlatformWindow?) -> Void
 
     /// Whether `book`'s text, content.md, is only in iCloud, as `isDataless`
     /// says of the file (one lstat, which reads no content). The app asks it
@@ -174,6 +178,9 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         /// When the user last cleaned it up by rule (Clean Up Transcript), or
         /// nil when they never have.
         var cleanedUpAt: Date? = nil
+        /// Where it came from, when TextMouth's recognizer did not make it
+        /// (FMT23, FMT25); nil for a transcript recognition made.
+        var source: TranscriptSource? = nil
     }
 
     /// A transcript the book has that this TextMouth could not read. A
@@ -203,7 +210,9 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     @Published private(set) var modelState: ModelState = .unsupported
     /// What the last download did, when it did not install the model: it
     /// was cancelled, or why it failed.
-    @Published private(set) var downloadNotice: String?
+    var downloadNotice: String? { downloadNoticeWording?() }
+    /// How the notice is worded, kept so that it is made in the interface language in use when it is shown (FR39).
+    @Published private var downloadNoticeWording: (() -> String)?
     /// The book's transcript, when it has one.
     @Published private(set) var existing: ExistingTranscript?
     /// The book's transcript when this TextMouth could not read it (it is
@@ -241,7 +250,7 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     @Published private(set) var transcriptionStartedAt: Date?
 
     /// The window the sheet sits on, where announcements come from.
-    weak var window: NSWindow?
+    weak var window: PlatformWindow?
     /// Closes the sheet; the presenter sets it.
     var onClose: () -> Void = {}
 
@@ -319,7 +328,8 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
                 createdAt: transcript.createdAt,
                 locale: transcript.locale,
                 editedAt: transcript.editedAt,
-                cleanedUpAt: transcript.cleanedUp?.cleanedAt
+                cleanedUpAt: transcript.cleanedUp?.cleanedAt,
+                source: transcript.source
             )
         case .inCloud:
             unreadableExisting = .inCloud
@@ -424,10 +434,18 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     }
 
     /// The line naming the book's transcript, when it has one: as it was
-    /// made, or, for one a later TextMouth wrote, who wrote it. One only in
-    /// iCloud is named by `bookInCloudLine` instead, which says what to do.
+    /// made, by recognition in its language or from outside, where it came
+    /// from (FMT23, FMT25); or, for one a later TextMouth wrote, who wrote
+    /// it. One only in iCloud is named by `bookInCloudLine` instead, which
+    /// says what to do.
     var existingLine: String? {
         if let existing {
+            // A transcript from outside names no language worth saying
+            // (`OutsideTranscript.undeterminedLocale`): where it came from
+            // is said instead.
+            if let source = existing.source {
+                return TranscriptionWording.outsideTranscript(source, on: existing.createdAt)
+            }
             return TranscriptionWording.alreadyTranscribed(
                 on: existing.createdAt,
                 languageName: TranscriptionLanguage.name(of: existing.locale)
@@ -634,7 +652,7 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
     func downloadModel() {
         guard offersDownload, let language, downloadTask == nil else { return }
         modelState = .downloading(nil)
-        downloadNotice = nil
+        downloadNoticeWording = nil
         let installer = services.installer
         // Each share done is shown on the main actor, as it is reported.
         let report: @Sendable (Double) -> Void = { [weak self] fraction in
@@ -673,11 +691,12 @@ final class TranscriptionSheetModel: ObservableObject, Identifiable {
         let name = modelLanguageName
         if let error {
             modelState = .needsDownload
-            let notice = error is CancellationError
-                ? TranscriptionWording.downloadCancelled(languageName: name)
-                : TranscriptionWording.downloadFailed(languageName: name, reason: error.localizedDescription)
-            downloadNotice = notice
-            services.announce(notice, window)
+            let reason = error.localizedDescription
+            let notice: () -> String = error is CancellationError
+                ? { TranscriptionWording.downloadCancelled(languageName: name) }
+                : { TranscriptionWording.downloadFailed(languageName: name, reason: reason) }
+            downloadNoticeWording = notice
+            services.announce(notice(), window)
             return
         }
         guard let language else { return }

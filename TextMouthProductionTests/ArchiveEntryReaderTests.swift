@@ -161,7 +161,7 @@ final class ArchiveEntryReaderTests: XCTestCase {
             XCTAssertThrowsError(try EPUBParser.parse(url: epub)) { error in
                 XCTAssertEqual(
                     error.localizedDescription,
-                    "The file “OEBPS/content.opf” in this EPUB book is damaged or incomplete: it holds more than "
+                    "The file “OEBPS/content.opf” in this book is damaged or incomplete: it holds more than "
                         + "\(ArchiveFigures.size(limit)), the most TextMouth reads from one file. "
                         + "Get a fresh copy of the book, then import it again."
                 )
@@ -203,7 +203,7 @@ final class ArchiveEntryReaderTests: XCTestCase {
             XCTAssertThrowsError(try FileImportService.importFileWithReport(from: epub, toFolder: folderPath)) { error in
                 XCTAssertEqual(
                     (error as? ImportFailure)?.reason,
-                    "Reading its text failed: The file “OEBPS/content.opf” in this EPUB book is damaged or incomplete: "
+                    "Reading its text failed: The file “OEBPS/content.opf” in this book is damaged or incomplete: "
                         + "it holds more than \(ArchiveFigures.size(limit)), the most TextMouth reads from one file. "
                         + "Get a fresh copy of the book, then import it again."
                 )
@@ -313,7 +313,7 @@ final class ArchiveEntryReaderTests: XCTestCase {
             XCTAssertThrowsError(try DAISYParser.extractMarkdown(from: book)) { error in
                 XCTAssertEqual(
                     error.localizedDescription,
-                    "The file “ncc.html” in this DAISY book is damaged or incomplete: it holds more than "
+                    "The file “ncc.html” in this book is damaged or incomplete: it holds more than "
                         + "\(ArchiveFigures.size(limit)), the most TextMouth reads from one file. "
                         + "Get a fresh copy of the book, then import it again."
                 )

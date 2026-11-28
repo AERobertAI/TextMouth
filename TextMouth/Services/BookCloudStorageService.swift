@@ -178,6 +178,19 @@ final class BookCloudStorageService: BookCloudStorage {
         }
     }
 
+    // MARK: How Much a Book Needs
+
+    /// The bytes of `package`'s files that are not on this Mac yet, from
+    /// the sizes the file system reports for them, read without downloading
+    /// anything (`Survey.sizesAreKnown`). Nil when a size is unknown, such as
+    /// for a folder only in the cloud, or when the package cannot be read.
+    func bytesToDownload(of package: BookPackage) -> Int64? {
+        guard let survey = try? survey(of: package), survey.sizesAreKnown else { return nil }
+        return survey.files
+            .filter { !$0.status.state.isOnThisMac && $0.status.state != .missing }
+            .reduce(0) { $0 + ($1.status.byteCount ?? 0) }
+    }
+
     // MARK: Downloading a Book
 
     /// Downloads every file of `package` (see `BookCloudStorage`). One task
@@ -235,8 +248,8 @@ final class BookCloudStorageService: BookCloudStorage {
             listen(to: survey, of: package, into: parts, listening: &listening)
             var heard = parts.percents
             var current = survey.progress(bySize: bySize, parts: heard)
-            let service = items.location(of: package.url).provider?.displayName ?? "the sync service"
-            let asOneItem = survey.packageItem == nil ? "" : ", which syncs the package as one item"
+            let service = items.location(of: package.url).provider?.displayName ?? "the sync service" // l10n: no (debug log text)
+            let asOneItem = survey.packageItem == nil ? "" : ", which syncs the package as one item" // l10n: no (debug log text)
             logEvent(
                 "CLOUD_DOWNLOAD_STARTED: \(name): \(current.totalFiles - current.completedFiles) of "
                     + "\(current.totalFiles) files to come from \(service)\(asOneItem)"
@@ -278,7 +291,7 @@ final class BookCloudStorageService: BookCloudStorage {
                 heard = parts.percents
                 if !tracedParts, !heard.isEmpty {
                     tracedParts = true
-                    let whose = package.isPackage && heard[package.url.path] != nil ? "for the package as a whole" : "within files"
+                    let whose = package.isPackage && heard[package.url.path] != nil ? "for the package as a whole" : "within files" // l10n: no (debug log text)
                     DiagnosticLog.trace(.storage, "cloud download \(bookID): the sync service publishes progress \(whose)")
                 }
 
@@ -318,7 +331,7 @@ final class BookCloudStorageService: BookCloudStorage {
                 }
             }
         } catch is CancellationError {
-            let arrived = latest.map { "\($0.completedFiles) of \($0.totalFiles) files" } ?? "no files"
+            let arrived = latest.map { "\($0.completedFiles) of \($0.totalFiles) files" } ?? "no files" // l10n: no (debug log text)
             logEvent("CLOUD_DOWNLOAD_STOPPED: \(name): cancelled with \(arrived) on this Mac")
             throw CancellationError()
         } catch let error as BookCloudError {
@@ -385,8 +398,8 @@ final class BookCloudStorageService: BookCloudStorage {
         let name = Self.logName(of: package)
         do {
             let survey = try self.survey(of: package)
-            guard survey.isUploaded else {
-                throw BookCloudError.notUploaded
+            if let refusal = survey.removalRefusal {
+                throw refusal
             }
             let removing = survey.itemsToRemove
             for item in removing {
@@ -471,12 +484,24 @@ final class BookCloudStorageService: BookCloudStorage {
             syncedItems.contains { $0.status.state == .downloading }
         }
 
-        /// Whether every item the sync service syncs has uploaded its
-        /// changes, by that item's own flag: the package's, when the service
-        /// syncs the package as one item, and never an upload flag its files
-        /// leave out, which counts as uploaded.
-        var isUploaded: Bool {
-            syncedItems.allSatisfy(\.status.isUploaded)
+        /// Why the download can't be removed, or nil when it can: changes
+        /// still to upload (`.notUploaded`), or the sync service's word not
+        /// proving the cloud's copy (`.cloudCopyNotProven`). Upload is asked
+        /// of every item the service syncs, as `isUploaded` does; the rest
+        /// only of the items a removal would remove, those whose content is
+        /// on this Mac, since nothing else of the book is lost by it. An
+        /// upload state the service didn't give counts as not proven, never
+        /// as uploaded.
+        var removalRefusal: BookCloudError? {
+            if syncedItems.contains(where: { $0.status.isUploadReported && !$0.status.isUploaded }) {
+                return .notUploaded
+            }
+            for item in syncedItems where item.status.state == .downloaded {
+                if let doubt = item.status.cloudCopyDoubt {
+                    return .cloudCopyNotProven(doubt)
+                }
+            }
+            return nil
         }
 
         /// What to ask the sync service for. A package it syncs as one item
@@ -502,10 +527,10 @@ final class BookCloudStorageService: BookCloudStorage {
         /// sync service syncs as one item, that they go as one.
         func removalWords(removing: [URL]) -> String {
             guard packageItem != nil else {
-                return "\(removing.count) of \(files.count) files"
+                return "\(removing.count) of \(files.count) files" // l10n: no (debug log text)
             }
             let removed = removing.isEmpty ? 0 : files.filter { $0.status.state.isOnThisMac }.count
-            return "\(removed) of \(files.count) files, as one package"
+            return "\(removed) of \(files.count) files, as one package" // l10n: no (debug log text)
         }
 
         /// The download errors reported by the items the sync service syncs
@@ -661,7 +686,7 @@ final class BookCloudStorageService: BookCloudStorage {
             }
             var listing = PackageListing()
             try collect(package.url, isPackageFolder: true, into: &listing)
-            listing.files.sort { $0.path < $1.path }
+            listing.files.sortStably { $0.path < $1.path }
             return listing
         }
     }
@@ -780,9 +805,15 @@ private extension BookCloudError {
         case .stalled(let seconds): return "nothing arrived for \(seconds) seconds"
         case .provider(let message), .removalFailed(let message): return "the sync service said: \(message)"
         case .notUploaded: return "changes are waiting to upload"
+        case .cloudCopyNotProven(let doubt): return BookCloudWording.logReason(doubt)
         case .bookIsOpen: return "the book is open"
         case .keptOnThisMac: return "the book is kept on this Mac"
+        case .keptForReadingList: return "the book is kept on this Mac for the reading list"
+        case .keptOnThisMacAndForReadingList: return "the book is kept on this Mac and for the reading list"
         case .packageMissing: return "the package is not on this Mac"
+        case .keptOnAllDevices: return "the book is kept on all devices"
+        case .bookInUse: return "the book is in use"
+        case .syncRemoval(let refusal): return refusal.logReason
         }
     }
 }

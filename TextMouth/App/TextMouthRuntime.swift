@@ -38,8 +38,16 @@ import Foundation
 /// `@unchecked Sendable`: every stored property is a constant, and the one
 /// type that is not `Sendable`, `UserDefaults`, is documented thread-safe.
 struct TextMouthRuntime: @unchecked Sendable {
-    /// Whether this process hosts the XCTest bundle: the isolation switch.
+    /// Whether this process runs in a sandbox of its own, as a process hosting the XCTest bundle does: the isolation
+    /// switch. It is also true of the iPhone app a UI test launched (`PhoneLaunchRequest`), which is a real app launch
+    /// in a sandbox; `hostsTestBundle` tells the two apart.
     let isHostedTest: Bool
+
+    /// Whether XCTest itself is in this process: it set `XCTestConfigurationFilePath`, and the test bundle runs here.
+    /// False for the iPhone app a UI test launched, which is sandboxed (`isHostedTest`) but is an app launch whose
+    /// launch language and locale are its own, so what reads the language (`InterfaceLanguage.systemState`) follows
+    /// them there and speaks English only where a bundle's tests run.
+    let hostsTestBundle: Bool
 
     /// The directory standing for the user's home. The default data
     /// directory and the legacy data locations are inside it.
@@ -60,15 +68,17 @@ struct TextMouthRuntime: @unchecked Sendable {
 
     /// A runtime made of exactly these parts. Tests build one to ask how a
     /// decision goes in the app, or under hosted tests, without touching
-    /// `current`.
+    /// `current`. `hostsTestBundle` is `isHostedTest` unless a test says otherwise.
     init(
         isHostedTest: Bool,
+        hostsTestBundle: Bool? = nil,
         homeDirectory: URL,
         preferences: UserDefaults,
         preferencesFile: URL? = nil,
         keepsSandbox: Bool = false
     ) {
         self.isHostedTest = isHostedTest
+        self.hostsTestBundle = hostsTestBundle ?? isHostedTest
         self.homeDirectory = homeDirectory
         self.preferences = preferences
         self.preferencesFile = preferencesFile
@@ -119,6 +129,19 @@ struct TextMouthRuntime: @unchecked Sendable {
         processIdentifier: Int32,
         temporaryDirectory: URL
     ) -> TextMouthRuntime {
+        // Read before the iPhone's sandbox request below adds the variable: only XCTest itself sets it.
+        let hostsTestBundle = environment[testConfigurationVariable] != nil
+        #if os(iOS)
+        #if DEBUG
+        // The iPhone app a UI test launches runs as a hosted test does, in a
+        // sandbox of its own, when it asks to (PhoneLaunchRequest): XCTest
+        // names its configuration only in a process hosting a test bundle.
+        var environment = environment
+        if PhoneLaunchRequest.runsInSandbox(environment) {
+            environment[testConfigurationVariable] = PhoneLaunchRequest.sandboxVariable
+        }
+        #endif
+        #endif
         guard environment[testConfigurationVariable] != nil else {
             return TextMouthRuntime(isHostedTest: false, homeDirectory: realHomeDirectory, preferences: .standard)
         }
@@ -132,6 +155,7 @@ struct TextMouthRuntime: @unchecked Sendable {
         )
         return TextMouthRuntime(
             isHostedTest: true,
+            hostsTestBundle: hostsTestBundle,
             homeDirectory: sandbox,
             preferences: store.defaults,
             preferencesFile: store.file,
@@ -142,10 +166,20 @@ struct TextMouthRuntime: @unchecked Sendable {
     /// The user's real home directory, read from the user database so that
     /// neither an app sandbox nor a changed `HOME` variable can redirect it.
     static var realHomeDirectory: URL {
+        #if os(iOS)
+        // On iOS the sandbox redirecting the home is exactly what is wanted:
+        // an app may write only inside its own container, which
+        // NSHomeDirectory() names. The user database names the wrong place on
+        // every iOS: /var/mobile on an iPhone, which the sandbox refuses, and,
+        // in the Simulator, which runs as the Mac's user, that user's real
+        // home, whose ~/.TextMouth is the live library of the Mac app.
+        return URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)
+        #else
         if let entry = getpwuid(getuid()), let directory = entry.pointee.pw_dir {
             return URL(fileURLWithPath: String(cString: directory), isDirectory: true)
         }
         return URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)
+        #endif
     }
 
     // MARK: - Sandboxed Preferences
@@ -289,7 +323,7 @@ struct TextMouthRuntime: @unchecked Sendable {
                   !isKept(entry) else { return false }
             return !isMakerRunning(process, values.creationDate)
         }
-        .sorted { $0.lastPathComponent < $1.lastPathComponent }
+        .sortedStably { $0.lastPathComponent < $1.lastPathComponent }
     }
 
     /// Deletes the sandboxes earlier hosted-test processes left behind in
@@ -316,8 +350,9 @@ struct TextMouthRuntime: @unchecked Sendable {
     func finishWithSandbox() {
         guard isHostedTest, Self.sandboxProcess(named: homeDirectory.lastPathComponent) != nil else { return }
         if keepsSandbox {
-            let note = "This test sandbox was kept because \(Self.keepSandboxVariable) was 1. "
-                + "Later test runs leave it alone; delete this folder when you are done with it.\n"
+            // A note for the developer, not interface text: a file in a test sandbox.
+            let note = "This test sandbox was kept because \(Self.keepSandboxVariable) was 1. " // l10n: no (developer note written into a test sandbox)
+                + "Later test runs leave it alone; delete this folder when you are done with it.\n" // l10n: no (developer note written into a test sandbox)
             try? note.write(to: homeDirectory.appendingPathComponent(Self.keptSandboxMarker), atomically: true, encoding: .utf8)
         } else {
             try? FileManager.default.removeItem(at: homeDirectory)

@@ -85,11 +85,18 @@ enum BrailleCells {
     /// "dots 4 and 7" or "dots 1, 2, and 7"; "no dots" for the blank cell.
     static func dotsInWords(of cell: Unicode.Scalar) -> String {
         let dots = (1...8).filter { cell.value & (1 << ($0 - 1)) != 0 }.map(String.init)
+        // A dot's number names it (dot 7), so each number is written without grouping.
         switch dots.count {
-        case 0: return "no dots"
-        case 1: return "dot \(dots[0])"
-        case 2: return "dots \(dots[0]) and \(dots[1])"
-        default: return "dots \(dots.dropLast().joined(separator: ", ")), and \(dots[dots.count - 1])"
+        case 0:
+            // Translators: How VoiceOver says the blank braille cell, which has no raised dots.
+            return InterfaceText.line("brailleCells.dotsInWords.none", "no dots")
+        case 1:
+            // Translators: How VoiceOver says a braille cell with one raised dot. %@ is the dot's number, 1 to 8, an identifier.
+            return InterfaceText.line("brailleCells.dotsInWords.oneDot", "dot \(dots[0])")
+        default:
+            // Two or more: "dots 4 and 7", "dots 1, 2, and 7", the list in the region's own style.
+            // Translators: How VoiceOver says a braille cell with two or more raised dots. %@ is the list of the dots' numbers, 1 to 8, such as "4 and 7" or "1, 2, and 7".
+            return InterfaceText.line("brailleCells.dotsInWords.other", "dots \(CountWording.list(dots))")
         }
     }
 

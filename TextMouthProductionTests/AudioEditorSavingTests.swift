@@ -36,12 +36,12 @@ final class AudioEditorSavingTests: XCTestCase {
         XCTAssertEqual(harness.announcements.sentences.last, "Saved. The book's audio is now 8 seconds long.")
         let samples = try AudioTestFixtures.floatSamples(of: harness.fixture.book.bookFileURL)
         XCTAssertEqual(samples.count, 64_000)
-        XCTAssertEqual(samples[checked: 16_000].map(AudioTestFixtures.rampSample), .frame(.book, 32_000))
+        XCTAssertEqual(samples[checked: 16_000].map(AudioTestFixtures.rampSample), .some(.frame(.book, 32_000)))
         XCTAssertEqual(model.closeNeed, .nothing)
         XCTAssertFalse(model.canPerform(.editorSave))
 
         await model.save()
-        XCTAssertEqual(harness.announcements.sentences.last, "There's nothing to save: the book's audio already holds every edit.")
+        XCTAssertEqual(harness.announcements.sentences.last, "Nothing to save: the book's audio holds every edit.")
     }
 
     /// A save that renders a filter and a silence, the book keeping its
@@ -93,7 +93,7 @@ final class AudioEditorSavingTests: XCTestCase {
         XCTAssertTrue(saved, "\(harness.announcements.sentences)")
         let samples = try AudioTestFixtures.floatSamples(of: harness.fixture.book.bookFileURL)
         XCTAssertEqual(samples.count, 20_000)
-        XCTAssertEqual(samples[checked: 15_999].map(AudioTestFixtures.rampSample), .frame(.book, 15_999))
+        XCTAssertEqual(samples[checked: 15_999].map(AudioTestFixtures.rampSample), .some(.frame(.book, 15_999)))
         XCTAssertEqual(AudioTestFixtures.peak(samples.suffix(4_000)), 0.25, accuracy: 0.01, "the recording")
     }
 
@@ -112,7 +112,7 @@ final class AudioEditorSavingTests: XCTestCase {
         XCTAssertNil(model.sheet)
         XCTAssertEqual(
             harness.announcements.sentences.last,
-            "The edits couldn't be saved. The book is open in a reader. Close it there, then save the edited audio again."
+            "The edits couldn't be saved. The book is open in a reader. Close it, then save again."
         )
     }
 
@@ -138,34 +138,142 @@ final class AudioEditorSavingTests: XCTestCase {
         }
     }
 
-    /// A save or an export in a format with no place for chapter markers
-    /// says they are left out of the file; an export as M4A keeps them, and
-    /// says nothing of them.
-    func testAFormatWithoutChaptersSaysTheyAreLeftOut() async throws {
+    /// Every format the editor writes keeps the chapter markers (FMT11): an
+    /// export as AIFF, CAF, or M4A keeps them, and a save of a WAVE book
+    /// keeps them as the file's markers; none says they are left out. The
+    /// warning's words stay for a format that would leave them out.
+    func testEveryFormatKeepsTheChapterMarkers() async throws {
         let harness = try await openRamp(seconds: 4)
         let model = harness.model
         await model.insertChapter(titled: "Quay")
-
-        await model.save()
-        XCTAssertTrue(harness.announcements.sentences.contains(
-            "Saving 4 seconds of audio as WAV, the format this book keeps. "
-                + "WAV files can't hold chapter markers, so its chapter marker is left out of this file."
-        ), "\(harness.announcements.sentences)")
-        XCTAssertTrue(AudioRenderFormat.aacM4B.holdsChapterMarkers)
-        XCTAssertTrue(AudioRenderFormat.mp3.holdsChapterMarkers)
-        XCTAssertFalse(AudioRenderFormat.pcmAIFF.holdsChapterMarkers)
+        XCTAssertEqual(AudioRenderFormat.allCases.filter { !$0.holdsChapterMarkers }, [])
+        XCTAssertEqual(model.chapterWarning(for: .pcmAIFF), "")
         XCTAssertEqual(
             AudioEditorWording.chaptersLeftOut(3, format: "CAF"),
             "CAF files can't hold chapter markers, so its 3 chapter markers are left out of this file."
         )
 
-        let destination = FileManager.default.temporaryDirectory.appendingPathComponent("chapters-\(UUID().uuidString).m4a")
-        addTeardownBlock { try? FileManager.default.removeItem(at: destination) }
-        await model.export(as: .m4a, to: destination)
-        let exporting = harness.announcements.sentences.first { $0.hasPrefix("Exporting 4 seconds of audio as M4A (AAC)") }
-        XCTAssertFalse(exporting?.contains("can't hold") ?? true, "\(harness.announcements.sentences)")
-        let chapters = await AudioPlaybackService.extractChapters(from: destination)
-        XCTAssertEqual(chapters.map(\.title), ["Quay"])
+        for (format, name) in [(AudioExportFormat.aiff, "AIFF"), (.caf, "CAF"), (.m4a, "M4A (AAC)")] {
+            let destination = FileManager.default.temporaryDirectory
+                .appendingPathComponent("chapters-\(UUID().uuidString).\(format.fileExtension)")
+            addTeardownBlock { try? FileManager.default.removeItem(at: destination) }
+            await model.export(as: format, to: destination)
+            let exporting = harness.announcements.sentences.first { $0.hasPrefix("Exporting 4 seconds of audio as \(name)") }
+            XCTAssertNotNil(exporting, "\(name): \(harness.announcements.sentences)")
+            XCTAssertFalse(exporting?.contains("can't hold") ?? true, "\(name): \(harness.announcements.sentences)")
+            if format == .m4a {
+                let chapters = await AudioPlaybackService.extractChapters(from: destination)
+                XCTAssertEqual(chapters.map(\.title), ["Quay"], name)
+            } else {
+                XCTAssertEqual(AudioMarkerList.read(at: destination)?.markers.map(\.name), ["Quay"], name)
+            }
+        }
+
+        // The save comes last: once saved, the editor reads the file again.
+        await model.save()
+        XCTAssertTrue(harness.announcements.sentences.contains(
+            "Saving 4 seconds of audio as WAV, the format this book keeps."
+        ), "\(harness.announcements.sentences)")
+        XCTAssertEqual(AudioMarkerList.read(at: harness.fixture.book.bookFileURL)?.markers.map(\.name), ["Quay"])
+        // One marker at the start is the whole file: a list of one place is
+        // no chapters (`FileChapterReaders.placedChapters`), so the book keeps
+        // its title as its one heading, as a file of no markers does.
+        let saved = await AudioPlaybackService.extractChapters(from: harness.fixture.book.bookFileURL)
+        XCTAssertEqual(saved.map(\.title), [], "the saved WAVE file's one marker makes no chapters of its own")
+    }
+
+    /// A file written without the chapter markers it should hold says so,
+    /// rather than "Exported" alone (FMT11): here a WAVE file exported under
+    /// a name the marker list never opens, so its markers are refused. A
+    /// save in place of a CAF book still warns that the book won't list its
+    /// markers, which TextMouth never reads back from CAF, though an export
+    /// as CAF keeps them for other programs.
+    func testAFileWrittenWithoutItsMarkersSaysSo() async throws {
+        let harness = try await openRamp(seconds: 4)
+        let model = harness.model
+        await model.insertChapter(titled: "Quay")
+        let destination = try makeSandboxDirectory("editor-markers-refused").appendingPathComponent("Quay.bin")
+
+        await model.export(as: .wav, to: destination)
+
+        XCTAssertEqual(
+            harness.announcements.sentences.last,
+            "Exported “Quay.bin”. Its chapter marker couldn't be written into the file, so it has none."
+        )
+        XCTAssertTrue(FileManager.default.fileExists(atPath: destination.path), "the audio is written all the same")
+        XCTAssertEqual(model.markersLeftOut(false, count: 1), "")
+        XCTAssertEqual(model.chapterWarning(for: .pcmCAF), "")
+        XCTAssertEqual(model.chapterWarning(for: .pcmWAV, savingInPlace: true), "")
+        XCTAssertEqual(
+            model.chapterWarning(for: .pcmCAF, savingInPlace: true),
+            " TextMouth doesn't read chapter markers back from CAF files, so this book won't list its chapter marker once saved."
+        )
+        XCTAssertEqual(
+            AudioEditorWording.chapterMarkersNotWritten(3),
+            "Its 3 chapter markers couldn't be written into the file, so it has none."
+        )
+    }
+
+    // MARK: - Labels Beside an Export (FMT06)
+
+    /// With its checkbox on, an export writes the chapter markers and the
+    /// markers beside the audio as an Audacity label file of its stem, in
+    /// time order, a marker without a name named by its number; a second
+    /// export of the same name never replaces the first's labels. With the
+    /// checkbox off, as the window opens, none is written.
+    func testAnExportWritesTheMarkersAsLabelsWhenAsked() async throws {
+        let harness = try await openRamp(seconds: 4)
+        let model = harness.model
+        await model.insertChapter(titled: "Quay")
+        model.move(to: 2.5)
+        model.addMarker()
+        let lock = try XCTUnwrap(model.orderedMarkers.last?.id)
+        model.renameMarker(lock, to: "Lock")
+        model.move(to: 1.5)
+        model.addMarker()
+        let folder = try makeSandboxDirectory("editor-labels")
+
+        XCTAssertFalse(model.exportsLabels)
+        await model.export(as: .wav, to: folder.appendingPathComponent("Plain.wav"))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: folder.appendingPathComponent("Plain.txt").path))
+
+        model.exportsLabels = true
+        let ferry = folder.appendingPathComponent("Ferry.wav")
+        await model.export(as: .wav, to: ferry)
+        await model.export(as: .wav, to: ferry)
+
+        let expected = "0.000000\t0.000000\tQuay\n1.500000\t1.500000\tMarker 1\n2.500000\t2.500000\tLock\n"
+        XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("Ferry.txt"), encoding: .utf8), expected)
+        XCTAssertEqual(try String(contentsOf: folder.appendingPathComponent("Ferry 2.txt"), encoding: .utf8), expected)
+        XCTAssertTrue(harness.announcements.sentences.contains("Exported “Ferry.wav” and its labels, “Ferry 2.txt”."),
+                      "\(harness.announcements.sentences)")
+        XCTAssertEqual(AudioEditorWording.exportLabelsToggle, "Also write the markers as Audacity labels")
+        XCTAssertEqual(
+            AudioEditorWording.exported(file: "a.wav", labelsFailed: "The disk is full."),
+            "Exported “a.wav”, but its labels couldn't be written. The disk is full."
+        )
+    }
+
+    /// With the checkbox on and no marker of either kind, an export writes
+    /// no label file and says so, as the checkbox's hint says before it.
+    func testAnExportAskedForLabelsWithNoMarkersSaysSo() async throws {
+        let harness = try await openRamp(seconds: 2)
+        let model = harness.model
+        model.exportsLabels = true
+        let folder = try makeSandboxDirectory("editor-no-labels")
+
+        await model.export(as: .wav, to: folder.appendingPathComponent("Quiet.wav"))
+
+        XCTAssertEqual(
+            harness.announcements.sentences.last,
+            "Exported “Quiet.wav”. It has no markers, so no label file was written."
+        )
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: folder.path), ["Quiet.wav"])
+        XCTAssertTrue(model.labelEntries.isEmpty)
+        XCTAssertEqual(
+            AudioEditorWording.exportLabelsNothingHint,
+            "No chapter markers or markers, so no label file would be written."
+        )
     }
 
     // MARK: - Exporting
@@ -202,7 +310,7 @@ final class AudioEditorSavingTests: XCTestCase {
         let model = harness.model
         model.askToRevert()
         XCTAssertFalse(model.confirmingRevert)
-        XCTAssertEqual(harness.announcements.sentences.last, "There's nothing to revert: no edit can be undone.")
+        XCTAssertEqual(harness.announcements.sentences.last, "Nothing to revert: no edit can be undone.")
 
         model.select(AudioTimeRange(start: 1, end: 2))
         await model.cut()
@@ -365,14 +473,14 @@ final class AudioEditorSavingTests: XCTestCase {
 
         ferry.model.isWorking = true
         XCTAssertEqual(delegate.applicationShouldTerminate(NSApplication.shared), .terminateCancel)
-        XCTAssertEqual(ferry.announcements.sentences.last, "The editor of “Ferry Log” is still working. Quit TextMouth once the change is done.")
+        XCTAssertEqual(ferry.announcements.sentences.last, "“Ferry Log” is still working. Quit once the change is done.")
         ferry.model.isWorking = false
 
         await ferry.model.startPunchIn()
         XCTAssertTrue(controller.holdQuit(then: { XCTFail("quit while recording") }))
         XCTAssertEqual(
             ferry.announcements.sentences.last,
-            "A recording is under way in the editor of “Ferry Log”. Stop it, or discard it with Clear Selection, then quit TextMouth."
+            "“Ferry Log” is recording. Stop or discard it with Clear Selection, then quit."
         )
         await ferry.model.cancelPunchIn()
         XCTAssertNil(controller.quitReview)
@@ -395,16 +503,25 @@ final class AudioEditorSavingTests: XCTestCase {
         recorder.answers = ["Ferry Log": .discard]
         let repeated = QuitRecorder()
 
+        // The request to quit again arrives on a later turn of the run loop,
+        // as QuitRequest.ask() delivers it, not inside the review's own call:
+        // the mark that lets it quit must still be there when it arrives.
         XCTAssertTrue(controller.holdQuit(then: {
             repeated.quits += 1
-            repeated.held.append(controller.holdQuit(then: {}))
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    repeated.held.append(controller.holdQuit(then: {}))
+                }
+            }
         }))
         await controller.quitReview?.value
+        let askedAgain = await eventually { repeated.held.count == 1 }
 
+        XCTAssertTrue(askedAgain, "the review never asked to quit again")
         XCTAssertEqual(ferry.announcements.sentences.last, AudioEditorWording.discardKept)
         XCTAssertTrue(ferry.model.session.hasUnsavedEdits)
         XCTAssertEqual(repeated.quits, 1)
-        XCTAssertEqual(repeated.held, [false], "the request the review made quits")
+        XCTAssertEqual(repeated.held, [false], "the request the review made, on a later turn, was asked about again")
         XCTAssertTrue(controller.holdQuit(then: {}), "a later request asks again")
         await controller.quitReview?.value
     }

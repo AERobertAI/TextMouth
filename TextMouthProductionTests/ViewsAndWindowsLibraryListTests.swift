@@ -71,6 +71,8 @@ final class ViewsAndWindowsLibraryListTests: XCTestCase {
         renamed.title = "Renamed"
         let differing: [(String, LibraryBookListRow)] = [
             ("book", Self.row(renamed, livePosition: live)),
+            // The Leading articles setting shows the title inverted.
+            ("shown title", Self.row(book, shownTitle: "Compared, The", livePosition: live)),
             ("open in a window", Self.row(book, isOpenInWindow: true, livePosition: live)),
             ("speed", Self.row(book, wpm: 250, livePosition: live)),
             ("edit mode", Self.row(book, isEditMode: true, livePosition: live)),
@@ -156,6 +158,7 @@ final class ViewsAndWindowsLibraryListTests: XCTestCase {
     /// A row for `book` with the given inputs, the defaults a plain row has.
     private static func row(
         _ book: Book,
+        shownTitle: String? = nil,
         isOpenInWindow: Bool = false,
         wpm: Double = 200,
         isEditMode: Bool = false,
@@ -172,6 +175,7 @@ final class ViewsAndWindowsLibraryListTests: XCTestCase {
     ) -> LibraryBookListRow {
         LibraryBookListRow(
             book: book,
+            shownTitle: shownTitle,
             isOpenInWindow: isOpenInWindow,
             wpm: wpm,
             isEditMode: isEditMode,

@@ -307,7 +307,7 @@ final class EditedTextKeptTests: CloudMaintenanceTestCase {
             "TextMouth opens the book's text in your text editor, as a Markdown file. "
                 + "Each line beginning with <!-- chapter: starts a chapter; keep those lines. "
                 + "Each <!-- page: … --> marks where a page begins. "
-                + "When you save, TextMouth reads your changes and updates the book, keeping your place as near as it can. "
+                + "When you save, the book updates and keeps your place as near as it can. "
                 + "This explanation appears only once."
         )
         XCTAssertEqual(

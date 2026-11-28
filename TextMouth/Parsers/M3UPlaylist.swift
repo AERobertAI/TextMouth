@@ -1,20 +1,49 @@
 import Foundation
 
 /// What can go wrong reading a playlist file, in words a listener hears.
-enum M3UPlaylistError: LocalizedError, Equatable {
+enum M3UPlaylistError: LocalizedError, LogDescribing, Equatable {
     /// The playlist file is larger than `M3UPlaylist.maximumByteCount`.
     case tooLarge(fileName: String)
+    /// An XSPF playlist that is not XML, is cut off, or is some other XML
+    /// (FMT12).
+    case notReadable(fileName: String)
+    /// An XSPF playlist that declares XML entities, which would be read as
+    /// nothing (FMT12).
+    case declaresEntities(fileName: String)
+    /// A .pls file that is a pronunciation lexicon, not a PLS playlist
+    /// (FMT08, FMT12): both use the extension.
+    case pronunciationLexicon(fileName: String)
 
     /// The file name in curly quotation marks, then what is wrong.
     var errorDescription: String? {
         switch self {
         case let .tooLarge(fileName):
-            return "The playlist “\(fileName)” is too large to read."
+            // Translators: Why a playlist file could not be imported: it is larger than the most TextMouth reads. %@ is the playlist's file name.
+            return InterfaceText.line("m3UPlaylistError.tooLarge", "The playlist “\(fileName)” is too large to read.")
+        case let .notReadable(fileName):
+            return PlaylistImportWording.notReadable(fileName: fileName)
+        case let .declaresEntities(fileName):
+            return PlaylistImportWording.declaresEntities(fileName: fileName)
+        case let .pronunciationLexicon(fileName):
+            return PlaylistImportWording.pronunciationLexicon(fileName: fileName)
+        }
+    }
+
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34). The playlist's wording sentences
+    /// are the interface's, so a log names the problem and the file only.
+    var logDescription: String {
+        switch self {
+        case let .tooLarge(fileName): return "The playlist “\(fileName)” is too large to read." // l10n: no (debug log)
+        case let .notReadable(fileName): return "The playlist “\(fileName)” is not readable as a playlist." // l10n: no (debug log)
+        case let .declaresEntities(fileName): return "The playlist “\(fileName)” declares XML entities of its own." // l10n: no (debug log)
+        case let .pronunciationLexicon(fileName): return "The file “\(fileName)” is a pronunciation lexicon, not a PLS playlist." // l10n: no (debug log)
         }
     }
 }
 
-/// A playlist in the M3U or M3U8 format (FMT10): a text file that lists audio
+/// A playlist in the M3U or M3U8 format (FMT10), or, read into the same type,
+/// a PLS or XSPF one (FMT12, `PLSAndXSPFPlaylist.swift`): a text file that lists audio
 /// files, one location per line, with optional `#` directives. This type is
 /// the pure part of importing one: `parse` reads the text, and `resolve`
 /// decides which of the listed locations are files TextMouth may use.
@@ -42,8 +71,8 @@ struct M3UPlaylist: Equatable, Sendable {
     /// list of files.
     var isStreaming: Bool
 
-    /// The extensions (lowercase) of playlist files.
-    static let fileExtensions: Set<String> = ["m3u", "m3u8"]
+    /// The extensions (lowercase) of playlist files: M3U, M3U8, PLS, and XSPF.
+    static let fileExtensions: Set<String> = ["m3u", "m3u8", "pls", "xspf"]
 
     /// The largest playlist file `read` accepts: 4 MiB.
     static let maximumByteCount = 4 * 1024 * 1024
@@ -147,7 +176,19 @@ struct M3UPlaylist: Equatable, Sendable {
         guard data.count <= maximumByteCount else {
             throw M3UPlaylistError.tooLarge(fileName: url.lastPathComponent)
         }
-        return parse(try decodedText(of: data, fileName: url.lastPathComponent))
+        let fileName = url.lastPathComponent
+        switch url.pathExtension.lowercased() {
+        case "xspf":
+            // XML carries its own encoding, so the bytes go to the XML reader.
+            return try parseXSPF(data, fileName: fileName)
+        case "pls":
+            let text = try decodedText(of: data, fileName: fileName)
+            // A pronunciation lexicon shares the extension (FMT08).
+            guard !looksLikeXML(text) else { throw M3UPlaylistError.pronunciationLexicon(fileName: fileName) }
+            return parsePLS(text)
+        default:
+            return parse(try decodedText(of: data, fileName: fileName))
+        }
     }
 
     /// The text in a playlist file's `data`. An .m3u8 is UTF-8 by its
@@ -191,15 +232,23 @@ extension M3UPlaylist {
 
         /// The reason as a sentence part a listener hears after the entry's name.
         var words: String {
+            words(listedIn: PlaylistImportWording.playlistKind)
+        }
+
+        /// The reason as a sentence part a listener hears after the name of
+        /// an entry of a list of `kind` ("playlist", or "cue sheet" for the
+        /// files a cue sheet names, FMT24): an entry outside the folder is
+        /// outside that list's own.
+        func words(listedIn kind: String) -> String {
             switch self {
-            case .webAddress: return "a web address"
-            case .outsideFolder: return "outside the playlist's folder"
-            case .missing: return "not found"
-            case .folder: return "a folder"
-            case .notAudio: return "not an audio file"
-            case .hidden: return "hidden"
-            case .notOrdinaryFile: return "not an ordinary file"
-            case .listedBefore: return "listed before"
+            case .webAddress: return "a web address" // l10n: no (a parser's damage reason: a skipped entry's reason)
+            case .outsideFolder: return "outside the \(kind)'s folder" // l10n: no (a parser's damage reason: a skipped entry's reason)
+            case .missing: return "not found" // l10n: no (a parser's damage reason: a skipped entry's reason)
+            case .folder: return "a folder" // l10n: no (a parser's damage reason: a skipped entry's reason)
+            case .notAudio: return "not an audio file" // l10n: no (a parser's damage reason: a skipped entry's reason)
+            case .hidden: return "hidden" // l10n: no (a parser's damage reason: a skipped entry's reason)
+            case .notOrdinaryFile: return "not an ordinary file" // l10n: no (a parser's damage reason: a skipped entry's reason)
+            case .listedBefore: return "listed before" // l10n: no (a parser's damage reason: a skipped entry's reason)
             }
         }
     }

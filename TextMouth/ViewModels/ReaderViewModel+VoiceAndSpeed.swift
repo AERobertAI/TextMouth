@@ -24,8 +24,7 @@ extension ReaderViewModel {
         if isAudioBook {
             return AudioSpeed.stepButtonLabel(increasing: forward, by: AudioSpeed.coarseStep)
         }
-        let direction = forward ? "Increase" : "Decrease"
-        return "\(direction) speed by \(Int(Self.speechSpeedStep)) words per minute"
+        return VoiceAndSpeedWording.speedStepLabel(forward: forward, wordsPerMinute: Int(Self.speechSpeedStep))
     }
 
     /// Adjust TTS speed by a delta (e.g. +25 or -25 WPM).
@@ -39,7 +38,7 @@ extension ReaderViewModel {
         speechService.setSpeedRealtime(newWPM)
         book.localWPM = speechService.wordsPerMinute
         saveLocalVoiceSettings()
-        announceToVoiceOver("\(Int(speechService.wordsPerMinute)) words per minute")
+        announceToVoiceOver(VoiceAndSpeedWording.speedAnnouncement(wordsPerMinute: Int(speechService.wordsPerMinute)))
     }
 
     /// Set pitch for this book (multiplier 0.5-2.0)
@@ -48,7 +47,7 @@ extension ReaderViewModel {
         book.localPitch = speechService.pitchMultiplier
         saveLocalVoiceSettings()
         let formatted = String(format: "%.1f", speechService.pitchMultiplier)
-        announceToVoiceOver("Pitch \(formatted)")
+        announceToVoiceOver(VoiceAndSpeedWording.pitchAnnouncement(formatted))
     }
 
     /// Set voice for this book only. The next chapter, if already rendered
@@ -60,7 +59,7 @@ extension ReaderViewModel {
         saveLocalVoiceSettings()
         refreshLookAhead()
         warmUpVoice()
-        announceToVoiceOver("Voice changed to \(voice.name)")
+        announceToVoiceOver(VoiceAndSpeedWording.voiceChanged(to: voice.name))
     }
 
     /// Have the render queue load the voice speech uses now into the system
@@ -99,8 +98,11 @@ extension ReaderViewModel {
         // stale: each speed or pitch step in Settings, which every playing
         // reader hears, leaves a look-ahead in the voice in effect alone
         // (PERF02). The global voice may have changed before this runs, so
-        // the look-ahead's own voice is what is compared.
-        let lookAheadVoiceIsCurrent = lookAhead.map {
+        // the look-ahead's own voice is what is compared. A look-ahead whose
+        // render still waits for the lead (`lookAheadWait`) has no voice yet:
+        // it renders in the voice in effect when it falls due, so no step
+        // makes it stale.
+        let lookAheadVoiceIsCurrent = lookAheadWait != nil || lookAhead.map {
             $0.signature.voiceIdentifier == speechService.currentVoice?.identifier
         } ?? false
         if !lookAheadVoiceIsCurrent {
@@ -140,7 +142,7 @@ extension ReaderViewModel {
         if let localVoiceID = localSettings.voiceID {
             settingsViewModel.selectedVoiceID = localVoiceID
         }
-        announceToVoiceOver("Settings applied as global defaults")
+        announceToVoiceOver(VoiceAndSpeedWording.appliedAsGlobalDefaults)
     }
 
     /// Reset this book to use global voice, speed, and pitch settings
@@ -155,18 +157,44 @@ extension ReaderViewModel {
         if isAudioBook {
             audioSpeed = AudioSpeed.normal
             audioPlaybackService.setSpeed(audioSpeed)
-            announceToVoiceOver("Audio speed reset to \(AudioSpeed.spokenLabel(for: audioSpeed))")
+            announceToVoiceOver(VoiceAndSpeedWording.audioSpeedReset(to: AudioSpeed.spokenLabel(for: audioSpeed)))
             return
         }
-        // Apply global settings
-        speechService.setSpeedRealtime(settingsViewModel.wordsPerMinute)
-        speechService.setPitchRealtime(settingsViewModel.pitchMultiplier)
-        if let voice = settingsViewModel.selectedVoice {
-            speechService.currentVoice = voice
-        }
+        // Apply global settings: the book keeps none of its own now.
+        applyGlobalSpeechSettingsWhereTheBookKeepsNone()
         refreshLookAhead()
         warmUpVoice()
         announceToVoiceOver(BookSettingsWording.resetDone)
+    }
+
+    /// Gives the speech service the global speed, pitch, and voice for each
+    /// of the three this book keeps no setting of its own for. A text book
+    /// only: an audiobook's speed is its player's (`audioSpeed`).
+    private func applyGlobalSpeechSettingsWhereTheBookKeepsNone() {
+        if book.localWPM == nil {
+            speechService.setSpeedRealtime(settingsViewModel.wordsPerMinute)
+        }
+        if book.localPitch == nil {
+            speechService.setPitchRealtime(settingsViewModel.pitchMultiplier)
+        }
+        if book.localVoiceID == nil, let voice = settingsViewModel.selectedVoice {
+            speechService.currentVoice = voice
+        }
+    }
+
+    /// Applies this book's voice, speed, and pitch as they are now, and the
+    /// global ones for those it keeps none of, as a reader must when the
+    /// book's own settings change under it: the settings its record held,
+    /// taken as the book opened (`takeNewerRecordedState(_:)`, risk 2), which
+    /// may clear one the reader opened with. An audiobook takes its own
+    /// speed, or the normal one, as the reader takes it when it opens.
+    func applySpeechSettingsOfTheBook() {
+        if isAudioBook {
+            audioSpeed = book.localWPM.map { AudioSpeed.normalized($0) } ?? AudioSpeed.normal
+            return
+        }
+        applyGlobalSpeechSettingsWhereTheBookKeepsNone()
+        applyLocalSpeechOverrides()
     }
 
     /// Whether this book has local voice/speed/pitch overrides
@@ -196,14 +224,20 @@ extension ReaderViewModel {
     /// reader's copy of the book and in the library; their IDs, which the
     /// reader's filter matches, are written from them.
     func toggleHeadingSkip(_ heading: Heading) {
+        // A skipped heading is saved with its words (its label, and its ID),
+        // which a protected book never lets into a record (FR41).
+        guard !book.isPasswordProtected else {
+            announceToVoiceOver(ProtectionWording.cannotSkipSections)
+            return
+        }
         var skipped = book.skippedHeadings ?? []
         if skipped.contains(where: { $0.id == heading.id }) {
             skipped.removeAll { $0.id == heading.id }
-            announceToVoiceOver("Section included: \(heading.text)")
+            announceToVoiceOver(VoiceAndSpeedWording.sectionIncluded(heading.text))
         } else {
             let start = TextPlace(chapter: heading.chapterIndex, offset: heading.characterOffset)
             skipped.append(SkippedHeading(heading, anchor: capturedAnchor(at: start)))
-            announceToVoiceOver("Section skipped: \(heading.text)")
+            announceToVoiceOver(VoiceAndSpeedWording.sectionSkipped(heading.text))
         }
         book.setSkippedHeadings(skipped)
         libraryViewModel.updateSkippedHeadings(bookID: book.id, headings: skipped)
@@ -230,7 +264,7 @@ enum SkippedSectionFilter {
 
         // Build ranges to exclude
         var excludeRanges: [Range<Int>] = []
-        let sortedHeadings = headings.sorted { $0.characterOffset < $1.characterOffset }
+        let sortedHeadings = headings.sortedStably { $0.characterOffset < $1.characterOffset }
         for (i, heading) in sortedHeadings.enumerated() {
             guard skippedIDs.contains(heading.id) else { continue }
             let start = min(max(0, heading.characterOffset), textLength)
@@ -265,7 +299,7 @@ enum SkippedSectionFilter {
         var cumulativeDelta = 0
         var points: [(targetPos: Int, cumulativeDelta: Int)] = []
 
-        for range in excludeRanges.sorted(by: { $0.lowerBound < $1.lowerBound }) {
+        for range in excludeRanges.sortedStably(by: { $0.lowerBound < $1.lowerBound }) {
             if pos < range.lowerBound {
                 let startIdx = text.index(atUTF16Offset: pos)
                 let endIdx = text.index(atUTF16Offset: min(range.lowerBound, text.utf16Length))
@@ -285,5 +319,66 @@ enum SkippedSectionFilter {
             result += text[startIdx...]
         }
         return (result, OffsetMap(points: points))
+    }
+}
+
+// MARK: - The Words
+
+/// What VoiceOver hears, and the speed buttons are named, as the voice, the
+/// speed, the pitch, and the skipped sections change.
+enum VoiceAndSpeedWording {
+    /// The label of a text book's speed button: "Increase speed by 25 words
+    /// per minute".
+    static func speedStepLabel(forward: Bool, wordsPerMinute: Int) -> String {
+        if forward {
+            // Translators: VoiceOver label of the playback bar's button that raises a text book's speed. %lld is the size of one step in words per minute.
+            return InterfaceText.line("voiceAndSpeed.speedStepLabel.increase", "Increase speed by \(number: wordsPerMinute) words per minute")
+        }
+        // Translators: VoiceOver label of the playback bar's button that lowers a text book's speed. %lld is the size of one step in words per minute.
+        return InterfaceText.line("voiceAndSpeed.speedStepLabel.decrease", "Decrease speed by \(number: wordsPerMinute) words per minute")
+    }
+
+    /// Said after a text book's speed changes: "200 words per minute".
+    static func speedAnnouncement(wordsPerMinute: Int) -> String {
+        // Translators: Announcement of a text book's new speed after it changed. %lld is the speed in words per minute.
+        InterfaceText.line("common.countWordsPerMinute", "\(number: wordsPerMinute) words per minute")
+    }
+
+    /// Said after the pitch changes: "Pitch 1.2". `pitch` is the multiplier
+    /// with one decimal.
+    static func pitchAnnouncement(_ pitch: String) -> String {
+        // Translators: Announcement of the voice's new pitch after it changed. %@ is the pitch multiplier with one decimal, such as 1.2.
+        InterfaceText.line("voiceAndSpeed.pitchAnnouncement", "Pitch \(pitch)")
+    }
+
+    /// Said after a voice is chosen for the book alone.
+    static func voiceChanged(to name: String) -> String {
+        // Translators: Announcement after a voice was chosen for the open book. %@ is the voice's name.
+        InterfaceText.line("voiceAndSpeed.voiceChanged", "Voice changed to \(name)")
+    }
+
+    /// Said after the book's own voice, speed, and pitch are applied to the global settings.
+    static var appliedAsGlobalDefaults: String {
+        // Translators: Announcement after the open book's own voice, speed, and pitch were applied as the global settings.
+        InterfaceText.line("voiceAndSpeed.appliedAsGlobalDefaults", "Settings applied as global defaults")
+    }
+
+    /// Said after an audiobook's speed goes back to the normal one: "Audio
+    /// speed reset to 1.0 times speed".
+    static func audioSpeedReset(to speed: String) -> String {
+        // Translators: Announcement after an audiobook's speed returned to normal. %@ is the speed as VoiceOver says it, such as "1.0 times speed".
+        InterfaceText.line("voiceAndSpeed.audioSpeedReset", "Audio speed reset to \(speed)")
+    }
+
+    /// Said after a skipped section is included again.
+    static func sectionIncluded(_ heading: String) -> String {
+        // Translators: Announcement after a heading's section that was skipped is read again. %@ is the heading's text.
+        InterfaceText.line("voiceAndSpeed.sectionIncluded", "Section included: \(heading)")
+    }
+
+    /// Said after a section is set to be skipped.
+    static func sectionSkipped(_ heading: String) -> String {
+        // Translators: Announcement after a heading's section is set to be skipped. %@ is the heading's text.
+        InterfaceText.line("voiceAndSpeed.sectionSkipped", "Section skipped: \(heading)")
     }
 }

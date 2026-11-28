@@ -14,7 +14,7 @@
 # pure file the relocator comes to depend on).
 set -eu
 here=${0:A:h}
-investigate=/Users/roberteggleston/programming/ai/claude/investigate/text-anchors-2026-10-10
+investigate=~/…/investigate/text-anchors-2026-10-10
 models=${MODELS:-$(git -C $here rev-parse --show-toplevel)/TextMouth/Models}
 place_stubs=${PLACE_STUBS:-$investigate/placediff-harness/PlaceStubs.swift}
 out=$2

@@ -1,0 +1,20 @@
+// The Clang modules the app imports the FFmpeg helper's stream by.
+//
+// TextMouthFFmpegProtocol is header-only: the records, limits, and exit statuses both sides read
+// (`private import TextMouthFFmpegProtocol` in FFmpegHelperStream.swift, the Swift file that
+// reads the stream). The helper's C includes the same header, so neither side can disagree
+// about it.
+//
+// TextMouthFFmpegSession declares the session itself, which only the FFmpeg library targets
+// build (project.yml): the Mac's helper links it, and an app that links one of those targets can
+// call it in its own process, as the iPhone will. Importing it without linking a library target
+// fails to link, so the Mac app never imports it.
+module TextMouthFFmpegProtocol {
+    header "TextMouthFFmpegProtocol.h"
+    export *
+}
+
+module TextMouthFFmpegSession {
+    header "TextMouthFFmpegSession.h"
+    export *
+}

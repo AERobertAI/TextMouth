@@ -135,7 +135,7 @@ final class PreferenceStoreTests: XCTestCase {
         XCTAssertEqual(sounds.volume, 0.5)
         XCTAssertTrue(sounds.soundsEnabled)
         XCTAssertEqual(spoken, [SoundEffectsSettingsWording.resetDone])
-        XCTAssertEqual(SoundEffectsSettingsWording.resetDone, "The sound effects are reset to the defaults.")
+        XCTAssertEqual(SoundEffectsSettingsWording.resetDone, "Sound effects reset to defaults")
         XCTAssertEqual(SoundEffectsSettingsWording.resetTitle, "Reset to Defaults")
         XCTAssertEqual(SoundEffectsSettingsWording.resetLabel, "Reset all sound effects to defaults")
     }
@@ -381,6 +381,21 @@ final class PreferenceStoreTests: XCTestCase {
     /// edited (FR12): JSON under keyboardShortcutEdits in the form the whole
     /// map was saved in, keyed by each edited action's name and holding only
     /// those; the whole map's key, customKeyboardBindings, is never written.
+    /// A sound event and the choice of no sound keep the values config.json
+    /// stores, and show titles (FR34): the stored value is never shown.
+    func testSoundEventsAndNoSoundKeepTheirStoredValuesAndShowTitles() {
+        XCTAssertEqual(SoundEvent.allCases.map(\.rawValue),
+                       ["Play", "Pause", "Skip Forward", "Skip Backward", "Where Am I (Start)", "Where Am I (End)"])
+        XCTAssertEqual(SoundEvent.allCases.map(\.title), SoundEvent.allCases.map(\.rawValue))
+        XCTAssertEqual(SoundEffectService.noSound, "None")
+        XCTAssertEqual(SoundEffectService.title(ofSound: SoundEffectService.noSound), "None")
+        XCTAssertEqual(SoundEffectService.title(ofSound: "Tink"), "Tink", "a system sound keeps its own name")
+        XCTAssertEqual(SoundEffectsSettingsWording.soundLabel(.whereAmIEnd), "Where Am I (End) sound")
+        XCTAssertEqual(SoundEffectsSettingsWording.previewLabel(.skipForward), "Preview Skip Forward sound")
+        XCTAssertEqual(SoundEffectsSettingsWording.volumeCaption(percent: 55), "Volume: 55%")
+        XCTAssertEqual(SoundEffectsSettingsWording.volumeValue(percent: 55), "55 percent")
+    }
+
     func testShortcutsKeepTheirSavedKeyAndForm() throws {
         let store = makeSandboxedPreferences("shortcuts-form")
         let manager = KeyboardShortcutManager(userDefaults: store, installsEventMonitor: false)

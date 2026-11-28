@@ -21,7 +21,10 @@ enum TextEncodingOption: Hashable, Sendable {
 /// read.
 enum TextEncodingChoices {
     /// The name of the option that reads the file again as an import does.
-    static let automaticName = "Automatic"
+    static var automaticName: String {
+        // Translators: Name of the Text Encoding pop-up's first option, which reads the file again the way an import does, by guessing its encoding.
+        InterfaceText.line("textEncodingChoices.automaticName", "Automatic")
+    }
 
     /// Every option, in order: Automatic first, then UTF-8, then each name
     /// of the catalog once, in the catalog's order and named exactly as the
@@ -29,8 +32,8 @@ enum TextEncodingChoices {
     /// gives two entries is offered once, by its first entry.
     static let options: [TextEncodingOption] = {
         var options: [TextEncodingOption] = [.automatic, .encoding(TextFileDecoder.utf8Identifier)]
-        var namesOffered: Set<String> = []
-        for entry in TextEncodingCatalog.entries where namesOffered.insert(entry.name).inserted {
+        var namesOffered: Set<TextEncodingCatalog.Label> = []
+        for entry in TextEncodingCatalog.entries where namesOffered.insert(entry.label).inserted {
             options.append(.encoding(entry.identifier))
         }
         return options
@@ -62,14 +65,15 @@ enum TextEncodingChoices {
         if encoding == .utf8 {
             return .encoding(TextFileDecoder.utf8Identifier)
         }
-        return TextEncodingCatalog.entry(for: encoding).flatMap { option(named: $0.name) }
+        return TextEncodingCatalog.entry(for: encoding).flatMap { option(named: $0.label) }
     }
 
-    /// The option the catalog's name `name` is offered by.
-    private static func option(named name: String) -> TextEncodingOption? {
+    /// The option the catalog's name `label` is offered by. Names are compared
+    /// by their label, never by the localized text they show.
+    private static func option(named label: TextEncodingCatalog.Label) -> TextEncodingOption? {
         options.first { option in
             guard case .encoding(let identifier) = option else { return false }
-            return TextEncodingCatalog.entry(forIdentifier: identifier)?.name == name
+            return TextEncodingCatalog.entry(forIdentifier: identifier)?.label == label
         }
     }
 
@@ -81,7 +85,7 @@ enum TextEncodingChoices {
     static func identifiers(of option: TextEncodingOption) -> [String] {
         guard case .encoding(let identifier) = option else { return [] }
         guard let entry = TextEncodingCatalog.entry(forIdentifier: identifier) else { return [identifier] }
-        return TextEncodingCatalog.entries.filter { $0.name == entry.name }.map(\.identifier)
+        return TextEncodingCatalog.entries.filter { $0.label == entry.label }.map(\.identifier)
     }
 }
 
@@ -100,9 +104,9 @@ struct TextEncodingReading: Equatable, Sendable {
         case guessed
         /// The file begins with a byte-order mark.
         case byteOrderMark
-        /// The file is UTF-16 without a byte-order mark, recognized by its
-        /// zero bytes.
-        case unmarkedUTF16
+        /// The file is UTF-16 or UTF-32 without a byte-order mark,
+        /// recognized by the structure of its bytes.
+        case unmarkedUnicode
         /// The bytes are valid UTF-8.
         case validUTF8
         /// An HTML file declares it.
@@ -135,7 +139,7 @@ struct TextEncodingReading: Equatable, Sendable {
         switch decoded.basis {
         case .chosen: basis = .chosen
         case .byteOrderMark: basis = .byteOrderMark
-        case .unmarkedUTF16: basis = .unmarkedUTF16
+        case .unmarkedUnicode: basis = .unmarkedUnicode
         case .validUTF8: basis = .validUTF8
         case .declaration: basis = .declared
         case .recorded, .guess: basis = .guessed
@@ -221,5 +225,13 @@ extension Book {
     /// always Unicode braille patterns, and never a feed's item.
     var offersBrailleFileCodeChoice: Bool {
         format == .braille && !isFeedItem && BrailleBookReader.kind(of: bookFileURL) != .pef
+    }
+
+    /// Whether Book Information offers this book the choice of the braille
+    /// code its text is read in (`brailleTable`, FMT21): any braille book,
+    /// whatever its file (a PEF's cells are translated to print by a table
+    /// too), but never a feed's item.
+    var offersBrailleTableChoice: Bool {
+        format == .braille && !isFeedItem
     }
 }

@@ -12,7 +12,9 @@ import Darwin
 /// converted by `afconvert`, both from the Mac itself (the app's oldest
 /// macOS is 14.0): a format that Mac cannot read or convert is refused by
 /// the file's name ("Converting its audio" stops the import, and nothing is
-/// left behind); no other check is needed.
+/// left behind). A file that is valid, but in a form of samples the
+/// converter fails on, is refused by that form, named after the failure
+/// (`Failure.unsupportedSamples`).
 ///
 /// On October 14, 2026 Apple's Vorbis decoder, playing an Ogg track through
 /// AVPlayer at 1.5x, locked up inside AudioToolbox and grew TextMouth to
@@ -53,9 +55,29 @@ enum ImportAudioConverter {
         "aifc", "caf", "au", "snd", "w64", "ac3", "ec3", "eac3", "mp1", "mp2", "mpa", "amr", "awb", "3gp", "3g2", "3ga",
     ]
 
+    /// The extensions, in lowercase, of the formats neither macOS nor iOS
+    /// decodes that TextMouth reads with readers of its own (`OwnAudioFormat`:
+    /// True Audio and the rest). Such a file is decoded in the app by its
+    /// reader and written as Apple Lossless (`OwnAudioConverter`); no
+    /// `afinfo` or `afconvert` could read it.
+    static let ownReaderExtensions: Set<String> = OwnAudioFormat.allFileExtensions
+
+    /// The extensions, in lowercase, that only an import takes and the app
+    /// itself converts: the formats whose files a book's package never holds
+    /// afterwards (`coreAudioExtensions` and `ownReaderExtensions`). Open
+    /// Book accepts them, and a package's track scan does not
+    /// (`BookFormat.packageTrackExtensions`). The formats TextMouth's FFmpeg
+    /// converts are import-only too, and are listed beside these wherever
+    /// they are used (`FFmpegAudioConverter.extensions`).
+    static let importOnlyExtensions: Set<String> = coreAudioExtensions.union(ownReaderExtensions)
+
     /// The extensions, in lowercase, of every audio format the import
-    /// converts (FMT09): Ogg's and `coreAudioExtensions`.
-    static let convertedExtensions: Set<String> = oggExtensions.union(coreAudioExtensions)
+    /// converts (FMT09): Ogg's, `importOnlyExtensions`, and those TextMouth's
+    /// FFmpeg converts (`FFmpegAudioConverter.extensions`, FMT31, FMT50), so
+    /// the reader guards keep all of them from Apple's decoders.
+    static let convertedExtensions: Set<String> = oggExtensions
+        .union(importOnlyExtensions)
+        .union(FFmpegAudioConverter.extensions)
 
     /// The extensions, in lowercase, of files TextMouth writes itself from
     /// its own samples with Apple's encoder and reads back in the app: a
@@ -130,10 +152,14 @@ enum ImportAudioConverter {
         /// The AAC bit rate written, in bits a second, or nil when the
         /// encoder chose its own.
         let bitRate: Int?
+        /// Whether the decoder refused part of the source's sound, which the
+        /// .m4a keeps as silence (FU03): the import tells the listener
+        /// (`FFmpegImportWording.partlyDecodedNotice(_:)`).
+        var partlyDecoded = false
     }
 
     /// Why a file could not be converted, in words a listener can be told.
-    enum Failure: LocalizedError, Equatable {
+    enum Failure: LocalizedError, LogDescribing, Equatable {
         /// The audio file could not be read as audio, or is only in the cloud.
         case unreadable(fileName: String)
         /// The converted file failed its check: it would not play, or its
@@ -154,25 +180,75 @@ enum ImportAudioConverter {
         /// which is which, so a mix to stereo would keep two arbitrary
         /// channels, often not the speech. Nothing was run.
         case unlabelledChannels(fileName: String, channels: Int)
+        /// One of TextMouth's own readers (`OwnAudioFormat`) gave the file
+        /// up, for `problem`: it is damaged, cut short, or of a form the
+        /// reader refuses.
+        case notRead(fileName: String, problem: OwnAudioError)
+        /// The audio one of TextMouth's own readers decoded could not be
+        /// written as an .m4a, for `reason` (an error's domain and code).
+        case notWritten(fileName: String, reason: String)
+        /// The file is valid, but its samples are of a form no decoder reads (`AudioSampleForm`, B15), and the
+        /// converter failed on it: it is not damaged.
+        case unsupportedSamples(fileName: String, form: AudioSampleForm)
 
         var errorDescription: String? {
             switch self {
             case let .unreadable(fileName):
-                return "The audio file \(fileName) could not be read for converting."
+                // Translators: Why an audio file could not be converted at import: it could not be read as audio, or it is only in the cloud. %@ is the file's name.
+                return InterfaceText.line("failure.unreadable.converting", "The audio file \(fileName) could not be read for converting.")
             case let .checkFailed(fileName, reason):
-                return "The audio converted from \(fileName) failed its check: \(reason)."
+                // Translators: Why a converted audio file was refused: it failed the check made after conversion. %1$@ is the source file's name and %2$@ the reason, a phrase with no full stop.
+                return InterfaceText.line("failure.checkFailed", "The audio converted from \(fileName) failed its check: \(reason).")
             case let .cannotName(fileName):
-                return "The audio converted from \(fileName) could not be given its name."
+                // Translators: Why a converted audio file was refused: it could not be given its final name. %@ is the source file's name.
+                return InterfaceText.line("failure.cannotName", "The audio converted from \(fileName) could not be given its name.")
             case let .killed(fileName, reason):
-                return "Converting \(fileName) was stopped because \(reason)."
+                // The reason is a phrase in English (`KillReason.words`), which the debug log writes too.
+                // Translators: Why an audio conversion was stopped: it ran too long or used too much memory. %1$@ is the source file's name and %2$@ the reason, a clause in English that follows "because".
+                return InterfaceText.line("failure.killed", "Converting \(fileName) was stopped because \(reason).")
             case let .processFailed(fileName, status):
-                return "Converting \(fileName) failed (the converter ended with code \(status))."
+                // Translators: Why an audio conversion failed: the converting program ended with an error. %1$@ is the source file's name and %2$@ the program's exit code, an identifier written without digit grouping.
+                return InterfaceText.line("failure.processFailed", "Converting \(fileName) failed (the converter ended with code \(String(status))).")
             case let .notEnoughSpace(fileName, bytesNeeded):
-                return "There is not enough free disk space to convert \(fileName): "
-                    + "it needs \(ImportProgressWording.size(bytesNeeded)) free."
+                // Translators: Why an audio conversion did not start: the disk holds too little free space. %1$@ is the source file's name and %2$@ the free space it needs, with its unit, such as "1.2 GB".
+                return InterfaceText.line("failure.notEnoughSpace", "There is not enough free disk space to convert \(fileName): it needs \(ImportProgressWording.size(bytesNeeded)) free.")
             case let .unlabelledChannels(fileName, channels):
-                return "The audio file \(fileName) has \(channels) channels but does not say which is which, "
-                    + "so TextMouth cannot mix it to stereo."
+                // Translators: Why an audio file was not converted: it has more than two channels and does not say which is which, so a mix to stereo would keep two arbitrary channels. %1$@ is the file's name and %2$lld the number of channels, always more than two.
+                return InterfaceText.line("failure.unlabelledChannels", "The audio file \(fileName) has \(number: channels) channels but does not say which is which, so TextMouth cannot mix it to stereo.")
+            case let .notRead(fileName, problem):
+                return OwnAudioWording.sentence(for: problem, fileName: fileName)
+            case let .notWritten(fileName, reason):
+                // Translators: Why converted audio was not saved as an .m4a file. %1$@ is the source file's name and %2$@ the error's domain and code, in the system's words.
+                return InterfaceText.line("failure.notWritten", "The audio converted from \(fileName) could not be written (\(reason)).")
+            case let .unsupportedSamples(fileName, form):
+                return AudioSampleFormWording.refusal(fileName: fileName, form: form)
+            }
+        }
+
+        /// The failure in English for the debug log, which stays English
+        /// whatever language the interface speaks (FR34).
+        var logDescription: String {
+            switch self {
+            case let .unreadable(fileName):
+                return "The audio file \(fileName) could not be read for converting." // l10n: no (debug log)
+            case let .checkFailed(fileName, reason):
+                return "The audio converted from \(fileName) failed its check: \(reason)." // l10n: no (debug log)
+            case let .cannotName(fileName):
+                return "The audio converted from \(fileName) could not be given its name." // l10n: no (debug log)
+            case let .killed(fileName, reason):
+                return "Converting \(fileName) was stopped because \(reason)." // l10n: no (debug log)
+            case let .processFailed(fileName, status):
+                return "Converting \(fileName) failed (the converter ended with code \(status))." // l10n: no (debug log)
+            case let .notEnoughSpace(fileName, bytesNeeded):
+                return "There is not enough free disk space to convert \(fileName): it needs \(bytesNeeded) bytes free." // l10n: no (debug log)
+            case let .unlabelledChannels(fileName, channels):
+                return "The audio file \(fileName) has \(channels) channels but does not say which is which." // l10n: no (debug log)
+            case let .notRead(fileName, _):
+                return "TextMouth's own reader could not read the audio file \(fileName)." // l10n: no (debug log)
+            case let .notWritten(fileName, reason):
+                return "The audio converted from \(fileName) could not be written (\(reason))." // l10n: no (debug log)
+            case let .unsupportedSamples(fileName, _):
+                return "The audio file \(fileName) is of a form no decoder reads." // l10n: no (debug log)
             }
         }
     }
@@ -235,21 +311,33 @@ enum ImportAudioConverter {
     /// Whether a file that `afinfo` describes by `formatID` (its first
     /// track's codec) and `fileType` (its container) plays as it is: AAC
     /// (`aac `, `aach`, `aacp`) in MPEG-4, QuickTime, or ADTS; Apple Lossless
-    /// (`alac`) in MPEG-4 or QuickTime; MP3 (`.mp3`) in MPEG audio, MPEG-4,
-    /// or QuickTime. Every other codec or container is converted. A nil
-    /// `fileType` (the container is not known) asks about the codec alone.
-    static func playsAsIs(formatID: String, fileType: String?) -> Bool {
+    /// (`alac`) in MPEG-4 or QuickTime, unless it holds a 20-bit source
+    /// (`unreadableAppleLosslessBits`, with `bitsPerSample`); MP3 (`.mp3`) in
+    /// MPEG audio, MPEG-4, or QuickTime. Every other codec or container is
+    /// converted. A nil `fileType` (the container is not known) asks about the
+    /// codec alone.
+    static func playsAsIs(formatID: String, fileType: String?, bitsPerSample: Int? = nil) -> Bool {
         let mpeg4Containers: Set<String> = ["m4af", "m4bf", "mp4f", "qt", "moov"]
         let containers: Set<String>
         switch formatID.trimmingCharacters(in: .whitespaces) {
         case "aac", "aach", "aacp": containers = mpeg4Containers.union(["adts"])
-        case "alac": containers = mpeg4Containers
+        case "alac":
+            // AVAssetReader cannot read Apple Lossless of a 20-bit source (the probe would call the file
+            // damaged), so it is converted, written at 24 bits (`appleLosslessBitDepth(forBitsPerSample:)`).
+            if bitsPerSample == unreadableAppleLosslessBits { return false }
+            containers = mpeg4Containers
         case ".mp3": containers = mpeg4Containers.union(["mpg3"])
         default: return false
         }
         guard let fileType else { return true }
         return containers.contains(fileType.trimmingCharacters(in: .whitespaces).lowercased())
     }
+
+    /// The bit depth of the source an Apple Lossless file may hold that
+    /// AVAssetReader cannot read, so that the file is converted rather than
+    /// played as it is (`playsAsIs`): 20, the depth `afconvert` and
+    /// AVFoundation's writer used to write (B15).
+    static let unreadableAppleLosslessBits = 20
 
     /// The files among `files` that the import converts, in their order: by
     /// their extension and bytes (`verdict(for:)`), and, for those the bytes
@@ -283,7 +371,7 @@ enum ImportAudioConverter {
     /// that the import converts; false when it cannot read the file.
     private static func isConvertedByWhatItHolds(_ url: URL, using tool: AudioFileInfo.Tool) async throws -> Bool {
         guard let facts = try await AudioFileInfo.read(url, using: tool) else { return false }
-        return !playsAsIs(formatID: facts.formatID, fileType: facts.fileType)
+        return !playsAsIs(formatID: facts.formatID, fileType: facts.fileType, bitsPerSample: facts.bitsPerSample)
     }
 
     /// The tracks of the folder `folder` that the import converts, by
@@ -367,6 +455,19 @@ enum ImportAudioConverter {
         /// that gives no layout (`AudioFileInfo.hasChannelLayout`), which
         /// cannot be mixed to stereo (`Failure.unlabelledChannels`).
         var hasChannelLayout = true
+        /// The source's chapters, which no conversion carries (FMT17): an Ogg
+        /// file's CHAPTERnnn comments (`OggHeaderReader.Tags.chapters`), or
+        /// the markers afinfo lists of any other (`AudioFileInfo.markers`).
+        /// A conversion that keeps chapters writes them into the .m4a's
+        /// chapter track (`ChapterTrackWriter`).
+        var chapters: [NeroChapterReader.Chapter] = []
+        /// How the samples of linear PCM are stored (`AudioFileInfo.sampleForm`), or nil for other audio: when
+        /// the converter fails on a form no decoder reads, the failure names it (`Failure.unsupportedSamples`, B15).
+        var sampleForm: AudioSampleForm? = nil
+        /// The format, when the file is one that TextMouth's own readers
+        /// decode: it is then converted in the app (`OwnAudioConverter`), by
+        /// no child process. Nil for every other source.
+        var ownReader: OwnAudioFormat? = nil
     }
 
     /// What the import does with one audio file.
@@ -399,7 +500,8 @@ enum ImportAudioConverter {
                 // Like needsConversion(among:), the codec decides MPEG-4 and unrecognized
                 // content; a file that cannot be read at all keeps its extension's answer.
                 let isReadable = AudioContentSniffer.firstBytes(of: source, upTo: 1) != nil
-                converts = isReadable && !playsAsIs(formatID: info.formatID, fileType: nil)
+                converts = isReadable
+                    && !playsAsIs(formatID: info.formatID, fileType: nil, bitsPerSample: info.bitsPerSample)
             }
         }
         guard converts else { return .leaveAsItIs }
@@ -417,20 +519,25 @@ enum ImportAudioConverter {
     /// - Throws: `CancellationError` only.
     static func inspect(_ url: URL, using afinfo: AudioFileInfo.Tool = .afinfo) async throws -> SourceInfo? {
         guard FileManager.default.fileExists(atPath: url.path), !DatalessFiles.isDataless(url) else { return nil }
+        // A format of TextMouth's own readers is told by its bytes and read
+        // by its reader; a file the reader refuses reads as no audio here
+        // (`convert` asks the reader itself, to say why).
+        if OwnAudioConverter.format(of: url) != nil { return try? OwnAudioConverter.sourceInfo(of: url) }
         if isOgg(url) { // lint-ok: Ogg alone is read from its own bytes; every other format by afinfo
             guard let header = OggHeaderReader.read(at: url) else { return nil }
             return SourceInfo(
                 sampleRate: header.sampleRate, channels: header.channels, duration: header.duration,
                 formatID: formatID(of: header.codec), bitsPerSample: header.bitsPerSample,
                 // FLAC keeps every bit of its source, so it becomes Apple Lossless; Vorbis and Opus are lossy.
-                isLossless: header.codec == .flac
+                isLossless: header.codec == .flac,
+                chapters: header.tags.chapters
             )
         }
         guard let facts = try await AudioFileInfo.read(url, using: afinfo) else { return nil }
         return SourceInfo(
             sampleRate: facts.sampleRate, channels: facts.channels, duration: facts.duration,
             formatID: facts.formatID, bitsPerSample: facts.bitsPerSample, isLossless: facts.isLossless,
-            hasChannelLayout: facts.hasChannelLayout
+            hasChannelLayout: facts.hasChannelLayout, chapters: facts.markerChapters, sampleForm: facts.sampleForm
         )
     }
 
@@ -457,25 +564,28 @@ enum ImportAudioConverter {
     }
 
     /// The Apple Lossless bit depth that holds a source of `bits` bits a
-    /// sample: 16, 20, 24, or 32, the smallest that fits; 24 when the depth
-    /// is unknown or the samples are floating-point numbers (nil).
+    /// sample: 16, 24, or 32, the smallest that fits; 24 when the depth is
+    /// unknown or the samples are floating-point numbers (nil). A source of
+    /// 17 to 20 bits is written at 24, which holds every sample exactly:
+    /// AVAssetReader cannot read the 20-bit Apple Lossless file that
+    /// afconvert and AVFoundation's writer make, so the import's own check
+    /// refused it as undecodable (train 1117-0431, B15).
     static func appleLosslessBitDepth(forBitsPerSample bits: Int?) -> Int {
         guard let bits else { return 24 }
         switch bits {
         case ...16: return 16
-        case ...20: return 20
         case ...24: return 24
         default: return 32
         }
     }
 
     /// The flag afconvert takes after `alac/` for an Apple Lossless bit
-    /// depth: 1, 2, 3, or 4 for 16, 20, 24, or 32 bits. Without it afconvert
+    /// depth (`appleLosslessBitDepth(forBitsPerSample:)`): 1, 3, or 4 for 16,
+    /// 24, or 32 bits (2 is 20 bits, never asked for). Without it afconvert
     /// writes 32-bit samples, five times the size of a 16-bit source's.
     static func appleLosslessFlag(forBitDepth depth: Int) -> Int {
         switch depth {
         case 16: return 1
-        case 20: return 2
         case 24: return 3
         default: return 4
         }
@@ -509,6 +619,14 @@ enum ImportAudioConverter {
 
     /// The `Target` for `info` and `bytes`; see `Target`.
     static func target(for info: SourceInfo, bytes: Int64) -> Target {
+        target(for: info, averageBitRate: Double(bytes) * 8 / info.duration)
+    }
+
+    /// The `Target` for `info` whose lossy codec averages `average` bits a
+    /// second (ignored for a lossless one); see `Target`. The ffmpeg import
+    /// gives its sound stream's own rate (FMT31), since a video file's size
+    /// counts its pictures too.
+    static func target(for info: SourceInfo, averageBitRate average: Double) -> Target {
         if info.isLossless {
             return Target(
                 channels: min(max(info.channels, 1), maximumChannels),
@@ -519,7 +637,6 @@ enum ImportAudioConverter {
         }
         let channels = min(max(info.channels, 1), maximumChannels)
         let rate = sampleRate(for: info.sampleRate)
-        let average = Double(bytes) * 8 / info.duration
         return Target(
             channels: channels,
             sampleRate: rate,
@@ -554,11 +671,10 @@ enum ImportAudioConverter {
 
     /// The bit depth of the stereo PCM file that step 1 of a downmix writes
     /// for `target`: 16 bits for AAC, which keeps no more; for Apple
-    /// Lossless the depth of its samples, 24 for a depth of 20 (PCM has no
-    /// 20-bit form), so nothing is lost.
+    /// Lossless the depth of its samples (`appleLosslessBitDepth`, which is
+    /// never 20, a depth PCM has no form of).
     static func downmixBitDepth(for target: Target) -> Int {
-        guard let depth = target.appleLosslessBitDepth else { return 16 }
-        return depth == 20 ? 24 : depth
+        target.appleLosslessBitDepth ?? 16
     }
 
     /// The free space a downmix of a track lasting `duration` seconds,
@@ -668,7 +784,7 @@ enum ImportAudioConverter {
     /// can be changed in one place.
     static func downmixArguments(from input: URL, to output: URL, target: Target) -> [String] {
         [
-            "-f", "caff", "-d", "LEI\(downmixBitDepth(for: target))@\(Int(target.sampleRate))",
+            "-f", "caff", "-d", "LEI\(downmixBitDepth(for: target))@\(Int(target.sampleRate))", // l10n: no (afconvert's arguments)
             "-c", String(maximumChannels), "--mix", input.path, output.path,
         ]
     }
@@ -704,6 +820,21 @@ enum ImportAudioConverter {
         var limits: @Sendable (_ duration: TimeInterval) -> WatchedProcess.Limits
         /// How the watchdog reads the child's resident memory.
         var residentMemory: @Sendable (pid_t) -> Int64?
+        /// What converts the files only ffmpeg reads (FMT31,
+        /// `FFmpegAudioConverter.converts(_:)`), which `convert` hands to it.
+        /// Nil means `FFmpegAudioConverter.tool`, which a test may bind; an
+        /// import reads that on its own thread and sets it here
+        /// (`FileImportService.convertTracks`), since the conversions' tasks
+        /// do not inherit it.
+        var ffmpeg: FFmpegAudioConverter.Tool? = nil
+
+        /// This tool with `ffmpeg` settled: its own, else
+        /// `FFmpegAudioConverter.tool` as the calling thread sees it.
+        func resolvingFFmpeg() -> Tool {
+            var resolved = self
+            resolved.ffmpeg = ffmpeg ?? FFmpegAudioConverter.tool
+            return resolved
+        }
 
         /// Apple's own converter, which reads Ogg through AudioFile and
         /// ExtAudioFile; it converted a 34-minute Vorbis track whole in
@@ -760,12 +891,58 @@ enum ImportAudioConverter {
     /// runs. The conversion runs in a child process the
     /// watchdog of `tool` kills when it hangs (`AUDIO_CONVERSION_KILLED` in the
     /// debug log).
+    ///
+    /// With `keepingChapters`, which an import passes (FMT17), the source's
+    /// chapters (`SourceInfo.chapters`) are then written into the checked
+    /// .m4a's chapter track (`keepChapters`, `ChapterTrackWriter`), its
+    /// samples copied as they are, and the file with them checked again;
+    /// when either fails, the file keeps no chapters, as before, and
+    /// `AUDIO_CHAPTERS_NOT_KEPT` says why in the debug log. The library's
+    /// conversion of an older book's Ogg files keeps none, so that book's
+    /// chapters, and the places in it, stay as they were.
+    ///
+    /// A file only FFmpeg reads (`FFmpegAudioConverter.converts(_:)`, FMT31)
+    /// is converted by TextMouth's own FFmpeg helper instead, with
+    /// `tool.ffmpeg` (`FFmpegAudioConverter.convert`, FMT50), into the same
+    /// kind of file, its chapters kept as every conversion keeps them when
+    /// `keepingChapters` asks.
     /// - Throws: `Failure`, or `CancellationError` when the task is
-    ///   cancelled.
-    static func convert(_ source: URL, naming: Bool = true, using tool: Tool = .afconvert) async throws -> Conversion {
+    ///   cancelled; for a file only FFmpeg reads, also
+    ///   `FFmpegAudioConverter.Failure`.
+    static func convert(
+        _ source: URL,
+        naming: Bool = true,
+        using tool: Tool = .afconvert,
+        keepingChapters: Bool = false
+    ) async throws -> Conversion {
+        if FFmpegAudioConverter.converts(source) {
+            return try await FFmpegAudioConverter.convert(
+                source, naming: naming, keepingChapters: keepingChapters, using: tool.ffmpeg ?? FFmpegAudioConverter.tool
+            )
+        }
         let started = Date()
         let name = source.lastPathComponent
-        guard let info = try await inspect(source, using: tool.info) else { throw Failure.unreadable(fileName: name) }
+        // A file of TextMouth's own readers is described by its reader, whose
+        // refusal (a damaged file, a form it does not read) is thrown as it is.
+        var described = try OwnAudioConverter.sourceInfo(of: source)
+        if described == nil { described = try await inspect(source, using: tool.info) }
+        guard let info = described else {
+            #if os(iOS)
+            // iOS has no afinfo, so `inspect` has no answer for any format but
+            // Ogg, and every file reaching this line is one the import would
+            // convert. It is not unreadable: the phone cannot convert it, and
+            // says so as Ogg's refusal does, in `WatchedProcess.run`. The one
+            // exception is a file named for a format of TextMouth's own
+            // readers whose bytes are of none: the phone could convert such a
+            // file, so it is unreadable, as it is where afinfo can't read it.
+            guard ownReaderExtensions.contains(source.pathExtension.lowercased()) else {
+                throw IOSUnavailable.feature("Converting this kind of file") // l10n: no (inside IOSUnavailable's English sentence until the iPhone's files convert)
+            }
+            throw Failure.unreadable(fileName: name)
+            #else
+            throw Failure.unreadable(fileName: name)
+            #endif
+        }
         // A header can state any sample rate. One that is no number, or past
         // the most a cap counts, is a damaged header, refused as an
         // unreadable one is before the target is worked out from it: a
@@ -784,9 +961,12 @@ enum ImportAudioConverter {
         do {
             try await write(source, to: staged, info: info, target: target, using: tool)
             try await check(staged, against: info.duration, from: name)
+            if keepingChapters, !info.chapters.isEmpty {
+                try await keepChapters(info.chapters, in: staged, lasting: info.duration, from: name)
+            }
         } catch {
             try? FileManager.default.removeItem(at: staged)
-            throw error
+            throw namingTheForm(in: error, of: info, fileName: name)
         }
         var conversion = Conversion(
             source: source,
@@ -808,6 +988,17 @@ enum ImportAudioConverter {
         return conversion
     }
 
+    /// `error`, a failure of the conversion of the file `fileName`, or, in its place, `Failure.unsupportedSamples`
+    /// when the converter itself ended in failure (an exit status above zero, not a kill or a start that failed) on
+    /// a source whose own description names a form the decoders do not read (`AudioSampleForm.isDecodable`): the
+    /// file is valid, and the converter's exit code would name no cause (B15). The form is looked at only after the
+    /// converter has failed, so a Mac whose converter reads it never refuses it.
+    private static func namingTheForm(in error: any Error, of info: SourceInfo, fileName: String) -> any Error {
+        guard case .processFailed(_, let status)? = error as? Failure, status > 0,
+              let form = info.sampleForm, !form.isDecodable else { return error }
+        return Failure.unsupportedSamples(fileName: fileName, form: form)
+    }
+
     /// Writes `staged` from `source`, described by `info`, as `target`. A
     /// source of mono or stereo is written in one step. A source of more
     /// channels is mixed down first, to a hidden stereo PCM file
@@ -826,6 +1017,12 @@ enum ImportAudioConverter {
         using tool: Tool
     ) async throws {
         let name = source.lastPathComponent
+        // One of TextMouth's own readers decodes the source in the app, mixing
+        // more than two channels to stereo itself: no child process runs.
+        if let format = info.ownReader {
+            try await OwnAudioConverter.write(source, of: format, to: staged, target: target)
+            return
+        }
         guard needsDownmix(info) else {
             try await run(
                 tool.command(source, staged, info, target), named: name, duration: info.duration, tool: tool,
@@ -871,12 +1068,29 @@ enum ImportAudioConverter {
     ) async throws {
         var limits = tool.limits(duration)
         limits.maximumOutputBytes = limits.maximumOutputBytes ?? cap
+        try await runConverting(command, named: name, limits: limits, residentMemory: tool.residentMemory, watching: output)
+    }
+
+    /// Runs one converting process, `command`, of a conversion of the file
+    /// named `name`, under `limits` (its output cap included), reading its
+    /// memory with `residentMemory` and watching `output` grow, and turns how
+    /// it ended into success or a `Failure`; a kill is logged
+    /// (`AUDIO_CONVERSION_KILLED`). afconvert's steps run through it; the
+    /// FFmpeg helper, whose output is a pipe, has its own
+    /// (`FFmpegAudioConverter.failure(of:read:fileName:kind:limits:logTag:)`).
+    static func runConverting(
+        _ command: (executable: URL, arguments: [String]),
+        named name: String,
+        limits: WatchedProcess.Limits,
+        residentMemory: @escaping @Sendable (pid_t) -> Int64?,
+        watching output: URL
+    ) async throws {
         let outcome = try await WatchedProcess.run(
             command.executable,
             arguments: command.arguments,
             watching: output,
             limits: limits,
-            residentMemory: tool.residentMemory
+            residentMemory: residentMemory
         )
         switch outcome {
         case .exited(status: 0):
@@ -899,12 +1113,57 @@ enum ImportAudioConverter {
         lengthTolerance + duration * 0.005
     }
 
+    /// The tag of the debug-log line saying a converted file's chapters
+    /// could not be kept (FMT17).
+    static let chaptersNotKeptLogTag = "AUDIO_CHAPTERS_NOT_KEPT"
+
+    /// Gives the .m4a at `url`, converted from the file named `sourceName`
+    /// and already checked, the source's `chapters`: written with them to a
+    /// hidden file beside it (`ChapterTrackWriter`), which is checked as the
+    /// conversion was (`check(_:against:from:)`) and only then takes the
+    /// file's place, so the chapters can never cost the import its audio. A
+    /// failure leaves the file as it was, with no chapters, and is recorded
+    /// as one line, `AUDIO_CHAPTERS_NOT_KEPT: <file>: <reason>`, the reason
+    /// naming only an error's domain and code, which never quote a path.
+    /// Internal so a test can cancel it.
+    /// - Throws: `CancellationError` only, when the task is cancelled: a
+    ///   cancelled import stops here as its conversion would, the file as it
+    ///   was and the hidden one gone.
+    static func keepChapters(
+        _ chapters: [NeroChapterReader.Chapter],
+        in url: URL,
+        lasting duration: TimeInterval,
+        from sourceName: String
+    ) async throws {
+        let withChapters = temporaryURL(beside: url)
+        do {
+            // A list that makes no chapter (every start past the end), or
+            // only one, writes nothing, and the file stays as it is. The
+            // sound before the first place is titled as the book will be: by
+            // the file's title tag, or the source's name, which the
+            // converted file takes.
+            let title = (sourceName as NSString).deletingPathExtension
+            guard try await ChapterTrackWriter.write(chapters, from: url, to: withChapters, lasting: duration, titled: title) else { return }
+            try await check(withChapters, against: duration, from: sourceName)
+            _ = try FileManager.default.replaceItemAt(url, withItemAt: withChapters)
+        } catch {
+            try? FileManager.default.removeItem(at: withChapters)
+            // Whatever AVFoundation throws once the task is cancelled, the
+            // import was cancelled: that, not a lost chapter list, is what
+            // the caller hears.
+            if error is CancellationError || Task.isCancelled { throw CancellationError() }
+            let failure = error as NSError
+            DiagnosticLog.event(.storage, "\(chaptersNotKeptLogTag): \(sourceName): \(failure.domain) \(failure.code)")
+        }
+    }
+
     /// Checks the converted file at `url`, made from the file named
     /// `sourceName` lasting `duration` seconds: it must open and decode as
     /// audio (`AudioMediaProbe`), and last as long to within
-    /// `lengthTolerance`.
+    /// `allowedLengthError(for:)`. The FFmpeg import checks its files with it
+    /// too (`FFmpegAudioConverter`, FMT31).
     /// - Throws: `Failure.checkFailed`.
-    private static func check(_ url: URL, against duration: TimeInterval, from sourceName: String) async throws {
+    static func check(_ url: URL, against duration: TimeInterval, from sourceName: String) async throws {
         switch await AudioMediaProbe.duration(of: url) {
         case let .failure(problem):
             throw Failure.checkFailed(fileName: sourceName, reason: problem.reason)
@@ -1003,15 +1262,17 @@ enum ImportAudioConverter {
         return true
     }
 
-    /// Converts each of `sources` as `convert(_:naming:)` does, at most
-    /// `maximumConcurrentConversions` at once, telling `progress` how many
-    /// are done as each ends. The conversions are returned in the order of
-    /// `sources`. Should one fail, the others are stopped, every file
-    /// already converted is removed, and its error is thrown.
+    /// Converts each of `sources` as `convert(_:naming:using:keepingChapters:)`
+    /// does, at most `maximumConcurrentConversions` at once, telling
+    /// `progress` how many are done as each ends. The conversions are
+    /// returned in the order of `sources`. Should one fail, the others are
+    /// stopped, every file already converted is removed, and its error is
+    /// thrown.
     static func convertEach(
         _ sources: [URL],
         naming: Bool = true,
         using tool: Tool = .afconvert,
+        keepingChapters: Bool = false,
         progress: (@Sendable (Int) -> Void)? = nil
     ) async throws -> [Conversion] {
         var results = [Conversion?](repeating: nil, count: sources.count)
@@ -1022,7 +1283,7 @@ enum ImportAudioConverter {
                 // the next, so at most the maximum run together.
                 while next < min(maximumConcurrentConversions, sources.count) {
                     let index = next
-                    group.addTask { (index, try await convert(sources[index], naming: naming, using: tool)) }
+                    group.addTask { (index, try await convert(sources[index], naming: naming, using: tool, keepingChapters: keepingChapters)) }
                     next += 1
                 }
                 var done = 0
@@ -1033,7 +1294,7 @@ enum ImportAudioConverter {
                         progress?(done)
                         if next < sources.count {
                             let index = next
-                            group.addTask { (index, try await convert(sources[index], naming: naming, using: tool)) }
+                            group.addTask { (index, try await convert(sources[index], naming: naming, using: tool, keepingChapters: keepingChapters)) }
                             next += 1
                         }
                     }
@@ -1149,10 +1410,15 @@ enum ImportAudioConverter {
         }
     }
 
-    /// Removes the Ogg files `conversions` were made from, once their
-    /// converted files have taken their places.
+    /// Removes the files `conversions` were made from, once their converted
+    /// files have taken their places, each with its companion when it has
+    /// one (a WavPack correction file, `OwnAudioConverter.companion(of:)`),
+    /// which is of no use without it.
     static func removeSources(of conversions: [Conversion]) throws {
         for conversion in conversions {
+            if let companion = OwnAudioConverter.companion(of: conversion.source) {
+                try FileManager.default.removeItem(at: companion)
+            }
             try FileManager.default.removeItem(at: conversion.source)
         }
     }
@@ -1189,6 +1455,13 @@ enum ImportAudioConverter {
                 at: destination.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
+            // A companion (a WavPack correction file) is kept beside its file, under its own name.
+            if let companion = OwnAudioConverter.companion(of: conversion.source) {
+                try FileManager.default.moveItem(
+                    at: companion,
+                    to: destination.deletingLastPathComponent().appendingPathComponent(companion.lastPathComponent)
+                )
+            }
             try FileManager.default.moveItem(at: conversion.source, to: destination)
         }
     }
@@ -1207,7 +1480,7 @@ enum ImportAudioConverter {
         where (try? file.resourceValues(forKeys: [.isRegularFileKey]))?.isRegularFile == true {
             files.append(file)
         }
-        return files.sorted {
+        return files.sortedStably {
             AudioBookParser.relativeName(of: $0, in: keptFolder).localizedStandardCompare(
                 AudioBookParser.relativeName(of: $1, in: keptFolder)
             ) == .orderedAscending

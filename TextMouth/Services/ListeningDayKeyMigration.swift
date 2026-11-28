@@ -188,7 +188,7 @@ struct ListeningDayKeyMigration {
         var outcome = Outcome()
         // In key order, so the seconds of keys naming one day are always
         // added in the same order.
-        for (key, seconds) in dailyListeningSeconds.sorted(by: { $0.key < $1.key }) {
+        for (key, seconds) in dailyListeningSeconds.sortedStably(by: { $0.key < $1.key }) {
             let migratedKey: String
             if key.hasPrefix(Self.legacyKeyPrefix) {
                 // Kept by an earlier migration, before a version that does

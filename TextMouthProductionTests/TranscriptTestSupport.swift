@@ -159,7 +159,7 @@ extension XCTestCase {
 /// ignores (the DAISY audio books, downloaded separately); nil when
 /// neither has it. The archive is only ever read.
 func testDataArchiveIfPresent(_ name: String) -> URL? {
-    let ownCopy = URL(fileURLWithPath: testFilePath(name))
+    let ownCopy = URL(fileURLWithPath: dataFilePath(name))
     let mainCheckoutCopy = mainCheckoutRoot(of: thisCheckoutRoot).map {
         $0.appendingPathComponent("TestData", isDirectory: true).appendingPathComponent(name)
     }
@@ -168,9 +168,24 @@ func testDataArchiveIfPresent(_ name: String) -> URL? {
     return [ownCopy, mainCheckoutCopy].compactMap { $0 }.first { FileManager.default.fileExists(atPath: $0.path) }
 }
 
+/// The ZIP archives in the `HumanFiles` folder the user keeps private samples
+/// in, from this checkout's or, from a linked worktree, the main checkout's
+/// (the folder is gitignored, so only the main checkout has it); empty when
+/// neither has one. The archives are only ever read, in place.
+func humanFilesArchivesIfPresent() -> [URL] {
+    let roots = [thisCheckoutRoot] + [mainCheckoutRoot(of: thisCheckoutRoot)].compactMap { $0 }
+    for root in roots {
+        let folder = root.appendingPathComponent("HumanFiles", isDirectory: true)
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []
+        let archives = names.filter { $0.lowercased().hasSuffix(".zip") }.sorted().map { folder.appendingPathComponent($0) }
+        if !archives.isEmpty { return archives }
+    }
+    return []
+}
+
 /// The root of the checkout this file was compiled in: the folder two
-/// levels above this source file, where `testFileURL` in
-/// LegacyScenarioHarness.swift finds TestData.
+/// levels above this source file, where `dataFileURL` in
+/// TestDataFiles.swift finds TestData.
 private let thisCheckoutRoot = URL(fileURLWithPath: #filePath)
     .deletingLastPathComponent()
     .deletingLastPathComponent()

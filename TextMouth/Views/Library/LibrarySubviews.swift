@@ -1,6 +1,230 @@
 import Combine
 import SwiftUI
 
+// MARK: - Wording
+
+/// The words of the Library list's bars and rows (FR34): the edit bar, the
+/// time-remaining bar, the breadcrumbs, and a book row's labels and menu. The
+/// words that say how many are whole sentences with their own plural forms.
+enum LibrarySubviewWording {
+    // MARK: Edit bar
+
+    /// The edit bar's count of books selected, as it shows it.
+    static func selectedOf(selected: Int, total: Int) -> String {
+        // Translators: Text of the edit bar in the Library list: how many of the listed books are selected. %1$lld is the number selected. %2$lld is how many books are listed.
+        InterfaceText.line("librarySubview.selectedOf", "\(number: selected) of \(number: total) selected")
+    }
+
+    /// What the edit bar's selection button says while some books are not selected.
+    static var selectAll: String {
+        // Translators: Button of the edit bar that selects every listed book.
+        InterfaceText.line("common.selectAll", "Select All")
+    }
+
+    /// What the edit bar's selection button says once every book is selected.
+    static var deselectAll: String {
+        // Translators: Button of the edit bar that deselects every book.
+        InterfaceText.line("librarySubview.deselectAll", "Deselect All")
+    }
+
+    /// What VoiceOver calls the selection button once every book is selected.
+    static var deselectAllBooks: String {
+        // Translators: Spoken label of the edit bar's button that deselects every book.
+        InterfaceText.line("librarySubview.deselectAllBooks", "Deselect all books")
+    }
+
+    /// What VoiceOver calls the selection button while books are listed.
+    static func selectAllLabel(count: Int) -> String {
+        // Translators: Spoken label of the edit bar's button that selects every listed book. %lld is how many books are listed.
+        InterfaceText.line("librarySubview.selectAllLabel", "Select all \(number: count) books")
+    }
+
+    /// What VoiceOver calls the selection button while no book is listed.
+    static var selectAllBooks: String {
+        // Translators: Spoken label of the edit bar's button that selects every listed book, while no book is listed and the button is dimmed.
+        InterfaceText.line("librarySubview.selectAllBooks", "Select all books")
+    }
+
+    /// What VoiceOver calls the edit bar's Move button.
+    static func moveToFolderLabel(count: Int) -> String {
+        // Translators: Spoken label of the edit bar's Move button. %lld is how many books are selected.
+        InterfaceText.line("librarySubview.moveToFolderLabel", "Move \(number: count) books to folder")
+    }
+
+    /// What VoiceOver calls the edit bar.
+    static func editModeLabel(selected: Int, total: Int) -> String {
+        total == 1
+            // Translators: Spoken label of the edit bar when one book is listed. %1$lld is how many are selected, 0 or 1. %2$lld is how many are listed, 1.
+            ? InterfaceText.line("librarySubview.editModeLabel.book", "Edit mode, \(number: selected) of \(number: total) book selected")
+            // Translators: Spoken label of the edit bar when several books, or none, are listed. %1$lld is how many are selected. %2$lld is how many are listed.
+            : InterfaceText.line("librarySubview.editModeLabel.books", "Edit mode, \(number: selected) of \(number: total) books selected")
+    }
+
+    // MARK: Time remaining bar
+
+    /// The bar's time left, as it shows it.
+    static func remaining(_ time: String) -> String {
+        // Translators: Text of the time bar under the Library list: the time left to read the listed books. %@ is a time, such as 3:20:00.
+        InterfaceText.line("common.valueRemaining", "\(time) remaining")
+    }
+
+    /// The bar's count of books not opened yet, as it shows it.
+    static func notYetOpened(count: Int) -> String {
+        // Translators: Text of the time bar: how many listed books have not been opened, so their time is unknown. The parentheses are part of the text. %lld is the number of books.
+        InterfaceText.line("librarySubview.notYetOpened", "(\(number: count) books not yet opened)")
+    }
+
+    /// The time left, as the bar's spoken label says it.
+    static func totalRemaining(_ time: String) -> String {
+        // Translators: Part of the time bar's spoken label: the time left for the listed books at the reading speed now set. %@ is a spoken time, such as 3 hours 20 minutes.
+        InterfaceText.line("librarySubview.totalRemaining", "\(time) total remaining at current speed")
+    }
+
+    /// The books not opened yet, as the bar's spoken label says it.
+    static func notBeenOpened(count: Int) -> String {
+        // Translators: Part of the time bar's spoken label: how many listed books have not been opened. %lld is the number of books.
+        InterfaceText.line("librarySubview.notBeenOpened", "\(number: count) books have not been opened yet")
+    }
+
+    /// The bar's visible count of books in the cloud.
+    static func inCloud(count: Int) -> String {
+        // Translators: Text of the time bar: how many listed books are only in the cloud, not downloaded. %lld is the number of books.
+        InterfaceText.line("librarySubview.inCloud", "\(number: count) books in the cloud")
+    }
+
+    /// The bar's visible count of books kept on this Mac.
+    static func keptOnThisMac(count: Int) -> String {
+        // Translators: Text of the time bar: how many listed books are kept downloaded on this Mac. %lld is the number of books.
+        InterfaceText.line("librarySubview.keptOnThisMac", "\(number: count) books kept on this Mac")
+    }
+
+    /// The bar's spoken count of books in the cloud.
+    static func spokenInCloud(count: Int) -> String {
+        // Translators: Part of the time bar's spoken label: how many listed books are only in the cloud. %lld is the number of books.
+        InterfaceText.line("librarySubview.spokenInCloud", "\(number: count) books are in the cloud")
+    }
+
+    /// The bar's spoken count of books kept on this Mac.
+    static func spokenKept(count: Int) -> String {
+        // Translators: Part of the time bar's spoken label: how many listed books are kept downloaded on this Mac. %lld is the number of books.
+        InterfaceText.line("librarySubview.spokenKept", "\(number: count) books are kept on this Mac")
+    }
+
+    // MARK: Breadcrumbs
+
+    /// What VoiceOver calls the breadcrumb that goes to the library's top level.
+    static var navigateToLibraryRoot: String {
+        // Translators: Spoken label of the first breadcrumb button, which goes to the library's top level.
+        InterfaceText.line("librarySubview.navigateToLibraryRoot", "Navigate to library root")
+    }
+
+    /// What VoiceOver calls a breadcrumb that goes to a folder.
+    static func navigateTo(_ folderName: String) -> String {
+        // Translators: Spoken label of a breadcrumb button that goes to a folder. %@ is the folder's name.
+        InterfaceText.line("librarySubview.navigateTo", "Navigate to \(folderName)")
+    }
+
+    // MARK: Rows
+
+    /// What VoiceOver says a folder's row does.
+    static var opensTheFolder: String {
+        // Translators: Hint of a folder's row in the Library list.
+        InterfaceText.line("librarySubview.opensTheFolder", "Opens the folder.")
+    }
+
+    /// What VoiceOver says a book's row does.
+    static var opensTheBook: String {
+        // Translators: Hint of a book's row in the Library list.
+        InterfaceText.line("librarySubview.opensTheBook", "Opens the book.")
+    }
+
+    /// What VoiceOver says a book's row does in edit mode, while it is not selected.
+    static var selectsThisBook: String {
+        // Translators: Hint of a book's row in the Library list in edit mode, while the book is not selected.
+        InterfaceText.line("librarySubview.selectsThisBook", "Selects this book.")
+    }
+
+    /// What VoiceOver says a book's row does in edit mode, while it is selected.
+    static var deselectsThisBook: String {
+        // Translators: Hint of a book's row in the Library list in edit mode, while the book is selected.
+        InterfaceText.line("librarySubview.deselectsThisBook", "Deselects this book.")
+    }
+
+    /// The badge on a book never opened.
+    static var new: String {
+        // Translators: Badge on a book's row in the Library list: the book has never been opened.
+        InterfaceText.line("librarySubview.newBadge", "New")
+    }
+
+    /// The badge on the book open in a window.
+    static var nowReading: String {
+        // Translators: Badge on a book's row in the Library list: the book is open in a reader window now.
+        InterfaceText.line("librarySubview.nowReading", "Now Reading")
+    }
+
+    /// The row's first word while its book is selected, in edit mode.
+    static var selected: String {
+        // Translators: First part of a book's spoken row label in edit mode, when the book is selected.
+        InterfaceText.line("librarySubview.selected", "Selected")
+    }
+
+    /// The row's author part.
+    static func byAuthor(_ author: String) -> String {
+        // Translators: Part of a book's spoken row label, after the title. %@ is the author's name, or Unknown.
+        InterfaceText.line("librarySubview.byAuthor", "by \(author)")
+    }
+
+    /// A reading progress spoken, "42 percent".
+    static func spokenPercent(_ percent: String) -> String {
+        // Translators: A book's reading progress as VoiceOver says it. %@ is a whole number, such as 42.
+        InterfaceText.line("librarySubview.spokenPercent", "\(percent) percent")
+    }
+
+    /// A reading progress spoken beside a download's percentage, "42 percent read".
+    static func percentRead(_ spokenProgress: String) -> String {
+        // Translators: A book's reading progress as VoiceOver says it when the row also says a download's percentage. %@ is the progress, such as 42 percent.
+        InterfaceText.line("librarySubview.percentRead", "\(spokenProgress) read")
+    }
+
+    /// The time left after the reading position, as the row shows it.
+    static func left(_ time: String) -> String {
+        // Translators: A book's time left to read, as its row shows it. %@ is a time, such as 16:00.
+        InterfaceText.line("common.valueLeft", "\(time) left")
+    }
+
+    // MARK: Row menu and actions
+
+    /// The row's menu item that moves a book one place up in a manual order.
+    static var moveUp: String {
+        // Translators: Menu item and VoiceOver action of a book's row that moves the book one place toward the top of an order the user arranges.
+        InterfaceText.line("common.moveUp", "Move Up")
+    }
+
+    /// The row's menu item that moves a book one place down in a manual order.
+    static var moveDown: String {
+        // Translators: Menu item and VoiceOver action of a book's row that moves the book one place toward the bottom of an order the user arranges.
+        InterfaceText.line("common.moveDown", "Move Down")
+    }
+
+    /// The row's menu item that opens the book.
+    static var open: String {
+        // Translators: Menu item of a book's row that opens the book in a reader window.
+        InterfaceText.line("common.open", "Open")
+    }
+
+    /// The row's menu item that shows the book's information.
+    static var bookInfo: String {
+        // Translators: Menu item of a book's row that opens the sheet with the book's information.
+        InterfaceText.line("common.bookInfo", "Book Info")
+    }
+
+    /// The row's menu item that starts edit mode with the book selected.
+    static var select: String {
+        // Translators: Menu item of a book's row that starts edit mode with the book selected.
+        InterfaceText.line("common.select", "Select")
+    }
+}
+
 // MARK: - Edit Mode Bar
 
 /// Toolbar shown at the top of the library when edit mode is active.
@@ -45,7 +269,7 @@ struct EditModeBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Text("\(selectedCount) of \(totalCount) selected")
+            Text(LibrarySubviewWording.selectedOf(selected: selectedCount, total: totalCount))
                 .font(.callout)
                 .fontWeight(.medium)
 
@@ -54,7 +278,7 @@ struct EditModeBar: View {
             // Select All, or Deselect All once every book listed is
             // selected; with no book listed, Select All, dimmed.
             let deselects = Self.offersDeselectAll(selectedCount: selectedCount, totalCount: totalCount)
-            Button(deselects ? "Deselect All" : "Select All") {
+            Button(deselects ? LibrarySubviewWording.deselectAll : LibrarySubviewWording.selectAll) {
                 if deselects {
                     onDeselectAll()
                 } else {
@@ -64,9 +288,9 @@ struct EditModeBar: View {
             .disabled(totalCount == 0)
             .accessibilityLabel(Self.selectAllLabel(selectedCount: selectedCount, totalCount: totalCount))
 
-            Button("Move") { onMove() }
+            Button(LibrarySheetWording.move) { onMove() }
                 .disabled(selectedCount == 0)
-                .accessibilityLabel("Move \(CountWording.books(selectedCount)) to folder")
+                .accessibilityLabel(LibrarySubviewWording.moveToFolderLabel(count: selectedCount))
 
             // Add to Reading List and Remove from Reading List (FR09),
             // dimmed while they would act on no book.
@@ -93,7 +317,7 @@ struct EditModeBar: View {
     /// "Edit mode, 2 of 5 books selected", the noun agreeing with the books
     /// listed (TODO A10; it said "0 of 1 books").
     nonisolated static func accessibilityLabel(selectedCount: Int, totalCount: Int) -> String {
-        "Edit mode, \(CountWording.part(selectedCount, of: totalCount, singular: "book", plural: "books")) selected"
+        LibrarySubviewWording.editModeLabel(selected: selectedCount, total: totalCount)
     }
 
     /// Whether the bar's selection button deselects: once every book listed
@@ -109,9 +333,9 @@ struct EditModeBar: View {
     /// books", dimmed, while none is listed.
     nonisolated static func selectAllLabel(selectedCount: Int, totalCount: Int) -> String {
         if offersDeselectAll(selectedCount: selectedCount, totalCount: totalCount) {
-            return "Deselect all books"
+            return LibrarySubviewWording.deselectAllBooks
         }
-        return totalCount > 0 ? "Select all \(CountWording.books(totalCount))" : "Select all books"
+        return totalCount > 0 ? LibrarySubviewWording.selectAllLabel(count: totalCount) : LibrarySubviewWording.selectAllBooks
     }
 }
 
@@ -149,13 +373,20 @@ struct TimeRemainingBar: View {
     /// alone. A feed's episodes and articles are never among `books`.
     var feedCount: Int = 0
 
+    /// The figures of the books' times left, kept between redraws: a redraw
+    /// when a reader moves estimates only the books readers have open
+    /// (`TimeRemainingTally`). Nothing in the bar depends on it but its speed.
+    @State private var tally = TimeRemainingTally()
+
     var body: some View {
-        let (time, known, unknown) = computeTimeRemaining()
-        if known > 0 || unknown > 0 || feedSummary != nil || feedCount > 0 {
+        let sum = tally.sum(of: books, wpm: wpm, livePositions: livePositions)
+        // Built once for the bar's text and its label.
+        let counted = countText
+        if sum.known > 0 || sum.unknown > 0 || feedSummary != nil || feedCount > 0 {
             HStack(spacing: 12) {
                 Label {
-                    if known > 0 {
-                        Text("\(TimeFormatting.format(time)) remaining")
+                    if sum.known > 0 {
+                        Text(LibrarySubviewWording.remaining(TimeFormatting.format(sum.time)))
                     }
                 } icon: {
                     Image(systemName: "clock")
@@ -163,8 +394,8 @@ struct TimeRemainingBar: View {
                 }
                 .font(.caption)
 
-                if unknown > 0 {
-                    Text("(\(CountWording.books(unknown)) not yet opened)")
+                if sum.unknown > 0 {
+                    Text(LibrarySubviewWording.notYetOpened(count: sum.unknown))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -189,7 +420,7 @@ struct TimeRemainingBar: View {
                         .foregroundColor(feedSummary.check.failed ? .red : .secondary)
                 }
 
-                Text(countText)
+                Text(counted)
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -197,7 +428,7 @@ struct TimeRemainingBar: View {
             .padding(.vertical, 6)
             .background(Color.secondary.opacity(0.08))
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(accessibilityLabel(time: time, known: known, unknown: unknown))
+            .accessibilityLabel(accessibilityLabel(for: sum, counting: counted))
             .accessibilityIdentifier(focusIdentifier ?? "")
             .background(
                 Group {
@@ -209,24 +440,6 @@ struct TimeRemainingBar: View {
         }
     }
 
-    /// The time left in `books` at `wpm`, each from its reader's live
-    /// position while that is newer than the library's, with how many books
-    /// have a known and an unknown time left.
-    private func computeTimeRemaining() -> (TimeInterval, Int, Int) {
-        var total: TimeInterval = 0
-        var known = 0
-        var unknown = 0
-        for book in books {
-            if let remaining = livePositions.applied(to: book).estimatedTimeRemaining(wpm: wpm) {
-                total += remaining
-                known += 1
-            } else {
-                unknown += 1
-            }
-        }
-        return (total, known, unknown)
-    }
-
     /// What the bar counts, shown and spoken alike: in a feed's folder, the
     /// feed's items in place of the books; elsewhere the books, the episodes
     /// and articles listed beside them, as Recently Opened and the Reading
@@ -236,20 +449,23 @@ struct TimeRemainingBar: View {
         feedSummary?.counts ?? CountWording.listItems(of: books, feeds: feedCount)
     }
 
-    private func accessibilityLabel(time: TimeInterval, known: Int, unknown: Int) -> String {
+    /// What VoiceOver says for the whole bar: the books counted as
+    /// `counting` says, then the time left in `sum`, the books not yet
+    /// opened, and where books are kept.
+    private func accessibilityLabel(for sum: TimeRemainingTally.Sum, counting countText: String) -> String {
         var parts: [String] = []
         parts.append(countText)
-        if known > 0 {
-            parts.append("\(TimeFormatting.spoken(time)) total remaining at current speed")
+        if sum.known > 0 {
+            parts.append(LibrarySubviewWording.totalRemaining(TimeFormatting.spoken(sum.time)))
         }
-        if unknown > 0 {
-            parts.append("\(CountWording.phrase(unknown, singular: "book has", plural: "books have")) not been opened yet")
+        if sum.unknown > 0 {
+            parts.append(LibrarySubviewWording.notBeenOpened(count: sum.unknown))
         }
         if booksInCloud > 0 {
-            parts.append(Self.spokenCount(booksInCloud, "in the cloud"))
+            parts.append(LibrarySubviewWording.spokenInCloud(count: booksInCloud))
         }
         if booksKept > 0 {
-            parts.append(Self.spokenCount(booksKept, "kept on this Mac"))
+            parts.append(LibrarySubviewWording.spokenKept(count: booksKept))
         }
         if let feedSummary {
             parts.append(feedSummary.check.visible)
@@ -259,26 +475,20 @@ struct TimeRemainingBar: View {
 
     /// What VoiceOver says for the whole bar, as its body sets it.
     var summaryAccessibilityLabel: String {
-        let (time, known, unknown) = computeTimeRemaining()
-        return accessibilityLabel(time: time, known: known, unknown: unknown)
+        let sum = TimeRemainingTally.sum(of: books, wpm: wpm, livePositions: livePositions)
+        return accessibilityLabel(for: sum, counting: countText)
     }
 
     /// The bar's visible count of books in the cloud: "1 book in the cloud",
     /// "3 books in the cloud".
     static func cloudCountText(_ count: Int) -> String {
-        "\(CountWording.books(count)) in the cloud"
+        LibrarySubviewWording.inCloud(count: count)
     }
 
     /// The bar's visible count of books kept on this Mac: "1 book kept on
     /// this Mac", "3 books kept on this Mac".
     static func keptCountText(_ count: Int) -> String {
-        "\(CountWording.books(count)) kept on this Mac"
-    }
-
-    /// `count` books said to be somewhere, as the bar's label speaks it:
-    /// "1 book is in the cloud", "3 books are kept on this Mac".
-    private static func spokenCount(_ count: Int, _ place: String) -> String {
-        "\(CountWording.phrase(count, singular: "book is", plural: "books are")) \(place)"
+        LibrarySubviewWording.keptOnThisMac(count: count)
     }
 }
 
@@ -291,9 +501,9 @@ struct BreadcrumbBar: View {
 
     var body: some View {
         HStack {
-            Button("Library") { onNavigateRoot() }
+            Button(FolderNavigationWording.libraryName) { onNavigateRoot() }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Navigate to library root")
+                .accessibilityLabel(LibrarySubviewWording.navigateToLibraryRoot)
 
             let parts = path.components(separatedBy: "/")
             ForEach(Array(parts.enumerated()), id: \.offset) { index, part in
@@ -306,7 +516,7 @@ struct BreadcrumbBar: View {
                     onNavigate(subPath)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Navigate to \(part)")
+                .accessibilityLabel(LibrarySubviewWording.navigateTo(part))
             }
 
             Spacer()
@@ -362,7 +572,7 @@ struct FolderRow: View {
     /// What VoiceOver says the row does: its result, never a gesture or a
     /// key, since VoiceOver, a braille display, and the keyboard each do it
     /// their own way (TODO A10; it said "Double-tap to open folder").
-    nonisolated static let accessibilityHint = "Opens the folder."
+    nonisolated static var accessibilityHint: String { LibrarySubviewWording.opensTheFolder }
 
     /// What the row shows after the folder's name: its books counted, "12
     /// books", with the feeds below it beside them, "3 books, 2 feeds", or
@@ -380,7 +590,7 @@ struct FolderRow: View {
     /// row counts them, "Planet Money, Feed, 10 of 381 episodes listed, 3
     /// downloaded", never its downloads as books (FR03).
     static func accessibilityLabel(name: String, bookCount: Int, feedCounts: FeedItemCounts?, feedsBelow: Int = 0) -> String {
-        guard let feedCounts else { return "\(name), \(countText(bookCount: bookCount, feedCounts: nil, feedsBelow: feedsBelow))" }
+        guard let feedCounts else { return SentenceWording.commaJoined([name, countText(bookCount: bookCount, feedCounts: nil, feedsBelow: feedsBelow)]) }
         return FeedWording.folderAnnouncement(name: name, counts: feedCounts)
     }
 }
@@ -389,6 +599,11 @@ struct FolderRow: View {
 
 struct BookRow: View {
     let book: Book
+    /// The title the row shows and speaks in place of the book's own, as
+    /// the Leading articles setting has the Library show titles while
+    /// sorting passes over articles ("Hobbit, The"); nil, the default,
+    /// shows the book's title as written. The book keeps its title.
+    var shownTitle: String? = nil
     var isOpenInWindow: Bool = false
     var wpm: Double = 200
     var isEditMode: Bool = false
@@ -455,6 +670,11 @@ struct BookRow: View {
         livePosition.applied(to: book)
     }
 
+    /// The title the row shows and speaks: `shownTitle`, or the book's own.
+    private var title: String {
+        shownTitle ?? book.title
+    }
+
     var body: some View {
         let _ = ViewBodyCounter.record("BookRow")
         HStack(spacing: 8) {
@@ -468,11 +688,11 @@ struct BookRow: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(book.title)
+                    Text(title)
                         .font(.headline)
 
                     if book.isUnopened {
-                        Text("New")
+                        Text(LibrarySubviewWording.new)
                             .font(.caption2)
                             .fontWeight(.semibold)
                             .padding(.horizontal, 5)
@@ -481,7 +701,7 @@ struct BookRow: View {
                             .foregroundColor(.white)
                             .cornerRadius(3)
                     } else if isOpenInWindow {
-                        Text("Now Reading")
+                        Text(LibrarySubviewWording.nowReading)
                             .font(.caption2)
                             .fontWeight(.semibold)
                             .padding(.horizontal, 5)
@@ -501,13 +721,18 @@ struct BookRow: View {
                         BookKeptNote()
                     }
 
+                    // "Locked": the book has a password and is not open (FR41).
+                    if book.isLockedForDisplay {
+                        RowNoteBadge(symbolName: "lock.fill", text: ProtectionWording.lockedState)
+                    }
+
                     // "Transcribed" or "Transcribing", after the cloud notes (FR05).
                     if let transcriptionNote {
                         RowNoteBadge(symbolName: transcriptionNote.symbolName, text: transcriptionNote.text)
                     }
                 }
                 HStack {
-                    Text(book.author)
+                    Text(Book.displayAuthor(book.author))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
 
@@ -566,8 +791,8 @@ struct BookRow: View {
     /// it their own way (TODO A10; it said "Double-tap to select" and "Press
     /// Enter to open, Command I for info").
     nonisolated static func accessibilityHint(isEditMode: Bool, isEditSelected: Bool) -> String {
-        guard isEditMode else { return "Opens the book." }
-        return isEditSelected ? "Deselects this book." : "Selects this book."
+        guard isEditMode else { return LibrarySubviewWording.opensTheBook }
+        return isEditSelected ? LibrarySubviewWording.deselectsThisBook : LibrarySubviewWording.selectsThisBook
     }
 
     /// The names of the row's own VoiceOver actions, in the order VoiceOver
@@ -585,29 +810,36 @@ struct BookRow: View {
         return names.flatMap { $0 }
     }
 
-    /// Spoken label for the whole row, replacing its combined children.
+    /// Spoken label for the whole row, replacing its combined children: it
+    /// begins with the title as the row shows it, so VoiceOver and a braille
+    /// display read what the row shows.
     var rowAccessibilityLabel: String {
         var parts: [String] = []
         if isEditMode && isEditSelected {
-            parts.append("Selected")
+            parts.append(LibrarySubviewWording.selected)
         }
-        parts.append(book.title)
-        parts.append("by \(book.author)")
+        parts.append(title)
+        parts.append(LibrarySubviewWording.byAuthor(Book.displayAuthor(book.author)))
         // Right after the title and author, so a book in the reading list
         // says so in the same place on every row (FR09).
         if isInReadingList {
             parts.append(ReadingListWording.inReadingListNote)
         }
         if book.isUnopened {
-            parts.append("New")
+            parts.append(LibrarySubviewWording.new)
         } else if isOpenInWindow {
-            parts.append("Now Reading")
+            parts.append(LibrarySubviewWording.nowReading)
         }
         if let cloudNote = cloudState?.spokenNote {
             parts.append(cloudNote)
         }
         if isKeptOnThisMac {
             parts.append(KeptOnThisMacNote.text)
+        }
+        // A protected book says so, after its title and notes, so it is not
+        // opened by surprise (FR41).
+        if book.isLockedForDisplay {
+            parts.append(ProtectionWording.lockedState)
         }
         if let transcriptionNote {
             parts.append(transcriptionNote.text)
@@ -639,7 +871,7 @@ struct BookRow: View {
         }
         guard let percent = book.percentComplete else { return nil }
         let wholePercent = String(format: "%.0f", percent)
-        return (visible: "\(wholePercent)%", spoken: "\(wholePercent) percent")
+        return (visible: "\(wholePercent)%", spoken: LibrarySubviewWording.spokenPercent(wholePercent))
     }
 
     /// The reading progress as the row's label speaks it: "42 percent", or
@@ -649,7 +881,7 @@ struct BookRow: View {
     /// no progress.
     nonisolated static func spokenProgress(for book: Book, besideDownloadPercentage: Bool) -> String? {
         guard let progress = progressText(for: book) else { return nil }
-        return besideDownloadPercentage && !book.restsAtEnd ? "\(progress.spoken) read" : progress.spoken
+        return besideDownloadPercentage && !book.restsAtEnd ? LibrarySubviewWording.percentRead(progress.spoken) : progress.spoken
     }
 
     /// The time left after the reading position that the row shows and
@@ -666,7 +898,7 @@ struct BookRow: View {
     /// row, and a feed item's row for the place kept after its file went
     /// (FR11, `FeedKeptProgress`).
     nonisolated static func remainingText(_ remaining: TimeInterval) -> (visible: String, spoken: String) {
-        (visible: "\(TimeFormatting.format(remaining)) left", spoken: LibraryInfoWording.remaining(remaining))
+        (visible: LibrarySubviewWording.left(TimeFormatting.format(remaining)), spoken: LibraryInfoWording.remaining(remaining))
     }
 }
 
@@ -678,9 +910,9 @@ struct BookRow: View {
 /// it.
 struct LibraryManualMove: Identifiable, Equatable {
     /// Move Up: one place toward the top of the order.
-    static let up = LibraryManualMove(title: "Move Up", direction: -1)
+    static var up: LibraryManualMove { LibraryManualMove(title: LibrarySubviewWording.moveUp, direction: -1) }
     /// Move Down: one place toward the bottom of the order.
-    static let down = LibraryManualMove(title: "Move Down", direction: 1)
+    static var down: LibraryManualMove { LibraryManualMove(title: LibrarySubviewWording.moveDown, direction: 1) }
 
     /// The move's name in the row's context menu and its VoiceOver actions.
     let title: String
@@ -794,6 +1026,10 @@ struct LibraryBookRowActions {
 struct LibraryBookListRow: View, Equatable {
     /// The row's book.
     let book: Book
+    /// The title the row shows and speaks in place of the book's own while
+    /// the Leading articles setting has titles shown with their articles
+    /// after them ("Hobbit, The"); nil shows the title as written.
+    var shownTitle: String? = nil
     /// Whether a reader window has the book open.
     let isOpenInWindow: Bool
     /// The speed the time left is figured at.
@@ -850,6 +1086,7 @@ struct LibraryBookListRow: View, Equatable {
     /// Whether two rows show the same thing: every input but `actions`.
     nonisolated static func == (lhs: LibraryBookListRow, rhs: LibraryBookListRow) -> Bool {
         lhs.book == rhs.book
+            && lhs.shownTitle == rhs.shownTitle
             && lhs.isOpenInWindow == rhs.isOpenInWindow
             && lhs.wpm == rhs.wpm
             && lhs.isEditMode == rhs.isEditMode
@@ -873,6 +1110,7 @@ struct LibraryBookListRow: View, Equatable {
         let _ = ViewBodyCounter.record("LibraryBookListRow")
         BookRow(
             book: book,
+            shownTitle: shownTitle,
             isOpenInWindow: isOpenInWindow,
             wpm: wpm,
             isEditMode: isEditMode,
@@ -914,15 +1152,15 @@ struct LibraryBookListRow: View, Equatable {
         let isMulti = targets.count > 1
 
         if !isMulti {
-            Button("Open") {
+            Button(LibrarySubviewWording.open) {
                 actions.open(book)
             }
-            Button("Book Info") {
+            Button(LibrarySubviewWording.bookInfo) {
                 actions.showInfo(book)
             }
         }
         if !isEditMode {
-            Button("Select") {
+            Button(LibrarySubviewWording.select) {
                 actions.select(book)
             }
         }

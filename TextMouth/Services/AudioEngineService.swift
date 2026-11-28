@@ -61,7 +61,7 @@ extension SpeechRenderSignature: CustomStringConvertible {
     /// hash, then the voice.
     var description: String {
         let hash = String(UInt(bitPattern: textHash), radix: 16)
-        return "\(textUTF16Length) UTF-16 units #\(hash), voice \(voiceIdentifier ?? "default")"
+        return "\(textUTF16Length) UTF-16 units #\(hash), voice \(voiceIdentifier ?? "default")" // l10n: no (debug and transition log text, which stays English)
     }
 }
 
@@ -87,39 +87,6 @@ struct SpeechRenderRequest: Sendable {
         self.text = text
         self.voice = voice
         signature = SpeechRenderSignature(text: text, voiceIdentifier: voice?.identifier)
-    }
-}
-
-/// Hears, on whatever thread the synthesizer calls it, that a render's
-/// synthesizer cancelled its utterance, and wakes the render queue, which
-/// waits for the utterance's last piece of audio. An utterance the engine
-/// refuses (see `SpeechMarkupGuard`) is cancelled before any piece, so
-/// nothing else would wake the queue until its two-minute limit: measured
-/// offline, a refused write made no buffer callback at all, and was
-/// cancelled within 0.03 s.
-///
-/// It is Sendable, as every delegate of a synthesizer is (the SDK marks
-/// `AVSpeechSynthesizerDelegate` `NS_SWIFT_SENDABLE`), and the compiler
-/// checks that it is: a final class whose only state is a semaphore and a
-/// flag kept in an `OSAllocatedUnfairLock`, both Sendable and never
-/// replaced.
-final class RenderCancellationObserver: NSObject, AVSpeechSynthesizerDelegate {
-    /// The render queue's wait for the last piece.
-    private let finished: DispatchSemaphore
-    /// Whether the synthesizer cancelled the utterance.
-    private let cancelled = OSAllocatedUnfairLock(initialState: false)
-
-    /// An observer that signals `finished` once the synthesizer cancels.
-    init(waking finished: DispatchSemaphore) {
-        self.finished = finished
-    }
-
-    /// Whether the synthesizer cancelled the utterance.
-    var wasCancelled: Bool { cancelled.withLock { $0 } }
-
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
-        cancelled.withLock { $0 = true }
-        finished.signal()
     }
 }
 
@@ -398,7 +365,7 @@ extension RenderedSpeechAudio {
             guard let format,
                   pieceFormat.sampleRate == format.sampleRate,
                   pieceFormat.channelCount == format.channelCount else {
-                failure = "a piece in \(pieceFormat) among audio in \(format.map { "\($0)" } ?? "no standard format")"
+                failure = "a piece in \(pieceFormat) among audio in \(format.map { "\($0)" } ?? "no standard format")" // l10n: no (debug and transition log text, which stays English)
                 return
             }
             let channelCount = Int(format.channelCount)
@@ -427,7 +394,7 @@ extension RenderedSpeechAudio {
                     }
                 }
             } else {
-                failure = "a piece of samples neither 32-bit floats nor 16-bit integers: \(pieceFormat)"
+                failure = "a piece of samples neither 32-bit floats nor 16-bit integers: \(pieceFormat)" // l10n: no (debug and transition log text, which stays English)
             }
         }
 
@@ -836,7 +803,14 @@ private final class RenderedSpeechFeeder: @unchecked Sendable {
 /// the node's report that a segment played back hops to the main queue,
 /// reading only the test hook `_segmentPlayedBackForTesting` first.
 final class AudioEngineService: ObservableObject, @unchecked Sendable {
-    private var engine = AVAudioEngine()
+    /// The audio engine, built with its node graph at the first thing that
+    /// needs one (`engine`), or nil until then. A look-ahead only renders
+    /// and lends its audio to the speech service's engine, so it never
+    /// builds one (audit C8).
+    private var builtEngine: AVAudioEngine?
+    /// How many engine graphs this service has built: 0 or 1. Lets a test
+    /// show that a service which only rendered, or lent its audio, built none.
+    private(set) var _engineBuildCountForTesting = 0
     private let playerNode: AVAudioPlayerNode
     private var timePitch = AVAudioUnitTimePitch()
     /// Feeds each play to `playerNode` a few slices at a time.
@@ -887,6 +861,17 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     var onPlaybackFinished: (() -> Void)?
     var renderWPM: Double = 350.0
 
+    #if os(iOS)
+    /// Called on the main queue when the engine stopped itself over a change of
+    /// hardware format, with a play under way, paused or not
+    /// (`AVAudioEngineConfigurationChangeNotification`): the speech service
+    /// plays on from its place, a natural break.
+    var onConfigurationChange: (() -> Void)?
+    /// The observation of this engine's configuration changes, removed as the
+    /// service goes.
+    private var configurationObservation: EngineNotificationObservation?
+    #endif
+
     /// Silence padding appended to rendered buffers (in seconds).
     /// The AVAudioUnitTimePitch node buffers audio internally — when the
     /// playerNode finishes and fires .dataPlayedBack, the timePitch may
@@ -910,8 +895,15 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// competing with the direct-mode synthesizer for system TTS resources
     /// and causing delays. Its ticket identifies the render to its own
     /// completion (`claimRenderCompletion(for:)`).
-    private var currentRender: (synth: AVSpeechSynthesizer, ticket: RenderTicket)?
+    private var currentRender: (writer: any SpeechBufferWriting, ticket: RenderTicket)?
     private let renderLock = NSLock()
+
+    /// Makes the synthesizer one write of a render uses, a fresh one each
+    /// time: the Mac's own (`AVSpeechBufferWriter`) in the app, the same the
+    /// speech export writes with, and a scripted writer in tests, which
+    /// replay what a real synthesizer did without a voice
+    /// (`SpeechWriteTrace`).
+    private let makeWriter: @Sendable () -> any SpeechBufferWriting
 
     /// Where a render's job runs, off the main thread: the global queue in
     /// the app; a test passes a queue of its own, held until it lets it go.
@@ -923,25 +915,77 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     ///     many of them.
     ///   - slicesAhead: How many slices of a play stand scheduled at a time.
     ///   - renderQueue: Where a render's job runs.
+    ///   - makeWriter: Makes the synthesizer each write of a render uses.
     init(
         sliceFrameCount: Int = AudioEngineService.defaultSliceFrameCount,
         slicesAhead: Int = AudioEngineService.defaultSlicesAhead,
-        renderQueue: DispatchQueue = .global(qos: .userInitiated)
+        renderQueue: DispatchQueue = .global(qos: .userInitiated),
+        makeWriter: @escaping @Sendable () -> any SpeechBufferWriting = { AVSpeechBufferWriter() }
     ) {
+        self.makeWriter = makeWriter
         let node = AVAudioPlayerNode()
         playerNode = node
         feeder = RenderedSpeechFeeder(node: node, sliceFrameCount: sliceFrameCount, slicesAhead: slicesAhead)
         self.renderQueue = renderQueue
-        setupEngine()
+        timePitch.rate = 1.0
     }
 
-    private func setupEngine() {
+    /// The audio engine, with the player node and time-pitch unit attached
+    /// and connected, built on first use. Everything that only needs to know
+    /// whether the engine runs reads `builtEngine` instead, so that stopping
+    /// or asking never builds one.
+    private var engine: AVAudioEngine {
+        if let builtEngine { return builtEngine }
+        let engine = AVAudioEngine()
+        builtEngine = engine
+        _engineBuildCountForTesting += 1
+        setupEngine(engine)
+        #if os(iOS)
+        observeConfigurationChanges(of: engine)
+        #endif
+        // The tracked volume holds from the first play on, set before the
+        // graph existed.
+        engine.mainMixerNode.outputVolume = currentVolume
+        return engine
+    }
+
+    /// Builds the engine graph now, if it is not built. The speech service
+    /// calls this as it makes its own engine, while direct speech already
+    /// speaks, so that the first seek, resume, or chapter handoff onto the
+    /// engine does not wait for the build (PERF08: 142 ms, 2.5 s cold). A
+    /// look-ahead never calls it.
+    func prepareGraph() {
+        _ = engine
+    }
+
+    /// Whether the engine is built and running; false, without building one,
+    /// when it is not built.
+    private var engineIsRunning: Bool { builtEngine?.isRunning ?? false }
+
+    /// Stops the engine if it is built and running; nothing otherwise.
+    private func stopEngineIfRunning() {
+        if let builtEngine, builtEngine.isRunning { builtEngine.stop() }
+    }
+
+    /// Stops the player node and ends the play being fed. A service whose
+    /// engine was never built has nothing playing and its node is attached
+    /// to nothing, so it is left alone.
+    private func stopPlayerNodeIfBuilt() {
+        if builtEngine != nil { feeder.stopNode() }
+    }
+
+    private func setupEngine(_ engine: AVAudioEngine) {
         engine.attach(playerNode)
         engine.attach(timePitch)
         let defaultFormat = AVAudioFormat(standardFormatWithSampleRate: 22050, channels: 1)!
+        #if os(iOS)
+        // A play connects the nodes again in its own format, so a failure here
+        // costs nothing but its log line.
+        _ = connectNodes(format: defaultFormat, for: "the engine's setup") // l10n: no (debug and transition log text, which stays English)
+        #else
         engine.connect(playerNode, to: timePitch, format: defaultFormat)
         engine.connect(timePitch, to: engine.mainMixerNode, format: defaultFormat)
-        timePitch.rate = 1.0
+        #endif
     }
 
     // MARK: - Rendering (AVSpeechSynthesizer.write)
@@ -950,10 +994,10 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// compete with direct-mode TTS for system resources.
     func cancelRender() {
         renderLock.lock()
-        let synth = currentRender?.synth
+        let writer = currentRender?.writer
         currentRender = nil
         renderLock.unlock()
-        synth?.stopSpeaking(at: .immediate)
+        writer?.stop()
         isRendering = false
     }
 
@@ -1023,6 +1067,10 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         renderedSignature = nil
         // Render at 0.7 rate (~457 WPM empirically) for a good balance of speed and quality
         renderWPM = 457.0
+        #if os(iOS)
+        // Read here, on the main thread, for the render queue's pace line.
+        let assumedRenderWPM = renderWPM
+        #endif
 
         renderQueue.async { [weak self] in
             // An engine let go of before its render began renders nothing,
@@ -1079,9 +1127,9 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
                     completion(false)
                 }
             }
-            // A render that timed out may still be writing pieces, so its
-            // builder is left alone; one the synthesizer cancelled holds at
-            // most part of the speech, which the frame map could not fit.
+            // A render that timed out holds only part of the speech, as does
+            // one the synthesizer cancelled, which the frame map could not
+            // fit; no piece reaches the builder after the write's wait.
             guard written.isComplete else {
                 reportFailure()
                 return
@@ -1103,6 +1151,22 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
                 return
             }
             let completedMap = Self.frameMap(utf16Length: text.utf16Length, speechFrameCount: audio.speechFrameCount)
+            #if os(iOS)
+            // The rate table and the 457 words a minute assumed here were
+            // measured on a Mac; what a phone's voices do is unknown. Counted
+            // here, on the render queue, and logged as numbers alone.
+            let renderedWords = PhoneAudioPace.wordCount(in: text)
+            let pace = PhoneAudioPace.description(
+                words: renderedWords,
+                seconds: Double(audio.speechFrameCount) / format.sampleRate,
+                expectedWordsPerMinute: assumedRenderWPM
+            )
+            DiagnosticLog.event(
+                .playback,
+                "RENDER_PACE: \(pace) sampleRate=\(Int(format.sampleRate)) channels=\(format.channelCount)",
+                in: .speechTransitions
+            )
+            #endif
 
             DispatchQueue.main.async {
                 // Recheck ownership on the queue that installs the audio.
@@ -1156,7 +1220,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
     /// On the render queue: write `spokenText` in `voice` with a fresh
     /// synthesizer, required for write()'s reliability, and wait for its
-    /// last piece, its cancel, or two minutes. The synthesizer is held as
+    /// finish, its cancel, or two minutes (`waitForWrite`). The synthesizer is held as
     /// the engine's current render under `ticket`, so that `cancelRender()`
     /// can stop it. A retry (`asRetry`) writes nothing once the engine has
     /// let go of the render (`RenderWrite.notWritten`), which it checks as
@@ -1167,11 +1231,11 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         for ticket: RenderTicket,
         asRetry: Bool
     ) -> RenderWrite {
-        let renderSynth = AVSpeechSynthesizer()
+        let writer = makeWriter()
         renderLock.lock()
         let letGoAlready = asRetry && currentRender?.ticket !== ticket
         if !letGoAlready {
-            currentRender = (renderSynth, ticket)
+            currentRender = (writer, ticket)
         }
         renderLock.unlock()
         guard !letGoAlready else { return .notWritten }
@@ -1182,36 +1246,104 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         utterance.prefersAssistiveTechnologySettings = false
 
         // Each piece is copied into the audio's blocks as it arrives,
-        // so no piece outlives the callback that delivers it.
+        // so no piece outlives the callback that delivers it. The delivery
+        // hands pieces to the builder only until the write ends, so the
+        // builder is this queue's alone once the wait below returns.
         let builder = RenderedSpeechAudio.Builder()
         let semaphore = DispatchSemaphore(value: 0)
-        // A cancel wakes the wait too: the synthesizer's delegate is
-        // weak, so the observer is held here until the wait returns.
-        let cancellation = RenderCancellationObserver(waking: semaphore)
-        renderSynth.delegate = cancellation
-
-        renderSynth.write(utterance) { buffer in
-            guard let pcm = buffer as? AVAudioPCMBuffer else { return }
-            if pcm.frameLength > 0 {
-                builder.append(pcm)
-            } else {
+        let clock = SystemSpeechBufferSynthesizer.defaultClock
+        clock.hold()
+        defer { clock.release() }
+        let delivery = SpeechBufferDelivery(onBuffer: { builder.append($0) }, waking: semaphore, clock: clock)
+        // The synthesizer's finish, not an empty buffer, ends the write: an
+        // empty buffer ends only one of its segments, about a sentence
+        // (`SpeechWriteRelay`). A cancel wakes the wait too.
+        let cancelled = OSAllocatedUnfairLock(initialState: false)
+        writer.start(
+            utterance,
+            onBuffer: { buffer in delivery.deliver(buffer) },
+            onFinish: { semaphore.signal() },
+            onCancel: {
+                cancelled.withLock { $0 = true }
                 semaphore.signal()
             }
-        }
+        )
 
-        let result = semaphore.wait(timeout: .now() + 120)
-        renderSynth.delegate = nil
+        // A render the engine lets go of ends its wait at once: on macOS 27
+        // `stopSpeaking(at:)` does not stop a write (it returns false and
+        // the buffers go on to the utterance's end), so neither a cancel nor
+        // a finish would come before the whole chapter was written, and the
+        // render coordinator's queue would hold the next render meanwhile.
+        let delivered = Self.waitForWrite(
+            waking: semaphore,
+            delivery: delivery,
+            limit: Self.renderWriteLimit,
+            quietAfterSegmentEnd: SpeechBufferDelivery.quietAfterSegmentEnd,
+            isLetGo: { self.hasLetGo(of: ticket) }
+        )
+        // However the wait ended, no piece reaches the builder after it.
+        delivery.end()
+        // The writer lives until the wait is over, or the finish it relays
+        // would never come.
+        withExtendedLifetime(writer) {}
 
-        // Whether this render was let go of while the write was waited for.
-        renderLock.lock()
-        let wasLetGo = currentRender?.ticket !== ticket
-        renderLock.unlock()
         return RenderWrite(
             builder: builder,
-            deliveredItsLastPiece: result == .success,
-            wasLetGo: wasLetGo,
-            synthesizerCancelled: cancellation.wasCancelled
+            deliveredItsLastPiece: delivered,
+            // Whether this render was let go of while the write was waited for.
+            wasLetGo: hasLetGo(of: ticket),
+            synthesizerCancelled: cancelled.withLock { $0 }
         )
+    }
+
+    /// Whether the engine has let go of the render `ticket` identifies, by
+    /// cancelling it or beginning another; read under `renderLock`, from any
+    /// thread.
+    private func hasLetGo(of ticket: RenderTicket) -> Bool {
+        renderLock.lock()
+        defer { renderLock.unlock() }
+        return currentRender?.ticket !== ticket
+    }
+
+    /// The longest a render's write is waited for, in seconds.
+    static let renderWriteLimit: TimeInterval = 120
+
+    /// How often a render's wait looks at the quiet after a segment's end
+    /// and at whether the engine let go of the render, in seconds.
+    private static let renderWaitSlice: TimeInterval = 0.25
+
+    /// On the render queue: wait for a write's end, and say whether the
+    /// synthesizer delivered its last piece: `semaphore` signalled (the
+    /// synthesizer's finish or cancel), or `quietAfterSegmentEnd` seconds
+    /// with nothing after a segment's end, the fallback for a synthesizer
+    /// that never reports its finish. False after `limit` seconds, and
+    /// within a slice of `isLetGo` turning true: the synthesizer goes on
+    /// writing a render it was told to stop, so only this ends its wait.
+    ///
+    /// - Parameters:
+    ///   - semaphore: Signalled at the synthesizer's finish and its cancel.
+    ///   - delivery: The write's delivery, which knows when its latest
+    ///     segment ended.
+    ///   - limit: The longest wait, in seconds.
+    ///   - quietAfterSegmentEnd: The quiet after a segment's end that counts
+    ///     as the write's end, in seconds.
+    ///   - isLetGo: Whether the engine has let go of the render.
+    /// - Returns: Whether the write ended within `limit`, its engine still
+    ///   holding it.
+    static func waitForWrite(
+        waking semaphore: DispatchSemaphore,
+        delivery: SpeechBufferDelivery,
+        limit: TimeInterval,
+        quietAfterSegmentEnd: TimeInterval,
+        isLetGo: () -> Bool
+    ) -> Bool {
+        let deadline = DispatchTime.now() + limit
+        while semaphore.wait(timeout: min(deadline, .now() + renderWaitSlice)) == .timedOut {
+            if isLetGo() { return false }
+            if delivery.endIfQuietAfterSegmentEnd(limit: quietAfterSegmentEnd) { return true }
+            if DispatchTime.now() >= deadline { return false }
+        }
+        return true
     }
 
     /// The map from offsets into a text `charCount` UTF-16 units long to
@@ -1255,13 +1387,26 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     func play(fromCharOffset charOffset: Int = 0) {
         guard let audio = renderedAudio else { return }
 
+        // The first play builds the engine graph; the player node must be
+        // attached to it before it is stopped and scheduled.
+        _ = engine
         feeder.stopNode()
+        #if os(iOS)
+        guard connectNodes(format: audio.format, for: "a play") else { // l10n: no (debug and transition log text, which stays English)
+            // Nothing plays, and the caller, which checks `isPlaying`, goes on
+            // another way.
+            isPlaying = false
+            isPaused = false
+            return
+        }
+        #else
         engine.disconnectNodeOutput(playerNode)
         engine.disconnectNodeOutput(timePitch)
         engine.connect(playerNode, to: timePitch, format: audio.format)
         engine.connect(timePitch, to: engine.mainMixerNode, format: audio.format)
+        #endif
 
-        guard startEngineIfStopped(for: "a play") else { return }
+        guard startEngineIfStopped(for: "a play") else { return } // l10n: no (debug and transition log text, which stays English)
 
         // Re-apply the tracked volume after engine start. The
         // stop→reconnect→start cycle during chapter transitions can
@@ -1278,12 +1423,16 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// the failure is logged with `purpose`, "a play" or "a resume"
     /// (`AUDIO_ENGINE_START_FAILED`), and the caller then plays nothing.
     private func startEngineIfStopped(for purpose: String) -> Bool {
-        guard !engine.isRunning else { return true }
+        guard !engineIsRunning else { return true }
         do {
             if _refusesToStartForTesting {
                 throw CocoaError(.featureUnsupported)
             }
+            #if os(iOS)
+            try startEngineCatchingExceptions()
+            #else
             try engine.start()
+            #endif
             return true
         } catch {
             // The system error's words, never book text.
@@ -1367,6 +1516,18 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
             isPaused: isPaused,
             reachedSegmentEnd: knownToHaveReachedItsEnd || pausedAtSegmentEnd
         )
+        #if os(iOS)
+        // An engine that stopped itself, over a change of hardware format or
+        // an interruption, plays nothing more, and a report that reaches the
+        // main queue now is no end of the chapter: the speech service plays on
+        // from its place, or the next Play starts cold. Taken for the end, the
+        // engine's silence would start the next chapter.
+        if outcome == .finishedPlayback, !knownToHaveReachedItsEnd, !engineIsRunning {
+            DiagnosticLog.trace(.playback, "speech audio end ignored: the engine stopped itself before the report arrived")
+            _segmentEndHandledForTesting?(.ignoredShortOfTheEnd)
+            return .ignoredShortOfTheEnd
+        }
+        #endif
         switch outcome {
         case .finishedPlayback:
             isPlaying = false
@@ -1428,8 +1589,8 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     func stopAfterFadePreservingPosition() -> Int {
         let offset = currentCharOffset()
         playbackGeneration += 1
-        feeder.stopNode()
-        if engine.isRunning { engine.stop() }
+        stopPlayerNodeIfBuilt()
+        stopEngineIfRunning()
         segmentStartFrame = frameForCharOffset(offset)
         isPlaying = false
         isPaused = false
@@ -1453,7 +1614,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         // A player node cannot resume while its containing engine is stopped.
         // This state can arise after the Mac sleeps for several hours even
         // though our scheduled slices and logical pause state remain intact.
-        guard startEngineIfStopped(for: "a resume") else { return false }
+        guard startEngineIfStopped(for: "a resume") else { return false } // l10n: no (debug and transition log text, which stays English)
 
         // Engine restarts can reset mixer state, so preserve the user's
         // current volume just as the normal play path does.
@@ -1484,8 +1645,8 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
     func stop() {
         playbackGeneration += 1  // Invalidate pending completion handlers
-        feeder.stopNode()
-        if engine.isRunning { engine.stop() }
+        stopPlayerNodeIfBuilt()
+        stopEngineIfRunning()
         isPlaying = false
         isPaused = false
     }
@@ -1539,17 +1700,18 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
     func setVolume(_ volume: Float) {
         currentVolume = max(0.0, min(volume, 1.0))
-        engine.mainMixerNode.outputVolume = currentVolume
+        // An engine not yet built takes the volume when it is built.
+        builtEngine?.mainMixerNode.outputVolume = currentVolume
     }
 
     func restoreVolume() {
         currentVolume = 1.0
-        engine.mainMixerNode.outputVolume = 1.0
+        builtEngine?.mainMixerNode.outputVolume = 1.0
     }
 
     /// Intended and effective mixer volume. Internal visibility supports
     /// hosted verification of fade persistence without exposing engine nodes.
-    var outputVolume: Float { engine.mainMixerNode.outputVolume }
+    var outputVolume: Float { builtEngine?.mainMixerNode.outputVolume ?? currentVolume }
     var intendedVolume: Float { currentVolume }
 
     /// The speed and pitch the time-pitch unit applies to rendered audio as it
@@ -1564,7 +1726,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         guard let audio = renderedAudio else { return }
         let wasPlaying = isPlaying && !isPaused
 
-        feeder.stopNode()
+        stopPlayerNodeIfBuilt()
 
         if wasPlaying {
             scheduleAndPlay(audio, fromCharOffset: charOffset)
@@ -1654,6 +1816,132 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         totalFrames = other.totalFrames
         renderWPM = other.renderWPM
     }
+
+    #if os(iOS)
+    // MARK: - The iPhone's Engine
+
+    /// Connects the player to the time-pitch unit and that to the mixer, in
+    /// `format`, catching the exception AVFAudio raises for a format the
+    /// hardware can't take, which Swift cannot catch and which would end the
+    /// app (the engineer's review, F6). A failure is logged as the start's
+    /// failure is (`AUDIO_ENGINE_START_FAILED`), naming `purpose`.
+    ///
+    /// - Returns: Whether the nodes are connected.
+    private func connectNodes(format: AVAudioFormat, for purpose: String) -> Bool {
+        let engine = self.engine
+        let playerNode = self.playerNode
+        let timePitch = self.timePitch
+        guard let exception = ObjCException.catching({
+            engine.disconnectNodeOutput(playerNode)
+            engine.disconnectNodeOutput(timePitch)
+            engine.connect(playerNode, to: timePitch, format: format)
+            engine.connect(timePitch, to: engine.mainMixerNode, format: format)
+        }) else { return true }
+        DiagnosticLog.event(
+            .playback,
+            "AUDIO_ENGINE_START_FAILED: could not connect for \(purpose): "
+                + ObjCException.logLine(tag: "AUDIO_ENGINE_EXCEPTION", for: exception),
+            in: .speechTransitions
+        )
+        return false
+    }
+
+    /// Starts the engine, turning the exception AVFAudio raises for a broken
+    /// precondition (an output that went away, an interrupted session) into a
+    /// thrown error, which `startEngineIfStopped(for:)` logs as it logs any
+    /// failure to start (F6).
+    private func startEngineCatchingExceptions() throws {
+        let engine = self.engine
+        var startError: Error?
+        if let exception = ObjCException.catching({
+            do {
+                try engine.start()
+            } catch {
+                startError = error
+            }
+        }) {
+            throw EngineException(line: ObjCException.logLine(tag: "AUDIO_ENGINE_EXCEPTION", for: exception))
+        }
+        if let startError { throw startError }
+    }
+
+    /// An exception AVFAudio raised, as an error whose description is its log
+    /// line.
+    private struct EngineException: LocalizedError {
+        /// `ObjCException.logLine(tag:for:)`'s line for it.
+        let line: String
+        var errorDescription: String? { line }
+    }
+
+    /// Pauses the engine itself, and not only its player node, so that no
+    /// audio runs while the iPhone's session is let go: deactivating with I/O
+    /// running fails with `IsBusy` (`AVAudioSession.h:247-254`) and other apps'
+    /// audio is never told to resume (the engineer's review, F8). The play and
+    /// its place are kept; `resume()` starts the engine again
+    /// (`startEngineIfStopped(for:)`), though the reader's next Play starts cold.
+    func pauseEngine() {
+        guard let engine = builtEngine, engine.isRunning else { return }
+        if let exception = ObjCException.catching({ engine.pause() }) {
+            DiagnosticLog.event(
+                .playback,
+                ObjCException.logLine(tag: "AUDIO_ENGINE_EXCEPTION", for: exception),
+                in: .speechTransitions
+            )
+        }
+    }
+
+    /// Observes this engine's configuration changes. Each engine is its own
+    /// notification's `object`, and there can be two at once, the speech
+    /// service's and the look-ahead's (the engineer's review, F5).
+    private func observeConfigurationChanges(of engine: AVAudioEngine) {
+        configurationObservation = EngineNotificationObservation(
+            NotificationCenter.default.addObserver(
+                forName: .AVAudioEngineConfigurationChange,
+                object: engine,
+                queue: nil,
+                using: Self.configurationChangeHandler(for: self)
+            )
+        )
+    }
+
+    /// The block the notification center calls for a configuration change,
+    /// made here, outside any instance method, as `NowPlayingService` makes its
+    /// command handlers (`NowPlayingService.swift:798-805`).
+    ///
+    /// The header says the callback "happens on an internal dispatch queue",
+    /// where the engine "must not be deallocated" (`AVAudioEngine.h:885-895`).
+    /// So the block does nothing there but hand the change to the main queue,
+    /// asynchronously, holding the service weakly and never reading it on that
+    /// queue. Given the main queue as its queue instead, the notification
+    /// center would make the engine's queue wait for the main thread, which
+    /// stops and starts this very engine in answer: two waits on each other.
+    private static func configurationChangeHandler(
+        for service: AudioEngineService
+    ) -> @Sendable (Notification) -> Void {
+        let handOver: @Sendable () -> Void = { [weak service] in
+            service?.engineConfigurationChanged()
+        }
+        return { _ in
+            DispatchQueue.main.async(execute: handOver)
+        }
+    }
+
+    /// On the main queue: the engine stopped itself over a change of hardware
+    /// format. A play under way ends here: whatever the player node reports of
+    /// it from now on is stale, so its silence is never taken for the chapter's
+    /// end, and the speech service plays on from its place
+    /// (`onConfigurationChange`).
+    private func engineConfigurationChanged() {
+        DiagnosticLog.event(
+            .playback,
+            "AUDIO_ENGINE_CONFIGURATION_CHANGED: running=\(engineIsRunning) playing=\(isPlaying) paused=\(isPaused)",
+            in: .speechTransitions
+        )
+        guard isPlaying else { return }
+        playbackGeneration += 1
+        onConfigurationChange?()
+    }
+    #endif
 
     // MARK: - Mapping
 
@@ -1787,7 +2075,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
     /// resume does when the engine must start again
     /// (`startEngineIfStopped(for:)`).
     func _stopEngineOnlyForTesting() {
-        if engine.isRunning { engine.stop() }
+        stopEngineIfRunning()
     }
 
     /// Runs the same interpolation used by production seeking.
@@ -1834,3 +2122,21 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
     deinit { stop() }
 }
+
+#if os(iOS)
+/// Holds a block observer's token and removes the observer as it goes, so
+/// that `AudioEngineService`'s observation ends with the service, its deinit
+/// unchanged.
+private final class EngineNotificationObservation {
+    /// The token `addObserver(forName:object:queue:using:)` returned.
+    private let token: NSObjectProtocol
+
+    init(_ token: NSObjectProtocol) {
+        self.token = token
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(token)
+    }
+}
+#endif

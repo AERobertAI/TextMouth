@@ -486,7 +486,7 @@ final class BrailleImportTests: XCTestCase {
         try assertRefused(
             url,
             saying: "Could not import “catalog.xml”. Checking its format failed: This XML file is not a DTBook book, "
-                + "a Word 2003 XML document, or a PEF braille file, the kinds of XML file TextMouth reads.")
+                + "a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.")
     }
 
     // MARK: - The Format
@@ -514,7 +514,7 @@ final class BrailleImportTests: XCTestCase {
         XCTAssertEqual(BookFormat.detect(from: xml), .braille)
         XCTAssertEqual(XMLDocumentSniffer.bookFormat(ofFileAt: xml), .braille)
         XCTAssertEqual(BookFormat.braille.displayName, "Braille")
-        XCTAssertEqual(BookFormat.braille.fileExtensions, ["brf", "brl", "pef"])
+        XCTAssertEqual(BookFormat.braille.fileExtensions, ["brf", "brl", "pef", "bopf"])
     }
 
     /// The kind of braille file is told by extension: BRL, PEF (and XML),

@@ -40,11 +40,11 @@ final class BookExportConvertToTests: XCTestCase {
         )
         XCTAssertEqual(
             BookExportWording.hint(for: .markdown, convertedTo: "HTML"),
-            "The book's text as HTML, made from the Markdown TextMouth reads it from."
+            "The book's text as HTML, made from its Markdown."
         )
         XCTAssertEqual(
             BookExportWording.hint(for: .markdown, convertedTo: "Word 97-2003 (.doc)"),
-            "The book's text as Word 97-2003 (.doc), made from the Markdown TextMouth reads it from."
+            "The book's text as Word 97-2003 (.doc), made from its Markdown."
         )
         // Without a conversion, and for a kind that converts nothing, every
         // word is today's.
@@ -52,10 +52,15 @@ final class BookExportConvertToTests: XCTestCase {
             XCTAssertEqual(BookExportWording.name(of: kind, convertedTo: nil), BookExportWording.name(of: kind))
             XCTAssertEqual(BookExportWording.hint(for: kind, convertedTo: nil), BookExportWording.hint(for: kind))
             if !kind.convertsText {
-                XCTAssertEqual(BookExportWording.name(of: kind, convertedTo: "HTML"), BookExportWording.name(of: kind))
                 XCTAssertEqual(BookExportWording.hint(for: kind, convertedTo: "HTML"), BookExportWording.hint(for: kind))
             }
+            // The headings are always written in a format, which their name
+            // says (FMT24).
+            if !kind.convertsText && !kind.writesChapterList {
+                XCTAssertEqual(BookExportWording.name(of: kind, convertedTo: "HTML"), BookExportWording.name(of: kind))
+            }
         }
+        XCTAssertEqual(BookExportWording.name(of: .headings, convertedTo: "CUE sheet"), "Headings as CUE sheet")
     }
 
     /// A converted checkbox's label names the conversion and says no size (a
@@ -134,7 +139,8 @@ final class BookExportConvertToTests: XCTestCase {
                 BookExportConversionChoice(
                     id: "doc",
                     name: "Word 97-2003 (.doc)",
-                    hint: "Word 97-2003 document. Its headings are plain text, so Word's navigation pane does not list them."
+                    hint: "Word 97-2003 document. Its headings are plain text, so Word's navigation pane omits "
+                              + "them."
                 ),
             ]
         )
@@ -143,7 +149,9 @@ final class BookExportConvertToTests: XCTestCase {
             Array(choices.dropFirst()),
             TextExportWriters.all.map { BookExportConversionChoice(id: $0.id, name: $0.name, hint: $0.hint) }
         )
-        for kind in BookExportKind.allCases where kind != .markdown {
+        // The headings' and bookmarks' pickers list the chapter list formats
+        // (FMT24, FMT06).
+        for kind in BookExportKind.allCases where kind != .markdown && kind != .transcript && !kind.writesChapterList {
             XCTAssertEqual(model.conversionChoices(for: kind), [], "\(kind) has no picker")
         }
     }
@@ -176,7 +184,7 @@ final class BookExportConvertToTests: XCTestCase {
         XCTAssertEqual(model.label(for: markdownChoice), "Text as HTML", "a conversion says no size")
         XCTAssertEqual(
             model.hint(for: .markdown),
-            "The book's text as HTML, made from the Markdown TextMouth reads it from."
+            "The book's text as HTML, made from its Markdown."
         )
 
         model.setConversionID("markdown", for: .markdown)
@@ -317,7 +325,7 @@ final class BookExportConvertToTests: XCTestCase {
             destination: try makeSandboxDirectory("Export Convert Drawn Folder")
         )
 
-        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 3 }) { hostingView in
+        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 4 }) { hostingView in
             XCTAssertEqual(popUps(in: hostingView).count, 0, "Text as Markdown is unchecked: no picker")
 
             model.setChecked(true, for: .markdown)
@@ -381,14 +389,14 @@ final class BookExportConvertToTests: XCTestCase {
             writers: [OptionsTestWriter()]
         )
 
-        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 3 }) { hostingView in
+        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 4 }) { hostingView in
             model.setChecked(true, for: .markdown)
             XCTAssertTrue(waitUntil(timeout: 5) {
                 hostingView.layoutSubtreeIfNeeded()
                 return self.popUps(in: hostingView).count == 1
             }, "checking the kind draws the picker")
             let withMarkdown = checkboxes(in: hostingView).count
-            XCTAssertEqual(withMarkdown, 3, "Markdown has no options to draw")
+            XCTAssertEqual(withMarkdown, 4, "Markdown has no options to draw")
 
             model.setConversionID("options-test", for: .markdown)
             XCTAssertTrue(waitUntil(timeout: 5) {
@@ -420,7 +428,7 @@ final class BookExportConvertToTests: XCTestCase {
             announcements.stop()
         }
 
-        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 3 }) { hostingView in
+        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 4 }) { hostingView in
             model.setChecked(false, for: .originalFile)
             model.setChecked(true, for: .markdown)
             model.setConversionID("options-test", for: .markdown)
@@ -471,7 +479,7 @@ final class BookExportConvertToTests: XCTestCase {
         let announcements = AnnouncementCapture()
         defer { announcements.stop() }
 
-        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 3 }) { hostingView in
+        withHostedView(BookExportSheet(model: model, close: {}), until: { self.checkboxes(in: $0).count == 4 }) { hostingView in
             model.setChecked(false, for: .originalFile)
             model.setChecked(true, for: .markdown)
             model.setConversionID("options-test", for: .markdown)
@@ -577,6 +585,86 @@ final class BookExportConvertToTests: XCTestCase {
     /// The pop-up buttons SwiftUI drew inside `view`: the Convert to picker.
     private func popUps(in view: NSView) -> [NSPopUpButton] {
         descendants(of: view, as: NSPopUpButton.self)
+    }
+
+    // MARK: - Localized Export Words (FR34)
+
+    /// A number that names a thing is written as it is, and a count is
+    /// written for the region: bookmark 12345, chapter 12345, but 12,345
+    /// items in en_US, whichever way the region groups.
+    func testIdentifiersAreUngroupedAndCountsAreGrouped() {
+        XCTAssertEqual(BookExportWording.untitledBookmark(number: 12345), "Bookmark 12345")
+        XCTAssertTrue(BookExportWording.nestedTooDeeply(chapter: 12345, limit: 128).hasPrefix("Chapter 12345 of this book nests "))
+        XCTAssertEqual(BookExportWording.items(12345), "\(12345.formatted()) items")
+        XCTAssertEqual(BookExportWording.items(1), "1 item")
+        XCTAssertEqual(BookExportWording.title(bookTitles: Array(repeating: "A", count: 3)), "Export 3 Books")
+        XCTAssertEqual(BookExportWording.commandTitle(count: 3), "Export 3 Books…")
+        XCTAssertEqual(BookExportWording.commandTitle(count: 1), "Export…")
+    }
+
+    /// What an export says joins whole sentences, and a count of files or
+    /// books in a checkbox's label stays one phrase of its own.
+    func testAnExportsSentencesAndLabelsReadAsBefore() {
+        let failures = [
+            BookExportFailure(name: "a.txt", reason: "It broke."),
+            BookExportFailure(name: "b.txt", reason: "It broke too"),
+        ]
+        XCTAssertEqual(
+            BookExportWording.failureSentence(failures),
+            "Couldn't export 2 items: a.txt: It broke; b.txt: It broke too."
+        )
+        XCTAssertEqual(
+            BookExportWording.choiceLabel(
+                kind: .plainText, bookCount: 2, availableItemCount: 2, fileCount: 2, byteCount: 2_000, inCloudCount: 1
+            ),
+            "Text as plain text, 2 books, about \(ByteCountFormatter.string(fromByteCount: 2_000, countStyle: .file)), 1 book in the cloud"
+        )
+        XCTAssertEqual(
+            BookExportWording.choiceLabel(
+                kind: .audio, bookCount: 1, availableItemCount: 1, fileCount: 12, byteCount: 1_000_000, inCloudCount: 0
+            ),
+            "Audio, 12 files, \(ByteCountFormatter.string(fromByteCount: 1_000_000, countStyle: .file))"
+        )
+    }
+
+    /// The debug log never holds the interface language: a failure's log
+    /// reason is English, an error of TextMouth's own is named by its type,
+    /// and two failures that differ only in their log reason are equal.
+    func testAFailureWritesEnglishToTheLog() {
+        let own = BookExportFailure.logReason(of: ChapterListExportError.noHeadings)
+        XCTAssertTrue(own.hasSuffix("ChapterListExportError"), own)
+        XCTAssertFalse(own.contains(BookExportWording.noHeadingsReason))
+        let system = CocoaError(.fileWriteFileExists)
+        XCTAssertEqual(BookExportFailure.logReason(of: system), system.localizedDescription)
+        XCTAssertEqual(
+            BookExportFailure(name: "a", reason: "r"),
+            BookExportFailure(name: "a", reason: "r", logReason: "another")
+        )
+        XCTAssertEqual(BookExportFailure(name: "a", reason: "r").logReason, "r")
+        XCTAssertEqual(
+            BookExportFailure(
+                name: "a", reason: BookExportWording.noTimedTranscriptReason,
+                logReason: "the book has no timed transcript to write as captions"
+            ).logReason,
+            "the book has no timed transcript to write as captions"
+        )
+    }
+
+    /// The words an exported EPUB writes for its readers follow the
+    /// interface language, and so does the language code that marks them.
+    func testAnEPUBsOwnWordsAreInTheInterfaceLanguage() {
+        XCTAssertEqual(EPUBPackageBuilder.ownLanguage, Bundle.main.preferredLocalizations.first ?? "en")
+        XCTAssertEqual(BookExportWording.contentsHeading, "Contents")
+        XCTAssertEqual(BookExportWording.pagesHeading, "Pages")
+        XCTAssertEqual(EPUBPackageBuilder.untitled, "Untitled")
+    }
+
+    /// A braille cell's dots are said as a list in the region's own style
+    /// ("dots 1, 2, and 7" in en_US), each number written without grouping.
+    func testABrailleCellsDotsAreSaidAsAList() {
+        XCTAssertEqual(BrailleCells.dotsInWords(of: "\u{2840}"), "dot 7")
+        XCTAssertEqual(BrailleCells.dotsInWords(of: "\u{2848}"), "dots \(CountWording.list(["4", "7"]))")
+        XCTAssertEqual(BrailleCells.dotsInWords(of: "\u{2843}"), "dots \(CountWording.list(["1", "2", "7"]))")
     }
 }
 

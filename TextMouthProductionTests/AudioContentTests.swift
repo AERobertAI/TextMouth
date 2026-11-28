@@ -229,6 +229,12 @@ final class AudioContentTests: XCTestCase {
         XCTAssertTrue(ImportAudioConverter.playsAsIs(formatID: "aach", fileType: "mp4f"))
         XCTAssertTrue(ImportAudioConverter.playsAsIs(formatID: "aacp", fileType: "m4bf"))
         XCTAssertTrue(ImportAudioConverter.playsAsIs(formatID: "alac", fileType: "m4af"))
+        for bits in [16, 24, 32] {
+            XCTAssertTrue(ImportAudioConverter.playsAsIs(formatID: "alac", fileType: "m4af", bitsPerSample: bits), "\(bits)")
+        }
+        // Apple Lossless of a 20-bit source cannot be read by AVAssetReader: converted, never played as it is (B15).
+        XCTAssertFalse(ImportAudioConverter.playsAsIs(formatID: "alac", fileType: "m4af", bitsPerSample: 20))
+        XCTAssertFalse(ImportAudioConverter.playsAsIs(formatID: "alac", fileType: nil, bitsPerSample: 20))
         XCTAssertTrue(ImportAudioConverter.playsAsIs(formatID: ".mp3", fileType: "MPG3"))
         XCTAssertTrue(ImportAudioConverter.playsAsIs(formatID: "aac ", fileType: nil))
         for codec in ["ac-3", "ec-3", "opus", "flac", "samr", "lpcm", ".mp2", "ima4", "ulaw"] {

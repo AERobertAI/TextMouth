@@ -175,7 +175,7 @@ final class RecordingRecoveryTests: XCTestCase {
         XCTAssertEqual(harness.model.recoveredTakes.map(\.url), [kept])
         XCTAssertEqual(
             harness.announcements.sentences.last,
-            RecordingWording.recoveredDiscarded(RecordingWording.recoveredTake(startedAt: Self.recordedAt, duration: recovered.duration))
+            RecordingWording.recoveredDiscarded(startedAt: Self.recordedAt, duration: recovered.duration)
         )
         XCTAssertEqual(harness.saver.calls.count, 0)
     }
@@ -306,9 +306,10 @@ final class RecordingRecoveryTests: XCTestCase {
         XCTAssertEqual(RecordingWording.recoveredTake(startedAt: Self.recordedAt, duration: nil), "Recording of \(when), which holds no sound")
         XCTAssertEqual(RecordingWording.saveRecoveredLabel(take), "Save as Audiobook: \(take)")
         XCTAssertEqual(RecordingWording.discardRecoveredLabel(take), "Discard: \(take)")
-        XCTAssertEqual(RecordingWording.recoveredDiscarded(take), "Discarded the recording of \(when), 1 minute, 4 seconds.")
-        XCTAssertTrue(RecordingWording.recoveredAnnouncement(count: 1).hasPrefix("TextMouth kept a recording from before it last quit"))
-        XCTAssertTrue(RecordingWording.recoveredAnnouncement(count: 3).hasPrefix("TextMouth kept 3 recordings from before it last quit"))
+        XCTAssertEqual(RecordingWording.recoveredDiscarded(startedAt: Self.recordedAt, duration: 64.4), "Discarded the recording of \(when), 1 minute, 4 seconds.")
+        XCTAssertEqual(RecordingWording.recoveredDiscarded(startedAt: Self.recordedAt, duration: nil), "Discarded the recording of \(when), which holds no sound.")
+        XCTAssertTrue(RecordingWording.recoveredAnnouncement(count: 1).hasPrefix("Found a recording from before TextMouth last quit"))
+        XCTAssertTrue(RecordingWording.recoveredAnnouncement(count: 3).hasPrefix("Found 3 recordings from before TextMouth last quit"))
     }
 
     // MARK: - Helpers

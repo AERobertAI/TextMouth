@@ -583,6 +583,80 @@ final class DOCXPageTests: XCTestCase {
         XCTAssertEqual(reading.openings(words: 1), ["Intro", "Cell"])
     }
 
+    // MARK: Text Boxes
+
+    /// A run holding a text box (a legacy `w:pict`) of one paragraph reading `value`.
+    static func box(_ value: String) -> String {
+        run("<w:pict><w:txbxContent>" + plain(value) + "</w:txbxContent></w:pict>")
+    }
+
+    /// A page that waits begins at the first words written after it, the box's
+    /// when the paragraph that holds its anchor has none: a paragraph of only
+    /// a box, after a page break, is read under the page the break began.
+    func testAParagraphOfOnlyABoxBeginsThePageThatWaits() throws {
+        let body = [
+            Self.paragraph(Self.run(Self.text("page one text"), Self.pageBreak)),
+            Self.paragraph(Self.box("BOXPAGE2")),
+            Self.plain("later on page two"),
+        ]
+        let reading = try read(body: body)
+
+        XCTAssertEqual(reading.labels, ["1", "2"])
+        XCTAssertEqual(reading.openings(words: 1), ["page", "BOXPAGE2"])
+        XCTAssertEqual(reading.spoken, "page one text BOXPAGE2 later on page two")
+        try assertSameReading(reading, body: body)
+    }
+
+    /// The same when the page begins at the paragraph's own properties.
+    func testAParagraphOfOnlyABoxWithPageBreakBeforeBeginsItsPageAtTheBox() throws {
+        let body = [
+            Self.plain("one"),
+            Self.paragraph(Self.box("BOXPAGE2"), properties: "<w:pageBreakBefore/>"),
+            Self.plain("later"),
+        ]
+        let reading = try read(body: body)
+
+        XCTAssertEqual(reading.labels, ["1", "2"])
+        XCTAssertEqual(reading.openings(words: 1), ["one", "BOXPAGE2"])
+        try assertSameReading(reading, body: body)
+    }
+
+    /// A document that begins with a box, or holds nothing else, has its first
+    /// page marked before the box's words, not never.
+    func testABoxAtTheStartOfADocumentIsOnPageOne() throws {
+        let first = try read(body: [Self.paragraph(Self.box("BOX")), Self.plain("later")])
+        XCTAssertEqual(first.labels, ["1"])
+        XCTAssertEqual(first.openings(words: 1), ["BOX"])
+        XCTAssertEqual(first.spoken, "BOX later")
+
+        let only = try read(body: [Self.paragraph(Self.box("BOX"), Self.box("TWO"))])
+        XCTAssertEqual(only.labels, ["1"])
+        XCTAssertEqual(only.openings(words: 1), ["BOX"])
+        XCTAssertEqual(only.spoken, "BOX TWO")
+    }
+
+    /// A box after a paragraph that has words of its own stays after it: the
+    /// paragraph's words take the page. A box with no words takes none.
+    func testAPendingPageGoesToTheFirstWordsWrittenWhoseverTheyAre() throws {
+        let withWords = [
+            Self.paragraph(Self.run(Self.text("A"), Self.pageBreak, Self.text("B")), Self.box("BOX")),
+            Self.plain("C"),
+        ]
+        let reading = try read(body: withWords)
+        XCTAssertEqual(reading.labels, ["1", "2"])
+        XCTAssertEqual(reading.openings(words: 1), ["A", "B"])
+        XCTAssertEqual(reading.spoken, "A B BOX C")
+
+        let empty = [
+            Self.paragraph(Self.run(Self.text("A"), Self.pageBreak)),
+            Self.paragraph(Self.run("<w:pict><w:txbxContent>" + Self.paragraph() + "</w:txbxContent></w:pict>")),
+            Self.plain("later"),
+        ]
+        let emptyReading = try read(body: empty)
+        XCTAssertEqual(emptyReading.labels, ["1", "2"])
+        XCTAssertEqual(emptyReading.openings(words: 1), ["A", "later"])
+    }
+
     // MARK: Pages Not Included
 
     /// With `includesPages` false no marker is written and a page `w:br` is

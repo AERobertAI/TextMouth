@@ -70,7 +70,7 @@ struct AudioEditorLevels: Equatable, Sendable {
     /// tone sets it, as the research recommended.
     var pauseThreshold: Float {
         guard !decibels.isEmpty else { return -45 }
-        let sorted = decibels.map { max($0, -90) }.sorted()
+        let sorted = decibels.map { max($0, -90) }.sortedStably()
         let background = sorted[min(sorted.count - 1, sorted.count / 10)]
         return min(-30, max(-60, background + 15))
     }
@@ -172,7 +172,7 @@ struct AudioEditorLevels: Equatable, Sendable {
             AVSampleRateKey: rate,
         ])
         output.alwaysCopiesSampleData = false
-        guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") }
+        guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") } // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
         reader.add(output)
 
         // The reading thread hands back the levels, or the error, once; a
@@ -248,7 +248,7 @@ struct AudioEditorLevels: Equatable, Sendable {
             // A measurement cancelled before its reader starts never reads.
             guard !isCancelled else { return .failure(CancellationError()) }
             guard reader.startReading() else {
-                return .failure(AudioEditorLevels.failure(of: reader, otherwise: "no error was given"))
+                return .failure(AudioEditorLevels.failure(of: reader, otherwise: "no error was given")) // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
             }
 
             let rate = preview.sampleRate
@@ -283,7 +283,7 @@ struct AudioEditorLevels: Equatable, Sendable {
             }
             guard !isCancelled else { return .failure(CancellationError()) }
             guard reader.status == .completed else {
-                return .failure(AudioEditorLevels.failure(of: reader, otherwise: "the reader stopped"))
+                return .failure(AudioEditorLevels.failure(of: reader, otherwise: "the reader stopped")) // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
             }
             return .success(AudioEditorLevels(decibels: meter.finish(), duration: Double(preview.frames) / rate))
         }

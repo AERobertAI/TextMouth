@@ -113,6 +113,49 @@ final class FeedItemIndexMoveTests: FeedItemIndexTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
     }
 
+    /// A book whose own record says Move to Library… made it the library's
+    /// own stays a book where it is, though a feed's record still names it
+    /// as a download, as another Mac's record of the feed, written whole from
+    /// memory, can (risk 4 of the local-first research). The same book
+    /// without the note moves (`testTodaysDownloadMovesIntoItsFeedKeepingEverything`).
+    @MainActor
+    func testABookItsRecordSaysMovedToLibraryStaysWhereItIs() async throws {
+        let fixture = try makeUsersLibrary()
+        var record = fixture.article.makeBookInfo()
+        record.metadata.feedLink = fixture.link
+        record.metadata.movedToLibrary = Self.date(7_200)
+        try record.save(to: fixture.article.tmbDirectory)
+        let model = launchedModel()
+
+        let moved = await model.moveDownloadsIntoTheirFeeds(records: fixture.records)
+
+        XCTAssertEqual(moved, 0, "a stale record of the feed moved the library's own book into it")
+        let row = try XCTUnwrap(model.bookByID(fixture.article.id))
+        XCTAssertNil(row.feedLink)
+        XCTAssertEqual(row.folderPath, folderPath)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: fixture.article.bookFileURL.path))
+        XCTAssertTrue(model.downloadsToMoveIntoTheirFeeds(records: fixture.records).isEmpty)
+    }
+
+    /// A download whose record is only in the cloud, with its package, is
+    /// not moved on a guess: it stays a book until a launch can read its
+    /// record, which then moves it.
+    @MainActor
+    func testADownloadWhoseRecordIsOnlyInTheCloudWaitsForALaterLaunch() async throws {
+        let fixture = try makeUsersLibrary()
+        let model = launchedModel()
+        let cloud = FakeCloudFiles()
+        cloud.markDataless(TextMouthPaths.bookInfoPath(in: fixture.article.tmbDirectory))
+
+        let moved = await model.moveDownloadsIntoTheirFeeds(records: fixture.records, access: cloud.access)
+
+        XCTAssertEqual(moved, 0, "a download moved while its record could not be read")
+        XCTAssertNil(model.bookByID(fixture.article.id)?.feedLink)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: fixture.article.bookFileURL.path))
+        let movedLater = await model.moveDownloadsIntoTheirFeeds(records: fixture.records)
+        XCTAssertEqual(movedLater, 1, "a launch that reads the record moves the download")
+    }
+
     // MARK: - After an Older TextMouth
 
     /// An older TextMouth, which reads no feed index, marks a download it

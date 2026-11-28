@@ -154,6 +154,8 @@ final class RTFExportWriterTests: XCTestCase {
         XCTAssertTrue(lines.contains { $0.hasPrefix(#"\pard\plain\s1\sb240\sa120\keepn\outlinelevel0"#) && $0.contains(" Flat") })
     }
 
+    // Mac only: Apple's RTF reader and NSFont are the Mac's; the iPhone writes the same RTF and reads it back with TextMouth's own reader (below).
+    #if os(macOS)
     // MARK: - Read Back by Apple's Reader
 
     /// Apple's reader gives the fixture's words in the fixture's order, a
@@ -200,6 +202,7 @@ final class RTFExportWriterTests: XCTestCase {
         let link = read.attribute(.link, at: site.location, effectiveRange: nil)
         XCTAssertEqual((link as? URL)?.absoluteString ?? link as? String, "https://example.com/a")
     }
+    #endif
 
     // MARK: - Read Back by TextMouth's Own Reader
 
@@ -375,6 +378,8 @@ final class RTFExportWriterTests: XCTestCase {
         XCTAssertEqual(TextExportWriters.writer(id: "rtf")?.name, "RTF")
     }
 
+    // Mac only: Word 97-2003 needs AppKit's .docFormat, so the iPhone does not offer it.
+    #if os(macOS)
     // MARK: - Word 97-2003
 
     /// The file begins with the signature of a compound file, the container of Word 97-2003.
@@ -463,7 +468,7 @@ final class RTFExportWriterTests: XCTestCase {
         XCTAssertEqual(writer.fileExtension, "doc")
         XCTAssertEqual(
             writer.hint,
-            "Word 97-2003 document. Its headings are plain text, so Word's navigation pane does not list them."
+            "Word 97-2003 document. Its headings are plain text, so Word's navigation pane omits them."
         )
         // Tonight's writers come first, in the picker's order; writers added
         // later (braille's) follow them.
@@ -490,6 +495,7 @@ final class RTFExportWriterTests: XCTestCase {
             XCTAssertEqual(error.localizedDescription, "The book's text could not be made into a Word 97-2003 document.")
         }
     }
+    #endif
 
     // MARK: - Lists in Reading Order
 

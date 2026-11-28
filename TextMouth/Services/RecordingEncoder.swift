@@ -12,9 +12,11 @@ enum RecordingEncodingError: LocalizedError, Equatable, Sendable {
     var errorDescription: String? {
         switch self {
         case .unreadableTake:
-            return "The recording's audio couldn't be read."
+            // Translators: Error in the Record window when saving: the recorded take holds no audio that can be read.
+            return InterfaceText.line("recordingEncodingError.unreadableTake", "The recording's audio couldn't be read.")
         case .encodingFailed:
-            return "The recording couldn't be converted to an audiobook file."
+            // Translators: Error in the Record window when saving: the recording could not be encoded as an audiobook file.
+            return InterfaceText.line("recordingEncodingError.encodingFailed", "The recording couldn't be converted to an audiobook file.")
         }
     }
 }
@@ -112,7 +114,7 @@ enum RecordingEncoder {
         let input = AVAssetWriterInput(mediaType: .audio, outputSettings: settings)
         input.expectsMediaDataInRealTime = false
         guard writer.canAdd(input) else {
-            throw RecordingEncodingError.encodingFailed("the writer refused the audio input")
+            throw RecordingEncodingError.encodingFailed("the writer refused the audio input") // l10n: no (debug log text)
         }
         writer.add(input)
         writer.metadata = [titleItem(title)]
@@ -122,7 +124,7 @@ enum RecordingEncoder {
         }
         guard writer.startWriting() else {
             reader.cancelReading()
-            throw RecordingEncodingError.encodingFailed(writer.error.map(describe) ?? "the writer did not start")
+            throw RecordingEncodingError.encodingFailed(writer.error.map(describe) ?? "the writer did not start") // l10n: no (debug log text)
         }
         writer.startSession(atSourceTime: .zero)
         while let buffer = output.copyNextSampleBuffer() {
@@ -132,7 +134,7 @@ enum RecordingEncoder {
             guard input.append(buffer) else {
                 reader.cancelReading()
                 writer.cancelWriting()
-                throw RecordingEncodingError.encodingFailed(writer.error.map(describe) ?? "a sample was refused")
+                throw RecordingEncodingError.encodingFailed(writer.error.map(describe) ?? "a sample was refused") // l10n: no (debug log text)
             }
         }
         guard reader.status == .completed else {
@@ -142,7 +144,7 @@ enum RecordingEncoder {
         input.markAsFinished()
         await writer.finishWriting()
         guard writer.status == .completed else {
-            throw RecordingEncodingError.encodingFailed(writer.error.map(describe) ?? "the file was not finished")
+            throw RecordingEncodingError.encodingFailed(writer.error.map(describe) ?? "the file was not finished") // l10n: no (debug log text)
         }
     }
 

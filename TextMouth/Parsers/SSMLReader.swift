@@ -16,20 +16,57 @@ enum SSMLReader {
     // MARK: Failures
 
     /// Why an SSML file could not be read.
-    enum Failure: LocalizedError, Equatable {
+    enum Failure: LocalizedError, LogDescribing, Equatable {
         /// The file is XML but its root element is not `speak`; the name
         /// is the element's local name, without any prefix.
         case notSSML(rootElement: String)
         /// The file is not well-formed XML; `reason` completes the sentence
         /// as `PackageSAXParser` words it, with the position.
         case damaged(reason: String)
+        /// The file is not damaged, but TextMouth will not read it: it defines
+        /// entities of its own, or is written in an encoding the guard cannot
+        /// see through (`XMLInputGuard`).
+        case unsafe(XMLInputGuard.Problem)
 
         var errorDescription: String? {
             switch self {
             case .notSSML(let rootElement):
-                return "This file is not SSML: it begins with the element “\(rootElement)”, not “speak”."
+                // Translators: Why a file could not be imported as SSML (Speech Synthesis Markup Language): its first element is not speak. %@ is the name of the first element it has. SSML is a format's name.
+                return InterfaceText.line("failure.notSSML", "This file is not SSML: it begins with the element “\(rootElement)”, not “speak”.")
             case .damaged(let reason):
-                return "This SSML file is damaged or incomplete: \(reason)."
+                // Translators: Why an SSML (Speech Synthesis Markup Language) file could not be imported: it is damaged. %@ is the reason, a phrase in English that begins with a lowercase letter and has no full stop.
+                return InterfaceText.line("failure.damaged", "This SSML file is damaged or incomplete: \(reason).")
+            case .unsafe(.encoding(let name)):
+                return SentenceWording.joined([
+                    // Translators: First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it is in a text encoding TextMouth cannot see through. %@ is the encoding's name as the file declares it.
+                    InterfaceText.line("failure.unsafe.encoding", "TextMouth can't safely read this SSML file, because it is written in the \(name) encoding."),
+                    // Translators: Last sentence of why a file was refused because of its text encoding: what to do. UTF-8 is an encoding's name and stays as it is.
+                    InterfaceText.line("common.saveItAsUtf8ThenImport", "Save it as UTF-8, then import it again."),
+                ])
+            case .unsafe:
+                return SentenceWording.joined([
+                    // Translators: First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it defines XML entities of its own, which could make it far larger when read.
+                    InterfaceText.line("failure.unsafe.entities", "TextMouth can't safely read this SSML file, because it defines entities of its own."),
+                    // Translators: Last sentence of why an SSML file was refused because it defines entities of its own: what to do.
+                    InterfaceText.line("failure.unsafe.definitions", "Open it in a text editor, take the entity definitions out, save it, then import it again."),
+                ])
+            }
+        }
+
+        /// The failure in English for the debug log, which stays English
+        /// whatever language the interface speaks (FR34).
+        var logDescription: String {
+            switch self {
+            case .notSSML(let rootElement):
+                return "This file is not SSML: it begins with the element “\(rootElement)”, not “speak”." // l10n: no (debug log)
+            case .damaged(let reason):
+                return "This SSML file is damaged or incomplete: \(reason)." // l10n: no (debug log)
+            case .unsafe(.encoding(let name)):
+                return "TextMouth can't safely read this SSML file, because it is written in the \(name) encoding. " // l10n: no (debug log)
+                    + "Save it as UTF-8, then import it again." // l10n: no (debug log)
+            case .unsafe:
+                return "TextMouth can't safely read this SSML file, because it defines entities of its own. " // l10n: no (debug log)
+                    + "Open it in a text editor, take the entity definitions out, save it, then import it again." // l10n: no (debug log)
             }
         }
     }
@@ -59,22 +96,6 @@ enum SSMLReader {
         try outcome.get()
         let body = builder.paragraphs.map { "<p>\($0)</p>" }.joined()
         return "<html><body>\(body)</body></html>"
-    }
-
-    /// `text` with the characters HTML gives meaning to written as
-    /// character references, so words such as "a < b" stay words.
-    private static func escaped(_ text: String) -> String {
-        var result = ""
-        for character in text {
-            switch character {
-            case "&": result += "&amp;"
-            case "<": result += "&lt;"
-            case ">": result += "&gt;"
-            case "\"": result += "&quot;"
-            default: result.append(character)
-            }
-        }
-        return result
     }
 
     // MARK: HTML Builder
@@ -108,7 +129,10 @@ enum SSMLReader {
 
         /// Prepare to read `data`; a damaged file is `Failure.damaged`.
         init(data: Data) {
-            super.init(data: data, file: "SSML") { _, reason in Failure.damaged(reason: reason) }
+            super.init(
+                data: data, file: "SSML",
+                malformedXMLError: { _, reason in Failure.damaged(reason: reason) },
+                refusedXMLError: { _, problem in Failure.unsafe(problem) })
         }
 
         // MARK: Elements
@@ -156,7 +180,7 @@ enum SSMLReader {
                 // when there is no alias to speak.
                 let alias = (attributeDict["alias"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                 if !alias.isEmpty {
-                    current += SSMLReader.escaped(alias)
+                    current += XMLEscaping.markup(alias)
                     skipDepth = 1
                 }
             case "desc", "meta", "metadata", "lexicon":
@@ -210,7 +234,7 @@ enum SSMLReader {
         /// dropped element.
         private func write(_ text: String) {
             guard skipDepth == 0 else { return }
-            current += SSMLReader.escaped(text)
+            current += XMLEscaping.markup(text)
         }
 
         // MARK: Paragraphs

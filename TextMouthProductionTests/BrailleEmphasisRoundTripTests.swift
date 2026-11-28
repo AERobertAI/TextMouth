@@ -387,6 +387,8 @@ final class BrailleEmphasisRoundTripTests: XCTestCase {
 
     // MARK: - Tables liblouis Cannot Read Back
 
+    // Mac only: this Mac's own tables, which the iPhone does not have.
+    #if os(macOS)
     /// One of this Mac's tables liblouis cannot read back, uncontracted
     /// Norwegian, writes no emphasis either, and every word comes back. Skips
     /// on a Mac that does not offer it.
@@ -395,4 +397,5 @@ final class BrailleEmphasisRoundTripTests: XCTestCase {
                       "This Mac does not offer its uncontracted Norwegian table (\(BrailleTableCatalog.macTablesFolder.path))")
         try assertWritesNoEmphasis(norwegian)
     }
+    #endif
 }

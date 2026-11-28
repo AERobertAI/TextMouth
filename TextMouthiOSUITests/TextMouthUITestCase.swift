@@ -1,0 +1,797 @@
+import XCTest
+
+/// What every UI test of the iPhone app shares: a launch with a library of
+/// its own, a public-domain book sent to it as another app would send one,
+/// waits that each have a limit, what VoiceOver would be given read in order,
+/// and Apple's accessibility audit with every finding listed.
+///
+/// **Sound.** A test may press Play and type, as a person does, but the
+/// simulator plays through the Mac's speakers and the keyboard clicks, so such
+/// a test runs only where nobody is listening: on a GitHub runner. The runner's
+/// script (`Scripts/agents/run-ios-ui-tests.py`) alone sets
+/// `TEXTMOUTH_UI_SOUND` to 1 for the test run, and `requireSound` skips a test,
+/// saying why, when it isn't. On the development Mac every such test skips. The
+/// helpers that make sound (`pressPlay`, `pressPause`, `startSleepTimer`,
+/// `type`) ask first themselves, so a test that forgets still cannot make a
+/// sound there. Apple's iOS audits only inspect: the audit that weighs an
+/// element's actions exists on macOS alone (XCUIAccessibilityAuditTypes.h).
+@MainActor
+class TextMouthUITestCase: XCTestCase {
+    /// The longest any wait lasts: a small book's import and opening take a
+    /// few seconds, and a first launch in a fresh simulator takes longer.
+    static let patience: TimeInterval = 60
+
+    /// The book every test sends: Alice's Adventures in Wonderland, Project
+    /// Gutenberg #11, which the Mac's tests read too.
+    static let bookTitle = "Alice's Adventures in Wonderland"
+    /// Its author, as its row reads it.
+    static let bookAuthor = "Lewis Carroll"
+
+    // MARK: - Sound
+
+    /// The environment variable that lets a test make sound: it is 1 only in a
+    /// run the GitHub runner's script made.
+    static let soundVariable = "TEXTMOUTH_UI_SOUND"
+
+    /// Whether this run may make sound (play the book, type).
+    static var soundIsAllowed: Bool {
+        ProcessInfo.processInfo.environment[soundVariable] == "1"
+    }
+
+    /// The words every skip for sound has in its reason. The runner's script looks for them, since it sets the
+    /// variable: a test that says them there never got it, and the run is judged failed
+    /// (`SOUND_SKIP_MARKER` in Scripts/agents/run-ios-ui-tests.py is this text, and a test pins that they agree).
+    static let soundSkipMarker = "runs only on a GitHub runner"
+
+    /// Skips the test, saying why, unless this run may make sound. `what` is
+    /// what the test does that sounds ("Pressing Play").
+    func requireSound(_ what: String) throws {
+        try XCTSkipUnless(
+            Self.soundIsAllowed,
+            "\(what) makes sound, so it \(Self.soundSkipMarker), where \(Self.soundVariable) is 1 "
+                + "(Scripts/agents/run-ios-ui-tests.py sets it); on this Mac it is skipped."
+        )
+    }
+
+    // MARK: - Launching
+
+    /// The largest text size iOS offers, Accessibility Extra Extra Extra Large.
+    static let largestText = "UICTContentSizeCategoryAccessibilityXXXL"
+
+    /// Launches the app with an empty library of its own (TEXTMOUTH_UI_TEST),
+    /// sending it the book when `sendingTheBook`, as another app would at a
+    /// cold launch (TEXTMOUTH_OPEN_AT_LAUNCH). With no book playing, the app
+    /// imports the book and opens it, and Play waits unpressed.
+    /// With `textSize`, the launch uses that content size category (as in
+    /// `Self.largestText`), as the Larger Text setting would.
+    func launch(sendingTheBook: Bool, textSize: String? = nil) throws -> XCUIApplication {
+        try launch(sendingBookAt: sendingTheBook ? Self.bookPath() : nil, textSize: textSize)
+    }
+
+    /// Launches as `launch(sendingTheBook:textSize:)` does, sending the book
+    /// at `path`, a file of this test bundle, when it is not nil: another
+    /// book than Alice, such as a braille one (BrailleUITests). `arguments`
+    /// are added to the launch's, as `-AppleLanguages (es)` starts the app in
+    /// Spanish (SpanishUITests). `environment` is added to the launch's
+    /// environment, as `TEXTMOUTH_EXPORT_TO` names the folder the Export sheet
+    /// exports to (ExportUITests).
+    func launch(
+        sendingBookAt path: String?,
+        textSize: String? = nil,
+        arguments: [String] = [],
+        environment: [String: String] = [:]
+    ) throws -> XCUIApplication {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchEnvironment["TEXTMOUTH_UI_TEST"] = "1"
+        app.launchEnvironment.merge(environment) { _, new in new }
+        if let textSize {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", textSize]
+        }
+        app.launchArguments += arguments
+        if let path {
+            app.launchEnvironment["TEXTMOUTH_OPEN_AT_LAUNCH"] = path
+        }
+        app.launch()
+        return app
+    }
+
+    /// The book's path in this test bundle, where project.yml copies it.
+    static func bookPath() throws -> String {
+        let bundle = Bundle(for: TextMouthUITestCase.self)
+        return try XCTUnwrap(bundle.url(forResource: "alice", withExtension: "epub"), "alice.epub is not in the bundle").path
+    }
+
+    /// Launches with the book (Alice, or the book at `path` when it is not
+    /// nil) and waits for the reader it opens, with the book loaded: Play is
+    /// there, and its value no longer says "Loading". `arguments` are added to
+    /// the launch's (`launch(sendingBookAt:textSize:arguments:)`). An app
+    /// started in another language names its Play button and that value in
+    /// it, so a test that starts one passes the language's `playLabel` and
+    /// `loadingValue` (Q17).
+    func launchIntoTheReader(
+        sendingBookAt path: String? = nil,
+        textSize: String? = nil,
+        arguments: [String] = [],
+        environment: [String: String] = [:],
+        playLabel: String = "Play",
+        loadingValue: String = "Loading"
+    ) throws -> XCUIApplication {
+        let app = try launch(
+            sendingBookAt: path ?? Self.bookPath(), textSize: textSize, arguments: arguments, environment: environment
+        )
+        let play = app.buttons[playLabel]
+        XCTAssertTrue(play.appears(within: Self.patience), "The reader never opened:\n\(app.debugDescription)")
+        // Not the test case's own expectation, so nothing is left unwaited.
+        let loaded = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "value == nil OR value != %@", loadingValue), object: play
+        )
+        XCTAssertEqual(XCTWaiter().wait(for: [loaded], timeout: Self.patience), .completed, "The book never finished loading")
+        return app
+    }
+
+    // MARK: - Playing and Typing
+
+    /// Presses Play and waits for the control to read "Pause". Skips the test
+    /// where sound isn't allowed.
+    func pressPlay(in app: XCUIApplication) throws {
+        try requireSound("Pressing Play")
+        let play = app.buttons["Play"]
+        XCTAssertTrue(play.appears(within: Self.patience), "No Play to press:\n\(app.debugDescription)")
+        play.tap()
+        XCTAssertTrue(
+            app.buttons["Pause"].appears(within: Self.patience),
+            "Play was pressed and the control never read Pause:\n\(app.debugDescription)"
+        )
+    }
+
+    /// Presses Pause and waits for the control to read "Play". Skips the test
+    /// where sound isn't allowed.
+    func pressPause(in app: XCUIApplication) throws {
+        try requireSound("Pressing Pause")
+        let pause = app.buttons["Pause"]
+        XCTAssertTrue(pause.appears(within: Self.patience), "No Pause to press:\n\(app.debugDescription)")
+        pause.tap()
+        XCTAssertTrue(
+            app.buttons["Play"].appears(within: Self.patience),
+            "Pause was pressed and the control never read Play:\n\(app.debugDescription)"
+        )
+    }
+
+    /// Opens the Sleep Timer sheet, presses the button labeled `button` (a
+    /// preset or a Stop At choice, each of which starts the book playing), and
+    /// waits for the sheet to close, as the Mac's "Close sheet after setting
+    /// timer" has it. Skips the test where sound isn't allowed.
+    func startSleepTimer(_ button: String, in app: XCUIApplication) throws {
+        try requireSound("Setting a sleep timer, which starts the book playing")
+        _ = try openReaderSheet("Sleep Timer", titled: "Sleep Timer", waitingFor: "Close", in: app)
+        let choice = app.buttons[button]
+        XCTAssertTrue(choice.appears(within: Self.patience), "No \"\(button)\" in the sheet:\n\(app.debugDescription)")
+        choice.tap()
+        XCTAssertTrue(
+            app.navigationBars["Sleep Timer"].waitForNonExistence(timeout: Self.patience),
+            "The Sleep Timer sheet stayed open after \"\(button)\":\n\(app.debugDescription)"
+        )
+    }
+
+    /// Types `text` into the text field labeled `label`, as a person does: the
+    /// field is tapped to hold the keyboard if it does not hold it yet, then
+    /// the keys are pressed. A second call finds the keyboard up and does not
+    /// tap again, which could move the insertion point (at large text sizes
+    /// the tap lands inside the text). Skips the test where sound isn't
+    /// allowed (the keyboard clicks).
+    func type(_ text: String, intoFieldLabeled label: String, in app: XCUIApplication) throws {
+        try requireSound("Typing")
+        let field = app.textFields[label]
+        XCTAssertTrue(field.appears(within: Self.patience), "No field labeled \"\(label)\":\n\(app.debugDescription)")
+        if !app.keyboards.firstMatch.exists {
+            field.tap()
+        }
+        dismissKeyboardIntroduction(in: app)
+        field.typeText(text)
+    }
+
+    /// Presses Continue on the keyboard's one-time page about sliding a finger
+    /// across the letters, if it covers the keyboard: a fresh simulator shows
+    /// it, and it would otherwise keep every key from the field. The runner's
+    /// script writes no preference to turn it off, so this is what dismisses it.
+    /// It is looked for once, with `exists`: a wait for a page that is not
+    /// there always ran out its 2 seconds (2.8 with the debug capture, about 25
+    /// seconds a run), and a late page is not waited for.
+    func dismissKeyboardIntroduction(in app: XCUIApplication) {
+        let page = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Speed up your typing")).firstMatch
+        if page.exists {
+            app.buttons["Continue"].tap()
+        }
+    }
+
+    /// The text of the "Book content" element, or empty when it holds none.
+    func bookContent(in app: XCUIApplication) throws -> String {
+        try elementsInOrder(of: app).first { $0.label == "Book content" }?.value ?? ""
+    }
+
+    /// The frames of every labeled element of `app`, read from one snapshot, as one list of lines to compare.
+    private func frames(of app: XCUIApplication) throws -> [String] {
+        try elementsInOrder(of: app).map { "\($0.label)@\($0.frame)" }
+    }
+
+    /// Waits until the screen has stopped moving: the frames of every labeled element are the same on two reads half a
+    /// second apart. A list lays its rows out lazily and a swipe's momentum carries it on after the swipe returns, so an
+    /// audit made at once can read rows still being laid out or scrolled (the clipped-text finding of train 1123-0905, on a
+    /// label whose frame was the same, whole, in every other run). Waits by that condition and for at most `Self.patience`,
+    /// then fails with the screen's tree.
+    func waitUntilStill(_ app: XCUIApplication) throws {
+        let deadline = Date().addingTimeInterval(Self.patience)
+        var previous = try frames(of: app)
+        while Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.5)
+            let current = try frames(of: app)
+            if current == previous { return }
+            previous = current
+        }
+        XCTFail("The screen never stopped moving:\n\(app.debugDescription)")
+    }
+
+    /// Scrolls the list on screen to its end and back to its start, waiting for it to be still after each swipe, so that
+    /// every row has been made and laid out once before anything is audited. Each direction stops when a swipe moves nothing,
+    /// at most twenty swipes.
+    func scrollThroughTheList(of app: XCUIApplication) throws {
+        for goingDown in [true, false] {
+            for _ in 0..<20 {
+                let before = try frames(of: app)
+                if goingDown { app.swipeUp() } else { app.swipeDown() }
+                try waitUntilStill(app)
+                if try frames(of: app) == before { break }
+            }
+        }
+    }
+
+    /// Taps `element` until `expected` shows, at most three times, five
+    /// seconds apart: at the largest text size the first tap after a launch
+    /// was seen to do nothing (a Back, an Add to Library; November 9, 2026), so
+    /// one tap is not trusted there. `what` names the tap in the failure,
+    /// which carries the screen's tree.
+    func tap(_ element: XCUIElement, until expected: XCUIElement, in app: XCUIApplication, what: String) {
+        for _ in 0..<3 {
+            // A tap whose screen took longer than the wait to come has worked.
+            if expected.exists { return }
+            guard element.appears(within: Self.patience) else {
+                XCTFail("No \(what) to tap:\n\(app.debugDescription)")
+                return
+            }
+            element.tap()
+            if expected.appears(within: 5) { return }
+        }
+        XCTFail("Tapping \(what) three times did not bring up what it should:\n\(app.debugDescription)")
+    }
+
+    // MARK: - What VoiceOver Is Given, in Order
+
+    /// One element of the screen as XCUITest reads it.
+    struct Element {
+        let type: XCUIElement.ElementType
+        let label: String
+        let value: String?
+        let frame: CGRect
+        /// The accessibility identifier, which iOS sometimes gives a control
+        /// that its label does not name (a toolbar button, for one).
+        let identifier: String
+    }
+
+    /// Every element of `app` with a label, in the order of the accessibility
+    /// tree, depth first: the order VoiceOver moves through with a flick,
+    /// unless a container orders its own. Read from one snapshot, so the
+    /// screen can't change halfway through. Walked with a stack of its own.
+    func elementsInOrder(of app: XCUIApplication) throws -> [Element] {
+        var found: [Element] = []
+        var stack: [any XCUIElementSnapshot] = [try app.snapshot()]
+        while let snapshot = stack.popLast() {
+            if !snapshot.label.isEmpty {
+                let value = snapshot.value.map { "\($0)" }
+                found.append(Element(
+                    type: snapshot.elementType, label: snapshot.label, value: value,
+                    frame: snapshot.frame, identifier: snapshot.identifier
+                ))
+            }
+            // Pushed last child first, so the first child is read next.
+            stack.append(contentsOf: snapshot.children.reversed())
+        }
+        return found
+    }
+
+    /// The elements as one line: each one's label, with its identifier where
+    /// that is not the label (a button iOS names by an identifier alone shows
+    /// here), and "(button)" after a button.
+    static func describe(_ elements: [Element]) -> String {
+        elements.map { element in
+            var text = element.label
+            if !element.identifier.isEmpty, element.identifier != element.label { text += " [id \(element.identifier)]" }
+            return element.type == .button ? "\(text) (button)" : text
+        }.joined(separator: " | ")
+    }
+
+    /// The buttons of every navigation bar showing, by label and identifier:
+    /// what to print when a button the test expects is missing.
+    func barButtons(of app: XCUIApplication) -> String {
+        app.navigationBars.buttons.allElementsBoundByIndex.map {
+            "label \"\($0.label)\" id \"\($0.identifier)\""
+        }.joined(separator: "; ")
+    }
+
+    /// Fails unless each of `expected` is the label of an element of
+    /// `elements` (one ending in "…" only begins it), each after the last.
+    func assertOrder(_ expected: [String], in elements: [Element], file: StaticString = #filePath, line: UInt = #line) {
+        var from = elements.startIndex
+        for label in expected {
+            let matches: (Element) -> Bool = label.hasSuffix("…")
+                ? { $0.label.hasPrefix(String(label.dropLast())) }
+                : { $0.label == label }
+            guard let index = elements[from...].firstIndex(where: matches) else {
+                let order = Self.describe(elements)
+                XCTFail("\"\(label)\" is not after \"\(expected.first ?? "")\"… in the order: \(order)", file: file, line: line)
+                return
+            }
+            from = elements.index(after: index)
+        }
+    }
+
+    // MARK: - The Reader's Sheets
+
+    /// Opens the reader's sheet from its control, waits for the sheet's
+    /// navigation bar and for the button `element`, and returns the sheet's
+    /// elements in order. A control that isn't on the reader is looked for
+    /// under the Book Actions menu, `menu` (FR51), which is opened first.
+    func openReaderSheet(
+        _ control: String,
+        titled title: String,
+        waitingFor element: String,
+        under menu: String = "Book Actions",
+        in app: XCUIApplication
+    ) throws -> [Element] {
+        if !app.buttons[control].exists, app.buttons[menu].exists {
+            tap(app.buttons[menu], until: app.buttons[control], in: app, what: "the \(menu) menu")
+        }
+        // The tap is repeated if the sheet does not come: a first tap was seen
+        // to do nothing (Bookmarks, pass 5, November 9, 2026).
+        tap(app.buttons[control], until: app.navigationBars[title], in: app, what: "the \(control) control")
+        XCTAssertTrue(
+            app.buttons[element].appears(within: Self.patience),
+            "The \(control) sheet has no \(element). Its bars' buttons: \(barButtons(of: app)). Order: \((try? elementsInOrder(of: app)).map(Self.describe) ?? "unreadable")"
+        )
+        return try elementsOfSheet(titled: title, in: app)
+    }
+
+    /// The elements of the sheet titled `title`, in order: everything from its
+    /// title on. A sheet's navigation bar is known by its identifier and
+    /// carries no label, so the order holds its title as the text inside it.
+    /// The screen under a sheet may still be in the tree before it, and a
+    /// control there can share the sheet's name ("Bookmarks", "Navigation
+    /// unit"), but that is a button: the last titled element that isn't one
+    /// is where the sheet begins.
+    func elementsOfSheet(titled title: String, in app: XCUIApplication) throws -> [Element] {
+        let elements = try elementsInOrder(of: app)
+        guard let start = elements.lastIndex(where: { $0.label == title && $0.type != .button }) else {
+            XCTFail("No navigation bar titled \"\(title)\" in: \(elements.map(\.label).joined(separator: " | "))")
+            return []
+        }
+        return Array(elements[start...])
+    }
+
+    // MARK: - The Search in Book Sheet
+
+    /// The search field's label, which the sheet's order reads.
+    /// `nonisolated`, since `Accepted.searchTextField` (a nonisolated static) reads it.
+    nonisolated static let searchFieldLabel = "Search text"
+
+    /// Launches into the reader (at the text size `textSize`, the default when
+    /// none), opens the Search in Book sheet from its button, and types `text`
+    /// into its field when it is given, returning the app. A test that types
+    /// skips, before it launches anything, where sound isn't allowed. Shared
+    /// by `SearchUITests` and by `LargeTextUITests`, which looks at the same
+    /// sheet at the largest text size.
+    func openSearchSheet(typing text: String?, textSize: String? = nil) throws -> XCUIApplication {
+        if text != nil {
+            try requireSound("Typing a search")
+        }
+        let app = try launchIntoTheReader(textSize: textSize)
+        _ = try openReaderSheet("Search in Book", titled: "Search in Book", waitingFor: "Back to Book", in: app)
+        if let text {
+            try type(text, intoFieldLabeled: Self.searchFieldLabel, in: app)
+        }
+        return app
+    }
+
+    /// Waits, for at most `patience`, until a static text of the sheet reads
+    /// `ending` (the search's status), and returns the sheet's elements in
+    /// order, from the sheet's title on. The status is "Searching…" until the search, which waits a
+    /// second for typing to pause, has finished.
+    func waitForStatus(ending suffixes: [String], in app: XCUIApplication) throws -> [Element] {
+        let predicate = NSPredicate(format: suffixes.map { _ in "label ENDSWITH %@" }.joined(separator: " OR "), argumentArray: suffixes)
+        let status = app.staticTexts.matching(predicate).firstMatch
+        XCTAssertTrue(
+            status.waitForExistence(timeout: Self.patience),
+            "No status ending \(suffixes) appeared. The screen:\n\(app.debugDescription)"
+        )
+        return try elementsOfSheet(titled: "Search in Book", in: app)
+    }
+
+    /// Waits for the "Search results" heading, which only a search that found something has, and then for the status
+    /// line of a search with matches, and returns the sheet's elements in order. "No matches" also ends with " matches",
+    /// so the status alone could be met by a search that found nothing: the heading is what says results came.
+    func waitForResults(in app: XCUIApplication) throws -> [Element] {
+        XCTAssertTrue(
+            app.staticTexts["Search results"].waitForExistence(timeout: Self.patience),
+            "No results came. The screen:\n\(app.debugDescription)"
+        )
+        return try waitForStatus(ending: [" matches", " match"], in: app)
+    }
+
+    // MARK: - The Audit and the Record
+
+    /// A finding the audit makes of a part of iOS the app doesn't draw, which
+    /// the app can't change, matched by the audit's type and the element's
+    /// label (exactly, or by its start when `labelIsPrefix`), and, when
+    /// `description` is given, Apple's own short description of it, with the
+    /// reason it's accepted.
+    struct Accepted {
+        let type: XCUIAccessibilityAuditType
+        let label: String
+        let why: String
+        /// Whether `label` need only begin the element's label.
+        var labelIsPrefix = false
+        /// Apple's `compactDescription` the finding must have, or none.
+        var description: String?
+
+        /// Whether the finding of `type`, on an element labeled `elementLabel`
+        /// (empty when it names none), described as `compact`, is this one.
+        func matches(type findingType: XCUIAccessibilityAuditType, label elementLabel: String, description compact: String) -> Bool {
+            guard findingType.contains(type) else { return false }
+            guard labelIsPrefix ? elementLabel.hasPrefix(label) : elementLabel == label else { return false }
+            return description.map { $0 == compact } ?? true
+        }
+
+        /// The Library's summary row, "1 book. 2 hours, ... remaining at
+        /// current speed", whose Dynamic Type finding ("partially unsupported")
+        /// is a plain `Text` in the subheadline style that grows and wraps
+        /// (the screenshots of `LargeTextUITests`, 5 lines at the largest
+        /// size). Its cause is not known. Matched by the summary's first
+        /// words (they begin with the book count, "1 book.") and the Dynamic
+        /// Type kind only; the same row's other findings, and every other
+        /// row's, still fail.
+        static let librarySummary = Accepted(
+            type: .dynamicType, label: "1 book.",
+            why: "the Library's summary row: a plain Text that grows and wraps, flagged for a cause not known",
+            labelIsPrefix: true
+        )
+
+        /// The Add to Library sheet's note on what only the Mac has (FR53), a
+        /// plain `Text` in the footnote style in its section's footer, which
+        /// wraps to two lines: flagged "partially unsupported" at the default
+        /// size as the Library's summary is (train 1127-1548), for a cause not
+        /// known, while `LargeTextUITests` passes the same sheet at the
+        /// largest size. Matched by the note's whole words, the Dynamic Type
+        /// kind, and Apple's exact short description, so a fixed font (which
+        /// reads "unsupported", and `PhoneFontPolicyTests` refuses in the
+        /// source) still fails, and so does any other finding on it.
+        static let onlyOnTheMacNote = Accepted(
+            type: .dynamicType, label: "Recording, editing audio, and transcribing are only on the Mac for now.",
+            why: "the Add to Library sheet's note: a plain footnote Text that grows and wraps, flagged as the Library's summary is",
+            description: "Dynamic Type font sizes are partially unsupported"
+        )
+
+        /// The Add to Library sheet's Add Feed… row and its summary (FR53), flagged "partially unsupported" in train
+        /// 1127-2052 as the sheet's note below them is, for a cause not known: plain `Text` in the system styles that grows
+        /// and wraps. Matched by each one's words, the Dynamic Type kind, and Apple's exact short description.
+        static let addFeedRow = Accepted(
+            type: .dynamicType, label: "Add Feed…",
+            why: "the Add to Library sheet's last row, flagged as the note under it is",
+            description: "Dynamic Type font sizes are partially unsupported"
+        )
+
+        /// The summary line of the Add Feed… row, as `addFeedRow`.
+        static let addFeedSummary = Accepted(
+            type: .dynamicType, label: "Opens a sheet to type a feed's address and choose its folder",
+            why: "the Add to Library sheet's last row's summary, flagged as the note under it is",
+            description: "Dynamic Type font sizes are partially unsupported"
+        )
+
+        /// A button of the Add Feed sheet that is dimmed while nothing is typed (Subscribe, Search): iOS dims it, and the
+        /// audit weighs the dimmed words against the contrast it holds an enabled control to. The iPhone's disabled
+        /// color is the system's gray on purpose (`PhoneTextColor.disabled`); the buttons are drawn in full contrast
+        /// the moment they work.
+        static func dimmedButton(_ label: String) -> Accepted {
+            Accepted(type: .contrast, label: label, why: "a dimmed button, in the system's gray for a control that does nothing now")
+        }
+
+        /// The Add Feed sheet's Search section heading, which iOS draws in its own header style: the audit finds its
+        /// contrast "nearly" enough and its Dynamic Type "partially unsupported", as it found Settings' first header.
+        static func sectionHeader(_ label: String) -> [Accepted] {
+            [
+                Accepted(type: .contrast, label: label, why: "a section header in iOS's own style"),
+                Accepted(type: .dynamicType, label: label, why: "a section header in iOS's own style"),
+            ]
+        }
+
+        /// A text field's placeholder that iOS clips at the larger text sizes, read whole by VoiceOver and braille.
+        static func clippedField(_ label: String) -> Accepted {
+            Accepted(type: .textClipped, label: label, why: "a text field's placeholder, read whole by VoiceOver and braille")
+        }
+
+        /// A Dynamic Type finding that names no element, in Apple's exact
+        /// words `description`. Every Dynamic Type finding that names an
+        /// element (audited alone) is matched by that element, so one that
+        /// names none can only be matched by its words. Two wordings were seen
+        /// at the largest size, on the scrolled screens: "...are unsupported"
+        /// on Settings (pass 1 to 5; probably the system stepper's minus and
+        /// plus, which iOS does not grow, unproven) and "...are partially
+        /// unsupported" on the Library (pass 5, once). Matched by an empty
+        /// label, the Dynamic Type kind, and the exact words only.
+        static func unnamedDynamicType(_ description: String) -> Accepted {
+            Accepted(
+                type: .dynamicType, label: "",
+                why: "a finding that names no element, which the audit gives no way to find; the words are Apple's",
+                description: description
+            )
+        }
+
+        /// "Dynamic Type font sizes are unsupported", with no element.
+        static let unnamedUnsupported = unnamedDynamicType("Dynamic Type font sizes are unsupported")
+
+        /// "Dynamic Type font sizes are partially unsupported", with no element.
+        static let unnamedPartlyUnsupported = unnamedDynamicType("Dynamic Type font sizes are partially unsupported")
+
+        /// A SwiftUI `TextField` of the phone, which the audit flags "Dynamic
+        /// Type font sizes are partially unsupported. User will not be able to
+        /// change the font size of this UITextField" although its text grows.
+        /// The audit checks UIKit's `adjustsFontForContentSizeCategory`, which
+        /// SwiftUI leaves off on the UITextField it draws; Apple's DTS engineer
+        /// says SwiftUI "does not always pass along that specific UIKit-level
+        /// flag" and that system fonts are "doing everything right"
+        /// (developer.apple.com/forums/thread/828525, June 2026). Matched by
+        /// the Dynamic Type kind, the field's label, and Apple's exact short
+        /// description, so that a fixed font, which reads "unsupported" and not
+        /// "partially unsupported", still fails (`PhoneFontPolicyTests` also
+        /// refuses fixed fonts in the sheets' source, and the hosted tests of
+        /// `PhoneTextFieldScalingTests` measure that each field's font grows,
+        /// and fail when SwiftUI turns the switch on, which ends the need).
+        static func swiftUITextField(_ label: String, labelIsPrefix: Bool = false) -> Accepted {
+            Accepted(
+                type: .dynamicType, label: label,
+                why: "a SwiftUI TextField whose font grows; the audit reads UIKit's adjustsFontForContentSizeCategory, which SwiftUI leaves off (Apple DTS, developer.apple.com/forums/thread/828525)",
+                labelIsPrefix: labelIsPrefix,
+                description: "Dynamic Type font sizes are partially unsupported"
+            )
+        }
+
+        /// The Go To sheet's three fields: Page, Percent through the book, and
+        /// Time (its label goes on, "Time at 500 words a minute" or "Time in
+        /// the recording").
+        static let goToFields = [
+            swiftUITextField("Page"),
+            swiftUITextField("Percent through the book"),
+            swiftUITextField("Time ", labelIsPrefix: true),
+        ]
+
+        /// The Sleep Timer sheet's custom minutes field.
+        static let sleepTimerField = swiftUITextField("Custom minutes")
+
+        /// Book Information's fields: title, author, publisher, and date (a
+        /// hand-edited field's label goes on, so each is matched by its start).
+        static let bookInformationFields = ["Book title", "Author", "Publisher", "Publication date"]
+            .map { swiftUITextField($0, labelIsPrefix: true) }
+
+        /// The Search in Book sheet's field.
+        static let searchTextField = swiftUITextField(TextMouthUITestCase.searchFieldLabel)
+
+        /// The system's search field: iOS clips its placeholder at the
+        /// largest text sizes, and VoiceOver and braille read it whole.
+        static let searchField = Accepted(
+            type: .textClipped, label: "Search books",
+            why: "the system's search field, read whole by VoiceOver and braille"
+        )
+
+        /// A button in a bar, at the bottom of the Library or at the top of a
+        /// sheet (Cancel, Done, Close): iOS doesn't grow bar items with
+        /// Dynamic Type, and shows them in the Large Content Viewer instead.
+        static func barItem(_ label: String) -> Accepted {
+            Accepted(type: .dynamicType, label: label, why: "a bar item, which iOS shows in the Large Content Viewer")
+        }
+
+        /// The first section header under a navigation bar, which the audit
+        /// reports as failing contrast ("Contrast failed for
+        /// SwiftUI.AccessibilityNode") on Settings ("Voice") and on Sleep Timer
+        /// ("New Timer"). It is a false positive, proven on November 9, 2026
+        /// from the screenshots kept with the results: each header's frame
+        /// (16, 116 or 132, 370 by 40 points) holds black text, (0, 0, 0), on a
+        /// background of (235 to 242, 235 to 242, 240 to 247), whose lowest
+        /// contrast is about 17 to 1, and the phone draws every header in the
+        /// primary label color (`PhoneTextColor`). Matched by the header's own
+        /// words and the contrast kind only: any other contrast finding, on
+        /// these screens or any other, still fails.
+        static func firstHeader(_ title: String) -> Accepted {
+            Accepted(
+                type: .contrast, label: title,
+                why: "the first section header under the bar: black text on a near-white background, measured from the screenshot, a false positive"
+            )
+        }
+
+        /// On a screen scrolled part of the way, text cut by the edge of the
+        /// screen or by the bar it scrolls under: the audit reports "Text
+        /// clipped" for it with no element (once or twice a pass, November 9,
+        /// 2026). The screenshot of pass 4 shows exactly that on Settings at
+        /// the largest size, scrolled: a line cut at the top under the
+        /// navigation bar's glass, and a row cut at the bottom edge. Matched by
+        /// an empty label, the clipped-text kind, and Apple's exact words, and
+        /// used only by the audits of a scrolled screen.
+        static let scrolledPastTheEdge = Accepted(
+            type: .textClipped, label: "",
+            why: "text cut by the screen's edge or the bar on a scrolled screen, which is what scrolling does",
+            description: "Text clipped"
+        )
+
+        /// The Braille section's caption in Settings, a long plain `Text` the audit names as clipped text whenever it is on the
+        /// screen at the largest size, with a frame well taller than its words: 393.33 points after `phoneWholeWords` gave it
+        /// a point of spacing a line, from 387.33, and flagged both times (the full suite of 0a5d1405b, train 1125-0148). It is
+        /// accepted by its exact words and the clipped-text kind only, because the words are measured whole: `PhoneWholeWordsTests`
+        /// hosts the real caption at the largest size and requires its frame to be a point taller than its words, and the screenshot
+        /// kept with train 1125-0148's audit shows all seven of its lines whole, between its row's separators. The other captions,
+        /// shorter, are not flagged.
+        static let brailleCaption = Accepted(
+            type: .textClipped,
+            label: "TextMouth reads braille files you add from now on with this code. A book keeps the code it was added with.",
+            why: "the Braille caption, whose frame is measured taller than its words (PhoneWholeWordsTests) and read whole by VoiceOver and braille"
+        )
+
+        /// The navigation bar's title: iOS truncates a long title at large
+        /// sizes, and VoiceOver and braille read it whole.
+        static func navigationTitle(_ title: String) -> Accepted {
+            Accepted(type: .textClipped, label: title, why: "the navigation bar's title, read whole by VoiceOver and braille")
+        }
+    }
+
+    /// The kinds of finding iOS audits (XCUIAccessibilityAuditTypes.h of the
+    /// iOS 26.0 SDK has these seven), each with its name: the one table that
+    /// `audit` runs from and `name(of:)` reads.
+    private static let auditKinds: [(kind: XCUIAccessibilityAuditType, name: String)] = [
+        (.contrast, "contrast"), (.elementDetection, "element detection"), (.hitRegion, "hit region"),
+        (.sufficientElementDescription, "element description"), (.dynamicType, "Dynamic Type"),
+        (.textClipped, "clipped text"), (.trait, "trait"),
+    ]
+
+    /// Runs Apple's accessibility audit on the screen showing, every iOS type
+    /// of it (or `types`), and fails once with every finding not `accepted`
+    /// listed, each with its type, its element, and Apple's words, so one run
+    /// shows them all. The accepted ones are kept with the results, with their
+    /// reasons. A finding of a kind in `informed` is kept with the results and
+    /// does not fail the test: for a kind a test checks another way.
+    ///
+    /// **Each kind is audited alone**, one `performAccessibilityAudit` per
+    /// kind, and not all together (November 9, 2026, iPhone 17, iOS 26.0).
+    /// Audited together, a finding names no element ("no element"), so it can't
+    /// be matched to an accepted one or found on the screen; audited alone, it
+    /// names its element. And Go To's "Potentially inaccessible text" appeared
+    /// in both of the runs that audited every kind together, and in none of
+    /// five launches that audited that kind alone, so it is a product of the
+    /// combined run. Every kind in `auditKinds`, the seven this SDK has, still
+    /// runs; a kind a later SDK adds would need a row there.
+    ///
+    /// With `acceptingTextCutByTheScroll`, a clipped-text finding on a row whose frame crosses the top (the navigation bar's
+    /// bottom) or the bottom edge of the screen is accepted, kept with the results: it is what scrolling does to a row.
+    ///
+    /// Each finding names its element with its type, label, value, identifier,
+    /// and frame in points (`trace(of:named:)`), so that a finding can be found on
+    /// the screenshot kept with the results. When any finding is not accepted,
+    /// the screen's whole accessibility tree, every element with its frame, is
+    /// kept too ("<screen>: accessibility tree").
+    func audit(
+        _ app: XCUIApplication,
+        screen: String,
+        types: XCUIAccessibilityAuditType = .all,
+        informing informed: XCUIAccessibilityAuditType = [],
+        accepting accepted: [Accepted] = [],
+        acceptingTextCutByTheScroll: Bool = false,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        // Where a scrolled screen's rows are cut: under the navigation bar at the top, and at the screen's bottom edge.
+        let topEdge = app.navigationBars.firstMatch.exists ? app.navigationBars.firstMatch.frame.maxY : app.frame.minY
+        let bottomEdge = app.frame.maxY
+        var findings: [String] = []
+        var acceptedFindings: [String] = []
+        var informingFindings: [String] = []
+        for (kind, _) in Self.auditKinds where !types.intersection(kind).isEmpty {
+            try app.performAccessibilityAudit(for: kind) { issue in
+                // One snapshot of the element, taken only if it still exists
+                // (reading a missing element's properties fails the test),
+                // serves the match and the trace.
+                let snapshot = Self.snapshot(of: issue.element)
+                let label = snapshot?.label ?? ""
+                let said = "[\(Self.name(of: issue.auditType))] \(Self.trace(of: snapshot, named: issue.element != nil)): \(issue.compactDescription). \(issue.detailedDescription)"
+                if let match = accepted.first(where: { $0.matches(type: issue.auditType, label: label, description: issue.compactDescription) }) {
+                    acceptedFindings.append("\(said) Accepted: \(match.why).")
+                } else if acceptingTextCutByTheScroll, issue.auditType == .textClipped, let frame = snapshot?.frame,
+                          frame.minY < topEdge || frame.maxY > bottomEdge {
+                    // A named row the scroll cuts at an edge (a caption's top 5 points under the bar, in train 1124-2049): the
+                    // audit cannot tell a cut by the edge from a cut of the text. The same screen audited as it first
+                    // appears, unscrolled, holds every row whole, and each caption wraps to its words (`fixedSize`).
+                    acceptedFindings.append("\(said) Accepted: the row crosses the edge of a scrolled screen (top \(topEdge), bottom \(bottomEdge)).")
+                } else if !informed.isDisjoint(with: issue.auditType) {
+                    // Kept with the results, and not failed.
+                    informingFindings.append(said)
+                } else {
+                    findings.append(said)
+                }
+                // Handled here, listed below.
+                return true
+            }
+        }
+        keepScreenshot(of: app, named: "\(screen) audited")
+        if !findings.isEmpty || !informingFindings.isEmpty {
+            let tree = XCTAttachment(string: app.debugDescription)
+            tree.name = "\(screen): accessibility tree"
+            tree.lifetime = .keepAlways
+            add(tree)
+        }
+        if !acceptedFindings.isEmpty {
+            let note = XCTAttachment(string: acceptedFindings.joined(separator: "\n"))
+            note.name = "\(screen): findings accepted"
+            note.lifetime = .keepAlways
+            add(note)
+        }
+        if !informingFindings.isEmpty {
+            let note = XCTAttachment(string: informingFindings.joined(separator: "\n"))
+            note.name = "\(screen): findings reported, not failed"
+            note.lifetime = .keepAlways
+            add(note)
+        }
+        XCTAssertTrue(
+            findings.isEmpty,
+            "The \(screen)'s audit found \(findings.count):\n" + findings.joined(separator: "\n"),
+            file: file, line: line
+        )
+    }
+
+    /// A snapshot of an audit finding's `element`, or none when the finding
+    /// names no element or the element is gone (the check is `exists`, which
+    /// never fails the test, where reading a missing element's properties
+    /// would).
+    static func snapshot(of element: XCUIElement?) -> (any XCUIElementSnapshot)? {
+        guard let element, element.exists else { return nil }
+        return try? element.snapshot()
+    }
+
+    /// What an audit finding's element is, to find it on the screenshot: its
+    /// type, label, value, identifier, and frame in points, whether it is
+    /// enabled, and how many elements it holds. "no element" when the finding
+    /// names none (`named` false), and a note when it named one that is gone
+    /// by the time it is read.
+    static func trace(of snapshot: (any XCUIElementSnapshot)?, named: Bool) -> String {
+        guard named else { return "no element" }
+        guard let snapshot else { return "an element no longer in the tree" }
+        let value = snapshot.value.map { "\($0)" } ?? "none"
+        return "\(snapshot.elementType.rawValue) \"\(snapshot.label)\" (value \(value), id \"\(snapshot.identifier)\", "
+            + "frame \(snapshot.frame), enabled \(snapshot.isEnabled), \(snapshot.children.count) children)"
+    }
+
+    /// The name of an iOS audit type, as XCUIAccessibilityAuditTypes.h has it.
+    static func name(of type: XCUIAccessibilityAuditType) -> String {
+        let matched = auditKinds.filter { type.contains($0.kind) }.map(\.name)
+        return matched.isEmpty ? "type \(type.rawValue)" : matched.joined(separator: ", ")
+    }
+
+    /// Keeps a screenshot of the screen with the test's results.
+    func keepScreenshot(of app: XCUIApplication, named name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+}
+
+extension XCUIElement {
+    /// Whether the element exists within `timeout` seconds, looking first without waiting: a wait on an element that is
+    /// already there costs about a second of XCUITest's own bookkeeping (the review of ci/ios-ui-tests, finding on time).
+    func appears(within timeout: TimeInterval) -> Bool {
+        exists || waitForExistence(timeout: timeout)
+    }
+}

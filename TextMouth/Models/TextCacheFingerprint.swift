@@ -144,7 +144,7 @@ enum FileStampComparison: Equatable {
 
 /// One file's stamp together with the digest of the bytes it held when the
 /// stamp was taken.
-struct FileFingerprint: Codable, Hashable, Sendable {
+struct FileFingerprint: Codable, Hashable, Sendable, KeepsUnknownKeys {
     /// The file's size in bytes.
     var byteCount: Int64
     /// When the file's content last changed, in nanoseconds since 1970 (see
@@ -152,6 +152,42 @@ struct FileFingerprint: Codable, Hashable, Sendable {
     var modificationTimeNanoseconds: Int64
     /// The digest of the file's bytes, from `FingerprintHasher`.
     var digest: String
+    /// The keys of the stored fingerprint that this TextMouth does not know
+    /// (V04), written back as they were. A fingerprint taken here has none:
+    /// what a later TextMouth noted of the file as it was would not
+    /// describe the file as it is.
+    var unknownKeys = UnknownKeys()
+
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case byteCount, modificationTimeNanoseconds, digest
+    }
+
+    /// The names of a fingerprint's keys that this version knows.
+    private static let knownKeyNames = CodingKeys.names
+
+    /// What a stored fingerprint holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames)
+
+    /// Reads a fingerprint as the synthesized decoder read it, every field
+    /// required, and keeps every other key as it is (V04).
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        byteCount = try container.decode(Int64.self, forKey: .byteCount)
+        modificationTimeNanoseconds = try container.decode(Int64.self, forKey: .modificationTimeNanoseconds)
+        digest = try container.decode(String.self, forKey: .digest)
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+    }
+
+    /// Writes the fingerprint as the synthesized encoder wrote it, after
+    /// the keys this version does not know (V04).
+    func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(byteCount, forKey: .byteCount)
+        try container.encode(modificationTimeNanoseconds, forKey: .modificationTimeNanoseconds)
+        try container.encode(digest, forKey: .digest)
+    }
 
     init(stamp: FileStamp, digest: String) {
         byteCount = stamp.byteCount
@@ -198,11 +234,51 @@ struct FileFingerprint: Codable, Hashable, Sendable {
 /// written. Book records keep it with the cache's format version, as an
 /// analysis-owned field, and the content index carries it, so every path that
 /// saves an analysis saves its fingerprint too.
-struct TextCacheFingerprint: Codable, Hashable, Sendable {
+struct TextCacheFingerprint: Codable, Hashable, Sendable, KeepsUnknownKeys {
     /// The book's own file, which the cache was extracted from.
     var source: FileFingerprint
     /// The content.md that extraction wrote.
     var cache: FileFingerprint
+    /// The keys of the stored fingerprints that this TextMouth does not
+    /// know (V04), written back as they were; none in fingerprints taken
+    /// here.
+    var unknownKeys = UnknownKeys()
+}
+
+// The coding is in an extension, so the struct keeps its memberwise
+// initializer.
+extension TextCacheFingerprint {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case source, cache
+    }
+
+    /// The names of the keys that this version knows.
+    private static let knownKeyNames = CodingKeys.names
+
+    /// What a stored pair of fingerprints holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(
+        names: knownKeyNames,
+        objects: ["source": FileFingerprint.keySchema, "cache": FileFingerprint.keySchema]
+    )
+
+    /// Reads the fingerprints as the synthesized decoder read them, both
+    /// required, and keeps every other key as it is (V04).
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        source = try container.decode(FileFingerprint.self, forKey: .source)
+        cache = try container.decode(FileFingerprint.self, forKey: .cache)
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+    }
+
+    /// Writes the fingerprints as the synthesized encoder wrote them, after
+    /// the keys this version does not know (V04).
+    func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(source, forKey: .source)
+        try container.encode(cache, forKey: .cache)
+    }
 }
 
 /// Why a text cache no longer describes what it was written from. The raw

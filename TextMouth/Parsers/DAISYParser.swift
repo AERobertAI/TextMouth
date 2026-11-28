@@ -5,7 +5,7 @@ import SwiftSoup
 // MARK: - Error Types
 
 /// Errors that can occur when parsing a DAISY book
-enum DAISYParserError: LocalizedError {
+enum DAISYParserError: LocalizedError, LogDescribing {
     case fileNotFound(String)
     case invalidArchive
     case notDAISYBook
@@ -17,16 +17,48 @@ enum DAISYParserError: LocalizedError {
     /// file's path inside the package; `reason` completes the sentence "The
     /// file is damaged or incomplete: …".
     case malformedXML(file: String, reason: String)
+    /// A file TextMouth will not read although it is not damaged: it defines
+    /// entities of its own, or is written in an encoding the guard cannot see
+    /// through (`XMLInputGuard`). `file` is the file's path inside the package.
+    case unsafeXML(file: String, problem: XMLInputGuard.Problem)
 
     var errorDescription: String? {
         switch self {
-        case .fileNotFound(let path): return "DAISY file not found at: \(path)"
-        case .invalidArchive: return "The DAISY file could not be opened as a ZIP archive."
-        case .notDAISYBook: return "Not a valid DAISY book (no OPF or ncc.html found)."
-        case .missingContent(let msg): return "Missing DAISY content: \(msg)"
-        case .parseError(let msg): return "DAISY parse error: \(msg)"
+        case .fileNotFound(let path):
+            // Translators: Why a DAISY book could not be imported: there is no file at its path. %@ is the path.
+            return InterfaceText.line("daisyParserError.fileNotFound", "DAISY file not found at: \(path)")
+        case .invalidArchive:
+            // Translators: Why a DAISY book could not be imported: it could not be opened as a ZIP archive.
+            return InterfaceText.line("daisyParserError.invalidArchive", "The DAISY file could not be opened as a ZIP archive.")
+        case .notDAISYBook:
+            // Translators: Why a file could not be imported as a DAISY book: it holds neither a package file (.opf) nor a navigation file (ncc.html). OPF and ncc.html are file names and stay as they are.
+            return InterfaceText.line("daisyParserError.notDAISYBook", "Not a valid DAISY book (no OPF or ncc.html found).")
+        case .missingContent(let msg):
+            // Translators: Why a DAISY book could not be imported: a part it needs is missing. %@ is what is missing, a phrase in English.
+            return InterfaceText.line("daisyParserError.missingContent", "Missing DAISY content: \(msg)")
+        case .parseError(let msg):
+            // Translators: Why a DAISY book could not be imported: a file inside it could not be read. %@ is the reason, a phrase in English.
+            return InterfaceText.line("daisyParserError.parseError", "DAISY parse error: \(msg)")
         case .malformedXML(let file, let reason):
-            return PackageDamage.message(file: file, reason: reason, container: "this DAISY book", original: "the book")
+            return PackageDamage.message(file: file, reason: reason, container: .daisyBook)
+        case .unsafeXML(let file, let problem):
+            return XMLInputGuard.refusalSentence(for: problem, file: file, in: .daisyBook)
+        }
+    }
+
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34).
+    var logDescription: String {
+        switch self {
+        case .fileNotFound(let path): return "DAISY file not found at: \(path)" // l10n: no (debug log)
+        case .invalidArchive: return "The DAISY file could not be opened as a ZIP archive." // l10n: no (debug log)
+        case .notDAISYBook: return "Not a valid DAISY book (no OPF or ncc.html found)." // l10n: no (debug log)
+        case .missingContent(let msg): return "Missing DAISY content: \(msg)" // l10n: no (debug log)
+        case .parseError(let msg): return "DAISY parse error: \(msg)" // l10n: no (debug log)
+        case .malformedXML(let file, let reason):
+            return PackageDamage.logMessage(file: file, reason: reason, container: .daisyBook)
+        case .unsafeXML(let file, let problem):
+            return XMLInputGuard.logRefusalSentence(for: problem, file: file, in: .daisyBook) ?? ""
         }
     }
 }
@@ -59,9 +91,17 @@ protocol DAISYFileProvider {
     /// nothing is yet, holding it to the bounds `readFile(at:)` holds it to.
     /// DAISY audio conversion copies each audio file with it.
     func copyFile(at path: String, to destination: URL) throws
+    /// The size in bytes of the file at the given relative path, as the file
+    /// system or the archive records it, without reading the file; nil when
+    /// it is not known. A reader that must refuse a package past a limit
+    /// adds the sizes up before it reads any file (`BardBraillePackage`).
+    func byteCount(of path: String) -> Int64?
 }
 
 extension DAISYFileProvider {
+    /// No size is known unless a provider says it.
+    func byteCount(of path: String) -> Int64? { nil }
+
     /// Copy the file by reading it whole and writing it out: for a provider
     /// whose files are small or already in memory. The archive and folder
     /// providers copy without holding a file whole (PERF24).
@@ -95,6 +135,10 @@ class CachingFileProvider: DAISYFileProvider {
 
     func copyFile(at path: String, to destination: URL) throws {
         try inner.copyFile(at: path, to: destination)
+    }
+
+    func byteCount(of path: String) -> Int64? {
+        inner.byteCount(of: path)
     }
 }
 
@@ -146,7 +190,8 @@ class ArchiveFileProvider: DAISYFileProvider {
     /// to the bounds `readFile(at:)` holds it to, so an audio file of up to
     /// 256 MB never sits whole in memory (PERF24). A copy that fails, the
     /// entry found too large partway included, leaves nothing behind.
-    /// - Throws: as `readFile(at:)` throws, or the error writing threw.
+    /// - Throws: as `readFile(at:)` throws, or the error writing threw
+    ///   (never taken for damage in the archive: `WriteFailure`).
     func copyFile(at path: String, to destination: URL) throws {
         let entry = try entry(at: path)
         guard FileManager.default.createFile(atPath: destination.path, contents: nil) else {
@@ -164,7 +209,8 @@ class ArchiveFileProvider: DAISYFileProvider {
                 try ArchiveEntryReader.stream(entry, in: archive, limit: nil, holdingToDeclaredSize: budget != nil) { chunk in
                     batch.append(chunk)
                     if batch.count >= Self.writeBatchSize {
-                        try handle.write(contentsOf: batch)
+                        // A failed write (a full disk) is not the archive's damage.
+                        do { try handle.write(contentsOf: batch) } catch { throw WriteFailure(underlying: error) }
                         batch.removeAll(keepingCapacity: true)
                     }
                 }
@@ -174,6 +220,12 @@ class ArchiveFileProvider: DAISYFileProvider {
             try? FileManager.default.removeItem(at: destination)
             throw error
         }
+    }
+
+    /// The size the archive records for the file at `path` (its entry found
+    /// as `readFile(at:)` finds it), or nil for a path it has none for.
+    func byteCount(of path: String) -> Int64? {
+        index.file(at: path).map { Int64($0.uncompressedSize) }
     }
 
     /// How many bytes of an entry `copyFile(at:to:)` gathers before writing.
@@ -189,16 +241,33 @@ class ArchiveFileProvider: DAISYFileProvider {
         return entry
     }
 
-    /// Run `body`, which reads `entry`, naming an entry it finds too large
-    /// in the DAISY damage sentence and keeping that on the budget.
-    private func withinBounds<Value>(of entry: Entry, _ body: () throws -> Value) throws -> Value {
+    /// A failure to write a file out while it is copied, which `withinBounds`
+    /// passes on as it was: the error itself, not ZIP damage. Internal so that
+    /// a test can throw one, since a full disk cannot be made in a test.
+    struct WriteFailure: Error {
+        /// The error the write threw.
+        let underlying: Error
+    }
+
+    /// Run `body`, which reads `entry`, naming an entry it finds too large,
+    /// or whose data cannot be unpacked, in the DAISY damage sentence and
+    /// keeping that on the budget. ZIPFoundation's own error for the second
+    /// is logged as `DAISY_ZIP_ERROR`, not shown. A failed write
+    /// (`WriteFailure`) is the error it was.
+    func withinBounds<Value>(of entry: Entry, _ body: () throws -> Value) throws -> Value {
+        let reason: String
         do {
             return try body()
+        } catch let failure as WriteFailure {
+            throw failure.underlying
         } catch let overflow as ArchiveEntryOverflow {
-            let damage = DAISYParserError.malformedXML(file: entry.path, reason: overflow.reason)
-            budget?.record(damage)
-            throw damage
+            reason = overflow.reason
+        } catch {
+            reason = ArchiveEntryReader.unreadableReason(of: entry, error: error, tag: "DAISY_ZIP_ERROR")
         }
+        let damage = DAISYParserError.malformedXML(file: entry.path, reason: reason)
+        budget?.record(damage)
+        throw damage
     }
 }
 
@@ -233,6 +302,13 @@ class DirectoryFileProvider: DAISYFileProvider {
             }
         }
         return files
+    }
+
+    /// The size of the file at `path`, following a symbolic link to it, as the
+    /// file system gives it; nil for a path that is no file.
+    func byteCount(of path: String) -> Int64? {
+        let target = baseURL.appendingPathComponent(path).resolvingSymlinksInPath()
+        return (try? target.resourceValues(forKeys: [.fileSizeKey]))?.fileSize.map(Int64.init)
     }
 
     func readFile(at path: String) throws -> Data {
@@ -400,7 +476,10 @@ enum DAISYParser {
         // Cached, since detection and the count of books both list the archive.
         let provider = CachingFileProvider(wrapping: ArchiveFileProvider(archive: archive))
         guard !provider.listFiles().contains(where: FileImportService.liesInTMBPackage) else { return false }
-        guard detectVersion(in: provider) != nil else { return false }
+        // A DAISY book, or an NLS BARD braille book, whose package has the
+        // same form and imports as one book too (FMT56).
+        guard detectVersion(in: provider) != nil
+                || BardBraillePackage.holdsPackage(inArchivePaths: provider.listFiles()) else { return false }
         let folders = packageFolders(inArchivePaths: provider.listFiles())
         return folders.count <= 1 || folders.contains("")
     }
@@ -418,7 +497,10 @@ enum DAISYParser {
     /// Create the appropriate file provider for a URL (ZIP, directory, or single file).
     /// Returns a CachingFileProvider that avoids redundant listFiles() calls during
     /// version detection, OPF lookup, and metadata extraction.
-    private static func makeFileProvider(from url: URL) throws -> DAISYFileProvider {
+    /// Internal, since an NLS BARD braille book's package, which has the form
+    /// of a DAISY 3 package, is read through the same providers
+    /// (`BardBraillePackage`, FMT56).
+    static func makeFileProvider(from url: URL) throws -> DAISYFileProvider {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw DAISYParserError.fileNotFound(url.path)
         }
@@ -435,9 +517,10 @@ enum DAISYParser {
             let ext = url.pathExtension.lowercased()
 
             if ext == "zip" || ext == "daisy" {
-                // ZIP archive
+                // ZIP archive; one with a password is refused in words that say so (B27).
+                try UnlockedSources.refuseIfLocked(at: url)
                 do {
-                    let archive = try Archive(url: url, accessMode: .read)
+                    let archive = try UnlockedSources.openArchive(at: url)
                     base = ArchiveFileProvider(archive: archive)
                 } catch {
                     throw DAISYParserError.invalidArchive
@@ -517,37 +600,16 @@ enum DAISYParser {
                 at: xmlPath,
                 in: provider,
                 includesPages: includesPages,
+                pagesBefore: 0,
                 reportIncompleteContent: reportIncompleteContent
-            )
+            ).markdown
         }
 
         // Parse OPF to find the DTBook XML file
         let opfResult = try DAISYOPFParser(path: opfPath, in: provider).parse()
 
-        // Collect DTBook content files, using spine order when available
-        let opfDir = (opfPath as NSString).deletingLastPathComponent
-        var dtbookPaths: [String] = []
-
-        if !opfResult.spineItemRefs.isEmpty {
-            // Use spine order to determine reading sequence
-            for idref in opfResult.spineItemRefs {
-                guard let item = opfResult.manifest[idref] else { continue }
-                if item.mediaType.contains("dtbook") || item.mediaType.contains("x-dtbook") {
-                    let path = opfDir.isEmpty ? item.href : "\(opfDir)/\(item.href)"
-                    dtbookPaths.append(path)
-                }
-            }
-        }
-
-        // Fall back to scanning manifest if spine didn't yield DTBook files
-        if dtbookPaths.isEmpty {
-            for (_, item) in opfResult.manifest {
-                if item.mediaType.contains("dtbook") || item.mediaType.contains("x-dtbook") {
-                    let path = opfDir.isEmpty ? item.href : "\(opfDir)/\(item.href)"
-                    dtbookPaths.append(path)
-                }
-            }
-        }
+        // Collect DTBook content files, in the one order every launch reads them in
+        var dtbookPaths = orderedDTBookPaths(of: opfResult, opfPath: opfPath, in: provider)
 
         // Last resort: find any .xml file that looks like DTBook
         if dtbookPaths.isEmpty {
@@ -561,22 +623,85 @@ enum DAISYParser {
         }
 
         // Convert each content file and concatenate in reading order
+        // The pages of the files before each, so that the ordinal a page with no
+        // words is labelled by counts through the whole book, not each file.
         var allMarkdown: [String] = []
+        var pagesBefore = 0
         for path in dtbookPaths {
-            let markdown = try convertDTBook(
+            let conversion = try convertDTBook(
                 at: path,
                 in: provider,
                 includesPages: includesPages,
+                pagesBefore: pagesBefore,
                 reportIncompleteContent: reportIncompleteContent
             )
-            if !markdown.isEmpty {
-                allMarkdown.append(markdown)
+            pagesBefore = conversion.pagesRead
+            if !conversion.markdown.isEmpty {
+                allMarkdown.append(conversion.markdown)
             }
         }
         return allMarkdown.joined(separator: "\n\n")
     }
 
-    /// Convert one DTBook content file to Markdown. Text read before any
+    /// The DTBook content files of a DAISY 3 package, in one fixed reading
+    /// order that is the same on every launch (the order pages are numbered
+    /// through, so a changing order would relabel them from one launch to the next):
+    /// 1. the order of the spine, when it lists DTBook files;
+    /// 2. else the order the SMIL files of the spine point at them, by the
+    ///    `src` of their `text` elements (a conformant DAISY 3 spine lists SMIL
+    ///    files), then any DTBook file no SMIL file points at, in the manifest's
+    ///    document order. A SMIL file that is missing or damaged only orders
+    ///    nothing: the files it would have pointed at come last;
+    /// 3. else the manifest's document order, never a dictionary's.
+    /// - Returns: The paths, empty when the manifest holds no DTBook file.
+    private static func orderedDTBookPaths(
+        of opfResult: DAISYOPFResult, opfPath: String, in provider: DAISYFileProvider
+    ) -> [String] {
+        let opfDir = (opfPath as NSString).deletingLastPathComponent
+
+        /// Whether a manifest item is a DTBook content file.
+        func isDTBook(_ item: DAISYManifestItem) -> Bool {
+            item.mediaType.contains("dtbook") || item.mediaType.contains("x-dtbook")
+        }
+        /// An item's path in the package, as it is read.
+        func path(of item: DAISYManifestItem) -> String {
+            opfDir.isEmpty ? item.href : "\(opfDir)/\(item.href)"
+        }
+        /// An item's path normalized, to compare with a SMIL file's references.
+        func key(of item: DAISYManifestItem) -> String {
+            ParserUtilities.resolvedPackagePath(item.href, relativeTo: opfPath, preserveFragment: false)
+        }
+
+        // 1. The spine's own DTBook files, in spine order.
+        let spineItems = opfResult.spineItemRefs.compactMap { opfResult.manifest[$0] }
+        let spineDTBooks = spineItems.filter(isDTBook)
+        if !spineDTBooks.isEmpty { return spineDTBooks.map(path(of:)) }
+
+        // 3. The manifest's DTBook files in document order.
+        let manifestDTBooks = opfResult.manifestOrder.compactMap { opfResult.manifest[$0] }.filter(isDTBook)
+        // One file has no order to find, so no SMIL file is read for it.
+        guard manifestDTBooks.count > 1 else { return manifestDTBooks.map(path(of:)) }
+
+        // 2. The order the spine's SMIL files point at them.
+        var itemsByKey: [String: DAISYManifestItem] = [:]
+        for item in manifestDTBooks where itemsByKey[key(of: item)] == nil { itemsByKey[key(of: item)] = item }
+        var ordered: [DAISYManifestItem] = []
+        var placed = Set<String>()
+        for smil in spineItems where smil.mediaType.lowercased().contains("smil") {
+            let smilPath = path(of: smil)
+            guard let sources = try? DAISYSMILParser(path: smilPath, in: provider).parseTextReferences() else { continue }
+            for source in sources {
+                let target = ParserUtilities.resolvedPackagePath(source, relativeTo: smilPath, preserveFragment: false)
+                if let item = itemsByKey[target], placed.insert(target).inserted { ordered.append(item) }
+            }
+        }
+        // Files no SMIL file points at keep the manifest's order, after those that are.
+        let unpointedAt = manifestDTBooks.filter { !placed.contains(key(of: $0)) }
+        return (ordered + unpointedAt).map(path(of:))
+    }
+
+    /// Convert one DTBook content file to Markdown, its pages numbered after
+    /// the `pagesBefore` of the files before it. Text read before any
     /// damage is kept, and the damage goes to `reportIncompleteContent`
     /// instead of into the book's text.
     /// - Throws: `DAISYParserError.malformedXML` naming the file when it is
@@ -585,13 +710,16 @@ enum DAISYParser {
         at path: String,
         in provider: DAISYFileProvider,
         includesPages: Bool,
+        pagesBefore: Int,
         reportIncompleteContent: (DAISYParserError) -> Void
-    ) throws -> String {
-        let conversion = try DTBookToMarkdownConverter(path: path, in: provider, includesPages: includesPages).convert()
+    ) throws -> DTBookConversion {
+        let conversion = try DTBookToMarkdownConverter(
+            path: path, in: provider, includesPages: includesPages, pagesBefore: pagesBefore
+        ).convert()
         if let diagnostic = conversion.diagnostic {
             reportIncompleteContent(diagnostic)
         }
-        return conversion.markdown
+        return conversion
     }
 
     /// Find a DTBook XML file by scanning for files with a <dtbook> root
@@ -781,7 +909,7 @@ enum DAISYParser {
                     continue
                 }
                 html = decodedHTML
-                doc = try SwiftSoup.parse(decodedHTML)
+                doc = try MarkupGuard.parse(decodedHTML)
                 documents[split.path] = doc
                 htmlByPath[split.path] = decodedHTML
             }

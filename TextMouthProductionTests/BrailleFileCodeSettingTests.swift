@@ -64,7 +64,7 @@ final class BrailleFileCodeSettingTests: XCTestCase {
     func testAChangeIsAnnouncedAndWrittenToConfigJSON() throws {
         let defaults = try isolatedDefaults()
         let url = try makeConfigFileURL()
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: defaults, configService: service
         )
@@ -154,7 +154,7 @@ final class BrailleFileCodeSettingTests: XCTestCase {
             notificationCenter: NotificationCenter(),
             initializeServices: false,
             userDefaults: defaults,
-            configService: ConfigService(fileURL: try makeConfigFileURL())
+            configService: makeConfigService(fileURL: try makeConfigFileURL())
         )
     }
 

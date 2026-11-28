@@ -34,6 +34,59 @@ final class FeedMoveToLibraryOperationTests: XCTestCase {
         try await assertMoved(fixture, in: world, model: next)
     }
 
+    // MARK: - A Stale Record of the Feed (Risk 4)
+
+    /// Move to Library… notes its time in the book's record, and the book's
+    /// later saves, a reading position here, keep the note.
+    func testTheRecordNotesTheMoveAndKeepsTheNote() async throws {
+        let world = try FeedTestWorld(self, label: "FeedMoveToLibraryNote")
+        let fixture = try await downloadedEpisode(world)
+        let before = Date()
+
+        let outcome = await world.library.moveToLibraryReturningOutcome([fixture.book], toFolder: fixture.keepers)
+
+        XCTAssertEqual(outcome, .success(nil))
+        let row = try XCTUnwrap(world.library.bookByID(fixture.book.id))
+        let noted = try XCTUnwrap(try BookInfo.load(from: row.tmbDirectory).metadata.movedToLibrary, "the record has no note of the move")
+        XCTAssertGreaterThanOrEqual(noted, before.addingTimeInterval(-1))
+        world.library.persistReadingPosition(bookID: row.id, position: ReadingPosition(chapterIndex: 0, characterOffset: 77))
+        LibraryPersistenceService.flushPendingSave()
+        let record = try BookInfo.load(from: row.tmbDirectory)
+        XCTAssertEqual(record.state.readingPosition?.characterOffset, 77)
+        XCTAssertEqual(record.metadata.movedToLibrary, noted, "a later save lost the note")
+    }
+
+    /// Another Mac's record of the feed, written whole from memory before
+    /// it knew of the move, still calls the episode downloaded: no later
+    /// launch takes the book back into its feed, whose rules could then
+    /// delete its file, because its own record says Move to Library… made
+    /// it the library's.
+    func testAStaleRecordOfTheFeedNeverTakesTheBookBack() async throws {
+        let world = try FeedTestWorld(self, label: "FeedMoveToLibraryStale")
+        let fixture = try await downloadedEpisode(world)
+        let outcome = await world.library.moveToLibraryReturningOutcome([fixture.book], toFolder: fixture.keepers)
+        XCTAssertEqual(outcome, .success(nil))
+        // The other Mac's record of the feed, as it writes it whole.
+        world.center.store.updateItem(fixture.link.itemID, of: fixture.feed.id) { item in
+            item.state = .downloaded(bookID: fixture.book.id)
+        }
+        await world.center.store.flush()
+
+        for launch in 1...2 {
+            let next = await nextLaunch(of: world)
+            let row = try XCTUnwrap(next.bookByID(fixture.book.id), "launch \(launch): the book left the library")
+            XCTAssertNil(row.feedLink, "launch \(launch): the book went back to its feed")
+            XCTAssertEqual(row.folderPath, fixture.keepers, "launch \(launch)")
+            XCTAssertTrue(FileManager.default.fileExists(atPath: row.filePath), "launch \(launch): the book's file is not where its row says")
+            XCTAssertFalse(
+                FileManager.default.fileExists(atPath: fixture.book.tmbDirectory.path),
+                "launch \(launch): the package went back into its feed's folder"
+            )
+            XCTAssertEqual(row.readingPosition?.characterOffset, Self.place, "launch \(launch)")
+            XCTAssertNotNil(try BookInfo.load(from: row.tmbDirectory).metadata.movedToLibrary, "launch \(launch): the record lost its note")
+        }
+    }
+
     // MARK: - A Crash Between Two Steps
 
     /// A crash once the item said "In Library", before the package moved:
@@ -431,25 +484,25 @@ final class FeedMoveToLibraryCommandTests: XCTestCase {
     func testTheWords() {
         XCTAssertEqual(
             FeedWording.moveToLibraryHint(count: 1, noun: .episode),
-            "Moves this episode into a folder of your library, where it becomes a book you can edit; it leaves the feed"
+            "Moves this episode into a library folder as a book you can edit; it leaves the feed"
         )
         XCTAssertEqual(
             FeedWording.moveToLibraryHint(count: 1, noun: .article),
-            "Moves this article into a folder of your library, where it becomes a book you can edit; it leaves the feed"
+            "Moves this article into a library folder as a book you can edit; it leaves the feed"
         )
         XCTAssertEqual(
             FeedWording.moveToLibraryHint(count: 3, noun: .item),
-            "Moves these 3 items into a folder of your library, where they become books you can edit; they leave their feeds"
+            "Moves these 3 items into a library folder as books you can edit; they leave their feeds"
         )
         XCTAssertEqual(FeedWording.moveToLibraryHeading(titles: ["Ep. 368"], noun: .episode), "Move “Ep. 368” to Library")
         XCTAssertEqual(FeedWording.moveToLibraryHeading(titles: ["A", "B", "C"], noun: .episode), "Move 3 Episodes to Library")
         XCTAssertEqual(
             FeedWording.movedToLibrary(titles: ["Ep. 368"], noun: .episode, folderPath: "Podcasts/Keepers"),
-            "Moved “Ep. 368” into Podcasts/Keepers. It's a book of your library now, and its feed lists it In Library."
+            "Moved “Ep. 368” into Podcasts/Keepers. It's a library book now, and its feed lists it In Library."
         )
         XCTAssertEqual(
             FeedWording.movedToLibrary(titles: ["A", "B"], noun: .article, folderPath: ""),
-            "Moved 2 articles into the top of your library. They're books of your library now, and their feeds list them In Library."
+            "Moved 2 articles into the top of your library. They're library books now, and their feeds list them In Library."
         )
         XCTAssertEqual(
             FeedWording.nothingToMoveToLibrary,
@@ -464,7 +517,7 @@ final class FeedMoveToLibraryCommandTests: XCTestCase {
                 folderPath: "Podcasts/Keepers",
                 stayed: [(title: "Ep. 2", reason: "The file couldn't be moved.")]
             ),
-            "Moved “Ep. 1” into Podcasts/Keepers. It's a book of your library now, and its feed lists it In Library. "
+            "Moved “Ep. 1” into Podcasts/Keepers. It's a library book now, and its feed lists it In Library. "
                 + "“Ep. 2” stays in its feed: The file couldn't be moved."
         )
         XCTAssertEqual(
@@ -478,7 +531,7 @@ final class FeedMoveToLibraryCommandTests: XCTestCase {
                     (title: "Ep. 5", reason: "No room."),
                 ]
             ),
-            "Moved 2 episodes into the top of your library. They're books of your library now, and their feeds list them In Library. "
+            "Moved 2 episodes into the top of your library. They're library books now, and their feeds list them In Library. "
                 + "“Ep. 3” and “Ep. 5” stay in their feeds: No room. “Ep. 4” stays in its feed: No permission."
         )
         let episode = Book(title: "E", format: .audio, filePath: "/e.m4a", md5Hash: "e")
@@ -553,7 +606,7 @@ final class FeedMoveToLibraryCommandTests: XCTestCase {
         // returns it, the sheet's owner keeps it while the sheet closes, as
         // `MoveToLibrarySheetPresentation` does, and it is said a moment
         // after, once VoiceOver is back on the window.
-        let sentence = "Moved “Episode 1” into \(keepers). It's a book of your library now, and its feed lists it In Library."
+        let sentence = "Moved “Episode 1” into \(keepers). It's a library book now, and its feed lists it In Library."
         let outcome = await request.move(toFolder: keepers, in: world.library)
         XCTAssertEqual(outcome, .success(sentence))
         XCTAssertEqual(heard, [], "the move was said while its sheet closed")

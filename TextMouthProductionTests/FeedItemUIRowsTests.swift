@@ -291,6 +291,29 @@ final class FeedItemUIRowsTests: XCTestCase {
         XCTAssertEqual(heard.last, "Deleted the download of “Episode 2”. It can be downloaded again.")
     }
 
+    // MARK: - The Row's Tag in the Selection
+
+    /// An item row's tag in the Library list's selection is its own
+    /// (returnrow). It is the same for the same item of the same feed, and
+    /// another for another item, or for the same item of another feed. It
+    /// is a version 8 UUID with the standard variant, so it never equals a
+    /// book's, folder's, or feed's random version 4 ID. One value is
+    /// pinned, as Python's hashlib and uuid compute it, so a change to how
+    /// the tag is made shows.
+    func testAnItemRowsSelectionTagIsItsOwn() throws {
+        let feed = try XCTUnwrap(UUID(uuidString: "6F0C1E1A-2B3C-4D5E-8F70-1A2B3C4D5E6F"))
+        let otherFeed = try XCTUnwrap(UUID(uuidString: "0D9E8F7A-6B5C-4D3E-9F21-0A1B2C3D4E5F"))
+        let tag = FeedItemRowContent.selectionID(feedID: feed, itemID: "guid:ep-1")
+
+        XCTAssertEqual(tag.uuidString, "B9136B3D-00BF-8E1A-80BA-A38DBFE45D20")
+        XCTAssertEqual(tag, FeedItemRowContent.selectionID(feedID: feed, itemID: "guid:ep-1"), "the tag changed between drawings")
+        XCTAssertNotEqual(tag, FeedItemRowContent.selectionID(feedID: feed, itemID: "guid:ep-2"), "two items share a tag")
+        XCTAssertNotEqual(tag, FeedItemRowContent.selectionID(feedID: otherFeed, itemID: "guid:ep-1"), "two feeds' items share a tag")
+        XCTAssertEqual(tag.uuid.6 >> 4, 8, "the version")
+        XCTAssertEqual(tag.uuid.8 >> 6, 0b10, "the variant")
+        XCTAssertEqual(UUID().uuid.6 >> 4, 4, "a book's, folder's, or feed's ID is version 4")
+    }
+
     // MARK: - Helpers
 
     /// Starts `world`'s engine and subscribes it to "The Tactile Atlas",

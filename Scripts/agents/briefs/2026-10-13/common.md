@@ -1,6 +1,6 @@
 # Common brief for October 13, 2026 (read with AGENTS.md)
 
-Repository: /Users/roberteggleston/programming/ai/claude/swift/TextMouth, a native macOS TTS and audiobook app, TextMouth. You work in your own git worktree (your current directory). `main` is at 07040da7 (FR15's merge, e2ab40d9, and its documentation) or later; the suite on it counts **6192 tests, 64 skipped, 0 failures**, with no Swift warnings (the performance baselines skip while the Mac is busy, so a quiet run skips fewer). The orchestrator runs on Opus 5.5, and so do you.
+Repository: <main checkout>, a native macOS TTS and audiobook app, TextMouth. You work in your own git worktree (your current directory). `main` is at 07040da7 (FR15's merge, e2ab40d9, and its documentation) or later; the suite on it counts **6192 tests, 64 skipped, 0 failures**, with no Swift warnings (the performance baselines skip while the Mac is busy, so a quiet run skips fewer). The orchestrator runs on Opus 5.5, and so do you.
 
 **Your worktree starts at origin/main, which is far behind local main.** Make your branch from local main by name (`git checkout -b <branch> main`) and check that `git merge-base --is-ancestor e2ab40d9 HEAD` succeeds before you start.
 

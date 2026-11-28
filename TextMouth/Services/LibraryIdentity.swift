@@ -44,7 +44,13 @@ struct LibraryIdentity: Codable, Equatable, Sendable {
         } catch CocoaError.fileReadNoSuchFile {
             return nil
         }
-        return try decoder.decode(LibraryIdentity.self, from: data)
+        return try decode(data)
+    }
+
+    /// The identity a marker's bytes hold, for a caller that read the file
+    /// itself, as Compare Libraries reads another copy's marker.
+    static func decode(_ data: Data) throws -> LibraryIdentity {
+        try decoder.decode(LibraryIdentity.self, from: data)
     }
 
     // MARK: - Adopting
@@ -55,18 +61,28 @@ struct LibraryIdentity: Codable, Equatable, Sendable {
     /// A marker already there is never replaced, even one written by another
     /// Mac a moment ago: the new marker is created exclusively, and when
     /// another appears first, that one is read and returned instead.
-    /// - Parameter now: The date a new identity records.
+    /// - Parameters:
+    ///   - id: The identifier a missing marker is written with: the one this
+    ///     Mac knows for the library, when the listener restores a marker
+    ///     that did not arrive in a cloud location (risk 5 of the local-first
+    ///     research), so the library is never given a second identity; nil,
+    ///     as every other caller passes, gives a new one.
+    ///   - now: The date a new marker records.
     /// - Returns: The identity the folder holds afterwards, and whether this
     ///   call gave it.
     /// - Throws: Why the marker could not be read or written.
-    static func adopt(in root: URL, now: Date = Date()) throws -> (identity: LibraryIdentity, isNew: Bool) {
+    static func adopt(
+        in root: URL,
+        identifiedAs id: UUID? = nil,
+        now: Date = Date()
+    ) throws -> (identity: LibraryIdentity, isNew: Bool) {
         if let existing = try read(in: root) {
             return (existing, false)
         }
         // The marker keeps the date to the second, as ISO 8601 writes it, so
         // the identity returned is the very one a later read returns.
         let wholeSeconds = Date(timeIntervalSince1970: now.timeIntervalSince1970.rounded(.down))
-        let identity = LibraryIdentity(id: UUID(), created: wholeSeconds)
+        let identity = LibraryIdentity(id: id ?? UUID(), created: wholeSeconds)
         do {
             // Exclusive creation: refused when any file is already there.
             try encoder.encode(identity).write(to: markerURL(in: root), options: .withoutOverwriting)

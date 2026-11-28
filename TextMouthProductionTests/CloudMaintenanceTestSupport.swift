@@ -3,6 +3,52 @@ import XCTest
 
 // MARK: - A Scripted Cloud
 
+/// An access that holds a maintenance pass on its background thread at its
+/// first look at a file, until the test lets it go, so that a test can drop
+/// its last reference to the library while the pass is under way and see
+/// whether the pass holds the library alive (FU12). Every wait has a limit,
+/// so a test that never lets go ends its pass anyway.
+final class HeldFileAccess: @unchecked Sendable {
+    /// Signaled by the pass's thread when it reaches its first file.
+    private let reached = DispatchSemaphore(value: 0)
+    /// Signaled by the test to let the held pass go on.
+    private let letGo = DispatchSemaphore(value: 0)
+    /// Guards `held`.
+    private let lock = NSLock()
+    /// Whether a look at a file was held already: only the first is.
+    private var held = false
+
+    /// The longest the pass waits for the test, in seconds.
+    private static let longestHold = 20.0
+
+    /// The access the pass takes: nothing is in the cloud, and the first
+    /// look at a file waits for `release()`.
+    var access: MaintenanceFileAccess {
+        MaintenanceFileAccess(isDataless: { [self] _ in
+            let isFirst = lock.withLock { () -> Bool in
+                defer { held = true }
+                return !held
+            }
+            if isFirst {
+                reached.signal()
+                _ = letGo.wait(timeout: .now() + Self.longestHold)
+            }
+            return false
+        })
+    }
+
+    /// Waits up to `timeout` seconds for the pass to reach its first file,
+    /// and returns whether it did.
+    func waitUntilHeld(timeout: TimeInterval = 10) -> Bool {
+        reached.wait(timeout: .now() + timeout) == .success
+    }
+
+    /// Lets the held pass go on.
+    func release() {
+        letGo.signal()
+    }
+}
+
 /// A cloud library scripted by a test (FR02): the items it pretends are
 /// dataless, and the items whose reads it refuses with `EDEADLK`, as the
 /// system refuses the read of a dataless file while downloads are off.

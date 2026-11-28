@@ -32,11 +32,87 @@ final class WindowScopeShortcutTests: XCTestCase {
         XCTAssertEqual(ShortcutAction.addFeed.availableScopes, [.library])
         XCTAssertEqual(ShortcutAction.copyReadingPosition.availableScopes, [.reader])
         XCTAssertEqual(ShortcutAction.searchInBook.availableScopes, [.reader])
+        XCTAssertEqual(ShortcutAction.searchLibrary.availableScopes, [.app], "Edit's command works in every window")
         XCTAssertEqual(ShortcutAction.recordingStop.availableScopes, [.recording])
         XCTAssertEqual(ShortcutAction.editorPlayPause.availableScopes, [.audioEditor])
         for action in ShortcutAction.allCases {
             XCTAssertTrue(action.availableScopes.contains(action.defaultScope), action.rawValue)
         }
+    }
+
+    // MARK: - The Search Library Window
+
+    /// A window, never shown, carrying the Search Library window's
+    /// identifier as the controller sets it, closed when the test ends.
+    private func makeSearchLibraryWindow() -> NSWindow {
+        let window = makeShortcutWindow(.library)
+        window.identifier = NSUserInterfaceItemIdentifier(LibrarySearchWindowController.windowIdentifier)
+        return window
+    }
+
+    /// The Search Library window is neither a Library nor a reader window:
+    /// the menu bar shows neither's menus while it is in front, where a
+    /// titled window without an identifier of its own is a Library window.
+    func testTheSearchLibraryWindowShowsNoContextMenus() {
+        let library = makeShortcutWindow(.library)
+
+        XCTAssertEqual(MenuVisibilityManager.detectWindowType(for: library), .library, "the control: a plain titled window")
+        XCTAssertNil(MenuVisibilityManager.detectWindowType(for: makeSearchLibraryWindow()))
+        XCTAssertEqual(LibrarySearchWindowController.windowIdentifier, "library-search")
+    }
+
+    /// The window in front is an "other" window to the menus, as Settings
+    /// is: a menu command working in one kind of window shows no key and is
+    /// dimmed there, where nil, no window in front, would admit every
+    /// command; a Library window and a reader keep their kinds, and no
+    /// window is nil.
+    func testTheMenusTakeTheSearchLibraryWindowForAnotherWindow() {
+        XCTAssertEqual(FrontWindowKind.kind(of: makeSearchLibraryWindow()), .other)
+        XCTAssertEqual(FrontWindowKind.kind(of: makeShortcutWindow(.library)), .library)
+        XCTAssertEqual(FrontWindowKind.kind(of: makeShortcutWindow(.reader)), .reader)
+        XCTAssertNil(FrontWindowKind.kind(of: nil))
+        // A command only Library windows have is dimmed there and shows no key.
+        XCTAssertFalse(ShortcutScope.library.admitsMenuCommand(in: FrontWindowKind.kind(of: makeSearchLibraryWindow())))
+        XCTAssertTrue(ShortcutScope.app.admitsMenuCommand(in: FrontWindowKind.kind(of: makeSearchLibraryWindow())), "Search Library… itself works there")
+    }
+
+    /// No shortcut matches in the Search Library window, nor in a sheet over
+    /// it: its list and field take every key, so Return opens a match and
+    /// Space and the letters are VoiceOver's and the list's, where in any
+    /// other window of the app the manager takes them for Open Selected Book,
+    /// Play / Pause, and the rest. Nothing is posted.
+    func testNoShortcutIsTakenInTheSearchLibraryWindow() throws {
+        let center = NotificationCenter()
+        let manager = KeyboardShortcutManager(
+            userDefaults: makeSandboxedPreferences("search-library-window-keys"),
+            installsEventMonitor: false,
+            notificationCenter: center
+        )
+        let posted = PostedShortcutActions(on: center)
+        let searchWindow = makeSearchLibraryWindow()
+        let sheet = makeShortcutSheet(on: searchWindow)
+        let keys = [
+            KeyBinding(key: "space"), KeyBinding(key: "return"), KeyBinding(key: "k"), KeyBinding(key: "l"),
+            KeyBinding(key: "rightArrow", command: true),
+        ]
+
+        XCTAssertNil(KeyboardShortcutManager.windowKind(ofKeyWindow: searchWindow))
+        XCTAssertNil(KeyboardShortcutManager.windowKind(ofKeyWindow: sheet))
+        XCTAssertEqual(KeyboardShortcutManager.windowKind(ofKeyWindow: makeShortcutWindow(.library)), .library)
+        for key in keys {
+            let press = try ShortcutKeyPresses.keyPress(of: key)
+            XCTAssertFalse(manager.handleKeyEvent(press, keyWindow: searchWindow, firstResponder: nil), "\(key.displayString) in the window")
+            XCTAssertFalse(manager.handleKeyEvent(press, keyWindow: searchWindow, firstResponder: NSTableView()), "\(key.displayString) in its list")
+            XCTAssertFalse(manager.handleKeyEvent(press, keyWindow: sheet, firstResponder: nil), "\(key.displayString) in a sheet over it")
+        }
+        XCTAssertEqual(posted.names, [], "nothing was posted")
+
+        // The control: the same keys act in a Library window.
+        for key in [KeyBinding(key: "space"), KeyBinding(key: "return")] {
+            let press = try ShortcutKeyPresses.keyPress(of: key)
+            XCTAssertTrue(manager.handleKeyEvent(press, keyWindow: makeShortcutWindow(.library), firstResponder: nil), key.displayString)
+        }
+        XCTAssertEqual(posted.names, [ShortcutAction.togglePlayback.rawValue, ShortcutAction.openSelectedBook.rawValue])
     }
 
     // MARK: - Naming a Scope

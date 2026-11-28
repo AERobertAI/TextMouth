@@ -11,6 +11,14 @@ import XCTest
 @MainActor
 final class PerformanceBaselineRulesTests: XCTestCase {
 
+    /// A Mac model that is not this machine's, for the tests of baselines recorded on another Mac. It is
+    /// "VirtualMac2,1" wherever this machine is anything else (every development Mac), and "Mac99,9" on a
+    /// virtual machine such as GitHub's runner, whose own model is "VirtualMac2,1": the test then still
+    /// stands for baselines of another model, which is the rule it checks.
+    private static var anotherMacModel: String {
+        MachineIdentity.current.model == "VirtualMac2,1" ? "Mac99,9" : "VirtualMac2,1"
+    }
+
     // MARK: - Medians
 
     /// The median is the middle number of an odd count, whatever the order,
@@ -68,9 +76,9 @@ final class PerformanceBaselineRulesTests: XCTestCase {
         XCTAssertNil(PerformanceRules.mismatchReason(of: file, machine: sameModel, configuration: file.configuration))
 
         var otherModel = file.machine
-        otherModel.model = "VirtualMac2,1"
+        otherModel.model = Self.anotherMacModel
         let mismatch = PerformanceRules.mismatchReason(of: file, machine: otherModel, configuration: file.configuration)
-        XCTAssertEqual(mismatch?.contains("VirtualMac2,1"), true, mismatch ?? "no reason")
+        XCTAssertEqual(mismatch?.contains(Self.anotherMacModel), true, mismatch ?? "no reason")
         XCTAssertEqual(mismatch?.contains("make perf-baselines"), true, mismatch ?? "no reason")
 
         let other = file.configuration == "Debug" ? "Release" : "Debug"
@@ -129,7 +137,7 @@ final class PerformanceBaselineRulesTests: XCTestCase {
     func testBaselinesOfAnotherMacSkipTheTests() async throws {
         let lines = ReportedLines()
         var otherMac = MachineIdentity.current
-        otherMac.model = "VirtualMac2,1"
+        otherMac.model = Self.anotherMacModel
         let run = try makeRun(
             settings: [PerformanceRunSettings.strictVariable: "1"],
             baselines: Self.baselineFile(values: [:], machine: otherMac),
@@ -140,7 +148,7 @@ final class PerformanceBaselineRulesTests: XCTestCase {
             XCTFail("baselines of another Mac did not skip the test")
         } catch is XCTSkip {
             XCTAssertTrue(
-                lines.all.contains { $0.hasPrefix("PERFORMANCE SKIPPED: the baselines were recorded on a VirtualMac2,1") },
+                lines.all.contains { $0.hasPrefix("PERFORMANCE SKIPPED: the baselines were recorded on a \(Self.anotherMacModel)") },
                 lines.all.joined(separator: "\n")
             )
         }
@@ -152,7 +160,7 @@ final class PerformanceBaselineRulesTests: XCTestCase {
     func testARecordingRunMeasuresOnAnotherMac() async throws {
         let lines = ReportedLines()
         var otherMac = MachineIdentity.current
-        otherMac.model = "VirtualMac2,1"
+        otherMac.model = Self.anotherMacModel
         let run = try makeRun(
             settings: [PerformanceRunSettings.strictVariable: "1", PerformanceRunSettings.recordVariable: "1"],
             baselines: Self.baselineFile(values: [:], machine: otherMac),

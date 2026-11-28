@@ -345,6 +345,29 @@ final class BookCloudStorageServiceTests: XCTestCase {
         XCTAssertEqual(steps.map(\.percent), [50, 100])
     }
 
+    /// A book needs room for the files not on this Mac yet, as they report
+    /// their sizes, read without downloading anything: the files already here
+    /// take none; a file still to come that reports no size makes the need
+    /// unknown (nil), which the reading list's downloads read as no bytes,
+    /// checked against the reserve alone; a book wholly here needs nothing.
+    func testABookNeedsTheBytesOfItsFilesNotYetHere() throws {
+        let book = try makePackage(["audio.m4b", "content.md", "cover.jpg"])
+        items.setStatus(managed(.notDownloaded, bytes: 900), of: book["audio.m4b"])
+        items.setStatus(managed(.notDownloaded, bytes: 40), of: book["content.md"])
+        items.setStatus(managed(.downloaded, bytes: 5), of: book["cover.jpg"])
+        let storage = makeStorage()
+
+        XCTAssertEqual(storage.bytesToDownload(of: book.package), 940)
+        XCTAssertEqual(items.downloadRequests, [], "reading the need downloaded something")
+
+        items.setStatus(managed(.notDownloaded, bytes: 0), of: book["content.md"])
+        XCTAssertNil(storage.bytesToDownload(of: book.package), "a file without a size gave a figure")
+
+        items.setStatus(managed(.downloaded, bytes: 900), of: book["audio.m4b"])
+        items.setStatus(managed(.downloaded, bytes: 40), of: book["content.md"])
+        XCTAssertEqual(storage.bytesToDownload(of: book.package), 0)
+    }
+
     /// Offline, a book with files only in the cloud fails at once: nothing
     /// is asked for and nothing waits.
     func testAnOfflineMacFailsAtOnce() async throws {
@@ -1022,6 +1045,64 @@ final class BookCloudStorageServiceTests: XCTestCase {
         XCTAssertEqual(items.removalRequests.count, 2, "nothing more was removed")
     }
 
+    // MARK: Removing Only What the Cloud Proves (Phase 0 of the local-first design)
+
+    /// A file whose sync service gave no upload state is not proven to be in
+    /// the cloud, so Remove Download refuses before removing anything, and
+    /// says why, in the words VoiceOver reads.
+    func testRemovingADownloadIsRefusedWhenNoUploadStateWasGiven() throws {
+        let book = try makePackage(["bookInfo.json", "content.md"])
+        syncFileByFile(book, files: managed(.downloaded))
+        items.setStatus(managed(.downloaded, uploadReported: false), of: book["content.md"])
+
+        XCTAssertThrowsError(try makeStorage().removeDownload(of: book.package)) { error in
+            XCTAssertEqual(error as? BookCloudError, .cloudCopyNotProven(.uploadNotReported))
+            XCTAssertEqual(
+                (error as? BookCloudError)?.explanation(in: .googleDrive),
+                "Google Drive hasn't said that every file of this book is uploaded, so its download can't be "
+                    + "removed: the only copy might be on this Mac. Try again in a moment."
+            )
+        }
+        XCTAssertEqual(items.removalRequests, [], "nothing was removed")
+        XCTAssertEqual(events.tags, ["CLOUD_DOWNLOAD_REMOVAL_FAILED"])
+    }
+
+    /// An upload that failed, a conflict, and a copy here that is not said
+    /// to be current each refuse the removal, with a reason of its own.
+    func testRemovingADownloadIsRefusedForAnUploadErrorAConflictAndAStaleCopy() throws {
+        let book = try makePackage(["bookInfo.json", "content.md"])
+        let cases: [(String, CloudItemStatus, CloudCopyDoubt)] = [
+            ("an upload error", managed(.downloaded, uploadError: "No space left in the drive."), .uploadFailed("No space left in the drive.")),
+            ("a conflict", managed(.downloaded, conflicts: true), .inConflict),
+            ("a copy not current", managed(.downloaded, current: false), .notCurrent),
+        ]
+        for (name, status, doubt) in cases {
+            syncFileByFile(book, files: managed(.downloaded))
+            items.setStatus(status, of: book["content.md"])
+            XCTAssertThrowsError(try makeStorage().removeDownload(of: book.package), name) { error in
+                XCTAssertEqual(error as? BookCloudError, .cloudCopyNotProven(doubt), name)
+            }
+        }
+        XCTAssertEqual(items.removalRequests, [], "nothing was removed")
+    }
+
+    /// Changes waiting to upload are still the plain "not uploaded yet",
+    /// ahead of any other doubt, and a file the service has not downloaded
+    /// is not asked about its current copy: nothing of it is removed.
+    func testRemovalOnlyAsksTheFilesItWouldRemoveAboutTheirCurrentCopy() throws {
+        let book = try makePackage(["bookInfo.json", "content.md"])
+        syncFileByFile(book, files: managed(.downloaded))
+        items.setStatus(managed(.downloaded, uploaded: false, current: false), of: book["content.md"])
+        XCTAssertThrowsError(try makeStorage().removeDownload(of: book.package)) { error in
+            XCTAssertEqual(error as? BookCloudError, .notUploaded)
+        }
+
+        // Only in the cloud, with no flag and not current: not removed, so not asked.
+        items.setStatus(managed(.notDownloaded, uploadReported: false, current: false), of: book["content.md"])
+        try makeStorage().removeDownload(of: book.package)
+        XCTAssertEqual(paths(items.removalRequests), paths([book["bookInfo.json"]]))
+    }
+
     /// A package synced as one item is asked for whole, never file by file,
     /// which the sync service would refuse: here its folder is on this Mac
     /// while its files are only in the cloud.
@@ -1221,10 +1302,16 @@ final class BookCloudStorageServiceTests: XCTestCase {
 
     /// The app installs the real services at launch, and the hosted tests'
     /// library, in their sandbox on the startup disk, still reads as local.
+    /// The book storage is the real one wrapped in sync's (`StoreBookStorage`,
+    /// which answers for a book another device has and for every other asks
+    /// the real one), or the real one itself where nothing wrapped it.
     @MainActor
     func testTheInstalledServicesSeeALocalLibrary() async throws {
         XCTAssertTrue(CloudServices.itemStatus is UbiquitousItemStatusProvider)
-        XCTAssertTrue(CloudServices.bookStorage is BookCloudStorageService)
+        XCTAssertTrue(
+            CloudServices.bookStorage is StoreBookStorage || CloudServices.bookStorage is BookCloudStorageService,
+            "the installed storage is neither the real one nor sync's wrapper of it"
+        )
         let items = CloudServices.itemStatus
         let storage = CloudServices.bookStorage
         let book = try makePackage(["content.md"])
@@ -1394,9 +1481,22 @@ private func managed(
     _ state: CloudItemState,
     bytes: Int64? = 100,
     uploaded: Bool = true,
-    error: String? = nil
+    error: String? = nil,
+    uploadReported: Bool = true,
+    uploadError: String? = nil,
+    conflicts: Bool = false,
+    current: Bool = true
 ) -> CloudItemStatus {
-    CloudItemStatus(state: state, isUploaded: uploaded, byteCount: bytes, hasUnresolvedConflicts: false, downloadError: error)
+    CloudItemStatus(
+        state: state,
+        isUploaded: uploaded,
+        byteCount: bytes,
+        hasUnresolvedConflicts: conflicts,
+        downloadError: error,
+        isUploadReported: uploadReported,
+        uploadError: uploadError,
+        isCurrent: current
+    )
 }
 
 /// Whether two URLs name the same item, however their folders are spelled.

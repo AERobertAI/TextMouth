@@ -145,8 +145,8 @@ final class MacBrailleTableBookTests: XCTestCase {
             }
             XCTAssertEqual(
                 changed.errorDescription,
-                "This Mac's braille table \u{201C}\(french)\u{201D} has changed since the book was read with it, "
-                    + "from liblouis 3.34.0 to 3.35.0, so TextMouth keeps the book's text as it was."
+                "This Mac's braille table \u{201C}\(french)\u{201D} changed from liblouis 3.34.0 to 3.35.0 "
+                    + "since the book was read, so TextMouth keeps the book's text as it was."
             )
             XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable("en-ueb-g2.ctb", recordedVersion: "3.34.0"))
             XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable(french, recordedVersion: nil))
@@ -158,10 +158,44 @@ final class MacBrailleTableBookTests: XCTestCase {
             XCTAssertThrowsError(try BrailleBookReader.requireUnchangedTable(french, recordedVersion: "3.34.0")) {
                 XCTAssertEqual(
                     ($0 as? LocalizedError)?.errorDescription,
-                    "This Mac's braille table \u{201C}\(french)\u{201D} may have changed since the book was read with "
-                        + "liblouis 3.34.0, so TextMouth keeps the book's text as it was."
+                    "This Mac's braille table \u{201C}\(french)\u{201D} may have changed since liblouis 3.34.0 "
+                        + "read the book, so TextMouth keeps the book's text as it was."
                 )
             }
+        }
+    }
+
+    // MARK: - A Bare Value The Mac's Pack Lacks
+
+    /// A bare value the Mac's pack lacks, such as the `fr-bfu-g2.ctb` the iPhone stores (FR32), reads with VoiceOver's file of
+    /// that name, keeps the value it was asked for, records and is held to this Mac's liblouis version, and translates as the
+    /// `mac:` value of the same file does; one VoiceOver lacks too is refused as before.
+    func testABareValueThePackLacksReadsWithVoiceOversFile() throws {
+        try XCTSkipIf(BrailleTableCatalog.table(withID: french) == nil,
+                      "This Mac does not offer its French contracted table (\(BrailleTableCatalog.macTablesFolder.path))")
+        let bare = BrailleTableSource.parse(french).fileName
+        XCTAssertNil(BrailleTableCatalog.bundled.first { $0.id == bare }, "the Mac's pack has English alone")
+        let table = try XCTUnwrap(BrailleTableCatalog.table(withID: bare))
+        XCTAssertEqual(table.id, bare)
+        XCTAssertTrue(BrailleTableCatalog.readsFromMacFolder(bare))
+        XCTAssertFalse(BrailleTableCatalog.readsFromMacFolder("en-ueb-g2.ctb"))
+        let version = try XCTUnwrap(BrailleTableCatalog.currentMacLiblouisVersion(), "this Mac's tables name no version")
+        XCTAssertEqual(BrailleTableCatalog.versionToRecord(forTable: bare), version)
+        XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable(bare, recordedVersion: version))
+        XCTAssertThrowsError(try BrailleBookReader.requireUnchangedTable(bare, recordedVersion: "2.0.0")) {
+            XCTAssertEqual($0 as? BrailleTranslator.Failure, .changedTable(bare, then: "2.0.0", now: version))
+        }
+        XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable(bare, recordedVersion: nil))
+
+        let work = try makeSandboxDirectory("MacBrailleBare")
+        let print = "Le chat est sur la table."
+        let named = try BrailleTranslator.translate([print], table: bare, direction: .printToBraille, workingIn: work)
+        let mac = try BrailleTranslator.translate([print], table: french, direction: .printToBraille, workingIn: work)
+        XCTAssertEqual(named, mac)
+        XCTAssertFalse(named.joined().isEmpty)
+        XCTAssertNil(BrailleTableCatalog.table(withID: "no-such-table.ctb"))
+        XCTAssertThrowsError(try BrailleTranslator.translate([print], table: "no-such-table.ctb", direction: .printToBraille, workingIn: work)) {
+            XCTAssertEqual($0 as? BrailleTranslator.Failure, .unknownTable("no-such-table.ctb"))
         }
     }
 
@@ -335,7 +369,7 @@ final class MacBrailleTableBookTests: XCTestCase {
         XCTAssertEqual(try decoded(gone), gone)
         XCTAssertEqual(try decoded("mac:../escape.ctb"), "")
         let defaults = try isolatedDefaults()
-        let service = ConfigService(fileURL: try makeConfigFileURL())
+        let service = makeConfigService(fileURL: try makeConfigFileURL())
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: defaults, configService: service
         )
@@ -358,6 +392,50 @@ final class MacBrailleTableBookTests: XCTestCase {
         XCTAssertEqual(BraillePreferences.table.read(from: defaults), spanish)
     }
 
+    /// An iPhone's choice this Mac lacks survives the Mac's launch save: a bare table name this Mac has no table of (an
+    /// iPhone's `en-nz-g2.ctb`, say) is not taken, the Mac keeps reading with its own table, and the save writes the file's
+    /// value back as it was, until the table is changed on this Mac, which writes the Mac's own. A file that then names a
+    /// table the Mac takes ends the hold.
+    @MainActor
+    func testAnIPhonesChoiceTheMacLacksSurvivesTheLaunchSave() throws {
+        let theirs = "table-only-the-iphone-has.ctb"
+        let url = try makeConfigFileURL()
+        try Data(#"{"brailleTable": "\#(theirs)"}"#.utf8).write(to: url)
+        let defaults = try isolatedDefaults()
+        let service = makeConfigService(fileURL: url)
+        let settings = SettingsViewModel(
+            notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: defaults, configService: service
+        )
+        // The file's value is kept as it is, never repaired to empty; the setting refuses it and keeps the Mac's own.
+        XCTAssertEqual(service.config.brailleTable, theirs)
+        settings.applyConfigChanges(service.config)
+        XCTAssertEqual(settings.brailleTable, "en-ueb-g2.ctb")
+
+        // What the launch's save writes, and what every later save of another setting writes.
+        var written = service.config
+        settings.writePreferences(into: &written)
+        XCTAssertEqual(written.brailleTable, theirs, "the launch save handed the iPhone this Mac's table")
+        settings.wordsPerMinute = 200
+        settings.writePreferences(into: &written)
+        XCTAssertEqual(written.brailleTable, theirs)
+
+        // A change on this Mac replaces it, and stays replaced.
+        settings.brailleTable = "en-us-g1.ctb"
+        settings.writePreferences(into: &written)
+        XCTAssertEqual(written.brailleTable, "en-us-g1.ctb")
+        settings.writePreferences(into: &written)
+        XCTAssertEqual(written.brailleTable, "en-us-g1.ctb")
+
+        // The file naming a table this Mac takes ends the hold.
+        var edit = written
+        edit.brailleTable = theirs
+        settings.applyConfigChanges(edit)
+        edit.brailleTable = "en_US.tbl"
+        settings.applyConfigChanges(edit)
+        settings.writePreferences(into: &written)
+        XCTAssertEqual(written.brailleTable, "en_US.tbl")
+    }
+
     /// A table that says six dots but writes a character with eight, as the
     /// Mac's Swedish table writes «, fails the book's export naming the
     /// character, in a BRF and a PEF alike, rather than dropping the extra
@@ -370,8 +448,8 @@ final class MacBrailleTableBookTests: XCTestCase {
         let book = ExportBookDetails(title: "Bok", author: nil, language: "sv")
         let quoted = try ExportDocumentWalker.document(fromMarkdown: "Han sa \u{00AB}hej\u{00BB} till dem.\n", book: book)
         let options = BrailleExportOptions(table: swedish)
-        let sentence = "The braille table writes \u{201C}\u{00AB}\u{201D} as an eight-dot cell, "
-            + "and TextMouth writes BRF and PEF files in six-dot braille only."
+        let sentence = "The braille table writes \u{201C}\u{00AB}\u{201D} as an eight-dot cell, but "
+            + "TextMouth's BRF and PEF files are six-dot only."
         try MacBrailleTableCheck.$verdicts.withValue(MacBrailleTableCheck.Verdicts()) {
             XCTAssertThrowsError(try BRFExportWriter().write(
                 quoted, options: options, to: folder.appendingPathComponent("bok.brf"), cancellation: BookExportCancellation()
@@ -406,8 +484,8 @@ final class MacBrailleTableBookTests: XCTestCase {
             fromMarkdown: "write to info@example.org\n", book: ExportBookDetails(title: "Note", author: nil, language: nil)
         )
         let options = BrailleExportOptions(table: table)
-        let sentence = "The braille table writes \u{201C}@\u{201D} as an eight-dot cell, "
-            + "and TextMouth writes BRF and PEF files in six-dot braille only."
+        let sentence = "The braille table writes \u{201C}@\u{201D} as an eight-dot cell, but TextMouth's BRF "
+            + "and PEF files are six-dot only."
         try MacBrailleTableCheck.$verdicts.withValue(MacBrailleTableCheck.Verdicts()) {
             XCTAssertTrue(try MacBrailleTableCheck.check(table, workingIn: folder).isUsable, "\(table) is not offered")
             XCTAssertThrowsError(try BRFExportWriter().write(

@@ -5,7 +5,8 @@ import XCTest
 /// catalog of the ways a BRF or BRL file writes braille cells as characters.
 /// Each seven-bit table is checked by its own facts and against liblouis's
 /// display table for it, vendored unchanged from liblouis 3.39.0 and read
-/// from the app's tables folder, so the test also proves the files ship.
+/// from the app's tables folder, so the test also proves the files ship, in
+/// both apps since the iPhone bundles liblouis's tables too (DR34).
 final class BrailleFileCodeTests: XCTestCase {
     /// The two seven-bit tables, by name for the failure messages.
     private let tables: [(name: String, table: SevenBitBrailleTable)] = [
@@ -127,8 +128,8 @@ final class BrailleFileCodeTests: XCTestCase {
         }
     }
 
-    /// The six-dot cells of the liblouis display table `name` in the app's
-    /// tables folder, as (character, dot value) pairs: exactly 64, one for
+    /// The six-dot cells of the liblouis display table `name`, unpacked from the app's
+    /// pack into its tables folder, as (character, dot value) pairs: exactly 64, one for
     /// each cell. A `display` line's second field is the character (`\s` the
     /// space, `\\` the backslash, `\xHHHH` a character by its code) and its
     /// third the dots (`0` the blank cell, else digits 1 to 6). A line whose
@@ -136,7 +137,7 @@ final class BrailleFileCodeTests: XCTestCase {
     /// `de-eurobrl6.dis`'s `display \s a`, the German tables' virtual-dot
     /// cell for the non-breaking space.
     private func displayCells(of name: String) throws -> [(character: UInt8, dots: UInt8)] {
-        let folder = try XCTUnwrap(BrailleTranslator.Tool.helper.tablesFolder)
+        let folder = try unpackedAppTables(for: name)
         let text = try String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8)
         var cells: [(character: UInt8, dots: UInt8)] = []
         for line in text.components(separatedBy: .newlines) {

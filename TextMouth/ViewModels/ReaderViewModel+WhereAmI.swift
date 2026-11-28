@@ -1,5 +1,9 @@
 import SwiftUI
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import AVFoundation
 
 // MARK: - Where Am I, Copy Reading Position, VoiceOver Announcements
@@ -43,6 +47,11 @@ extension ReaderViewModel {
             replaceWhereAmISynthesizer()
             speakWhereAmISummary(replacement)
         case .speak(let summary):
+            #if os(iOS)
+            // The announcement speaks through the app's audio session, which
+            // must be the app's first (the engineer's review, F7).
+            guard phoneHooks.audioMayStart() else { return }
+            #endif
             pauseBookForWhereAmI()
             speakWhereAmISummary(summary)
         }
@@ -94,7 +103,8 @@ extension ReaderViewModel {
     private func speakWhereAmISummary(_ detail: SummaryDetail) {
         whereAmIDetail = detail
         guard let content else {
-            speakWhereAmI("No book is loaded.")
+            // Translators: What Where Am I? says when no book is open.
+            speakWhereAmI(InterfaceText.line("readerViewModel.speakWhereAmISummary", "No book is loaded."))
             return
         }
         speakWhereAmI(detail == .full ? buildFullWhereAmI(content: content) : buildBriefWhereAmI())
@@ -102,9 +112,10 @@ extension ReaderViewModel {
 
     /// The page Where Am I? says (PG04): the reading position's "Page 112 of
     /// 300" (or "Before page 1") while the setting that adds the page is on,
-    /// and nothing otherwise. A book without pages has no label to say.
+    /// and nothing otherwise. A book without pages has no label to say, and
+    /// a book of one page none worth saying (`hasSeveralPages`).
     var whereAmIPageLabel: String {
-        settingsViewModel.saysPageInWhereAmI ? currentPagePosition.label : ""
+        settingsViewModel.saysPageInWhereAmI && hasSeveralPages ? currentPagePosition.label : ""
     }
 
     /// Brief summary: book title, current heading, heading number, the page
@@ -153,7 +164,7 @@ extension ReaderViewModel {
             ? [EndOfBookWording.finishedProgress]
             : [
                 String(format: "%.0f percent", percentComplete),
-                "\(TimeFormatting.spoken(timeRemaining)) remaining\(ReaderTimeWording.spokenSpeed(speed))",
+                ReaderTimeWording.remainingSpoken(TimeFormatting.spoken(timeRemaining), speed: speed),
             ]
         let parts = whereAmILocationParts(
             bookTitle: bookTitle,
@@ -224,17 +235,21 @@ extension ReaderViewModel {
             headingPosition: headingPosition,
             pageLabel: pageLabel
         )
-        let namedSpeed = ReaderTimeWording.spokenSpeed(speed)
         if isFinished {
             parts.append(EndOfBookWording.finishedProgress)
         } else {
             parts.append(String(format: "%.0f percent through the book", percentComplete))
-            parts.append("\(TimeFormatting.spoken(timeRemaining)) remaining\(namedSpeed)")
+            parts.append(ReaderTimeWording.remainingSpoken(TimeFormatting.spoken(timeRemaining), speed: speed))
             if let timeRemainingInHeading {
-                parts.append("\(TimeFormatting.spoken(timeRemainingInHeading)) remaining in this heading")
+                // Translators: Part of the full Where Am I? summary: the time left in the heading being read. %@ is the time in words, such as "12 minutes".
+                parts.append(InterfaceText.line("common.valueRemainingInThisHeading", "\(TimeFormatting.spoken(timeRemainingInHeading)) remaining in this heading"))
             }
         }
-        parts.append("Total book time: \(TimeFormatting.spoken(totalTime))\(namedSpeed)")
+        parts.append(ReaderTimeWording.spoken(
+            // Translators: Part of the full Where Am I? summary: the book's whole length. %@ is the time in words, such as "4 hours, 50 minutes".
+            InterfaceText.line("readerViewModel.totalBookTime", "Total book time: \(TimeFormatting.spoken(totalTime))"),
+            speed: speed
+        ))
         if let readingListPlace {
             parts.append(ReadingListReaderWording.place(readingListPlace))
         }
@@ -300,8 +315,9 @@ extension ReaderViewModel {
     }
 
     /// Time left in `heading` from the live cursor at the current speed, or
-    /// nil when the heading spans no text to measure.
-    private func remainingTime(inHeading heading: Heading, content: DocumentContent) -> TimeInterval? {
+    /// nil when the heading spans no text to measure. The iPhone's Where Am
+    /// I? value reads it too.
+    func remainingTime(inHeading heading: Heading, content: DocumentContent) -> TimeInterval? {
         let totalHeadingChars = estimatedCharsInHeading(heading)
         guard totalHeadingChars > 0 else { return nil }
         let headingStart = content.globalOffset(chapterIndex: heading.chapterIndex, localOffset: heading.characterOffset)
@@ -590,6 +606,11 @@ extension ReaderViewModel {
         }
         // The window opens; the work below closes it.
         isWhereAmIEndSoundPlaying = true
+        #if os(iOS)
+        // Nothing of the book plays while the end sound does, and the book it
+        // paused resumes only after it.
+        phoneHooks.silentGapBegan?()
+        #endif
         afterWhereAmIEndSound { [weak self] in
             self?.resumeAfterWhereAmIEndSound()
         }
@@ -647,6 +668,9 @@ extension ReaderViewModel {
             isCurrentlyPlaying = true
             isCurrentlyPaused = true
         }
+        // The announcement's own pause was never watched, meant to last
+        // seconds; left standing, it is watched as `pause()`'s is (C11).
+        watchPauseForGrowingLong()
     }
 
     /// Ends a Where Am I announcement as the book stops: by `stop()`, which
@@ -751,7 +775,7 @@ extension ReaderViewModel {
     /// Estimated character count for a heading section (from heading start to next heading or end of book)
     func estimatedCharsInHeading(_ heading: Heading) -> Int {
         guard let content = content else { return 0 }
-        let allHeadings = content.allHeadings
+        let allHeadings = headings
         let headingGlobalStart = content.globalOffset(chapterIndex: heading.chapterIndex, localOffset: heading.characterOffset)
         var nextOffset = content.totalCharacterCount
         if let idx = allHeadings.firstIndex(where: { $0.id == heading.id }),
@@ -768,9 +792,15 @@ extension ReaderViewModel {
     func copyReadingPosition() {
         guard content != nil else { return }
 
+        #if os(macOS)
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(readingPositionText, forType: .string)
-        announceToVoiceOver("Reading position copied to clipboard")
+        #else
+        // iOS's pasteboard replaces its contents when a string is set.
+        UIPasteboard.general.string = readingPositionText
+        #endif
+        // Translators: Announcement after Copy Reading Position put the reading position on the clipboard.
+        announceToVoiceOver(InterfaceText.line("readerViewModel.copyReadingPosition", "Reading position copied to clipboard"))
     }
 
     /// The reading position as Copy Reading Position copies it
@@ -833,7 +863,11 @@ extension ReaderViewModel {
             : [
                 String(format: "%.1f%% through", percentComplete),
                 place ?? "",
-                "\(formattedTimeRemaining) remaining\(ReaderTimeWording.shownSpeed(speed))",
+                ReaderTimeWording.shown(
+                    // Translators: Time left in the book as the copied reading position shows it. %@ is a clock time such as 3:44:01.
+                    InterfaceText.line("common.valueRemaining", "\(formattedTimeRemaining) remaining"),
+                    speed: speed
+                ),
             ]
         return readingPositionSummary(parts: [
             bookTitle,

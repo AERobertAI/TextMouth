@@ -240,9 +240,17 @@ struct LibraryViewDefinitionList: Equatable, Sendable {
         var candidate = base
         // One more number than there are views always finds a free name.
         for number in 1...(views.count + 1) {
-            let suffix = number == 1 ? " Copy" : " Copy \(number)"
-            let room = max(LibraryViewDefinition.nameLimit - suffix.count, 0)
-            candidate = String(base.prefix(room)).trimmingCharacters(in: .whitespacesAndNewlines) + suffix
+            // The copy's whole name for a given base: each pattern is one
+            // string, so a translation may put "Copy" before the name.
+            let named: (String) -> String = number == 1
+                // Translators: Name Duplicate gives a copy of a Library view. %@ is the name of the view that was copied, such as "Unopened"; the copy is "Unopened Copy".
+                ? { InterfaceText.line("libraryViewDefinitionList.copyName.first", "\($0) Copy") }
+                // Translators: Name Duplicate gives a second or later copy of a Library view, the first copy's name being taken. %1$@ is the name of the view that was copied. %2$@ is the copy's number, 2 or more, an identifier written without digit grouping.
+                : { InterfaceText.line("libraryViewDefinitionList.copyName.numbered", "\($0) Copy \(String(number))") }
+            // What the pattern adds to a name, so the base is cut to leave
+            // room for it under the name limit.
+            let room = max(LibraryViewDefinition.nameLimit - named("").count, 0)
+            candidate = named(String(base.prefix(room)).trimmingCharacters(in: .whitespacesAndNewlines))
             if !isNameTaken(candidate, except: nil) {
                 break
             }

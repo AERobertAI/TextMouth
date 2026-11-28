@@ -5,24 +5,29 @@ options:
     macOS: "14.0"
   xcodeVersion: "16.0"
   minimumXcodeGenVersion: "2.30"
+  # English is the language the code is written in, and the String Catalog's
+  # source language (TextMouth/Localization/Localizable.xcstrings, FR34, which
+  # neither app compiles since FR39: Strings.pack carries the text): each app's
+  # CFBundleDevelopmentRegion is $(DEVELOPMENT_LANGUAGE), so a person whose
+  # languages TextMouth lacks gets English; a line with no translation shows
+  # the English its InterfaceText.line call holds.
+  developmentLanguage: en
 
 # Swift package versions are locked deliberately. Each direct dependency is
 # an exactVersion requirement, so regenerating the project can never float to
 # an untested release, and the committed Package.resolved under
 # TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/ pins exact
-# revisions plus the transitive swift-cmark package. `make check` fails when
-# resolution would change that file. To upgrade a package, change its version
-# here, run `make update-packages`, review the Package.resolved diff, run
-# `make check`, and commit both files together.
+# revisions. `make check` fails when resolution would change that file. To
+# upgrade a package, change its version here, run `make update-packages`,
+# review the Package.resolved diff, run `make check`, and commit both files
+# together.
 packages:
   ZIPFoundation:
     url: https://github.com/weichsel/ZIPFoundation.git
     exactVersion: "0.9.20"
-  SwiftSoup:
-    url: https://github.com/scinfu/SwiftSoup.git
-    exactVersion: "2.13.9"
-  swift-markdown:
-    url: https://github.com/swiftlang/swift-markdown.git
+  # cmark-gfm, the Markdown parser: the app reads its tree itself (MarkdownTree).
+  swift-cmark:
+    url: https://github.com/swiftlang/swift-cmark.git
     exactVersion: "0.9.0"
 
 # Every target compiles in the Swift 6 language mode and checks Swift
@@ -38,39 +43,314 @@ packages:
 # warning (Scripts/check.sh), so a new concurrency problem is reported the
 # day it is written. Package targets are not affected: Xcode builds them with
 # their own settings and suppresses their warnings.
+#
+# The localization settings are gone (FR39 phase 8): neither app compiles a String
+# Catalog or writes Apple's language tables any more. SWIFT_EMIT_LOC_STRINGS is off,
+# so the compiler extracts no strings; the catalog is no part of either target's
+# resources (the `excludes` of the two app targets), and Strings.pack, built from it
+# by the phase "Pack interface text", carries every language. The two settings that
+# only shaped Apple's tables, LOCALIZATION_PREFERS_STRING_CATALOGS and
+# STRINGS_FILE_OUTPUT_ENCODING, left with them: with no catalog in a Resources phase
+# they change nothing.
 settings:
   base:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_EMIT_LOC_STRINGS: NO
+
+# The version both apps carry, on one line: Scripts/set-version.sh (make
+# set-version, bump-patch, and bump-minor) changes exactly one
+# MARKETING_VERSION line, and the Mac app and the iOS app share it.
+settingGroups:
+  appVersion:
+    MARKETING_VERSION: "0.6.2"
+    CURRENT_PROJECT_VERSION: "1"
+  # How TextMouth's own braille code in TextMouthBraille/ compiles, in the
+  # Mac's helper and in the iPhone's library alike (DR34): liblouis.h is
+  # liblouis's own header, as a system header, so the warnings of its
+  # comments (five @deprecated commands without a deprecation attribute) are
+  # not shown; TextMouth's own are. Without a header map, which would list it
+  # among the project's own headers and find it there first, "liblouis.h" is
+  # found on this path.
+  brailleCode:
+    SYSTEM_HEADER_SEARCH_PATHS:
+      - $(SRCROOT)/Vendor/liblouis/include
+    USE_HEADERMAP: NO
+    GCC_OPTIMIZATION_LEVEL: s
+    SKIP_INSTALL: YES
+
+# The C libraries both apps build, each defined once and built for each
+# platform by a target of its own (LAME and LAME_iOS, ObjCExceptionCatcher
+# and ObjCExceptionCatcher_iOS, liblouis and liblouis_iOS): see the targets
+# below for what each is.
+targetTemplates:
+  LAMELibrary:
+    type: library.static
+    # LAME is C alone, with no Objective-C class or category for the linker
+    # to keep, so the app links it without the -ObjC flag XcodeGen otherwise
+    # adds to every target that links a static library.
+    requiresObjCLinking: false
+    sources:
+      - path: Vendor/lame/libmp3lame
+        headerVisibility: project
+      - path: Vendor/lame/config.h
+        headerVisibility: project
+    settings:
+      base:
+        PRODUCT_NAME: mp3lame
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/Vendor/lame
+          - $(SRCROOT)/Vendor/lame/include
+          - $(SRCROOT)/Vendor/lame/libmp3lame
+        GCC_PREPROCESSOR_DEFINITIONS: HAVE_CONFIG_H=1
+        GCC_OPTIMIZATION_LEVEL: s
+        GCC_WARN_INHIBIT_ALL_WARNINGS: YES
+        SKIP_INSTALL: YES
+        # LAME and liblouis each include their own "config.h". Xcode's header
+        # map lists every header of the project under its bare name, so it
+        # can hand either target the other's; without it, each target finds
+        # its own through its search paths above.
+        USE_HEADERMAP: NO
+  ObjCExceptionCatcherLibrary:
+    type: library.static
+    requiresObjCLinking: false
+    sources:
+      - path: Vendor/ObjCExceptionCatcher/ObjCExceptionCatcher.m
+      - path: Vendor/ObjCExceptionCatcher/include/ObjCExceptionCatcher.h
+        headerVisibility: project
+    settings:
+      base:
+        PRODUCT_NAME: ObjCExceptionCatcher
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/Vendor/ObjCExceptionCatcher/include
+        CLANG_ENABLE_OBJC_ARC: YES
+        SKIP_INSTALL: YES
+  # liblouis 3.39.0, built once for each platform: the Mac's braille helper
+  # links the liblouis target, and the iPhone app links liblouis_iOS (see
+  # the liblouis target for what it is and how it is vendored).
+  LiblouisLibrary:
+    type: library.static
+    # C alone, with no Objective-C class or category for the linker to keep.
+    requiresObjCLinking: false
+    sources:
+      - path: Vendor/liblouis/liblouis
+        headerVisibility: project
+        excludes:
+          - liblouis.h.in
+      - path: Vendor/liblouis/config.h
+        headerVisibility: project
+      - path: Vendor/liblouis/include/liblouis.h
+        headerVisibility: project
+    settings:
+      base:
+        PRODUCT_NAME: louis
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/Vendor/liblouis
+          - $(SRCROOT)/Vendor/liblouis/include
+          - $(SRCROOT)/Vendor/liblouis/liblouis
+        GCC_PREPROCESSOR_DEFINITIONS: LIBLOUIS_FOR_TEXTMOUTH=1
+        GCC_OPTIMIZATION_LEVEL: s
+        GCC_WARN_INHIBIT_ALL_WARNINGS: YES
+        SKIP_INSTALL: YES
+        # Its own config.h, never LAME's (see USE_HEADERMAP in LAME's target).
+        USE_HEADERMAP: NO
+
+  # FFmpeg 9.0.2 (FMT50), the decoders of the formats macOS and iOS cannot read, and TextMouth's
+  # own session around it (TextMouthFFmpeg/Session/session.c, TextMouthFFmpegSession.h): one
+  # static library for each platform, FFmpeg for the Mac and FFmpeg_iOS for the iPhone. FFmpeg's
+  # code is not in the repository: the build phase runs Scripts/vendor/ffmpeg/build.py, which
+  # downloads the pinned release once, checks its SHA-256, and builds the libraries the import
+  # needs into $(OBJROOT)/FFmpeg/<platform> (inside DerivedData, which GitHub's runners cache), or
+  # does nothing when that build is there already. The library's own libtool step then takes
+  # FFmpeg's merged archive in (OTHER_LIBTOOLFLAGS), so a target that depends on this one links
+  # all of FFmpeg, and the system's zlib (session.c asks the linker for it), with that one
+  # dependency and no setting of its own. The session's own header changes with every FFmpeg
+  # build (textmouth_ffmpeg_build.h), so a new build recompiles it and relinks what links it.
+  # FFmpeg is LGPL 2.1 or later, linked statically as LAME and liblouis are: the app's whole
+  # source, the script among it, is public, so anyone can rebuild the app with a changed FFmpeg
+  # (Licenses/FFmpeg/README). FFmpeg is built for arm64 alone, so the targets are arm64 alone.
+  FFmpegLibrary:
+    type: library.static
+    # C alone, with no Objective-C class or category for the linker to keep.
+    requiresObjCLinking: false
+    sources:
+      - path: TextMouthFFmpeg/Session
+      - path: TextMouthFFmpeg/include/TextMouthFFmpegSession.h
+        headerVisibility: project
+      - path: TextMouthFFmpeg/include/TextMouthFFmpegProtocol.h
+        headerVisibility: project
+    preBuildScripts:
+      - name: Build FFmpeg
+        # The system's Python 3, which every Mac with Xcode and every GitHub runner has.
+        script: /usr/bin/python3 -I -B "$SRCROOT/Scripts/vendor/ffmpeg/build.py" --xcode
+        # Run on every build: the script itself ends at once when the build is there.
+        basedOnDependencyAnalysis: false
+        outputFiles:
+          - $(OBJROOT)/FFmpeg/$(PLATFORM_NAME)/include/textmouth_ffmpeg_build.h
+          - $(OBJROOT)/FFmpeg/$(PLATFORM_NAME)/lib/libtmffmpeg.a
+    settings:
+      base:
+        PRODUCT_NAME: FFmpegSession
+        ARCHS: arm64
+        # FFmpeg's headers, as system headers, so that their warnings are not shown; the
+        # session's own are.
+        SYSTEM_HEADER_SEARCH_PATHS:
+          - $(OBJROOT)/FFmpeg/$(PLATFORM_NAME)/include
+        OTHER_LIBTOOLFLAGS: $(OBJROOT)/FFmpeg/$(PLATFORM_NAME)/lib/libtmffmpeg.a
+        # Plain C with textual includes: session.c needs no Clang module, and with modules on, Xcode
+        # precompiles its system headers and the session's own header (whose folder holds the Swift
+        # side's module map) as modules of this target's own, which a restored runner cache can claim
+        # and lack (train 1117-1219, FMT54: "module file ... not found"). The objects are the same.
+        CLANG_ENABLE_MODULES: NO
+        GCC_OPTIMIZATION_LEVEL: s
+        # The script reads the repository and writes into OBJROOT, outside what a sandboxed
+        # script phase may touch.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        SKIP_INSTALL: YES
+        # Its headers are found by their paths, never through the project's header map.
+        USE_HEADERMAP: NO
+
+  # The interface-text pack (FR39), for both apps: Scripts/l10n/pack.py builds Strings.pack, the
+  # IDs, the English, the translators' notes, and every language in one file, from the String
+  # Catalog (keyed by ID, its `en` values the English since FR39 phase 7), into the folder that
+  # holds the app's resources. A postBuildScript, after the Resources phase and before Xcode signs
+  # the product. Since the switch (FR39 phase 8) it is the only text either app carries: the
+  # catalog is no resource, and no Localizable table of Apple's is built.
+  #
+  # pack.py writes the file by replacing it (never in place), because the engine memory-maps the
+  # pack and a file rewritten under a running process can end it with SIGBUS. Its stamp, which lets a
+  # build with nothing changed skip the work, lives in DERIVED_FILE_DIR, outside the app. An entry
+  # with no English, or any text the pack refuses, fails the build and leaves the earlier file as it
+  # was. `make check` fails a pack over 1.5 MB or an app that holds other than one Strings.pack, and
+  # InterfaceTextShippedPackTests compares the pack each test host ships with the catalog.
+  #
+  # The same build writes <language>.lproj/InfoPlist.strings for each of the catalog's 25 languages
+  # beside the pack: the *.lproj folders (with CFBundleLocalizations in both Info.plists) are what
+  # keep the bundle's languages for the system. They hold no entry yet (pack.py's
+  # info_plist_entries is where the Info.plist strings will come from). The phase passes
+  # --remove-apple-tables: Xcode never cleans a product, so an incremental build would keep the
+  # Localizable tables an earlier build wrote; without the flag pack.py deletes nothing.
+  #
+  # A Debug build, the app every hosted and interface test runs in, is named "TextMouth Test"
+  # (TEXTMOUTH_TEST_DISPLAY_NAME, the user's request of November 22, 2026), so the Dock, the app
+  # switcher, and VoiceOver say which TextMouth is the tests' when one comes to the front. pack.py
+  # writes it as CFBundleDisplayName into every language's InfoPlist.strings, the one place Launch
+  # Services reads a shown name from while the bundle's file is TextMouth.app. Release, the app
+  # make build and make install make, sets no name and stays "TextMouth"; make check fails a
+  # Release app that a test name reached.
+  #
+  # Script sandboxing is off: the script reads the repository and writes into the product.
+  PackInterfaceText:
+    postBuildScripts:
+      - name: Pack interface text
+        script: /usr/bin/python3 -I -B "$SRCROOT/Scripts/l10n/pack.py" build --catalog "$SRCROOT/TextMouth/Localization/Localizable.xcstrings" --out "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Strings.pack" --remove-apple-tables --display-name "$TEXTMOUTH_TEST_DISPLAY_NAME" --stamp "$DERIVED_FILE_DIR/Strings.pack.stamp"
+        basedOnDependencyAnalysis: false
+    settings:
+      base:
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+      configs:
+        Debug:
+          TEXTMOUTH_TEST_DISPLAY_NAME: "TextMouth Test"
+
+  # The braille-table pack (FR40), for both apps: Scripts/packs/braille_tables.py builds
+  # BrailleTables.pack from liblouis's tables (Vendor/liblouis/tables), into the folder that
+  # holds the app's resources. The Mac's pack (profile mac) holds the 20 files the Mac app
+  # bundled before the pack; the iPhone's (profile iphone) holds every table whose license
+  # TextMouth may ship (Vendor/liblouis/TABLES-LICENSES.md). Each target says its profile in
+  # BRAILLE_TABLES_PROFILE. A postBuildScript, as PackInterfaceText is, with its inputs and
+  # its output declared and its own stamp (in DERIVED_FILE_DIR), which makes it do nothing
+  # when the content is the same. No raw
+  # table is in either app: `make check` fails an app that holds a liblouis tables folder.
+  PackBrailleTables:
+    postBuildScripts:
+      - name: Pack braille tables
+        script: /usr/bin/python3 -I -B "$SRCROOT/Scripts/packs/braille_tables.py" build --profile "$BRAILLE_TABLES_PROFILE" --tables "$SRCROOT/Vendor/liblouis/tables" --out "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/BrailleTables.pack" --stamp "$DERIVED_FILE_DIR/BrailleTables.pack.stamp" --remove-old-tables
+        inputFiles:
+          - $(SRCROOT)/Scripts/packs/braille_tables.py
+          - $(SRCROOT)/Scripts/packs/packfile.py
+          - $(SRCROOT)/Scripts/packs/braille_tables_mac.txt
+          - $(SRCROOT)/Vendor/liblouis/config.h
+          - $(SRCROOT)/Vendor/liblouis/tables
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/BrailleTables.pack
+        # Run on every build, as "Pack interface text" does: the script's own stamp (the hashes of its inputs and of the
+        # output) is what skips the work, since Xcode's analysis cannot see a changed file inside the tables folder.
+        basedOnDependencyAnalysis: false
+    settings:
+      base:
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+
+  # SwiftSoup 2.13.9, the HTML and XML parser, vendored in Vendor/SwiftSoup
+  # (see its README.md): the release's own source with attributes changed
+  # and nothing else, written by Scripts/vendor/swiftsoup/make_vendor.py. A
+  # static library the apps link, compiled as one module (every file, so the
+  # compiler can drop what the app never reaches) and, in Release, for size
+  # (-Osize, the smallest build, which the Makefile asks of every target).
+  # The module is named SwiftSoup, as the package was. Its warnings are
+  # SwiftSoup's own and are not shown; the gate counts Swift warnings only.
+  # SwiftSoupCorpusTests checks that it builds the trees the package built.
+  SwiftSoupLibrary:
+    type: library.static
+    # Swift alone: no Objective-C class or category for the linker to keep.
+    requiresObjCLinking: false
+    sources:
+      - path: Vendor/SwiftSoup/Sources
+    settings:
+      base:
+        PRODUCT_NAME: SwiftSoup
+        PRODUCT_MODULE_NAME: SwiftSoup
+        SWIFT_SUPPRESS_WARNINGS: YES
+        SKIP_INSTALL: YES
+      configs:
+        Release:
+          SWIFT_COMPILATION_MODE: wholemodule
+          SWIFT_OPTIMIZATION_LEVEL: -Osize
 
 targets:
   TextMouth:
     type: application
+    templates:
+      - PackInterfaceText
+      - PackBrailleTables
     platform: macOS
     sources:
-      - TextMouth
-      # liblouis's braille tables (FMT21), copied unchanged as one folder
-      # into Contents/Resources/liblouis/tables, where the braille helper
-      # finds them (see the liblouis target below).
-      - path: Vendor/liblouis/tables
-        type: folder
-        buildPhase:
-          copyFiles:
-            destination: resources
-            subpath: liblouis
+      # Every source file, less the iOS app's own folder: a new file is
+      # shared by both apps unless it is in TextMouth/Platform/iOS/ (iOS
+      # only) or TextMouth/Platform/macOS/ (the Mac only, which the iOS
+      # target leaves out). Scripts/ios/typecheck.py follows the same rule.
+      - path: TextMouth
+        excludes:
+          - "Platform/iOS/**"
+          # The String Catalog is the pack's source, not a resource: neither app compiles it
+          # (FR39 phase 8), so Apple's language tables are not in the bundle.
+          - "Localization/Localizable.xcstrings"
+      # liblouis's braille tables are no resource: the "Pack braille tables" phase
+      # (PackBrailleTables) packs the four English tables and what they include
+      # into Contents/Resources/BrailleTables.pack, and the app unpacks the ones
+      # it needs into its Caches folder at first use, where the braille helper
+      # finds them (FR40; see the liblouis target below).
       # The licences of the code TextMouth bundles, copied unchanged from the
       # vendored files into Contents/Resources/Licenses, one folder for each:
       # liblouis (FMT21) is under the GNU Lesser General Public License 2.1,
-      # and LAME (FR04) under the GNU Library General Public License 2. They
-      # are copied from Vendor, never into the repository a second time, so
-      # each stays the vendored release's own text. BundledLicenseTests checks
-      # that all four reach the built app.
+      # LAME (FR04) under the GNU Library General Public License 2, and
+      # foliate-js (MIT), whose mobi.js the MOBI reader (FMT42) follows, under
+      # its own MIT licence, and SwiftSoup (MIT, vendored since November 14,
+      # 2026). They are copied from Vendor, never into the
+      # repository a second time, so each stays the vendored release's own
+      # text. BundledLicenseTests checks that every one reaches the built app.
       - path: Vendor/liblouis/COPYING.LESSER
         buildPhase:
           copyFiles:
             destination: resources
             subpath: Licenses/liblouis
       - path: Vendor/liblouis/README
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/liblouis
+      # The licenses of liblouis's tables, which are not all the release's own (FR40): each file's
+      # license, and the tables TextMouth leaves out for theirs.
+      - path: Vendor/liblouis/TABLES-LICENSES.md
         buildPhase:
           copyFiles:
             destination: resources
@@ -85,11 +365,81 @@ targets:
           copyFiles:
             destination: resources
             subpath: Licenses/LAME
+      # The notices of the BSD-licensed decoders that TextMouth's own audio
+      # readers follow (TextMouth/Parsers/OwnAudio): none of their code is
+      # compiled in, and each reader's Swift is written from its decoder, so
+      # its notice ships with the app. True Audio: the README of the TTA
+      # Hardware Players Library 1.2, which holds its licence.
+      - path: Vendor/package-licenses/TrueAudio/README
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/TrueAudio
+      # The notice at the head of ttadec.c, whose copyright line the README lacks.
+      - path: Vendor/package-licenses/TrueAudio/COPYRIGHT
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/TrueAudio
+      # WavPack: libwavpack 5.9.0's COPYING.
+      - path: Vendor/package-licenses/WavPack/COPYING
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/WavPack
+      # Monkey's Audio: the SDK 13.47's License.txt.
+      - path: Vendor/package-licenses/MonkeysAudio/License.txt
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/MonkeysAudio
+      - path: Vendor/foliate-js/LICENSE
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/foliate-js
+      # SwiftSoup's MIT licence, from the vendored copy, which is compiled
+      # into the app (Vendor/SwiftSoup/README.md).
+      - path: Vendor/SwiftSoup/LICENSE
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/SwiftSoup
+      # The Swift packages' licences, from the one copy in Vendor/package-licenses that the iPhone app copies too. Each
+      # package has its own entries, so a dropped package takes them with it.
+      - path: Vendor/package-licenses/ZIPFoundation/LICENSE
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/ZIPFoundation
+      - path: Vendor/package-licenses/swift-cmark/COPYING
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/swift-cmark
+      # FFmpeg's notices (FMT50), which the FFmpeg helper links: the release's own LICENSE.md and
+      # COPYING.LGPLv2.1, unchanged, and the README of Scripts/vendor/ffmpeg/build.py (the
+      # release, its SHA-256, and the configure lines).
+      - path: Vendor/package-licenses/FFmpeg/LICENSE.md
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/FFmpeg
+      - path: Vendor/package-licenses/FFmpeg/COPYING.LGPLv2.1
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/FFmpeg
+      - path: Vendor/package-licenses/FFmpeg/README
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/FFmpeg
     settings:
+      groups:
+        - appVersion
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouth
-        MARKETING_VERSION: "0.2.4"
-        CURRENT_PROJECT_VERSION: "1"
         TEXTMOUTH_GIT_COMMIT: unknown
         TEXTMOUTH_BUILD_DATE: unknown
         INFOPLIST_FILE: TextMouth/Resources/Info.plist
@@ -98,11 +448,17 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         PRODUCT_NAME: TextMouth
         GENERATE_INFOPLIST_FILE: false
+        # What the "Pack braille tables" phase packs (PackBrailleTables): the Mac's 20 files.
+        BRAILLE_TABLES_PROFILE: mac
         # Where Swift finds the LAME module (Vendor/lame/include/module.modulemap),
         # the exception catcher's (Vendor/ObjCExceptionCatcher/include/module.modulemap),
-        # and the braille helper's protocol (TextMouthBraille/include/module.modulemap),
-        # which the helper's main.c includes too.
-        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include
+        # the system bzip2's, through which the interface-text pack's reader links libbz2
+        # (Vendor/CBZip2/include/module.modulemap; nothing of bzip2 is vendored),
+        # the braille helper's protocol (TextMouthBraille/include/module.modulemap),
+        # which the helper's translation (TextMouthBraille/TextMouthBrailleLibrary.c)
+        # includes too, and the FFmpeg helper's stream
+        # (TextMouthFFmpeg/include/module.modulemap), which its C includes too.
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/Vendor/CBZip2/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
       # The Release app, which `make build` packages and `make install`
       # copies, is built to be small. Debug, where the hosted tests run, is
       # left as it is.
@@ -127,19 +483,53 @@ targets:
           # can reach, such as the parts of the Swift packages' public API
           # that TextMouth never calls.
           DEAD_CODE_STRIPPING: true
+          # Compile the app's own code to be small rather than fastest
+          # (-Osize, where Release's default is -O): the app's own code is
+          # about 2.4 MB smaller, and the same code computes the same
+          # results, only 1% to 11% more slowly (a millisecond or less on
+          # each of the ten benchmarks of the November 13, 2026 size audit).
+          # The Makefile's build rule gives the Swift packages the same
+          # level from the command line, which project.yml cannot do. Debug,
+          # where the tests run, is left as it is.
+          SWIFT_OPTIMIZATION_LEVEL: -Osize
+          # Write no export trie. The stripped executable still carried one,
+          # 174 KB naming a single symbol, because strip does not rebuild
+          # it. An app's executable exports nothing that anything links
+          # against (the braille helper is run, not loaded), so the linker
+          # writes none. Release only: in Debug the test bundle loads
+          # against the app (BUNDLE_LOADER) and needs its exports.
+          # (LD_EXPORT_SYMBOLS is Xcode's own setting for the linker's
+          # -no_exported_symbols: Xcode warns when OTHER_LDFLAGS holds it.
+          # Scripts/test/release-goldens.sh sets it back to YES.)
+          LD_EXPORT_SYMBOLS: NO
     dependencies:
       - package: ZIPFoundation
-      - package: SwiftSoup
-      - package: swift-markdown
-        product: Markdown
+      # The HTML and XML parser, vendored (Vendor/SwiftSoup).
+      - target: SwiftSoup
+      # The Markdown parser and its GitHub extensions (MarkdownTree).
+      - package: swift-cmark
+        product: cmark-gfm
+      - package: swift-cmark
+        product: cmark-gfm-extensions
       # The MP3 encoder, linked into the app (MP3Encoder).
       - target: LAME
       # The Objective-C exception catcher (ObjCException).
       - target: ObjCExceptionCatcher
+      # The system's bzip2 library, which the interface-text pack's reader decodes bzip2 blobs
+      # with (InterfaceTextPack, through the CBZip2 module in Vendor/CBZip2).
+      - sdk: libbz2.tbd
       # The braille helper (FMT21), a command-line program copied into
       # Contents/MacOS beside the app's own executable, where
       # Bundle.main.url(forAuxiliaryExecutable:) finds it; never linked.
       - target: TextMouthBraille
+        link: false
+        embed: true
+        codeSign: true
+        copy:
+          destination: executables
+      # The FFmpeg helper (FMT50), copied into Contents/MacOS as the braille helper is; never
+      # linked: the app reads its stream (FFmpegHelperStream), so FFmpeg never runs in the app.
+      - target: TextMouthFFmpeg
         link: false
         embed: true
         codeSign: true
@@ -169,59 +559,254 @@ targets:
   # it encodes speech about 100 times faster than real time. Its compiler
   # warnings are LAME's own and are not shown; the gate counts Swift warnings
   # only. DEBUG stays undefined, as it would turn on LAME's debugging output.
+  # Its settings are the LAMELibrary template's, above; LAME_iOS, below, is
+  # the same library built for the iOS app.
   LAME:
-    type: library.static
+    templates:
+      - LAMELibrary
     platform: macOS
-    # LAME is C alone, with no Objective-C class or category for the linker
-    # to keep, so the app links it without the -ObjC flag XcodeGen otherwise
-    # adds to every target that links a static library.
-    requiresObjCLinking: false
-    sources:
-      - path: Vendor/lame/libmp3lame
-        headerVisibility: project
-      - path: Vendor/lame/config.h
-        headerVisibility: project
-    settings:
-      base:
-        PRODUCT_NAME: mp3lame
-        HEADER_SEARCH_PATHS:
-          - $(SRCROOT)/Vendor/lame
-          - $(SRCROOT)/Vendor/lame/include
-          - $(SRCROOT)/Vendor/lame/libmp3lame
-        GCC_PREPROCESSOR_DEFINITIONS: HAVE_CONFIG_H=1
-        GCC_OPTIMIZATION_LEVEL: s
-        GCC_WARN_INHIBIT_ALL_WARNINGS: YES
-        SKIP_INSTALL: YES
-        # LAME and liblouis each include their own "config.h". Xcode's header
-        # map lists every header of the project under its bare name, so it
-        # can hand either target the other's; without it, each target finds
-        # its own through its search paths above.
-        USE_HEADERMAP: NO
   # One C function that runs a block and returns the Objective-C exception it
   # raised (TMCatchException), for the few framework calls that raise one
   # Swift cannot catch. Built as LAME is: a static library with a module
   # map, which the app links. It is a function, with no class or category
-  # for the linker to keep, so the app links it without -ObjC.
+  # for the linker to keep, so the app links it without -ObjC. Its settings
+  # are the ObjCExceptionCatcherLibrary template's, above.
   ObjCExceptionCatcher:
-    type: library.static
+    templates:
+      - ObjCExceptionCatcherLibrary
     platform: macOS
-    requiresObjCLinking: false
+  # The iOS app's builds of the same two libraries.
+  LAME_iOS:
+    templates:
+      - LAMELibrary
+    platform: iOS
+    deploymentTarget: "26.0"
+  ObjCExceptionCatcher_iOS:
+    templates:
+      - ObjCExceptionCatcherLibrary
+    platform: iOS
+    deploymentTarget: "26.0"
+  # FFmpeg and TextMouth's session around it, for each app (the FFmpegLibrary template's comment,
+  # above, says what it is). The Mac's FFmpeg helper links FFmpeg; the iPhone app, which can run
+  # no helper, links FFmpeg_iOS and runs the session in its own process (FMT54).
+  FFmpeg:
+    templates:
+      - FFmpegLibrary
+    platform: macOS
+  FFmpeg_iOS:
+    templates:
+      - FFmpegLibrary
+    platform: iOS
+    deploymentTarget: "26.0"
+  # SwiftSoup, for each app (the template's comment, above, says what it is).
+  SwiftSoup:
+    templates:
+      - SwiftSoupLibrary
+    platform: macOS
+  SwiftSoup_iOS:
+    templates:
+      - SwiftSoupLibrary
+    platform: iOS
+    deploymentTarget: "26.0"
+  # The iOS app (phase 0 of the port, IOS-PORT-RESEARCH-2026-11-03.md): the
+  # same sources as the Mac app, less TextMouth/Platform/macOS/ and the Mac's
+  # resources, with TextMouth/Platform/iOS/ for what only iOS compiles. Its
+  # module is named TextMouth too, so shared code and tests read the same on
+  # both. Xcode builds it only once its iOS platform is downloaded (Xcode >
+  # Settings > Components); until then Scripts/ios/typecheck.py checks it.
+  # It runs no helper program: iOS lets an app start none, so the braille
+  # translation and the FFmpeg session the Mac runs in its helpers run inside
+  # this app (DR34, FMT54).
+  TextMouthiOS:
+    type: application
+    templates:
+      - PackInterfaceText
+      - PackBrailleTables
+    platform: iOS
+    deploymentTarget: "26.0"
     sources:
-      - path: Vendor/ObjCExceptionCatcher/ObjCExceptionCatcher.m
-      - path: Vendor/ObjCExceptionCatcher/include/ObjCExceptionCatcher.h
-        headerVisibility: project
+      - path: TextMouth
+        excludes:
+          - "Platform/macOS/**"
+          - "Resources/**"
+          # The String Catalog is the pack's source, not a resource (as in the Mac target).
+          - "Localization/Localizable.xcstrings"
+      # liblouis's braille tables are no resource here either: the "Pack braille tables"
+      # phase (PackBrailleTables) packs every table TextMouth ships into the app's
+      # BrailleTables.pack, and the braille translation reads the ones it needs from the
+      # Caches folder, where the app unpacks them at first use (DR34, FR40).
+      # The licences of every library the iPhone app links, and of the code
+      # its shared readers follow, copied unchanged into the app's Licenses
+      # folder, one folder for each, as the Mac app does (see the TextMouth
+      # target). Scripts/ios/check-licenses.py fails when a linked library
+      # has no entry, or when an entry is not copied from the file it names.
+      # liblouis (DR34) is under the GNU Lesser General Public License 2.1.
+      - path: Vendor/liblouis/COPYING.LESSER
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/liblouis
+      - path: Vendor/liblouis/README
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/liblouis
+      # The licenses of liblouis's tables, which are not all the release's own (FR40): each file's
+      # license, and the tables TextMouth leaves out for theirs.
+      - path: Vendor/liblouis/TABLES-LICENSES.md
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/liblouis
+      # FFmpeg's notices (FMT54), which the iPhone app links (FFmpeg_iOS), as the Mac app ships
+      # them: the release's own LICENSE.md and COPYING.LGPLv2.1, unchanged, and the README of
+      # Scripts/vendor/ffmpeg/build.py (the release, its SHA-256, its patches, and the configure
+      # lines). FFmpeg is under the GNU Lesser General Public License 2.1 or later.
+      - path: Vendor/package-licenses/FFmpeg/LICENSE.md
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/FFmpeg
+      - path: Vendor/package-licenses/FFmpeg/COPYING.LGPLv2.1
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/FFmpeg
+      - path: Vendor/package-licenses/FFmpeg/README
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/FFmpeg
+      - path: Vendor/lame/COPYING
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/LAME
+      - path: Vendor/lame/LICENSE
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/LAME
+      - path: Vendor/foliate-js/LICENSE
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/foliate-js
+      # The notices of the decoders TextMouth's own audio readers follow
+      # (TextMouth/Parsers/OwnAudio, shared code): see the TextMouth target.
+      - path: Vendor/package-licenses/TrueAudio/README
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/TrueAudio
+      # The notice at the head of ttadec.c, whose copyright line the README lacks.
+      - path: Vendor/package-licenses/TrueAudio/COPYRIGHT
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/TrueAudio
+      - path: Vendor/package-licenses/WavPack/COPYING
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/WavPack
+      - path: Vendor/package-licenses/MonkeysAudio/License.txt
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/MonkeysAudio
+      - path: Vendor/SwiftSoup/LICENSE
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/SwiftSoup
+      # The Swift packages' licences (Vendor/package-licenses holds each as
+      # the package's release has it, at the versions Package.resolved pins).
+      - path: Vendor/package-licenses/ZIPFoundation/LICENSE
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/ZIPFoundation
+      - path: Vendor/package-licenses/swift-cmark/COPYING
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: Licenses/swift-cmark
     settings:
+      groups:
+        - appVersion
       base:
-        PRODUCT_NAME: ObjCExceptionCatcher
-        HEADER_SEARCH_PATHS:
-          - $(SRCROOT)/Vendor/ObjCExceptionCatcher/include
-        CLANG_ENABLE_OBJC_ARC: YES
-        SKIP_INSTALL: YES
+        PRODUCT_NAME: TextMouth
+        PRODUCT_MODULE_NAME: TextMouth
+        # What the "Pack braille tables" phase packs (PackBrailleTables): every table TextMouth ships.
+        BRAILLE_TABLES_PROFILE: iphone
+        # An identifier of its own: a free team registers it, the background
+        # task identifiers must begin with it, and an iOS app running on a
+        # Mac would otherwise collide with the Mac app's container and
+        # preferences.
+        PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouth.iOS
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: true
+        # Merged with the INFOPLIST_KEY_ settings below into the plist Xcode
+        # generates. Written from the Mac's plist by
+        # Scripts/ios/sync-info-plist.py: the Mac's keys, display name, and
+        # document types, less what iOS cannot read, with the keys only iOS
+        # needs (the background audio mode, one scene at a time). It holds no
+        # key that a setting below also sets, since Apple does not say which
+        # would win, and IOSInfoPlistTests checks both.
+        INFOPLIST_FILE: TextMouth/Platform/iOS/Info.plist
+        # A file from another app arrives where it is, as the Files app holds
+        # it, rather than as a copy in Documents/Inbox.
+        INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        # No INFOPLIST_KEY_UIApplicationSceneManifest_Generation: the scene
+        # manifest it writes allows several scenes, and the plist above holds
+        # a manifest of one scene at a time instead.
+        CODE_SIGN_STYLE: Automatic
+        # The LAME, exception-catcher, braille-protocol, and FFmpeg-stream
+        # modules, as the Mac target finds them (the FFmpeg session's module,
+        # in the same folder, needs the FFmpeg_iOS dependency to link), and
+        # the braille library's (DR34), whose map is in
+        # TextMouthBraille/include/TextMouthBrailleLibrary, where Clang looks
+        # for a module of that name on this path.
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/Vendor/CBZip2/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
+    dependencies:
+      - package: ZIPFoundation
+      - target: SwiftSoup_iOS
+      # The Markdown parser and its GitHub extensions (MarkdownTree).
+      - package: swift-cmark
+        product: cmark-gfm
+      - package: swift-cmark
+        product: cmark-gfm-extensions
+      - target: LAME_iOS
+      - target: ObjCExceptionCatcher_iOS
+      # The system's bzip2 library, for the interface-text pack's reader (see the Mac target).
+      - sdk: libbz2.tbd
+      # The braille translator (DR34): liblouis, and TextMouth's own
+      # translation around it, which the app calls in its own process.
+      - target: liblouis_iOS
+      - target: TextMouthBrailleLibrary_iOS
+      # FFmpeg and TextMouth's session around it (FMT54), which the app runs
+      # in its own process on an engine of its own (FFmpegInProcessRun.swift):
+      # the iPhone starts no helper, so the formats only FFmpeg reads convert
+      # in the app itself.
+      - target: FFmpeg_iOS
+    # The iPhone app's scheme, committed, so that `xcodebuild test -scheme
+    # TextMouthiOS` runs both of its test bundles in the simulator: the one
+    # Xcode made by itself held only the UI tests. The Mac's schemes are
+    # still Xcode's own, made when none is committed for a target.
+    scheme:
+      testTargets:
+        - TextMouthiOSTests
+        - TextMouthiOSUITests
+      gatherCoverageData: false
   # liblouis 3.39.0, the braille translator (FMT21), vendored in
-  # Vendor/liblouis and built as a static library that only the braille
+  # Vendor/liblouis and built as a static library that the Mac's braille
   # helper links: liblouis is C that reads untrusted braille and text, it has
-  # had memory-safety bugs, and it is not thread-safe, so it never runs in
-  # TextMouth's own process.
+  # had memory-safety bugs, and it is not thread-safe, so on the Mac it never
+  # runs in TextMouth's own process. The iPhone, which may start no helper,
+  # links its own build of it (liblouis_iOS) and runs it in the app, one call
+  # at a time on a thread of its own, within limits (DR34).
   #
   # Vendor/liblouis holds, unchanged, these files of liblouis's release
   # tarball liblouis-3.39.0.tar.gz, from
@@ -231,8 +816,11 @@ targets:
   # Public License, version 2.1, under which the library and its tables are
   # distributed ("or any later version"); README, AUTHORS, and NEWS; the
   # library's sources and headers in liblouis/, the ones its Makefile.am
-  # builds liblouis from (liblouis.h.in among them); and in tables/ the four
-  # English tables TextMouth offers, with every table they include:
+  # builds liblouis from (liblouis.h.in among them); and in tables/, since
+  # FR40, every file of the release's own tables/ folder (the apps ship the ones
+  # whose license allows it, packed: see PackBrailleTables). Before FR40 it held
+  # only the four English tables TextMouth offers, with every table they include,
+  # which are still the files the Mac's pack holds (Scripts/packs/braille_tables_mac.txt):
   # Unified English Braille uncontracted (en-ueb-g1.ctb) and contracted
   # (en-ueb-g2.ctb), and English Braille, American Edition, uncontracted
   # (en-us-g1.ctb) and contracted (en_US.tbl), 17 files; and three display
@@ -265,33 +853,41 @@ targets:
   # the DEBUG=1 of the Debug configuration, which would turn on liblouis's
   # debugging output.
   liblouis:
-    type: library.static
+    templates:
+      - LiblouisLibrary
     platform: macOS
+  # The iPhone's build of the same library (DR34), from the same template,
+  # which the iPhone app links with TextMouthBrailleLibrary_iOS: iOS lets an
+  # app start no helper program, so its braille runs in the app itself, one
+  # call at a time on a thread of its own, within limits (InProcessEngine,
+  # BrailleTranslator).
+  liblouis_iOS:
+    templates:
+      - LiblouisLibrary
+    platform: iOS
+    deploymentTarget: "26.0"
+  # TextMouth's own braille translation (TextMouthBraille/TextMouthBrailleLibrary.c,
+  # DR34), which the Mac's helper below compiles with its main.c, built for
+  # the iPhone as a static library, which the iPhone app links and calls in
+  # its own process (tmb_translate). Its interface,
+  # TextMouthBraille/include/TextMouthBrailleLibrary.h, is the Clang module
+  # TextMouthBrailleLibrary, found through SWIFT_INCLUDE_PATHS as the
+  # protocol's is.
+  TextMouthBrailleLibrary_iOS:
+    type: library.static
+    platform: iOS
+    deploymentTarget: "26.0"
     # C alone, with no Objective-C class or category for the linker to keep.
     requiresObjCLinking: false
     sources:
-      - path: Vendor/liblouis/liblouis
-        headerVisibility: project
-        excludes:
-          - liblouis.h.in
-      - path: Vendor/liblouis/config.h
-        headerVisibility: project
-      - path: Vendor/liblouis/include/liblouis.h
-        headerVisibility: project
+      - path: TextMouthBraille/TextMouthBrailleLibrary.c
     settings:
+      groups:
+        - brailleCode
       base:
-        PRODUCT_NAME: louis
-        HEADER_SEARCH_PATHS:
-          - $(SRCROOT)/Vendor/liblouis
-          - $(SRCROOT)/Vendor/liblouis/include
-          - $(SRCROOT)/Vendor/liblouis/liblouis
-        GCC_PREPROCESSOR_DEFINITIONS: LIBLOUIS_FOR_TEXTMOUTH=1
-        GCC_OPTIMIZATION_LEVEL: s
-        GCC_WARN_INHIBIT_ALL_WARNINGS: YES
-        SKIP_INSTALL: YES
-        # Its own config.h, never LAME's (see USE_HEADERMAP in LAME's target).
-        USE_HEADERMAP: NO
-  # The braille helper (FMT21): TextMouthBraille/main.c, TextMouth's own
+        PRODUCT_NAME: TextMouthBrailleLibrary
+  # The braille helper (FMT21): TextMouthBraille/main.c around the
+  # translation in TextMouthBraille/TextMouthBrailleLibrary.c, TextMouth's own
   # code, a command-line program that links liblouis and translates one
   # book's paragraphs per run, print to braille or braille to print, with
   # the bundle's own tables. The app runs it under its watchdog
@@ -299,10 +895,11 @@ targets:
   # liblouis costs one run of the helper, never the app. The app target
   # copies it into Contents/MacOS. Optimized for size, and stripped in the
   # Release configuration as the app is. Its line protocol is defined once,
-  # in TextMouthBraille/include/TextMouthBrailleProtocol.h, which main.c
-  # includes by its path beside it and the app imports through the module
-  # map in the same folder (see SWIFT_INCLUDE_PATHS above), so the two sides
-  # cannot disagree about it.
+  # in TextMouthBraille/include/TextMouthBrailleProtocol.h, which the
+  # translation includes by its path beside it and the app imports through
+  # the module map in the same folder (see SWIFT_INCLUDE_PATHS above), so the
+  # two sides cannot disagree about it. The iPhone builds the same
+  # translation as TextMouthBrailleLibrary_iOS (DR34).
   TextMouthBraille:
     type: tool
     platform: macOS
@@ -311,18 +908,46 @@ targets:
     dependencies:
       - target: liblouis
     settings:
+      groups:
+        - brailleCode
       base:
         PRODUCT_NAME: TextMouthBraille
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         CODE_SIGN_IDENTITY: "-"
-        # liblouis.h is liblouis's own header, as a system header, so the
-        # warnings of its comments (five @deprecated commands without a
-        # deprecation attribute) are not shown; main.c's own are. Without a
-        # header map, which would list it among the project's own headers
-        # and find it there first, "liblouis.h" is found on this path.
-        SYSTEM_HEADER_SEARCH_PATHS:
-          - $(SRCROOT)/Vendor/liblouis/include
+      configs:
+        Release:
+          DEPLOYMENT_POSTPROCESSING: true
+          STRIP_INSTALLED_PRODUCT: true
+          STRIP_STYLE: all
+          DEAD_CODE_STRIPPING: true
+  # The FFmpeg helper (FMT50): TextMouthFFmpeg/main.c, TextMouth's own code, a command-line
+  # program that links FFmpeg (the FFmpeg target: FFmpeg and TextMouth's session around it) and
+  # reads one file per run, writing what it holds and its sound to standard output in the stream
+  # of TextMouthFFmpeg/include/TextMouthFFmpegProtocol.h. The app runs it under its watchdog
+  # (FFmpegHelperStream, through WatchedProcess), so a hang or a crash in FFmpeg costs one run of
+  # the helper, never the app, which is not sandboxed. The app target copies it into
+  # Contents/MacOS. Optimized for size, and stripped in the Release configuration as the app is;
+  # FFmpeg itself is built for speed (Scripts/vendor/ffmpeg/build.py, ENABLE_SMALL). arm64
+  # alone, as FFmpeg is built.
+  TextMouthFFmpeg:
+    type: tool
+    platform: macOS
+    sources:
+      - path: TextMouthFFmpeg/main.c
+    dependencies:
+      - target: FFmpeg
+    settings:
+      base:
+        PRODUCT_NAME: TextMouthFFmpeg
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        CODE_SIGN_IDENTITY: "-"
+        ARCHS: arm64
         USE_HEADERMAP: NO
+        # Textual includes, as the FFmpegLibrary template's (92d1f63c4): main.c needs no Clang
+        # module, and with modules on Xcode precompiles the session's and the protocol's headers as
+        # modules of this target's own, which a restored runner cache can claim and lack after a
+        # change to them (break run 44226031638: "module file ..._Builtin_stddef-*.pcm not found").
+        CLANG_ENABLE_MODULES: NO
         GCC_OPTIMIZATION_LEVEL: s
         SKIP_INSTALL: YES
       configs:
@@ -336,6 +961,10 @@ targets:
     platform: macOS
     sources:
       - TextMouthProductionTests
+      # The fixture packs and catalogs of the interface-text engine's tests (FR39), read where they are, as a folder.
+      - path: Scripts/l10n/tests/fixtures/pack
+        type: folder
+        buildPhase: resources
       # Production-backed compatibility scenarios still use the original
       # scenario registration syntax while importing the TextMouth module.
       # Keep this list explicit until these grouped activities are rewritten as
@@ -366,7 +995,330 @@ targets:
         INFOPLIST_FILE: TextMouthProductionTests/Info.plist
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TextMouth.app/Contents/MacOS/TextMouth"
         BUNDLE_LOADER: "$(TEST_HOST)"
-        # The LAME, exception-catcher, and braille-protocol modules, which `@testable import TextMouth` may load.
-        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/TextMouthBraille/include
+        # The LAME, exception-catcher, braille-protocol, and FFmpeg-stream modules, which `@testable import TextMouth` may load.
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/Vendor/CBZip2/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
     dependencies:
       - target: TextMouth
+  # The iPhone app's own tests, run in the iOS simulator by
+  # `xcodebuild test -scheme TextMouthiOS`: what only iOS compiles, the UIKit
+  # code under TextMouth/Platform/iOS/ that the Mac's test host never sees.
+  # Hosted in the iPhone app, so `@testable import TextMouth` reaches its
+  # types, and TextMouthRuntime gives the hosting process a sandboxed library
+  # of its own, as on the Mac. The plain types in TextMouth/Phone/ stay tested
+  # on the Mac's host, with the rest of the suite.
+  TextMouthiOSTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - TextMouthiOSTests
+      # The fixture packs and catalogs of the interface-text engine's tests (FR39), read where they are, as a folder.
+      - path: Scripts/l10n/tests/fixtures/pack
+        type: folder
+        buildPhase: resources
+      # Mac test files the iPhone's unit tests share by path (one file serves both bundles; see docs/developer/testing.md).
+      - TextMouthProductionTests/ArchiveBudgetTests.swift
+      - TextMouthProductionTests/AudioEditTimelineTests.swift
+      - TextMouthProductionTests/AudioSeekAndObserverTests.swift
+      - TextMouthProductionTests/AudioZIPClassificationTests.swift
+      - TextMouthProductionTests/BardBrailleTests.swift
+      - TextMouthProductionTests/BookAuthorPlaceholderTests.swift
+      - TextMouthProductionTests/BookContentIndexTests.swift
+      - TextMouthProductionTests/BookExportDeliveryTests.swift
+      - TextMouthProductionTests/BookMetadataUpdateTests.swift
+      - TextMouthProductionTests/BookSearchModelTests.swift
+      - TextMouthProductionTests/BookTextEncodingTests.swift
+      - TextMouthProductionTests/BrailleBookPageTests.swift
+      - TextMouthProductionTests/BrailleCellsTests.swift
+      - TextMouthProductionTests/BrailleDamagedInputTests.swift
+      - TextMouthProductionTests/BrailleEbaeFixesTests.swift
+      - TextMouthProductionTests/BrailleEmphasisReadingTests.swift
+      - TextMouthProductionTests/BrailleEmphasisRoundTripTests.swift
+      - TextMouthProductionTests/BrailleExportWriterTests.swift
+      - TextMouthProductionTests/BrailleFileCodeRecordTests.swift
+      - TextMouthProductionTests/BrailleFileCodeTests.swift
+      - TextMouthProductionTests/BrailleFileReaderTests.swift
+      - TextMouthProductionTests/BrailleImportTests.swift
+      - TextMouthProductionTests/BrailleLayoutTests.swift
+      - TextMouthProductionTests/BraillePageAnalyzerTests.swift
+      - TextMouthProductionTests/BrailleTablePackTests.swift
+      - TextMouthProductionTests/BrailleTablePrintOnlyTests.swift
+      - TextMouthProductionTests/BrailleTranslatorTests.swift
+      - TextMouthProductionTests/CloudStorageContractTests.swift
+      - TextMouthProductionTests/CloudTestDoubles.swift
+      - TextMouthProductionTests/CollectionTestSupport.swift
+      - TextMouthProductionTests/CountWordingTests.swift
+      - TextMouthProductionTests/DOCXEmphasisTests.swift
+      - TextMouthProductionTests/DOCXHiddenTextTests.swift
+      - TextMouthProductionTests/DOCXMalformedXMLTests.swift
+      - TextMouthProductionTests/DOCXNotesTests.swift
+      - TextMouthProductionTests/DOCXPictureAttributeTests.swift
+      - TextMouthProductionTests/DOCXStructureTests.swift
+      - TextMouthProductionTests/DOCXTestPackages.swift
+      - TextMouthProductionTests/DOCXTextBoxTests.swift
+      - TextMouthProductionTests/DamagedFileTestSupport.swift
+      - TextMouthProductionTests/DataDirectoryAvailabilityTests.swift
+      - TextMouthProductionTests/DataDirectoryCopyTests.swift
+      - TextMouthProductionTests/DataDirectoryCreationTests.swift
+      - TextMouthProductionTests/DataDirectoryServicesTests.swift
+      - TextMouthProductionTests/DeepMarkdown.swift
+      - TextMouthProductionTests/DocumentByteLimitTests.swift
+      - TextMouthProductionTests/EPUBExportRoundTripTests.swift
+      - TextMouthProductionTests/EPUBExportWriterNavigationTests.swift
+      - TextMouthProductionTests/EPUBExportWriterTests.swift
+      - TextMouthProductionTests/EPUBLinkAddressTests.swift
+      - TextMouthProductionTests/EPUBRoundTripSupport.swift
+      - TextMouthProductionTests/EPUBStructureFailureTests.swift
+      - TextMouthProductionTests/EndOfBookRuleTests.swift
+      - TextMouthProductionTests/ExportContentsListTests.swift
+      - TextMouthProductionTests/ExportDeepChapterWalkerTests.swift
+      - TextMouthProductionTests/ExportDocumentWalkerNestingTests.swift
+      - TextMouthProductionTests/ExportDocumentWalkerStructureTests.swift
+      - TextMouthProductionTests/ExportDocumentWalkerTests.swift
+      - TextMouthProductionTests/ExtractionReportTests.swift
+      - TextMouthProductionTests/FFmpegHelperHostileFileTests.swift
+      - TextMouthProductionTests/FFmpegHelperProtocolTests.swift
+      - TextMouthProductionTests/FFmpegHelperStreamTests.swift
+      - TextMouthProductionTests/FFmpegImportConversionTests.swift
+      - TextMouthProductionTests/FFmpegImportPlanTests.swift
+      - TextMouthProductionTests/FFmpegImportRealTests.swift
+      - TextMouthProductionTests/FFmpegImportSnifferTests.swift
+      - TextMouthProductionTests/FFmpegMetadataTests.swift
+      - TextMouthProductionTests/FFmpegTestSupport.swift
+      - TextMouthProductionTests/FileDigestTests.swift
+      - TextMouthProductionTests/FinishedBookModelTests.swift
+      - TextMouthProductionTests/FolderDuplicateRepairTests.swift
+      - TextMouthProductionTests/FolderPathEquivalenceTests.swift
+      - TextMouthProductionTests/FolderSafetyTests.swift
+      - TextMouthProductionTests/FormatSampleFixtures.swift
+      - TextMouthProductionTests/HTMLExportWriterTests.swift
+      - TextMouthProductionTests/HostedTestIsolationSupport.swift
+      - TextMouthProductionTests/IOSInfoPlistTests.swift
+      - TextMouthProductionTests/ImportConcurrencyTests.swift
+      - TextMouthProductionTests/ImportDecisionQueueTests.swift
+      - TextMouthProductionTests/ImportDecisionTestSupport.swift
+      - TextMouthProductionTests/ImportFuzzMutator.swift
+      - TextMouthProductionTests/ImportFuzzMutatorTests.swift
+      - TextMouthProductionTests/ImportProgressWordingTests.swift
+      - TextMouthProductionTests/ImportRefusalTestSupport.swift
+      - TextMouthProductionTests/InProcessEngineTests.swift
+      - TextMouthProductionTests/InterfaceTextOverridesFileTests.swift
+      - TextMouthProductionTests/InterfaceTextOverridesWordingTests.swift
+      - TextMouthProductionTests/InterfaceTextPackFixtureTests.swift
+      - TextMouthProductionTests/InterfaceTextShippedPackTests.swift
+      - TextMouthProductionTests/InterfaceTextTests.swift
+      - TextMouthProductionTests/KF8Fixture.swift
+      - TextMouthProductionTests/KF8LayoutTests.swift
+      - TextMouthProductionTests/KF8ReviewFixTests.swift
+      - TextMouthProductionTests/KFXFixture.swift
+      - TextMouthProductionTests/KFXIonTests.swift
+      - TextMouthProductionTests/KFXPrivateBooksTests.swift
+      - TextMouthProductionTests/KFXTestBook.swift
+      - TextMouthProductionTests/KFXWalkTests.swift
+      - TextMouthProductionTests/LanguagePackTests.swift
+      - TextMouthProductionTests/LeadingArticlesSortTests.swift
+      - TextMouthProductionTests/LeadingArticlesTests.swift
+      - TextMouthProductionTests/LegacyDocumentAndAccessibilityTests.swift
+      - TextMouthProductionTests/LegacyLibraryModelTests.swift
+      - TextMouthProductionTests/LibraryAndSectionPolicyTests.swift
+      - TextMouthProductionTests/LibraryFeedListCountTests.swift
+      - TextMouthProductionTests/LibraryFolderAdoptionTests.swift
+      - TextMouthProductionTests/LibraryIdentityTests.swift
+      - TextMouthProductionTests/LibraryIndexQuarantineTests.swift
+      - TextMouthProductionTests/LibraryIndexTestSupport.swift
+      - TextMouthProductionTests/LibraryInfoWordingTests.swift
+      - TextMouthProductionTests/LibraryLifecycleTests.swift
+      - TextMouthProductionTests/LibraryMoveTransactionTests.swift
+      - TextMouthProductionTests/LibrarySearchEngineTests.swift
+      - TextMouthProductionTests/LibrarySearchPrefilterTests.swift
+      - TextMouthProductionTests/LibrarySearchSpecialsTests.swift
+      - TextMouthProductionTests/LibrarySearchTextStoreTests.swift
+      - TextMouthProductionTests/LibraryViewDefinitionListTests.swift
+      - TextMouthProductionTests/LibraryViewDefinitionTests.swift
+      - TextMouthProductionTests/LibraryViewFilterEvaluatorTests.swift
+      - TextMouthProductionTests/ListNeighborsTests.swift
+      - TextMouthProductionTests/ListeningDayKeyMigrationTests.swift
+      - TextMouthProductionTests/LogLocationTests.swift
+      - TextMouthProductionTests/LogTestSupport.swift
+      - TextMouthProductionTests/MOBIBookStructureTests.swift
+      - TextMouthProductionTests/MOBIFixture.swift
+      - TextMouthProductionTests/MarkdownEmphasisTests.swift
+      - TextMouthProductionTests/MarkdownExportWriterTests.swift
+      - TextMouthProductionTests/MarkdownMarkerSupport.swift
+      - TextMouthProductionTests/MarkdownNestingTests.swift
+      - TextMouthProductionTests/MarkdownPageMarkerTests.swift
+      - TextMouthProductionTests/MarkupFuzzGenerator.swift
+      - TextMouthProductionTests/MarkupGuardTests.swift
+      - TextMouthProductionTests/MediaGestureDetectorTests.swift
+      - TextMouthProductionTests/NetworkReachabilityTests.swift
+      - TextMouthProductionTests/ObjCExceptionTests.swift
+      - TextMouthProductionTests/OwnAudioImportTests.swift
+      - TextMouthProductionTests/OwnAudioSampleSupport.swift
+      - TextMouthProductionTests/PDFExtractionDiagnosticsTests.swift
+      - TextMouthProductionTests/PackContainerTests.swift
+      - TextMouthProductionTests/PackageNavigationAuditTests.swift
+      - TextMouthProductionTests/PageModelTests.swift
+      - TextMouthProductionTests/ParserContentFidelityTests.swift
+      - TextMouthProductionTests/PatienceDiffTests.swift
+      - TextMouthProductionTests/PhoneAudioErrorCodeTests.swift
+      - TextMouthProductionTests/PhoneAudioEventPolicyTests.swift
+      - TextMouthProductionTests/PhoneAudioPaceTests.swift
+      - TextMouthProductionTests/PhoneAudioWordingTests.swift
+      - TextMouthProductionTests/PhoneBackgroundHoldTests.swift
+      - TextMouthProductionTests/PhoneBookSearchTests.swift
+      - TextMouthProductionTests/PhoneBookmarksModelTests.swift
+      - TextMouthProductionTests/PhoneBrailleSettingsTests.swift
+      - TextMouthProductionTests/PhoneEscapePolicyTests.swift
+      - TextMouthProductionTests/PhoneExportFolderTests.swift
+      - TextMouthProductionTests/PhoneExportMemoryCheckTests.swift
+      - TextMouthProductionTests/PhoneExportOfferTests.swift
+      - TextMouthProductionTests/PhoneExportQuestionTests.swift
+      - TextMouthProductionTests/PhoneExportSpeechTests.swift
+      - TextMouthProductionTests/PhoneFocusRequestsTests.swift
+      - TextMouthProductionTests/PhoneFolderVocabularyTests.swift
+      - TextMouthProductionTests/PhoneGoToModelTests.swift
+      - TextMouthProductionTests/PhoneHeadingsModelTests.swift
+      - TextMouthProductionTests/PhoneImportBranchTests.swift
+      - TextMouthProductionTests/PhoneImportCopyTests.swift
+      - TextMouthProductionTests/PhoneImportHoldingTests.swift
+      - TextMouthProductionTests/PhoneImportQuestionTests.swift
+      - TextMouthProductionTests/PhoneImportWordingTests.swift
+      - TextMouthProductionTests/PhoneLaunchRequestTests.swift
+      - TextMouthProductionTests/PhoneLibraryChoicesTests.swift
+      - TextMouthProductionTests/PhoneLibraryOfferTests.swift
+      - TextMouthProductionTests/PhoneLibraryRowsTests.swift
+      - TextMouthProductionTests/PhoneLibrarySectionsTests.swift
+      - TextMouthProductionTests/PhoneLogExportTests.swift
+      - TextMouthProductionTests/PhoneMemoryPolicyTests.swift
+      - TextMouthProductionTests/PhoneMoveFeedbackTests.swift
+      - TextMouthProductionTests/PhoneNavigationUnitsTests.swift
+      - TextMouthProductionTests/PhoneReaderControlsTests.swift
+      - TextMouthProductionTests/PhoneRouteTests.swift
+      - TextMouthProductionTests/PhoneRowValueTests.swift
+      - TextMouthProductionTests/PhoneRowWordingTests.swift
+      - TextMouthProductionTests/PhoneScreenHoldsTests.swift
+      - TextMouthProductionTests/PhoneSettingsDefaultsTests.swift
+      - TextMouthProductionTests/PhoneSettingsVocabularyTests.swift
+      - TextMouthProductionTests/PhoneSleepDeadlineTests.swift
+      - TextMouthProductionTests/PhoneSleepTimerModelTests.swift
+      - TextMouthProductionTests/PhoneReaderCloudPhaseTests.swift
+      - TextMouthProductionTests/PhoneSyncLifeCycleTests.swift
+      - TextMouthProductionTests/PhoneSyncSettingsTests.swift
+      - TextMouthProductionTests/PlaceRelocatorBookTests.swift
+      - TextMouthProductionTests/PlaceRelocatorHeadingTests.swift
+      - TextMouthProductionTests/PlaceRelocatorSharedRuleTests.swift
+      - TextMouthProductionTests/PlaceRelocatorTestSupport.swift
+      - TextMouthProductionTests/PlaceRelocatorTests.swift
+      - TextMouthProductionTests/PlainSyncFolderAccessTests.swift
+      - TextMouthProductionTests/PlaybackFuzzOperations.swift
+      - TextMouthProductionTests/PlaybackFuzzOperationsTests.swift
+      - TextMouthProductionTests/PreferenceStoreTests.swift
+      - TextMouthProductionTests/RTFExportWriterTests.swift
+      - TextMouthProductionTests/ReadingStatsDayAttributionTests.swift
+      - TextMouthProductionTests/ReadingTextCacheTests.swift
+      - TextMouthProductionTests/RemovalWordingTests.swift
+      - TextMouthProductionTests/RunLoopWaiting.swift
+      - TextMouthProductionTests/RunningClockTests.swift
+      - TextMouthProductionTests/SharedPackageMigrationTests.swift
+      - TextMouthProductionTests/SoftHyphenEffectTests.swift
+      - TextMouthProductionTests/SourceScanSymlinkTests.swift
+      - TextMouthProductionTests/SourceScanTestSupport.swift
+      - TextMouthProductionTests/SpeechPreparationBenchmarkSupport.swift
+      - TextMouthProductionTests/SpeechPreparationSubstitutionTests.swift
+      - TextMouthProductionTests/SpeechRenderCoordinatorTests.swift
+      - TextMouthProductionTests/StackProbe.swift
+      - TextMouthProductionTests/StorageDestinationAssessmentTests.swift
+      - TextMouthProductionTests/StorageGenerationTestSupport.swift
+      - TextMouthProductionTests/StorageGenerationTests.swift
+      - TextMouthProductionTests/StorageGenerationWorkTests.swift
+      - TextMouthProductionTests/StoreBackupTests.swift
+      - TextMouthProductionTests/StoreFetchTests.swift
+      - TextMouthProductionTests/SubstitutionCompositionTests.swift
+      - TextMouthProductionTests/SyncApplyTests.swift
+      - TextMouthProductionTests/SyncBaselineTests.swift
+      - TextMouthProductionTests/SyncCenterTests.swift
+      - TextMouthProductionTests/SyncEngineTests.swift
+      - TextMouthProductionTests/SyncFeedTests.swift
+      - TextMouthProductionTests/SyncFolderIOTests.swift
+      - TextMouthProductionTests/SyncFolderTests.swift
+      - TextMouthProductionTests/SyncFormatTests.swift
+      - TextMouthProductionTests/SyncMergePropertyTests.swift
+      - TextMouthProductionTests/SyncOrderKeyTests.swift
+      - TextMouthProductionTests/SyncOutboxTests.swift
+      - TextMouthProductionTests/SyncProjectionTests.swift
+      - TextMouthProductionTests/SyncRegistersTests.swift
+      - TextMouthProductionTests/SyncReviewFixTests.swift
+      - TextMouthProductionTests/SyncSchedulerTests.swift
+      - TextMouthProductionTests/SyncStampTests.swift
+      - TextMouthProductionTests/SyncStatusLineTests.swift
+      - TextMouthProductionTests/SyncTestDrive.swift
+      - TextMouthProductionTests/SyncTestFixtures.swift
+      - TextMouthProductionTests/SyncTwoDeviceTests.swift
+      - TextMouthProductionTests/SyncWordingTests.swift
+      - TextMouthProductionTests/TMBNameTests.swift
+      - TextMouthProductionTests/TestDataFiles.swift
+      - TextMouthProductionTests/TextAnchorFineWordsTests.swift
+      - TextMouthProductionTests/TextAnchorRealReadings.swift
+      - TextMouthProductionTests/TextAnchorRecordTests.swift
+      - TextMouthProductionTests/TextAnchorTests.swift
+      - TextMouthProductionTests/TextCacheFingerprintTests.swift
+      - TextMouthProductionTests/TextEncodingCatalogTests.swift
+      - TextMouthProductionTests/TextEncodingChoiceDecoderTests.swift
+      - TextMouthProductionTests/TextEncodingFixtures.swift
+      - TextMouthProductionTests/TextPlausibilityTests.swift
+      - TextMouthProductionTests/TextutilHTMLStructureTests.swift
+      - TextMouthProductionTests/TimeEntryTests.swift
+      - TextMouthProductionTests/TimeLeftEstimateTests.swift
+      - TextMouthProductionTests/TimedTextModelTests.swift
+      - TextMouthProductionTests/TitleTypingTests.swift
+      - TextMouthProductionTests/UnicodeCoordinateTests.swift
+      - TextMouthProductionTests/ViewsAndWindowsCloudStatesTests.swift
+      - TextMouthProductionTests/WordDocumentComparisonTests.swift
+      - TextMouthProductionTests/WordDocumentLegacyComparisonTests.swift
+      - TextMouthProductionTests/WordsInOrderSupport.swift
+      - TextMouthProductionTests/XMLInputGuardTests.swift
+      - TextMouthProductionTests/ZIPTestSupport.swift
+      - TextMouthProductionTests/ZIPEncryptionTestSupport.swift
+      # End of the shared Mac test files.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouthiOSTests
+        GENERATE_INFOPLIST_FILE: true
+        # Both apps' products are TextMouth.app, and the scheme Xcode made for
+        # the iPhone app by itself left this bundle out of its tests: the
+        # iPhone app's own scheme, in the TextMouthiOS target, names it.
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/TextMouth.app/TextMouth"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        # The LAME, exception-catcher, braille-protocol, and FFmpeg-stream modules, which `@testable import TextMouth` may load.
+        SWIFT_INCLUDE_PATHS: $(SRCROOT)/Vendor/lame/include $(SRCROOT)/Vendor/ObjCExceptionCatcher/include $(SRCROOT)/Vendor/CBZip2/include $(SRCROOT)/TextMouthBraille/include $(SRCROOT)/TextMouthFFmpeg/include
+    dependencies:
+      - target: TextMouthiOS
+  # The iPhone app driven from outside, in the simulator, by XCUITest: what
+  # VoiceOver would be given on the Library and the reader (each element's
+  # label, value, and traits, and their order), and Apple's accessibility
+  # audit of each screen. Each test launches the app with a library of its
+  # own and a public-domain book sent to it (PhoneLaunchRequest). A test that
+  # presses Play or types makes sound, so it runs only where
+  # TEXTMOUTH_UI_SOUND is 1, which the GitHub runner's script sets and nothing
+  # on the development Mac does (TextMouthUITestCase.requireSound).
+  TextMouthiOSUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - TextMouthiOSUITests
+      # Alice's Adventures in Wonderland, Project Gutenberg #11, the sample
+      # the Mac's tests read too: the book each UI test sends the app.
+      - path: TestData/alice.epub
+        buildPhase: resources
+      # The Grade 2 braille sample the Mac's tests read too, which
+      # BrailleUITests sends the app (DR34).
+      - path: TestData/format-samples/brf/grade2-short.brf
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.textmouth.TextMouthiOSUITests
+        GENERATE_INFOPLIST_FILE: true
+        TEST_TARGET_NAME: TextMouthiOS
+    dependencies:
+      - target: TextMouthiOS

@@ -238,7 +238,7 @@ final class TranscriptionServiceTests: XCTestCase {
             (.unsupportedLanguage("Klingon"), "Transcription doesn't support Klingon."),
             (
                 .modelNotInstalled("English (India)"),
-                "The speech model for English (India) isn't on this Mac yet. It needs to be downloaded first."
+                "The speech model for English (India) isn't on this Mac yet. Download it first."
             ),
             (.notAnAudiobook, "Only audiobooks can be transcribed."),
             (.noAudio, "This audiobook has no audio to transcribe."),

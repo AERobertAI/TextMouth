@@ -1,3 +1,5 @@
+import AVFoundation
+import os
 import XCTest
 @testable import TextMouth
 
@@ -170,6 +172,38 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertEqual(aacDuration, 1, accuracy: 0.01)
     }
 
+    /// A book stored as 64-bit floats (a WAVE, AIFF, or CAF file), a depth
+    /// AVAssetReader's outputs take only when asked for another (B12),
+    /// imports: the probe measures it, its samples decode to the end, and
+    /// AVFoundation says it plays. A 64-bit integer CAF, which AVFoundation
+    /// can't convert (its decode check failed with "failed to determine
+    /// suitable PCM converter"), is refused, with a problem that names its
+    /// form and is no word of damage (B15), and never imported to play
+    /// nothing.
+    func testProbeMeasuresBooksOfWideSamples() async throws {
+        let refusedForm = AudioSampleForm(bits: 64, isFloat: false)
+        for book in AudioEditRenderingTests.wideBooks {
+            let file = try AudioTestFixtures.makeTemporaryDirectory().appendingPathComponent(book.fileName)
+            addTeardownBlock { try? FileManager.default.removeItem(at: file.deletingLastPathComponent()) }
+            try book.write(file, 24_000, 8_000)
+
+            let probed = await AudioMediaProbe.duration(of: file)
+
+            if book.decodes {
+                let playable = try await AVURLAsset(url: file).load(.isPlayable)
+                XCTAssertEqual(try probed.get(), 3, accuracy: 0.01, "\(book)")
+                XCTAssertTrue(playable, "\(book)")
+            } else {
+                // The refusal itself is asserted: a probe that accepted the book would fail here.
+                guard case .failure(let problem) = probed else {
+                    XCTFail("\(book) was accepted, not refused")
+                    continue
+                }
+                XCTAssertEqual(problem, .unsupportedSamples(refusedForm), "\(book)")
+            }
+        }
+    }
+
     /// A file whose audio track ends before the file does, as when an
     /// audiobook's cover art or chapter titles outlast its audio, is
     /// measured whole but checked over the samples that track holds: the
@@ -182,6 +216,117 @@ final class AudioMediaValidationTests: XCTestCase {
         let outcome = await AudioMediaProbe.duration(of: file)
 
         XCTAssertEqual(outcome, .success(3))
+    }
+
+    // MARK: - A Decoding Check That Does Not Return
+
+    /// A decoding check that waits for `gate` (up to twenty seconds, so no test can hold a thread for ever), counts
+    /// each start in `started`, and then finds nothing wrong.
+    private func heldCheck(
+        gate: DispatchSemaphore,
+        started: OSAllocatedUnfairLock<Int>
+    ) -> AudioMediaProbe.DecodeCheck {
+        { _ in
+            started.withLock { (count: inout Int) in count += 1 }
+            _ = gate.wait(timeout: .now() + 20)
+            return nil
+        }
+    }
+
+    /// A problem the check finds is the probe's answer, so the seam changes nothing for a check that returns.
+    func testTheDecodingCheckThePassedInIsTheOneThatDecides() async throws {
+        let wave = folder.appendingPathComponent("two seconds.wav")
+        try AudioTestFixtures.writeSilence(to: wave, duration: 2)
+
+        let outcome = await AudioMediaProbe.duration(of: wave, decoding: { _ in .cannotDecode })
+
+        XCTAssertEqual(outcome, .failure(.cannotDecode))
+    }
+
+    /// A decoding check that never returns (as `AVAssetReader` did not on a GitHub runner) is waited for only until
+    /// the probe's deadline: the file then passes on its header's length, in well under the check's own wait.
+    /// Without the deadline the probe answers only when the check does, here twenty seconds later.
+    func testAHungDecodingCheckIsGivenUpOnAtItsDeadlineAndTheFilePassesOnItsHeader() async throws {
+        let wave = folder.appendingPathComponent("held.wav")
+        try AudioTestFixtures.writeSilence(to: wave, duration: 2)
+        let gate = DispatchSemaphore(value: 0)
+        defer { gate.signal() }
+        let started = OSAllocatedUnfairLock(initialState: 0)
+        let began = Date()
+
+        let outcome = await AudioMediaProbe.duration(
+            of: wave, decoding: heldCheck(gate: gate, started: started), deadline: 0.3)
+
+        XCTAssertEqual(outcome, .success(2))
+        XCTAssertEqual(started.withLock { $0 }, 1, "the check should have been started")
+        XCTAssertLessThan(Date().timeIntervalSince(began), 5, "the probe waited for the check, not for its deadline")
+    }
+
+    /// Decoding checks that wait hold dispatch threads and not the threads of Swift's concurrency pool, which has one
+    /// for each core: more probes than cores all reach their check at once, and a task of the pool still runs.
+    /// With the check run in the probe's own task, only as many probes as the pool has threads reach it.
+    func testHeldDecodingChecksLeaveTheConcurrencyPoolFree() async throws {
+        let wave = folder.appendingPathComponent("held many.wav")
+        try AudioTestFixtures.writeSilence(to: wave, duration: 2)
+        let count = ProcessInfo.processInfo.activeProcessorCount + 2
+        let gate = DispatchSemaphore(value: 0)
+        defer { for _ in 0..<count { gate.signal() } }
+        let started = OSAllocatedUnfairLock(initialState: 0)
+        let check = heldCheck(gate: gate, started: started)
+        let probes = (0..<count).map { _ in
+            Task.detached(priority: .utility) { await AudioMediaProbe.duration(of: wave, decoding: check, deadline: 30) }
+        }
+
+        for _ in 0..<200 where started.withLock({ $0 }) < count {
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        XCTAssertEqual(started.withLock { $0 }, count,
+                       "only \(started.withLock { $0 }) of \(count) checks started: the rest could not get a thread")
+        let ran = OSAllocatedUnfairLock(initialState: false)
+        Task.detached(priority: .utility) { ran.withLock { $0 = true } }
+        for _ in 0..<100 where !ran.withLock({ $0 }) {
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        XCTAssertTrue(ran.withLock { $0 }, "a task could not run on the concurrency pool while the checks were held")
+
+        for _ in 0..<count { gate.signal() }
+        for probe in probes {
+            let outcome = await probe.value
+            XCTAssertEqual(outcome, .success(2))
+        }
+    }
+
+    /// What a decoding check saw: whether it was given a job at all, and a weak reference to that job, so a test can
+    /// see when the job is freed.
+    private struct SeenJob {
+        var wasGiven = false
+        weak var job: AudioMediaProbe.DecodeJob?
+    }
+
+    /// A check that answers in time frees its job (the file's asset, its track, and the readers the check made) once
+    /// the probe has answered, not when the deadline passes. An import probes many files a minute, and a job kept
+    /// until its deadline keeps that file's readers open. With the deadline's timer holding the job, it lives on for
+    /// the whole deadline, here thirty seconds.
+    func testAJobIsFreedWhenItsCheckAnswersNotWhenItsDeadlinePasses() async throws {
+        let wave = folder.appendingPathComponent("freed.wav")
+        try AudioTestFixtures.writeSilence(to: wave, duration: 2)
+        let seen = OSAllocatedUnfairLock(initialState: SeenJob())
+
+        let outcome = await AudioMediaProbe.duration(of: wave, decoding: { job in
+            seen.withLock { (state: inout SeenJob) in
+                state.wasGiven = true
+                state.job = job
+            }
+            return nil
+        }, deadline: 30)
+
+        XCTAssertEqual(outcome, .success(2))
+        XCTAssertTrue(seen.withLock { $0.wasGiven }, "the decoding check never ran, so this test proves nothing")
+        for _ in 0..<40 where seen.withLock({ $0.job != nil }) {
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        XCTAssertNil(seen.withLock { $0.job },
+                     "the job was still alive 2 seconds after its check answered: the deadline's timer held it")
     }
 
     /// A plain text file named like an MP3 cannot be opened as audio.
@@ -327,7 +472,7 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertEqual(error, .unplayableFile(file: "Disc 2/02.mp3", problem: .cannotOpen))
         XCTAssertEqual(
             error?.localizedDescription,
-            "The file “Disc 2/02.mp3” in this audiobook is damaged or incomplete: it cannot be opened as audio. "
+            "The file “Disc 2/02.mp3” in this book is damaged or incomplete: it cannot be opened as audio. "
                 + AudioMediaAdvice.damage
         )
     }
@@ -364,7 +509,7 @@ final class AudioMediaValidationTests: XCTestCase {
         XCTAssertEqual(error, .unplayableFile(file: "02.m4a", problem: .endsEarly))
         XCTAssertEqual(
             error?.localizedDescription,
-            "The file “02.m4a” in this audiobook is damaged or incomplete: "
+            "The file “02.m4a” in this book is damaged or incomplete: "
                 + "its audio breaks off before the length the file declares. "
                 + AudioMediaAdvice.damage
         )
@@ -421,7 +566,7 @@ final class AudioMediaValidationTests: XCTestCase {
         for (problem, reason) in reasons {
             XCTAssertEqual(
                 AudioParseError.unplayableFile(file: "Disc 2/03.mp3", problem: problem).errorDescription,
-                "The file “Disc 2/03.mp3” in this audiobook is damaged or incomplete: \(reason). "
+                "The file “Disc 2/03.mp3” in this book is damaged or incomplete: \(reason). "
                     + AudioMediaAdvice.damage
             )
         }
@@ -445,7 +590,7 @@ final class AudioMediaValidationTests: XCTestCase {
         ))
         XCTAssertEqual(
             error?.localizedDescription,
-            "The heading “Chapter 12” starts 5 seconds into its file “a.wav”, which is only 2 seconds long. "
+            "The heading “Chapter 12” starts 5 seconds into “a.wav”, which is only 2 seconds long. "
                 + AudioMediaAdvice.mismatch
         )
     }
@@ -491,7 +636,7 @@ final class AudioMediaValidationTests: XCTestCase {
         ))
         XCTAssertEqual(
             error?.localizedDescription,
-            "The heading “Survey” ends 3 seconds into its file “a.wav”, which is only 2 seconds long. "
+            "The heading “Survey” ends 3 seconds into “a.wav”, which is only 2 seconds long. "
                 + AudioMediaAdvice.mismatch
         )
     }
@@ -608,8 +753,8 @@ final class AudioMediaValidationTests: XCTestCase {
         ))
         XCTAssertEqual(
             error?.localizedDescription,
-            "The heading “Chapter 2” starts 0 seconds into its file “a.wav”, before the heading “Chapter 1”, "
-                + "which comes earlier in the book and starts 1 second in. "
+            "The heading “Chapter 2” starts 0 seconds into “a.wav”, before the earlier heading “Chapter 1”, "
+                + "which starts 1 second in. "
                 + AudioMediaAdvice.mismatch
         )
     }
@@ -826,7 +971,7 @@ final class AudioMediaValidationTests: XCTestCase {
 
         XCTAssertEqual(
             error?.localizedDescription,
-            "The heading “Chapter 12” starts 1 hour into its file “03.wav”, which is only 10 minutes long. "
+            "The heading “Chapter 12” starts 1 hour into “03.wav”, which is only 10 minutes long. "
                 + AudioMediaAdvice.mismatch
         )
     }
@@ -839,7 +984,7 @@ final class AudioMediaValidationTests: XCTestCase {
 
         XCTAssertEqual(
             error.errorDescription,
-            "The untitled heading 3 ends 1 hour, 2 minutes, 5 seconds into its file “Disc 1/03.mp3”, "
+            "The untitled heading 3 ends 1 hour, 2 minutes, 5 seconds into “Disc 1/03.mp3”, "
                 + "which is only 1 hour long. "
                 + AudioMediaAdvice.mismatch
         )

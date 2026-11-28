@@ -78,8 +78,10 @@ extension LibraryViewModel {
         then completion: (@MainActor @Sendable () -> Void)? = nil
     ) {
         let rows = Dictionary(library.books.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let open = openBookIDs
-        DispatchQueue.global(qos: .utility).async {
+        let open = openBookIDsNow
+        // Weak here too: a strong capture would hold the library until the
+        // pass ends, though the closure below is written for its going.
+        DispatchQueue.global(qos: .utility).async { [weak self] in
             let outcome = Self.recoverLeftoverPlaceMoves(rows: rows, open: open, access: access)
             DispatchQueue.main.async { [weak self] in
                 guard let self else {

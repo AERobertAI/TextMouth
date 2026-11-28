@@ -6,7 +6,7 @@ You are `docs23`, a Sonnet documentation agent. You build nothing and run no tes
 Run `git checkout -b docs/oct23 main`, then check that `git merge-base --is-ancestor 8aa0c690 HEAD` succeeds.
 
 ## What to document (one commit per numbered part)
-1. **The transcripts merge** (fec4de73). The lead's report is `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/transcripts-lead-report.md`, and its "For the documentation pass" section has wording. The fix agent's report, `transcripts-fix-report.md` beside it, changed some sentences: the code wins.
+1. **The transcripts merge** (fec4de73). The lead's report is `<main checkout>/build/orchestrator/transcripts-lead-report.md`, and its "For the documentation pass" section has wording. The fix agent's report, `transcripts-fix-report.md` beside it, changed some sentences: the code wins.
    - **`docs/user/transcribing.md`:**
      - Retranscribe Audio…, and what the sheet says it replaces;
      - a feed episode's transcript can now be edited and cleaned up, with its note;
@@ -20,7 +20,7 @@ Run `git checkout -b docs/oct23 main`, then check that `git merge-base --is-ance
    - **`docs/user/settings.md`:** Storage's sentence about books a newer TextMouth wrote.
    - **The first launch:** say what it does, on the page that describes it (`where-your-library-lives.md`): open readers get their new text with pages, and EPUB page breaks keep their words.
    - **The architecture pages,** from its list.
-3. **V01, saying truly what going back to 0.1.1 does.** Read the TODO's V01 item, in the main checkout: `grep -n "V01 —" /Users/roberteggleston/programming/ai/claude/swift/TextMouth/TODO-2026-09-04.md`. Its facts are also in `humanQuestions/2026-10-23.md` there.
+3. **V01, saying truly what going back to 0.1.1 does.** Read the TODO's V01 item, in the main checkout: `grep -n "V01 —" <main checkout>/TODO-2026-09-04.md`. Its facts are also in `humanQuestions/2026-10-23.md` there.
    - 0.1.1 refuses a library holding a book in any of eight formats: braille, rich text, rich text with attachments, Word 97-2003, OpenDocument, Word 2003 XML, Safari web archives, and SSML.
    - It still writes book records, which lose 0.2.0's records of edits and pages.
    - Never choose Rebuild Library Index in 0.1.1.

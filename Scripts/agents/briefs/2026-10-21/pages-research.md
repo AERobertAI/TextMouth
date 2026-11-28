@@ -8,7 +8,7 @@ You are `pages-research`, an Opus agent, on the branch `research/pages`. TextMou
 The orchestrator will turn your plan into a TODO section and launch an implementation team today, so make it concrete enough for that: settled decisions, exact names, and file ownership.
 
 ## Deliverables
-1. `PAGES-RESEARCH-2026-10-21.md` in the repository root, in the style of the other research documents (for example `FORMATS-RESEARCH-2026-10-17.md` and `TEXT-ANCHORS-RESEARCH-2026-10-10.md`, which are gitignored and in the main checkout, `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/`). Commit it with `git add -f` on `research/pages`.
+1. `PAGES-RESEARCH-2026-10-21.md` in the repository root, in the style of the other research documents (for example `FORMATS-RESEARCH-2026-10-17.md` and `TEXT-ANCHORS-RESEARCH-2026-10-10.md`, which are gitignored and in the main checkout, `<main checkout>/`). Commit it with `git add -f` on `research/pages`.
 2. Inside it, a section "TODO section draft": items PG01, PG02, and so on, each in the form of the FMT items in `TODO-2026-09-04.md` (main checkout; see `grep -n "^- \[ \] \*\*FMT43 " TODO-2026-09-04.md` for the form): a title, difficulty, impact, what and why, files, risks, samples, and dependencies. Order them as they should be built.
 3. Inside it, a section "Team plan": the order of work, which items can run in parallel, each worker task's files (so no two workers edit one file at once), and which existing test classes each task must run.
 4. Questions for the user, each with a recommended answer, only where a choice is truly theirs.

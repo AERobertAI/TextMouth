@@ -25,9 +25,15 @@ enum AudioExportFormat: String, CaseIterable, Sendable {
     /// The format's name as Export lists it and VoiceOver reads it.
     var title: String {
         switch self {
-        case .m4a: return "M4A (AAC)"
-        case .m4b: return "M4B Audiobook (AAC)"
-        case .appleLossless: return "Apple Lossless (M4A)"
+        case .m4a:
+            // Translators: Name of an audio file format in the audio editor's Export format list and in messages about a save: M4A files holding AAC audio.
+            return InterfaceText.line("audioExportFormat.title.m4a", "M4A (AAC)")
+        case .m4b:
+            // Translators: Name of an audio file format in the audio editor's Export format list and in messages about a save: M4B audiobook files holding AAC audio.
+            return InterfaceText.line("audioExportFormat.title.m4b", "M4B Audiobook (AAC)")
+        case .appleLossless:
+            // Translators: Name of an audio file format in the audio editor's Export format list and in messages about a save: M4A files holding Apple Lossless audio. Apple Lossless is Apple's name for the codec.
+            return InterfaceText.line("audioExportFormat.title.appleLossless", "Apple Lossless (M4A)")
         case .wav: return "WAV"
         case .aiff: return "AIFF"
         case .caf: return "CAF"

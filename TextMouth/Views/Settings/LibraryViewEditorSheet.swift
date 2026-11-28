@@ -66,7 +66,7 @@ struct LibraryViewEditorSheet: View {
                 }
             }
             .formStyle(.grouped)
-            .toggleStyle(.checkbox)
+            .checkboxToggleStyle()
             .textFieldStyle(.roundedBorder)
             Divider()
             HStack {
@@ -156,7 +156,7 @@ struct LibraryViewEditorSheet: View {
             } else {
                 Picker(Wording.sortByLabel, selection: $model.sortField) {
                     ForEach(LibrarySortField.allCases, id: \.self) { field in
-                        Text(field.rawValue).tag(field)
+                        Text(field.title).tag(field)
                     }
                 }
                 .frame(maxWidth: Self.popUpWidth + 120)

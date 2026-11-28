@@ -152,9 +152,9 @@ extension ReaderViewModel {
         guard isPlaying || isWaitingForChapterDownload || isWaitingOutChapterPause else { return }
         audioPausedForMove = AudioPausedForMove(volume: audioPlaybackService.intendedVolume)
         if !isChapterHeldByWhereAmI {
-            stopWaitingForChapterDownload(because: "the book's package is moving")
+            stopWaitingForChapterDownload(because: "the book's package is moving") // l10n: no (debug-log reason)
         }
-        stopWaitingOutChapterPause(because: "the book's package is moving")
+        stopWaitingOutChapterPause(because: "the book's package is moving") // l10n: no (debug-log reason)
         audioPlaybackService.stop()
     }
 

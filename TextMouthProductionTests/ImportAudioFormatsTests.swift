@@ -109,11 +109,13 @@ final class ImportAudioFormatsTests: XCTestCase {
         XCTAssertEqual(none.channels, 1)
     }
 
-    /// The bit depth is the smallest of 16, 20, 24, and 32 that holds the
-    /// source's; an unknown depth (nil: floating-point or unreported) is 24.
+    /// The bit depth is the smallest of 16, 24, and 32 that holds the
+    /// source's, so a source of 17 to 20 bits is written at 24 (AVAssetReader
+    /// cannot read a 20-bit Apple Lossless file, B15); an unknown depth (nil:
+    /// floating-point or unreported) is 24.
     func testTheLosslessBitDepthIsTheSmallestThatHoldsTheSource() {
         let expected: [(Int?, Int)] = [
-            (8, 16), (16, 16), (17, 20), (20, 20), (21, 24), (24, 24), (25, 32), (32, 32), (64, 32), (nil, 24),
+            (8, 16), (16, 16), (17, 24), (18, 24), (20, 24), (21, 24), (24, 24), (25, 32), (32, 32), (64, 32), (nil, 24),
         ]
         for (bits, depth) in expected {
             let target = ImportAudioConverter.target(for: info(bits: bits, lossless: true), bytes: 1)
@@ -131,13 +133,13 @@ final class ImportAudioFormatsTests: XCTestCase {
 
     // MARK: - afconvert's Arguments
 
-    /// Apple Lossless names its bit depth by flag (1, 2, 3, 4 for 16, 20, 24,
-    /// 32 bits), takes no sample rate or bit rate, and never a channel
+    /// Apple Lossless names its bit depth by flag (1, 3, 4 for 16, 24, 32
+    /// bits; a source of 20 bits is written at 24, so 3), takes no sample rate or bit rate, and never a channel
     /// count: a source of more than two channels is mixed down first.
     func testApplesLosslessArgumentsNameTheDepthFlag() {
         let input = URL(fileURLWithPath: "/in/a.caf")
         let output = URL(fileURLWithPath: "/out/.a.m4a")
-        for (depth, flag) in [(16, "1"), (20, "2"), (24, "3"), (32, "4")] {
+        for (depth, flag) in [(16, "1"), (20, "3"), (24, "3"), (32, "4")] {
             let source = info(rate: 96_000, bits: depth, lossless: true)
             let target = ImportAudioConverter.target(for: source, bytes: 1)
             XCTAssertEqual(

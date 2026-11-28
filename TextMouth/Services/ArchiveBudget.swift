@@ -47,6 +47,13 @@ struct ArchiveLimits: Sendable {
     /// The free bytes on the volume holding a location, or nil when the
     /// system cannot tell; tests supply their own figure.
     var freeSpace: @Sendable (URL) -> Int64?
+    /// Whether copying the file at the first location to the second costs
+    /// almost no space, because the volume clones the file (APFS shares its
+    /// blocks until one side is changed). Imports that copy files whole
+    /// (`FileImportService.requireRoom(forCopying:onVolumeOf:)`) count such
+    /// a file as empty. A copy that is not known to be a clone counts in
+    /// full, so tests that need a full copy supply `false`.
+    var copyIsClone: @Sendable (URL, URL) -> Bool = { _, _ in false }
 
     /// The documented limits every import uses.
     static let standard = ArchiveLimits(
@@ -55,7 +62,8 @@ struct ArchiveLimits: Sendable {
         maximumEntries: 10_000,
         maximumNestingDepth: 1,
         freeSpaceReserve: 1_000_000_000,
-        freeSpace: { ArchiveLimits.volumeFreeSpace(at: $0) }
+        freeSpace: { ArchiveLimits.volumeFreeSpace(at: $0) },
+        copyIsClone: { ArchiveLimits.volumeClonesCopy(from: $0, to: $1) }
     )
 
     /// The limits imports use: `standard`, unless a test binds smaller ones
@@ -82,6 +90,19 @@ struct ArchiveLimits: Sendable {
             return important
         }
         return values.volumeAvailableCapacity.map(Int64.init)
+    }
+
+    /// Whether `FileManager.copyItem` of the file at `source` into the
+    /// folder at `destination` clones it: both are on one volume, and that
+    /// volume supports cloning (APFS does; HFS+ and exFAT copy every byte).
+    /// False when either volume cannot be told, or when the file is still in
+    /// the cloud (a copy downloads it in full), so a doubtful copy counts
+    /// in full.
+    static func volumeClonesCopy(from source: URL, to destination: URL) -> Bool {
+        guard !DatalessFiles.isDataless(source),
+              ImportScratchSpace.areOnSameVolume(source, destination) else { return false }
+        let values = try? destination.resourceValues(forKeys: [.volumeSupportsFileCloningKey])
+        return values?.volumeSupportsFileCloning == true
     }
 }
 
@@ -153,28 +174,47 @@ enum ArchiveBudgetError: LocalizedError, Equatable {
         let size = ArchiveFigures.size
         switch self {
         case let .expandsPastLimit(declared, limit, holdsAudioOrArchives, withNestedArchives):
-            let kind = holdsAudioOrArchives ? "archives holding audio or other archives" : "archives without audio"
-            return "\(Self.subject(withNestedArchives)) expands to \(size(declared)), "
-                + "more than the \(size(limit)) TextMouth extracts from \(kind)."
+            // Four whole sentences: the archive alone or with those inside it, and the kind of archive.
+            switch (withNestedArchives, holdsAudioOrArchives) {
+            case (false, true):
+                // Translators: Why an import's archive was refused. %1$@ is the size the archive expands to, such as "2 GB"; %2$@ is the limit for archives that hold audio or other archives.
+                return InterfaceText.line("archiveBudgetError.expandsPastLimit.holding", "The archive expands to \(size(declared)), more than the \(size(limit)) TextMouth extracts from archives holding audio or other archives.")
+            case (false, false):
+                // Translators: Why an import's archive was refused. %1$@ is the size the archive expands to, such as "2 GB"; %2$@ is the limit for archives that hold no audio.
+                return InterfaceText.line("archiveBudgetError.expandsPastLimit.without", "The archive expands to \(size(declared)), more than the \(size(limit)) TextMouth extracts from archives without audio.")
+            case (true, true):
+                // Translators: Why an import's archive was refused when it holds other archives. %1$@ is the total size they expand to, such as "2 GB"; %2$@ is the limit for archives that hold audio or other archives.
+                return InterfaceText.line("archiveBudgetError.expandsPastLimit.innerHolding", "Together with the archives inside it, the archive expands to \(size(declared)), more than the \(size(limit)) TextMouth extracts from archives holding audio or other archives.")
+            case (true, false):
+                // Translators: Why an import's archive was refused when it holds other archives. %1$@ is the total size they expand to, such as "2 GB"; %2$@ is the limit for archives that hold no audio.
+                return InterfaceText.line("archiveBudgetError.expandsPastLimit.innerWithout", "Together with the archives inside it, the archive expands to \(size(declared)), more than the \(size(limit)) TextMouth extracts from archives without audio.")
+            }
         case let .tooManyEntries(count, limit, withNestedArchives):
-            return "\(Self.subject(withNestedArchives)) holds \(ArchiveFigures.count(count)) files and folders, "
-                + "more than the \(ArchiveFigures.count(limit)) TextMouth extracts in one import."
+            return withNestedArchives
+                // Translators: Why an import's archive was refused when it holds other archives. %1$@ is how many files and folders they hold in all, already formatted; %2$@ is the limit, already formatted.
+                ? InterfaceText.line("archiveBudgetError.tooManyEntries.together", "Together with the archives inside it, the archive holds \(ArchiveFigures.count(count)) files and folders, more than the \(ArchiveFigures.count(limit)) TextMouth extracts in one import.")
+                // Translators: Why an import's archive was refused: it holds too many files and folders. %1$@ is how many it holds, already formatted; %2$@ is the limit, already formatted.
+                : InterfaceText.line("archiveBudgetError.tooManyEntries.extracts", "The archive holds \(ArchiveFigures.count(count)) files and folders, more than the \(ArchiveFigures.count(limit)) TextMouth extracts in one import.")
         case let .notEnoughSpace(nestedArchive, needed, available, reserve):
-            let subject = nestedArchive.map { "The archive “\($0)” inside it" } ?? "The archive"
-            return "\(subject) expands to \(size(needed)), but the disk holding the TextMouth library has only "
-                + "\(size(available)) free, and TextMouth keeps \(size(reserve)) of it free. "
-                + "Free up space, then import it again."
+            // The last sentence's "it" is the archive, which the first sentence names.
+            // Translators: Last sentence of why an import's archive was refused for want of disk space: what to do. "It" is the archive.
+            let advice = InterfaceText.line("archiveBudgetError.notEnoughSpace.import", "Free up space, then import it again.")
+            let sentence = nestedArchive.map {
+                // Translators: First sentence of why an import's archive was refused for want of disk space, when the archive is inside another. %1$@ is the inner archive's name; %2$@ is the size it expands to; %3$@ is the free space; %4$@ is the space TextMouth keeps free.
+                InterfaceText.line("archiveBudgetError.notEnoughSpace.inside", "The archive “\($0)” inside it expands to \(size(needed)), but the disk holding the TextMouth library has only \(size(available)) free, and TextMouth keeps \(size(reserve)) of it free.")
+            // Translators: First sentence of why an import's archive was refused for want of disk space. %1$@ is the size the archive expands to; %2$@ is the free space; %3$@ is the space TextMouth keeps free.
+            } ?? InterfaceText.line("archiveBudgetError.notEnoughSpace.expands", "The archive expands to \(size(needed)), but the disk holding the TextMouth library has only \(size(available)) free, and TextMouth keeps \(size(reserve)) of it free.")
+            return SentenceWording.joined([sentence, advice])
         case let .extractedPastDeclaredSize(declared):
-            return "The archive holds more than the \(size(declared)) it declares, so extraction stopped. "
-                + "Get a fresh copy of the archive, then import it again."
+            return SentenceWording.joined([
+                // Translators: First sentence of why an import's archive stopped extracting: it holds more than it declares. %@ is the size it declares, such as "2 GB".
+                InterfaceText.line("archiveBudgetError.pastDeclaredSize", "The archive holds more than the \(size(declared)) it declares, so extraction stopped."),
+                // Translators: Last sentence of why an import's archive stopped extracting: what to do.
+                InterfaceText.line("archiveBudgetError.pastDeclaredSizeFix", "Get a fresh copy of the archive, then import it again."),
+            ])
         }
     }
 
-    /// What a sentence about the import's totals is about: the archive
-    /// alone, or the archive with the archives found inside it.
-    private static func subject(_ withNestedArchives: Bool) -> String {
-        withNestedArchives ? "Together with the archives inside it, the archive" : "The archive"
-    }
 }
 
 // MARK: - Budget

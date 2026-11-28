@@ -155,10 +155,10 @@ extension AudioEditorModel {
     func hint(for action: ShortcutAction) -> String {
         let hint = AudioEditorWording.hint(for: action, bindings: bindings(for: action))
         if action == .editorUndo, !session.canUndo, let reason = session.undoLimitExplanation {
-            return "\(hint) \(reason)"
+            return SentenceWording.joined([hint, reason])
         }
         if action == .editorRevert, session.canUndo, !canRevert {
-            return "\(hint) \(AudioEditorWording.revertNoOriginal)"
+            return SentenceWording.joined([hint, AudioEditorWording.revertNoOriginal])
         }
         return hint
     }

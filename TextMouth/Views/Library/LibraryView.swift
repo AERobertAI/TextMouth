@@ -23,9 +23,9 @@ enum WindowCommandRouting {
     /// a panel's own shortcut from reaching the reader to close that panel.
     @MainActor
     static func shouldAccept(
-        sourceWindow: NSWindow?,
-        hostWindow: NSWindow?,
-        keyWindow: NSWindow?
+        sourceWindow: PlatformWindow?,
+        hostWindow: PlatformWindow?,
+        keyWindow: PlatformWindow?
     ) -> Bool {
         guard let hostWindow else { return true }
 
@@ -41,7 +41,8 @@ enum WindowCommandRouting {
     /// Walk through nested sheets to the document window that owns them.
     /// The visited set guards against a malformed AppKit relationship cycle.
     @MainActor
-    static func rootWindow(for window: NSWindow) -> NSWindow {
+    static func rootWindow(for window: PlatformWindow) -> PlatformWindow {
+        #if os(macOS)
         var currentWindow = window
         var visited: Set<ObjectIdentifier> = []
 
@@ -51,6 +52,11 @@ enum WindowCommandRouting {
         }
 
         return currentWindow
+        #else
+        // A UIWindow has no sheets of its own (a presented sheet is a view
+        // controller inside it), so it is already the document window.
+        return window
+        #endif
     }
 }
 
@@ -214,7 +220,7 @@ struct LibraryView: View {
     /// the views it offers. Until October 30, 2026 it was a segmented picker
     /// of the five categories, called "Library category"; the constant keeps
     /// the name the tests have always used.
-    static let categoryPickerLabel = "Library view"
+    static var categoryPickerLabel: String { LibraryListWording.viewPickerLabel }
     /// Which library folders hold feeds, and the feed engine they follow
     /// (FR03): the app's, unless a test shows its own. Observed, as it
     /// publishes only when a feed's folder changes; the views showing a
@@ -266,7 +272,7 @@ struct LibraryView: View {
     /// its sheet.
     @State private var bookInfoRequest: UUID?
     /// The NSWindow hosting this library, for checking key window status on notifications
-    @State private var hostWindow: NSWindow?
+    @State private var hostWindow: PlatformWindow?
     /// Whether removing asks first and where deleted files go, kept current
     /// so removal buttons and confirmations say what removal will do.
     @State private var removalPreferences = RemovalPreferences(ConfigService.shared.config)
@@ -341,6 +347,10 @@ struct LibraryView: View {
         // the model again.
         let allBooks = displayedBooks
         let books = filteredBooks
+        // How titles are sorted, shown, and found by typing (the Leading
+        // articles setting), read once for the rows, the rotor, and the
+        // Feeds section.
+        let articles = libraryViewModel.leadingArticles
         // Which views shown when applicable list something, asked once for
         // the body, and shared by the View pop-up and Go to View (review of
         // October 31, 2026, finding 4).
@@ -475,7 +485,13 @@ struct LibraryView: View {
                 // row also offers its feed's folder's commands, as the
                 // folder's row, left out where the feed's row stands for
                 // it, did.
-                LibraryFeedsSection(center: feedFolders.center, location: location, open: openFeed, perform: performFeedAction) { row in
+                LibraryFeedsSection(
+                    center: feedFolders.center,
+                    location: location,
+                    articles: articles,
+                    open: openFeed,
+                    perform: performFeedAction
+                ) { row in
                     if let folder = folder(ofFeedRow: row) {
                         Divider()
                         folderMenu(folder)
@@ -494,13 +510,15 @@ struct LibraryView: View {
                     }
                 }
             }
-            .searchable(text: $searchText, prompt: "Search books")
-            .accessibilityRotor("Books") {
-                ForEach(books) { book in
-                    AccessibilityRotorEntry(book.title, id: book.id)
+            .searchable(text: $searchText, prompt: LibraryListWording.searchPrompt)
+            .accessibilityRotor(LibraryListWording.booksRotor) {
+                // Each title as its row shows it ("Hobbit, The" while sorting
+                // passes over articles), in the list's order.
+                ForEach(libraryViewModel.booksRotorEntries(of: books, articles: articles)) { entry in
+                    AccessibilityRotorEntry(entry.label, id: entry.id)
                 }
             }
-            .accessibilityRotor("Folders") {
+            .accessibilityRotor(LibraryListWording.foldersHeader) {
                 // Each folder here, as its row says it, or, for a feed's
                 // folder the Feeds section's row stands for, moving to that
                 // row (FR03).
@@ -508,6 +526,7 @@ struct LibraryView: View {
                     AccessibilityRotorEntry(entry.label, id: entry.id)
                 }
             }
+            #if os(macOS)
             .onDeleteCommand {
                 // Delete key removes all selected books (either selection mechanism)
                 let books = selectedBooks
@@ -516,6 +535,7 @@ struct LibraryView: View {
                     clearAllSelections()
                 }
             }
+            #endif
             .onChange(of: currentFolderPath) { _, _ in
                 // Clear selections when navigating to a different folder
                 editSelection = []
@@ -526,6 +546,23 @@ struct LibraryView: View {
                 editSelection = []
                 selectedBookIDs = []
             }
+            // Letter navigation that passes over leading articles, in the
+            // Leading articles setting's second and third choices; in the
+            // first, the list's own type select, as always.
+            .modifier(LibraryTitleTyping(
+                articles: articles,
+                rows: {
+                    typedRows(
+                        folders: showsFolders ? subfolders : [],
+                        books: listsItems ? books : [],
+                        allBooks: allBooks,
+                        feedID: feedID,
+                        articles: articles
+                    )
+                },
+                selection: $selectedBookIDs,
+                window: hostWindow
+            ))
         }
         .toolbar {
             ToolbarItemGroup {
@@ -533,9 +570,9 @@ struct LibraryView: View {
                     Button {
                         navigateUp()
                     } label: {
-                        Label("Up One Level", systemImage: "chevron.up")
+                        Label(LibraryListWording.upOneLevel, systemImage: "chevron.up")
                     }
-                    .accessibilityLabel("Go up one folder level")
+                    .accessibilityLabel(LibraryListWording.goUpOneFolderLevel)
                 }
 
                 addToLibraryButton(focusTarget: focusTarget)
@@ -548,9 +585,9 @@ struct LibraryView: View {
                         isEditMode = true
                     }
                 } label: {
-                    Label(isEditMode ? "Done" : "Edit", systemImage: isEditMode ? "checkmark.circle.fill" : "checkmark.circle")
+                    Label(isEditMode ? LibraryListWording.done : LibraryListWording.edit, systemImage: isEditMode ? "checkmark.circle.fill" : "checkmark.circle")
                 }
-                .accessibilityLabel(isEditMode ? "Exit edit mode" : "Enter edit mode")
+                .accessibilityLabel(isEditMode ? LibraryListWording.exitEditMode : LibraryListWording.enterEditMode)
                 .accessibilityHint(Self.editModeButtonHint(isEditMode: isEditMode, selectedCount: selectedBooks.count))
 
                 if showsFolders {
@@ -558,9 +595,9 @@ struct LibraryView: View {
                         newFolderParentPath = currentFolderPath
                         showNewFolderSheet = true
                     } label: {
-                        Label("New Folder", systemImage: "folder.badge.plus")
+                        Label(LibrarySheetWording.newFolderTitle, systemImage: "folder.badge.plus")
                     }
-                    .accessibilityLabel("Create new folder")
+                    .accessibilityLabel(LibraryListWording.createNewFolder)
                 }
 
                 // Feed Settings or Folder Settings for the folder shown (FR19).
@@ -656,7 +693,9 @@ struct LibraryView: View {
             token: cloudRefreshToken,
             library: libraryViewModel,
             refusal: $cloudRefusal,
-            performKeepMenuCommand: performKeepMenuCommand
+            performKeepMenuCommand: performKeepMenuCommand,
+            performKeepOnAllDevicesMenuCommand: performKeepOnAllDevicesMenuCommand,
+            performRemoveDownloadMenuCommand: performRemoveDownloadMenuCommand
         ))
         // File > Export… for the selection, and the Export dialog (FR05).
         .modifier(LibraryExportSupport(
@@ -743,10 +782,7 @@ struct LibraryView: View {
         .onReceive(NotificationCenter.default.publisher(for: .openSelectedBook)) { notification in
             // Only respond in the focused library window
             guard takesCommand(notification) else { return }
-            if let id = selectedBookIDs.first,
-               let book = filteredBooks.first(where: { $0.id == id }) {
-                openBook(book)
-            }
+            openSelectedRow()
         }
         .onReceive(NotificationCenter.default.publisher(for: .removeFromLibrary)) { notification in
             // Cmd+Delete: remove selected books from library
@@ -847,16 +883,16 @@ struct LibraryView: View {
         // words say whether everything goes to the Trash or is deleted
         // permanently, as the Trash preference chooses (TODO A08).
         .alert(
-            "Delete Folder?",
+            LibraryListWording.deleteFolderQuestion,
             isPresented: $libraryViewModel.showDeleteFolderDialog
         ) {
-            Button("Move Contents Out") {
+            Button(LibraryListWording.moveContentsOut) {
                 libraryViewModel.showDeleteFolderDestinationSheet = true
             }
             Button(deleteEverythingWording.buttonTitle, role: .destructive) {
                 libraryViewModel.showDeleteEverythingConfirm = true
             }
-            Button("Cancel", role: .cancel) {
+            Button(LibraryWindowWording.cancel, role: .cancel) {
                 libraryViewModel.pendingDeleteFolder = nil
             }
         } message: {
@@ -875,7 +911,7 @@ struct LibraryView: View {
                     libraryViewModel.pendingDeleteFolder = nil
                 }
             }
-            Button("Cancel", role: .cancel) {
+            Button(LibraryWindowWording.cancel, role: .cancel) {
                 libraryViewModel.pendingDeleteFolder = nil
             }
         } message: {
@@ -926,7 +962,7 @@ struct LibraryView: View {
                 sortItems(hasSubfolders: hasSubfolders)
             }
         } label: {
-            Label("Sort", systemImage: "arrow.up.arrow.down")
+            Label(LibraryListWording.sort, systemImage: "arrow.up.arrow.down")
         }
         .accessibilityLabel(sortMenuLabel)
     }
@@ -962,7 +998,7 @@ struct LibraryView: View {
         // screen; choosing that field again leaves the sort as it is and
         // says it (TODO A11), and only the direction command reverses it.
         ForEach(LibrarySortField.allCases, id: \.self) { field in
-            Toggle(field.rawValue, isOn: Binding(
+            Toggle(field.title, isOn: Binding(
                 get: { sort.isChecked(field) },
                 set: { _ in userChangedSort(.choose(field)) }
             ))
@@ -983,7 +1019,7 @@ struct LibraryView: View {
                 libraryViewModel.applySortToSubfolders(sort.setting, from: currentFolderPath)
                 announceToVoiceOver(sort.subfolderAnnouncement)
             } label: {
-                Text("Apply Sort to All Subfolders")
+                Text(LibraryListWording.applySortToSubfolders)
             }
         }
     }
@@ -1012,8 +1048,15 @@ struct LibraryView: View {
             ReadingListOptionsBar(
                 continuation: list.continuation,
                 skipsFinished: list.skipsFinished,
+                removesFinished: list.removesFinished,
+                keepsBooks: keptBooks.keepsReadingListBooks,
+                // Shown in a cloud library, and while sync is on: it drives the
+                // downloads after every sync (FR43, section 16).
+                showsKeepChoice: cloudStates.showsCloudNotes,
                 chooseContinuation: { libraryViewModel.setReadingListContinuation($0) },
-                chooseSkipsFinished: { libraryViewModel.setReadingListSkipsFinished($0) }
+                chooseSkipsFinished: { libraryViewModel.setReadingListSkipsFinished($0) },
+                chooseRemovesFinished: { libraryViewModel.setReadingListRemovesFinished($0) },
+                chooseKeepsBooks: { libraryViewModel.setKeepsReadingListBooks($0) }
             )
         }
     }
@@ -1030,7 +1073,7 @@ struct LibraryView: View {
                     Image(systemName: "play.fill")
                         .foregroundColor(.accentColor)
                         .accessibilityHidden(true)
-                    Text("Continue: \(lastBook.title)")
+                    Text(LibraryListWording.continueVisible(lastBook.title))
                         .lineLimit(1)
                         .truncationMode(.tail)
                     Spacer()
@@ -1046,7 +1089,7 @@ struct LibraryView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Self.continueAccessibilityLabel(for: lastBook, wpm: settingsViewModel.wordsPerMinute))
-            .accessibilityHint("Opens the last book you were reading")
+            .accessibilityHint(LibraryListWording.continueHint)
             .accessibilityIdentifier(voiceOverFocusID)
             .background(StandardVoiceOverFocus(delay: 1.2))
         }
@@ -1066,7 +1109,7 @@ struct LibraryView: View {
     /// speaks it. A book with no time left to show, as a finished one,
     /// leaves the time out: "Continue listening to Emma".
     nonisolated static func continueAccessibilityLabel(for book: Book, wpm: Double) -> String {
-        let label = "Continue listening to \(book.title)"
+        let label = LibraryListWording.continueListeningTo(book.title)
         guard let remaining = BookRow.timeRemaining(for: book, wpm: wpm) else { return label }
         return "\(label), \(BookRow.remainingText(remaining).spoken)"
     }
@@ -1135,6 +1178,8 @@ struct LibraryView: View {
         let selectionReadingListCommands: [ReadingListCommand]
         /// What the rows' commands do.
         let actions: LibraryBookRowActions
+        /// How the rows show titles (the Leading articles setting).
+        let articles: LeadingArticles
     }
 
     /// The context the rows of `books` share, for a list whose location
@@ -1151,7 +1196,8 @@ struct LibraryView: View {
             for: selection,
             isSelection: selection.count > 1,
             states: cloudStates,
-            kept: keptBooks.bookIDs
+            kept: keptBooks.bookIDs,
+            keptOnAllDevices: keptBooks.syncedBookIDs
         )
         // Every book's moves in the order the list shows, read from that
         // order rather than by sorting the folder again for each row.
@@ -1168,7 +1214,8 @@ struct LibraryView: View {
                 isSelection: selection.count > 1,
                 inList: readingListIDs
             ),
-            actions: rowActions
+            actions: rowActions,
+            articles: libraryViewModel.leadingArticles
         )
     }
 
@@ -1184,6 +1231,8 @@ struct LibraryView: View {
         let isSelectionRow = targets.count > 1
         return LibraryBookListRow(
             book: book,
+            // "Hobbit, The" while sorting passes over articles.
+            shownTitle: libraryViewModel.rowTitle(of: book, articles: context.articles),
             isOpenInWindow: libraryViewModel.openBookIDs.contains(book.id),
             wpm: settingsViewModel.wordsPerMinute,
             isEditMode: isEditMode,
@@ -1197,7 +1246,8 @@ struct LibraryView: View {
                     for: targets,
                     isSelection: false,
                     states: cloudStates,
-                    kept: keptBooks.bookIDs
+                    kept: keptBooks.bookIDs,
+                    keptOnAllDevices: keptBooks.syncedBookIDs
                 ),
             // Move Up and Move Down move the row's own book alone (TODO A06).
             manualMoves: isSelectionRow ? nil : context.manualMoves[book.id],
@@ -1269,7 +1319,7 @@ struct LibraryView: View {
                 }
             }
         } header: {
-            Text("Folders")
+            Text(LibraryListWording.foldersHeader)
                 .accessibilityAddTraits(.isHeader)
         }
     }
@@ -1283,16 +1333,16 @@ struct LibraryView: View {
     /// question naming the feed (REV14 feeds 7).
     @ViewBuilder
     private func folderMenu(_ folder: BookFolder) -> some View {
-        Button("Rename Folder...") {
+        Button(LibraryListWording.renameFolder) {
             renameFolderText = folder.name
             folderToRename = folder
         }
-        Button("Move Folder...") {
+        Button(LibraryListWording.moveFolder) {
             folderToMove = folder
         }
         if libraryViewModel.offersDeleteFolder(folder) {
             Divider()
-            Button("Delete Folder...", role: .destructive) {
+            Button(LibraryListWording.deleteFolder, role: .destructive) {
                 if libraryViewModel.folderHasContents(folder) {
                     libraryViewModel.pendingDeleteFolder = folder
                     libraryViewModel.showDeleteFolderDialog = true
@@ -1320,6 +1370,7 @@ struct LibraryView: View {
                 folderBooks: allBooks,
                 search: searchText,
                 wordsPerMinute: settingsViewModel.wordsPerMinute,
+                articles: context.articles,
                 bookRow: { book, actions in bookRow(book, context: context, feedActions: actions) },
                 perform: performFeedItemAction
             )
@@ -1344,11 +1395,81 @@ struct LibraryView: View {
         }
     }
 
+    /// The list's rows, in its order, as letter navigation reaches them
+    /// (`LibraryTitleTyping`): the Folders section's folders by their names
+    /// as written; the Feeds section's feeds, in the order it shows them;
+    /// and the books, as a feed's folder lists them where the list shows
+    /// one (its items' books, then its other books). A feed's items not
+    /// downloaded are left out, as they were before their rows could hold
+    /// the selection (returnrow): letters reach folders, feeds, and books.
+    /// - Parameters:
+    ///   - folders: The folders the Folders section shows, or none.
+    ///   - books: The books the list shows, as the search narrows them, or none.
+    ///   - allBooks: Every book at the location, in the order shown.
+    ///   - feedID: The feed whose folder the list shows, if it shows one.
+    ///   - articles: How titles are sorted and shown.
+    private func typedRows(
+        folders: [BookFolder],
+        books: [Book],
+        allBooks: [Book],
+        feedID: UUID?,
+        articles: LeadingArticles
+    ) -> [TypedRow<UUID>] {
+        // The folders and feeds are few and made at each key; the books,
+        // which may be thousands, are the rows kept with their titles folded.
+        var rows = folders.map { TypedRow(id: $0.id, name: $0.name) }
+        rows += LibraryFeedsSectionRows.rows(at: location, center: feedFolders.center, articles: articles)
+            .map { TypedRow(id: $0.id, title: $0.title, language: nil) }
+        // In a feed's folder, its books in the order it lists them.
+        let listedBooks = feedID == nil || books.isEmpty
+            ? books
+            : booksSectionRows(books, orderedBy: allBooks, feedID: feedID, articles: articles).compactMap(\.book)
+        rows += libraryViewModel.typedRows(of: listedBooks)
+        return rows
+    }
+
+    /// The Books section's rows in the list's order, as
+    /// `booksSection(_:orderedBy:feedID:)` draws them: in a feed's folder
+    /// (`feedID`), the feed's items newest first, each downloaded one as
+    /// its book's row, then the folder's other books (FR03); elsewhere the
+    /// books shown.
+    /// - Parameters:
+    ///   - books: The books the list shows, as the search narrows them.
+    ///   - allBooks: Every book at the location, in the order shown.
+    ///   - feedID: The feed whose folder the list shows, if it shows one.
+    ///   - articles: How titles are sorted and shown.
+    private func booksSectionRows(
+        _ books: [Book],
+        orderedBy allBooks: [Book],
+        feedID: UUID?,
+        articles: LeadingArticles
+    ) -> [LibraryInfoRow] {
+        guard let feedID else { return books.map(LibraryInfoRow.book) }
+        let listing = FeedFolderListing.make(
+            feedID: feedID,
+            center: feedFolders.center,
+            shownBooks: books,
+            folderBooks: allBooks,
+            search: searchText,
+            wordsPerMinute: settingsViewModel.wordsPerMinute,
+            articles: articles
+        )
+        let entries = listing.entries.map { entry -> LibraryInfoRow in
+            switch entry {
+            case .book(let book, _): return .book(book)
+            case .item(let item): return .feedItem(item)
+            }
+        }
+        return entries + listing.otherBooks.map(LibraryInfoRow.book)
+    }
+
     /// The Folders section's rows and the Folders rotor's entries here, of
     /// `folders`, the folders directly inside this location
     /// (`LibraryFeedFolders.folderRows(_:at:bookCount:)`, FR03).
     private func shownFolderRows(of folders: [BookFolder]) -> LibraryFolderRows {
-        feedFolders.folderRows(folders, at: location) { libraryViewModel.bookCount(inFolderTree: $0.fullPath) }
+        feedFolders.folderRows(folders, at: location, articles: libraryViewModel.leadingArticles) {
+            libraryViewModel.bookCount(inFolderTree: $0.fullPath)
+        }
     }
 
     /// The library folder of the feed a Feeds row shows, or nil when it is
@@ -1435,6 +1556,32 @@ struct LibraryView: View {
         )
     }
 
+    /// Open Selected Book (Return): opens the first row the list's own
+    /// selection holds, in the list's order, as that row's default action
+    /// (VoiceOver's VO-Space) does outside edit mode (returnrow). A book
+    /// opens in its reader, which first downloads a book only in the cloud.
+    /// A feed's item not downloaded downloads, then opens. A folder's row,
+    /// or a feed's, opens its folder. Edit mode's checks are not where the
+    /// keyboard is, so they open nothing. With no row selected, VoiceOver
+    /// hears so. Return once opened only books, so on an item's row it
+    /// opened the book the selection had stayed on.
+    private func openSelectedRow() {
+        switch selectedRow(editSelection: []) {
+        case .book(let book):
+            openBook(book)
+        case .feedItem(let item):
+            if let open = FeedItemAction.open(for: item) {
+                performFeedItemAction(open)
+            }
+        case .folder(let folder):
+            currentFolderPath = folder.fullPath
+        case .feed(let row):
+            openFeed(row)
+        case nil:
+            announceToVoiceOver(LibraryInfoWording.nothingSelected)
+        }
+    }
+
     /// What the rows' commands do, on this list's state as it is when they
     /// run: open, Book Info, Select, Move to Folder, Move Up and Move Down,
     /// the cloud commands, removal, Export, Edit Text, and the transcription
@@ -1456,9 +1603,7 @@ struct LibraryView: View {
                 moveToFolder(books)
             },
             moveInManualOrder: { book, direction in
-                if let target = reorderTarget {
-                    moveBook(book.id, direction: direction, in: target)
-                }
+                moveBooks([book.id], direction: direction)
             },
             moveSayingPlace: moveSayingPlace,
             performCloudCommand: performCloudCommand,
@@ -1550,6 +1695,53 @@ struct LibraryView: View {
         LibraryCloudCommands.shared.setKeptFromMenu(keeping, for: selectedBooks, in: libraryViewModel, from: hostWindow)
     }
 
+    /// Runs Library > Keep on All Devices (`keeping`) or Stop Keeping on All
+    /// Devices, which `notification` carried, for the books selected here,
+    /// when this window takes the command: on the books that command is
+    /// offered for (`LibraryCloudCommand.commands`). VoiceOver hears why
+    /// when nothing changes: no book is selected, or each is kept already.
+    private func performKeepOnAllDevicesMenuCommand(_ keeping: Bool, _ notification: Notification) {
+        guard takesCommand(notification) else { return }
+        let kind: LibraryCloudCommand.Kind = keeping ? .keepOnAllDevices : .stopKeepingOnAllDevices
+        let offered = LibraryCloudCommand.commands(
+            for: selectedBooks,
+            isSelection: selectedBooks.count > 1,
+            states: cloudStates,
+            kept: keptBooks.bookIDs,
+            keptOnAllDevices: keptBooks.syncedBookIDs
+        )
+        if let command = offered.first(where: { $0.kind == kind }) {
+            LibraryCloudCommands.shared.setKeptOnAllDevices(keeping, command.books, from: hostWindow)
+        } else if selectedBooks.isEmpty {
+            VoiceOverAnnouncer.announce(LibraryCloudWording.noBooksSelected, from: hostWindow)
+        } else if keeping {
+            // Every selected book is kept already.
+            VoiceOverAnnouncer.announce(SyncWording.keptState, from: hostWindow)
+        }
+    }
+
+    /// Runs Library > Remove Download, which `notification` carried, for the books selected here, when this window
+    /// takes the command: on the books it is offered for (`LibraryCloudCommand.commands`). Its refusal is shown in
+    /// the window's alert, as a row's command shows it; VoiceOver hears why when nothing can be removed.
+    private func performRemoveDownloadMenuCommand(_ notification: Notification) {
+        guard takesCommand(notification) else { return }
+        let offered = LibraryCloudCommand.commands(
+            for: selectedBooks,
+            isSelection: selectedBooks.count > 1,
+            states: cloudStates,
+            kept: keptBooks.bookIDs,
+            keptOnAllDevices: keptBooks.syncedBookIDs
+        )
+        if let command = offered.first(where: { $0.kind == .removeDownload }) {
+            Task { cloudRefusal = await LibraryCloudCommands.shared.perform(command, in: libraryViewModel, from: hostWindow) }
+        } else {
+            VoiceOverAnnouncer.announce(
+                selectedBooks.isEmpty ? LibraryCloudWording.noBooksSelected : SyncWording.nothingToRemove,
+                from: hostWindow
+            )
+        }
+    }
+
     // MARK: - Moving Books
 
     /// Opens the Move to Folder sheet, by a request for `books`, from a
@@ -1627,8 +1819,8 @@ struct LibraryView: View {
     /// to select multiple books for moving or deleting", and "1 books").
     nonisolated static func editModeButtonHint(isEditMode: Bool, selectedCount: Int) -> String {
         isEditMode
-            ? "Exits edit mode. \(CountWording.books(selectedCount)) selected."
-            : "Enters edit mode, for selecting several books to move or remove."
+            ? LibraryListWording.exitsEditMode(selectedCount: selectedCount)
+            : LibraryListWording.entersEditMode
     }
 
     /// Clear all selections (both native and edit mode) and exit edit mode
@@ -1659,7 +1851,7 @@ struct LibraryView: View {
     /// key window takes it; a window whose NSWindow isn't known yet takes
     /// either.
     private func takesCommand(_ notification: Notification) -> Bool {
-        let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow
+        let sourceWindow = notification.userInfo?["sourceWindow"] as? PlatformWindow
         return WindowCommandRouting.shouldAccept(
             hasSourceWindow: sourceWindow != nil,
             sourceMatchesHost: sourceWindow === hostWindow,
@@ -1671,16 +1863,29 @@ struct LibraryView: View {
     // MARK: - Speak Info and Book Info for the Selected Row
 
     /// The row Speak Info (Shift-Command-I) and Book Info (Command-I) act
-    /// on: the first selected row in the list's order, which the List
-    /// selects by ID for a folder's and a feed's row as for a book's, or
-    /// the edit selection's first book (`LibraryInfoRow.selected`).
+    /// on: the first selected row in the list's order, or the edit
+    /// selection's first book (`selectedRow(editSelection:)`).
     private var selectedInfoRow: LibraryInfoRow? {
-        LibraryInfoRow.selected(
+        selectedRow(editSelection: editSelection)
+    }
+
+    /// The first row the list's selection holds, in the list's order,
+    /// which the List selects by its tag: a book's, a folder's, or a feed's
+    /// ID, or a feed's item's own tag (returnrow); failing that, the first
+    /// book `editSelection` checks; nil when neither selects a row shown
+    /// (`LibraryInfoRow.selected`).
+    private func selectedRow(editSelection: Set<UUID>) -> LibraryInfoRow? {
+        let articles = libraryViewModel.leadingArticles
+        return LibraryInfoRow.selected(
             selectedBookIDs,
             editSelection: editSelection,
             folders: shownFolderRows(of: libraryViewModel.subfoldersOf(currentFolderPath)).shown,
-            feeds: LibraryFeedsSectionRows.rows(at: location, center: feedFolders.center),
-            books: filteredBooks
+            // In the order the Feeds section shows them.
+            feeds: LibraryFeedsSectionRows.rows(at: location, center: feedFolders.center, articles: articles),
+            // The Books section's rows, where the view shows that section.
+            rows: listsItems
+                ? booksSectionRows(filteredBooks, orderedBy: displayedBooks, feedID: shownFeedID, articles: articles)
+                : []
         )
     }
 
@@ -1852,7 +2057,7 @@ struct LibraryView: View {
     /// so a long name never makes the window's content wider than the window.
     private func viewPicker(offering offered: [LibraryViewDefinition]) -> some View {
         HStack(spacing: 0) {
-            Picker("View", selection: $shownViewID) {
+            Picker(LibraryListWording.view, selection: $shownViewID) {
                 ForEach(offered) { view in
                     Text(view.name).tag(view.id)
                 }
@@ -1927,7 +2132,7 @@ struct LibraryView: View {
     /// The Open Book choice's hint, once the Import Book button's. It named
     /// four formats, which left out most of those TextMouth reads, its
     /// audiobooks among them (TODO A10). The Add to Library sheet reuses it.
-    nonisolated static let importBookHint = "Opens a file picker to import books in any format TextMouth reads."
+    nonisolated static var importBookHint: String { LibraryListWording.importBookHint }
 
     /// The Add to Library button (FR20), which replaced the Import, New from
     /// Text, and Add Feed buttons: it shows the sheet that lists those ways
@@ -1963,22 +2168,23 @@ struct LibraryView: View {
     /// Move the currently selected book up or down in the order the list
     /// shows. Only works when a single book is selected and the list shows
     /// an order the user arranges: one folder's manual order (TODO A06), or
-    /// the reading list (FR09). Announces the result to VoiceOver.
+    /// the reading list (FR09). Announces the result to VoiceOver, and when
+    /// the move cannot be made, says why rather than staying silent
+    /// (`LibraryViewModel.moveSelection`). Only the books selected count:
+    /// a selected folder row is not a book to move.
     private func moveSelectedBookInManualOrder(direction: Int) {
-        guard let target = reorderTarget else { return }
-        let ids = effectiveSelection
-        guard ids.count == 1, let bookID = ids.first else { return }
-        moveBook(bookID, direction: direction, in: target)
+        moveBooks(Set(selectedBooks.map(\.id)), direction: direction)
     }
 
-    /// Moves a book one place up (-1) or down (+1) in `target`, which saves
-    /// at once, and tells VoiceOver where it went, the same way in a folder
-    /// and in the reading list. Move Up and Move Down in the context menu
-    /// and on the keyboard share it.
-    private func moveBook(_ bookID: UUID, direction: Int, in target: LibraryReorderTarget) {
-        if let result = libraryViewModel.moveBook(bookID, direction: direction, in: target) {
-            announceToVoiceOver(result.announcement)
-        }
+    /// Moves the one book in `bookIDs` one place up (-1) or down (+1) in the
+    /// order the list shows, which saves at once, and tells VoiceOver where
+    /// it went or why it could not, the same way in a folder and in the
+    /// reading list. Move Up and Move Down in the context menu, and Move
+    /// Book Up and Move Book Down from the menu and the keyboard, share it.
+    private func moveBooks(_ bookIDs: Set<UUID>, direction: Int) {
+        announceToVoiceOver(
+            libraryViewModel.moveSelection(bookIDs, direction: direction, at: location, sortedBy: sort)
+        )
     }
 
     /// A row's Move Up (-1) or Move Down (+1) VoiceOver action (FR09):
@@ -2113,6 +2319,7 @@ struct LibraryView: View {
                 MetadataEditorView(
                     audioMetadata: metadata,
                     handEdits: book.handEdits,
+                    book: book,
                     onSave: { edited, opened in
                         // Compared with what the editor opened with, which
                         // shows the file's tags where the row keeps none,
@@ -2146,7 +2353,7 @@ struct LibraryView: View {
 /// window's name.
 private struct ClosedLibraryWindowPlaceholder: View {
     var body: some View {
-        Text("Library")
+        Text(FolderNavigationWording.libraryName)
             .font(.title2)
             .foregroundColor(.secondary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -2274,6 +2481,10 @@ private struct LibraryCloudWindowSupport: ViewModifier {
     /// the Library menu, with the notification that carried it, which says
     /// whether this window takes it.
     let performKeepMenuCommand: (_ keeping: Bool, _ notification: Notification) -> Void
+    /// The same for Keep on All Devices and Stop Keeping on All Devices (FR43).
+    let performKeepOnAllDevicesMenuCommand: (_ keeping: Bool, _ notification: Notification) -> Void
+    /// The same for Library > Remove Download, with sync on (FR46).
+    let performRemoveDownloadMenuCommand: (_ notification: Notification) -> Void
 
     func body(content: Content) -> some View {
         content
@@ -2289,11 +2500,20 @@ private struct LibraryCloudWindowSupport: ViewModifier {
             .onReceive(NotificationCenter.default.publisher(for: .stopKeepingOnThisMac)) { notification in
                 performKeepMenuCommand(false, notification)
             }
+            .onReceive(NotificationCenter.default.publisher(for: .keepOnAllDevices)) { notification in
+                performKeepOnAllDevicesMenuCommand(true, notification)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .stopKeepingOnAllDevices)) { notification in
+                performKeepOnAllDevicesMenuCommand(false, notification)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .removeDownload)) { notification in
+                performRemoveDownloadMenuCommand(notification)
+            }
             // Why Remove Download kept a book's download. This alert is the
             // only place the refusal is said: nothing announces it besides
             // (#2094).
             .alert(refusal?.title ?? "", isPresented: isShowingRefusal, presenting: refusal) { _ in
-                Button("OK", role: .cancel) {}
+                Button(LibraryWindowWording.errorDismiss, role: .cancel) {}
             } message: { refusal in
                 Text(refusal.message)
             }
@@ -2343,5 +2563,163 @@ extension LibraryView {
             onOpenBook: onOpenBook,
             feedFolders: feedFolders
         )
+    }
+}
+
+// MARK: - Wording
+
+/// The words of the Library window's list, its toolbar, and its folder
+/// menu that no other wording enum owns (FR34). Cancel and OK come from
+/// `LibraryWindowWording`, "New Folder" from `LibrarySheetWording`, and the sort
+/// fields' names from `LibrarySortField.title`.
+enum LibraryListWording {
+    /// What VoiceOver calls the View pop-up, whose items are the views' names.
+    static var viewPickerLabel: String {
+        // Translators: Spoken label of the View pop-up of a Library window, which chooses the view of the library shown, such as Unopened.
+        InterfaceText.line("libraryList.viewPickerLabel", "Library view")
+    }
+
+    /// The View pop-up's title.
+    static var view: String {
+        // Translators: Title of the pop-up in a Library window that chooses the view of the library shown.
+        InterfaceText.line("libraryList.view", "View")
+    }
+
+    /// The search field's prompt.
+    static var searchPrompt: String {
+        // Translators: Prompt of the Library window's search field, which narrows the listed books.
+        InterfaceText.line("libraryList.searchPrompt", "Search books")
+    }
+
+    /// The rotor that moves between books.
+    static var booksRotor: String {
+        // Translators: Name of the VoiceOver rotor that moves between the books of the Library list.
+        InterfaceText.line("common.books", "Books")
+    }
+
+    /// The Folders section's header and the rotor that moves between folders.
+    static var foldersHeader: String {
+        // Translators: Header of the Library list's section of folders, and name of the VoiceOver rotor that moves between them.
+        InterfaceText.line("libraryList.foldersHeader", "Folders")
+    }
+
+    /// The toolbar button that goes to the parent folder.
+    static var upOneLevel: String {
+        // Translators: Toolbar button of a Library window that goes up to the folder that holds the folder shown.
+        InterfaceText.line("common.upOneLevel", "Up One Level")
+    }
+
+    /// What VoiceOver calls it.
+    static var goUpOneFolderLevel: String {
+        // Translators: Spoken label of the toolbar button that goes up to the folder that holds the folder shown.
+        InterfaceText.line("libraryList.goUpOneFolderLevel", "Go up one folder level")
+    }
+
+    /// The edit mode toolbar button's title while edit mode is on.
+    static var done: String {
+        // Translators: Title of the toolbar button that leaves edit mode in the Library list, shown while edit mode is on.
+        InterfaceText.line("common.done", "Done")
+    }
+
+    /// The edit mode toolbar button's title while edit mode is off.
+    static var edit: String {
+        // Translators: Title of the toolbar button that enters edit mode in the Library list, for selecting several books.
+        InterfaceText.line("common.edit", "Edit")
+    }
+
+    /// What VoiceOver calls the button while edit mode is on.
+    static var exitEditMode: String {
+        // Translators: Spoken label of the toolbar button that leaves edit mode in the Library list.
+        InterfaceText.line("libraryList.exitEditMode", "Exit edit mode")
+    }
+
+    /// What VoiceOver calls the button while edit mode is off.
+    static var enterEditMode: String {
+        // Translators: Spoken label of the toolbar button that enters edit mode in the Library list.
+        InterfaceText.line("libraryList.enterEditMode", "Enter edit mode")
+    }
+
+    /// The edit button's hint while edit mode is on.
+    static func exitsEditMode(selectedCount: Int) -> String {
+        // Translators: Hint of the toolbar's edit mode button while edit mode is on. %lld is how many books are selected.
+        InterfaceText.line("libraryList.exitsEditMode", "Exits edit mode. \(number: selectedCount) books selected.")
+    }
+
+    /// The edit button's hint while edit mode is off.
+    static var entersEditMode: String {
+        // Translators: Hint of the toolbar's edit mode button while edit mode is off.
+        InterfaceText.line("libraryList.entersEditMode", "Enters edit mode, for selecting several books to move or remove.")
+    }
+
+    /// What VoiceOver calls the toolbar's New Folder button.
+    static var createNewFolder: String {
+        // Translators: Spoken label of the toolbar button that opens the sheet that makes a new folder.
+        InterfaceText.line("libraryList.createNewFolder", "Create new folder")
+    }
+
+    /// The title of the question about deleting a folder that holds books.
+    static var deleteFolderQuestion: String {
+        // Translators: Title of the question asked before a folder that holds books or folders is deleted.
+        InterfaceText.line("libraryList.deleteFolderQuestion", "Delete Folder?")
+    }
+
+    /// The answer that moves a folder's contents out before it is deleted.
+    static var moveContentsOut: String {
+        // Translators: Button of the question about deleting a folder: it moves the folder's books and subfolders to another place, then deletes the folder.
+        InterfaceText.line("libraryList.moveContentsOut", "Move Contents Out")
+    }
+
+    /// The Sort menu's title.
+    static var sort: String {
+        // Translators: Title of the Library window's toolbar menu that chooses how the books are sorted.
+        InterfaceText.line("libraryList.sort", "Sort")
+    }
+
+    /// The Sort menu's item that gives every subfolder this sort.
+    static var applySortToSubfolders: String {
+        // Translators: Item of the Sort menu that gives every subfolder of the folder shown the sort chosen here.
+        InterfaceText.line("libraryList.applySortToSubfolders", "Apply Sort to All Subfolders")
+    }
+
+    /// The Continue button's visible text.
+    static func continueVisible(_ title: String) -> String {
+        // Translators: Text of the Continue button at the top of the Library list. %@ is the title of the book last read.
+        InterfaceText.line("libraryList.continueVisible", "Continue: \(title)")
+    }
+
+    /// The Continue button's hint.
+    static var continueHint: String {
+        // Translators: Hint of the Continue button at the top of the Library list.
+        InterfaceText.line("libraryList.continueHint", "Opens the last book you were reading")
+    }
+
+    /// What VoiceOver calls the Continue button, before its time.
+    static func continueListeningTo(_ title: String) -> String {
+        // Translators: Spoken label of the Continue button at the top of the Library list. %@ is the title of the book last read. The time left may follow it.
+        InterfaceText.line("libraryList.continueListeningTo", "Continue listening to \(title)")
+    }
+
+    /// The folder menu's item that renames the folder.
+    static var renameFolder: String {
+        // Translators: Item of a folder's menu that opens the sheet that renames the folder. The three dots mean a sheet opens.
+        InterfaceText.line("libraryList.renameFolder", "Rename Folder...")
+    }
+
+    /// The folder menu's item that moves the folder.
+    static var moveFolder: String {
+        // Translators: Item of a folder's menu that opens the sheet that moves the folder under another folder. The three dots mean a sheet opens.
+        InterfaceText.line("libraryList.moveFolder", "Move Folder...")
+    }
+
+    /// The folder menu's item that deletes the folder.
+    static var deleteFolder: String {
+        // Translators: Item of a folder's menu that deletes the folder. The three dots mean a question follows.
+        InterfaceText.line("libraryList.deleteFolder", "Delete Folder...")
+    }
+
+    /// The Open Book choice's hint, which the Add to Library sheet reuses.
+    static var importBookHint: String {
+        // Translators: Hint of the choice that opens a file picker to import books, in the Add to Library sheet.
+        InterfaceText.line("libraryList.importBookHint", "Opens a file picker to import books in any format TextMouth reads.")
     }
 }

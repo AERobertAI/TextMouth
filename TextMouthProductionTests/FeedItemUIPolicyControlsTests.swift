@@ -47,7 +47,7 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
     func testEachChoicesHintSaysWhatItDoes() {
         XCTAssertEqual(
             FeedWording.itemPolicyHint(.everyListedNewestDownloaded, count: 5, noun: nil),
-            "Lists every episode and article with what you did with it, keeps the newest 5 downloaded, "
+            "Lists every episode and article, keeps the newest 5 downloaded, "
                 + "and removes older downloads it made, keeping their place, bookmarks, and settings."
         )
         XCTAssertEqual(
@@ -57,19 +57,19 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
         )
         XCTAssertEqual(
             FeedWording.itemPolicyHint(.onlyNewestListed, count: 5, noun: nil),
-            "Lists those of the newest 5 you haven't played, and every download, and downloads only what you ask for; "
-                + "the others keep their records and come back when you list more."
+            "Lists the newest 5 you haven't played, and every download. Downloads only what you ask for; "
+                + "the others keep their records and return when you list more."
         )
         // A feed's own words: its items, and "read" for articles.
         XCTAssertEqual(
             FeedWording.itemPolicyHint(.everyListedNewestDownloaded, count: 3, noun: .episode),
-            "Lists every episode with what you did with it, keeps the newest 3 downloaded, "
+            "Lists every episode, keeps the newest 3 downloaded, "
                 + "and removes older downloads it made, keeping their place, bookmarks, and settings."
         )
         XCTAssertEqual(
             FeedWording.itemPolicyHint(.onlyNewestListed, count: 2, noun: .article),
-            "Lists those of the newest 2 you haven't read, and every download, and downloads only what you ask for; "
-                + "the others keep their records and come back when you list more."
+            "Lists the newest 2 you haven't read, and every download. Downloads only what you ask for; "
+                + "the others keep their records and return when you list more."
         )
         XCTAssertTrue(FeedWording.itemPolicyHint(.everyListedDownloadsByHand, count: 5, noun: .item).hasPrefix("Lists every episode and article;"))
     }
@@ -88,11 +88,11 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
         XCTAssertEqual(FeedWording.newestCountCaption(5, noun: nil), "How many of the newest: 5 items")
         XCTAssertEqual(
             FeedWording.newestCountHint(noun: nil),
-            "How many of each feed's newest episodes and articles are kept downloaded, or listed, from 1 to 2,000"
+            "Newest episodes and articles kept downloaded or listed, from 1 to 2,000"
         )
         XCTAssertEqual(
             FeedWording.newestCountHint(noun: .episode),
-            "How many of this feed's newest episodes are kept downloaded, or listed, from 1 to 2,000"
+            "Newest episodes kept downloaded or listed, from 1 to 2,000"
         )
         XCTAssertEqual(SettingsPolicy.feedNewestCount.range, 1...2_000)
 
@@ -359,7 +359,7 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
             XCTAssertTrue(model.usesGlobalItemPolicy, "\(record.feed.title) has a choice of its own")
             XCTAssertEqual(world.center.counts(of: record.feed.id).noun, noun, record.feed.title)
             XCTAssertEqual(FeedWording.itemPolicyTitle(model.itemPolicy, noun: noun), title)
-            XCTAssertEqual(FeedWording.newestCountValue(model.itemPolicy.newestCount, noun: noun), "5 \(noun.plural)")
+            XCTAssertEqual(FeedWording.newestCountValue(model.itemPolicy.newestCount, noun: noun), "5 \(noun == .article ? "articles" : noun == .item ? "items" : "episodes")")
         }
         XCTAssertEqual(world.center.counts(of: users.finishIt.feed.id).listed, 381)
         XCTAssertEqual(

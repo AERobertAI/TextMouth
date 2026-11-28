@@ -27,6 +27,7 @@ extension ConfigService.AppConfig {
         config.sleepFadeOutDuration = 6
         config.sleepTimerAutoClose = false
         config.endOfBookBehavior = EndOfBookBehavior.continueNext.rawValue
+        config.nextBookWindow = NextBookWindow.newWindow.rawValue
         config.punctuationPauseLevel = 2
         config.lastOpenedBookID = "8E4C2D71-5B0A-4F6B-9C3E-2A7D1F9B6E05"
         config.autoPlayOnNavigate = true
@@ -88,6 +89,8 @@ extension ConfigService.AppConfig {
         config.transcriptionLocale = TranscriptFixtures.languageOtherThanTheDefault
         config.offerTranscriptionAfterImport = true
         config.libraryViews = customizedLibraryViews
+        // Leading articles passed over when typing, unlike the default.
+        config.leadingArticles = LeadingArticles.ignoredWhenTyping.rawValue
         config.brailleTable = "en-us-g1.ctb"
         // The braille file characters (braillecodes), unlike the default,
         // North American Braille ASCII.
@@ -148,7 +151,7 @@ extension XCTestCase {
         }
     ) throws -> SettingsViewModel {
         let file = try configFile ?? makeTestDirectory(label).appendingPathComponent("config.json")
-        let configService = ConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
+        let configService = makeConfigService(fileURL: file, fileOperations: ConfigService.FileOperations(
             write: configWrite,
             openForEvents: { _ in -1 },
             close: { _ in }
@@ -161,6 +164,41 @@ extension XCTestCase {
         )
     }
 
+    /// A config service on `fileURL` of the test's own, whose waiting save is
+    /// dropped as the test ends. Every config service a test makes besides
+    /// the shared one comes from here (`ConfigTestWorldTeardownTests` checks
+    /// the test sources): a settings change asks its service for a save that
+    /// waits a moment for more changes (`ConfigService.scheduleSave()`; a
+    /// reader opening saves through `ConfigService.shared` instead, which
+    /// `ConfigSaveFlush` writes as each test ends), the
+    /// folders the test made are deleted as it ends, and a save still
+    /// waiting then fired after them, failed with "The folder "config.json"
+    /// doesn't exist", and had its failure announced into whichever test
+    /// ran next (`ReaderCloudDownloadTests`, Q-flake). The parameters are
+    /// the service's own.
+    @MainActor
+    func makeConfigService(
+        fileURL: URL,
+        fileOperations: ConfigService.FileOperations = .system,
+        coalescingDelay: Duration = .milliseconds(200),
+        saveDelay: Duration = ConfigService.defaultSaveDelay
+    ) -> ConfigService {
+        let service = ConfigService(
+            fileURL: fileURL,
+            fileOperations: fileOperations,
+            coalescingDelay: coalescingDelay,
+            saveDelay: saveDelay
+        )
+        // Teardown blocks run last registered first. The service needs its
+        // file's URL, so the folder that holds it was made, and its removal
+        // registered, before this block: this one runs first, and the save
+        // is dropped while nothing has been deleted. (Dropping it needs no
+        // folder, so one made some other way is no harm either, as long as
+        // the block runs before the next test starts.)
+        addTeardownBlock { service._dropScheduledSaveForTesting() }
+        return service
+    }
+
     /// A config.json location in a directory of this test's own inside the
     /// isolated test root. The directory is removed when the test ends.
     func makeConfigFileURL() throws -> URL {
@@ -169,29 +207,6 @@ extension XCTestCase {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
         return directory.appendingPathComponent("config.json")
-    }
-
-    /// The debug log's lines that contain `text`, waiting first for every
-    /// queued log write. Lines go to the data directory's Logs folder, or to
-    /// this Mac's while the data directory can't take them, so both debug
-    /// logs are read, each line being in one of them only. The rotated
-    /// generations are read too, in case one of the lines started a new file.
-    func debugLogLines(containing text: String) -> [String] {
-        TextMouthPaths.flushLogs()
-        let folders = [
-            TextMouthPaths.root.appendingPathComponent(TextMouthPaths.logsFolderName, isDirectory: true),
-            MachineLocalPaths.logs,
-        ]
-        return folders
-            .flatMap { folder -> [URL] in
-                let logFile = folder.appendingPathComponent(DiagnosticLog.File.debug.rawValue, isDirectory: false)
-                return [logFile.appendingPathExtension(TextMouthPaths.rotatedLogExtension), logFile]
-            }
-            .compactMap { try? String(contentsOf: $0, encoding: .utf8) }
-            .joined(separator: "\n")
-            .split(separator: "\n")
-            .map(String.init)
-            .filter { $0.contains(text) }
     }
 
     /// The debug log's lines that name the file at `url`, which lies inside
@@ -207,6 +222,29 @@ extension XCTestCase {
             line: line
         )
         return debugLogLines(containing: DiagnosticLog.loggablePath(url))
+    }
+
+    /// The debug log's lines written while `body` runs, in the order they were
+    /// written: the bytes the log gained meanwhile, after every queued write.
+    /// It reads bytes rather than comparing lines, because a line's time is
+    /// to the second only. Two exports that end alike within one second write
+    /// the same line twice, and a comparison of lines would take the second
+    /// for the first. A log rotated meanwhile starts a new file that holds only
+    /// the new lines.
+    ///
+    /// For work that awaits, as `DOCXMalformedXMLTests` and
+    /// `ReadingStatsDayAttributionTests` read the log for work that doesn't.
+    /// The log's folder must not change while `body` runs: call
+    /// `TextMouthPaths.ensureDirectoryStructure()` first.
+    func debugLogLines(writtenWhile body: () async throws -> Void) async rethrows -> [String] {
+        let log = TextMouthPaths.debugLogFile
+        TextMouthPaths.flushLogs()
+        let before = (try? Data(contentsOf: log)) ?? Data()
+        try await body()
+        TextMouthPaths.flushLogs()
+        let after = (try? Data(contentsOf: log)) ?? Data()
+        let written = after.starts(with: before) ? after.dropFirst(before.count) : after
+        return String(decoding: written, as: UTF8.self).components(separatedBy: "\n").filter { !$0.isEmpty }
     }
 }
 

@@ -29,13 +29,17 @@ enum OPMLReadError: Error, Equatable, Sendable {
     var message: String {
         switch self {
         case .empty:
-            return "That file is empty."
+            // Translators: Why an OPML file of subscriptions could not be imported: it is empty.
+            return InterfaceText.line("opmlReadError.message.empty", "That file is empty.")
         case .notOPML:
-            return "That file isn't an OPML list of subscriptions."
+            // Translators: Why an OPML file of subscriptions could not be imported: it is another kind of file.
+            return InterfaceText.line("opmlReadError.message.notOPML", "That file isn't an OPML list of subscriptions.")
         case let .damaged(problem, line):
-            return "That OPML file is damaged at line \(line): \(problem)."
+            // Translators: Why an OPML file of subscriptions could not be imported: its markup is damaged. The first %@ is the line number of the fault, an identifier written without digit grouping. The second is a short technical reason in English, from the parser, kept English as detail for a bug report.
+            return InterfaceText.line("opmlReadError.message.damaged", "That OPML file is damaged at line \(String(line)): \(problem).")
         case .noFeeds:
-            return "That OPML file lists no feeds."
+            // Translators: Why an OPML file of subscriptions could not be imported: it lists no feed TextMouth can subscribe to.
+            return InterfaceText.line("opmlReadError.message.noFeeds", "That OPML file lists no feeds.")
         }
     }
 }
@@ -64,6 +68,11 @@ enum FeedOPML {
     static func subscriptions(in data: Data) throws(OPMLReadError) -> [OPMLSubscription] {
         guard data.contains(where: { !isXMLWhitespace($0) }) else { throw .empty }
         guard data.count <= maximumBytes else { throw .damaged(problem: "the file is larger than TextMouth reads", line: 1) }
+        // As for a feed, the attributes and the encoding are asked, and not the
+        // entities of the file's own (`XMLInputGuard`).
+        if let problem = XMLInputGuard.problemLeavingDefinitions(with: data) {
+            throw .damaged(problem: XMLInputGuard.reason(for: problem), line: 1)
+        }
         let strict = OPMLStrictReading(data: data)
         switch strict.read() {
         case .read(let outlines):
@@ -157,14 +166,14 @@ enum FeedOPML {
             if let site = feed.siteLink {
                 attributes.append(("htmlUrl", site.absoluteString))
             }
-            let written = attributes.map { "\($0.0)=\"\(escaped($0.1))\"" }.joined(separator: " ")
+            let written = attributes.map { "\($0.0)=\"\(XMLEscaping.attribute($0.1))\"" }.joined(separator: " ")
             return "    <outline \(written)/>"
         }
         let text = """
         <?xml version="1.0" encoding="UTF-8"?>
         <opml version="2.0">
           <head>
-            <title>\(escaped(title))</title>
+            <title>\(XMLEscaping.attribute(title))</title>
             <dateCreated>\(rfc822(date))</dateCreated>
           </head>
           <body>
@@ -172,35 +181,8 @@ enum FeedOPML {
           </body>
         </opml>
 
-        """
+        """ // l10n: no (the OPML file format, not interface text)
         return Data(text.utf8)
-    }
-
-    /// `text` escaped for an XML attribute or element: the five markup
-    /// characters as entities, and tabs and line breaks as character
-    /// references, which an attribute would otherwise read as spaces; a
-    /// Windows line break (CR LF) becomes "&#13;&#10;", so it reads back
-    /// whole. The text is walked by Unicode scalar, as XML reads it: a Swift
-    /// Character can hide what must be escaped, as CR LF is one Character,
-    /// and so is an "&", "<", or quote with a combining accent after it,
-    /// which written raw would break the markup.
-    static func escaped(_ text: String) -> String {
-        var result = ""
-        result.reserveCapacity(text.count)
-        for scalar in text.unicodeScalars {
-            switch scalar {
-            case "&": result += "&amp;"
-            case "<": result += "&lt;"
-            case ">": result += "&gt;"
-            case "\"": result += "&quot;"
-            case "'": result += "&apos;"
-            case "\t": result += "&#9;"
-            case "\n": result += "&#10;"
-            case "\r": result += "&#13;"
-            default: result.unicodeScalars.append(scalar)
-            }
-        }
-        return result
     }
 
     /// `date` as RFC 822 writes it, as OPML's dateCreated asks: "Sun, 04 Oct
@@ -209,7 +191,7 @@ enum FeedOPML {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
+        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss 'GMT'" // l10n: no (the OPML file format, not interface text)
         return formatter.string(from: date)
     }
 }

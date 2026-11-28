@@ -24,7 +24,14 @@ enum DataDirectoryMigrationError: LocalizedError {
     /// The data directory to copy is gone, or is no folder: a file, or
     /// anything else, stands where it was.
     case missingSource
+    /// The copy lacks the content of the book with this title: its file is
+    /// not where the library says, inside the data directory.
     case missingBook(String)
+    /// The book with this title is stored at this path, outside the data
+    /// directory, so the move copies nothing of it and cannot point the
+    /// library at a copy. Refused before anything is published, rather than
+    /// reported as missing from the copy, which it never was in.
+    case bookOutsideDataDirectory(title: String, path: String)
     case invalidLibrary
     /// The new location changed while the data was being copied, so the
     /// copy was not published and the data directory in use did not change
@@ -40,17 +47,44 @@ enum DataDirectoryMigrationError: LocalizedError {
         case .invalidRelationship(let overlap, let source, let destination):
             return overlap.explanation(source: source, destination: destination)
         case .unreachableLink(let link, let target):
-            return "The new location, \(link.named.path), is a link to \(target), which cannot be found. "
-                + "Choose another location."
-        case .destinationNotEmpty: return "The selected data directory is not empty. Choose an empty location."
+            return SentenceWording.joined([
+                // Translators: First sentence of why a move of the data directory was refused. %1$@ is the new location's path; %2$@ is the path the link leads to.
+                InterfaceText.line("dataDirectoryMigrationError.unreachableLink", "The new location, \(link.named.path), is a link to \(target), which cannot be found."),
+                DataDirectoryMoveWording.chooseAnotherLocation,
+            ])
+        case .destinationNotEmpty:
+            return SentenceWording.joined([
+                // Translators: First sentence of why a move of the data directory was refused: the new location already holds something.
+                InterfaceText.line("dataDirectoryMigrationError.destinationNotEmpty", "The selected data directory is not empty."),
+                // Translators: Last sentence of why a move of the data directory was refused: what to do.
+                InterfaceText.line("dataDirectoryMigrationError.chooseEmptyLocation", "Choose an empty location."),
+            ])
         case .destinationNotAFolder(let location):
-            return "The new location, \(location.namedDescription), is a file, not a folder. Choose another location."
-        case .missingSource: return "The current data directory does not exist."
-        case .missingBook(let title): return "The migrated copy is missing the content for \(title)."
-        case .invalidLibrary: return "The migrated library index could not be validated."
+            return SentenceWording.joined([
+                // Translators: First sentence of why a move of the data directory was refused. %@ is the new location's path, with where it leads when it is a link.
+                InterfaceText.line("dataDirectoryMigrationError.destinationNotFolder", "The new location, \(location.namedDescription), is a file, not a folder."),
+                DataDirectoryMoveWording.chooseAnotherLocation,
+            ])
+        case .missingSource:
+            // Translators: Why a move of the data directory was refused: the folder it would move from is missing.
+            return InterfaceText.line("dataDirectoryMigrationError.missingSource", "The current data directory does not exist.")
+        case .missingBook(let title):
+            // Translators: Why a move of the data directory failed: the copy lacks a book's content. %@ is the book's title.
+            return InterfaceText.line("dataDirectoryMigrationError.missingBook", "The migrated copy is missing the content for \(title).")
+        case .bookOutsideDataDirectory(let title, let path):
+            return SentenceWording.joined([
+                // Translators: First sentence of why a move of the data directory was refused. %1$@ is the book's title; %2$@ is the path where its file is stored.
+                InterfaceText.line("dataDirectoryMigrationError.bookOutside", "The book \(title) is stored at \(path), outside the data directory, so the move cannot carry it."),
+                // Translators: Last sentence of why a move of the data directory was refused: what to do. Replace Existing is the name of a button in the duplicate question. "It" is the book.
+                InterfaceText.line("dataDirectoryMigrationError.bookOutsideFix", "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again."),
+            ])
+        case .invalidLibrary:
+            // Translators: Why a move of the data directory failed: the copied library index did not pass its check.
+            return InterfaceText.line("dataDirectoryMigrationError.invalidLibrary", "The migrated library index could not be validated.")
         case .destinationChanged(let change): return change.explanation
         case .cancelled:
-            return "The move was cancelled, so nothing changed."
+            // Translators: Why a move of the data directory ended: the listener cancelled it.
+            return InterfaceText.line("dataDirectoryMigrationError.cancelled", "The move was cancelled, so nothing changed.")
         }
     }
 }
@@ -85,14 +119,20 @@ struct DataDirectoryLocation {
     /// leads there when that name is a link: "/Volumes/Archive/.TextMouth,
     /// where /Users/me/.TextMouth leads".
     var realDescription: String {
-        isAlias ? "\(real.path), where \(named.path) leads" : real.path
+        isAlias
+            // Translators: A folder's real path followed by the link that leads to it. %1$@ is the real path; %2$@ is the link's path.
+            ? InterfaceText.line("dataDirectoryLocation.realDescription", "\(real.path), where \(named.path) leads")
+            : real.path
     }
 
     /// The name as a message gives it, followed by the real folder when the
     /// name is a link: "/Users/me/.TextMouth, which leads to
     /// /Volumes/Archive/.TextMouth".
     var namedDescription: String {
-        isAlias ? "\(named.path), which leads to \(real.path)" : named.path
+        isAlias
+            // Translators: A link's path followed by the real folder it leads to. %1$@ is the link's path; %2$@ is the real path.
+            ? InterfaceText.line("dataDirectoryLocation.namedDescription", "\(named.path), which leads to \(real.path)")
+            : named.path
     }
 
     /// `path` without the /private that /var, /tmp, and /etc lead to.
@@ -186,24 +226,49 @@ enum DataDirectoryOverlap: Equatable {
     /// is inside the current data directory, /Users/me/.TextMouth. Choose a
     /// location outside it."
     func explanation(source: DataDirectoryLocation, destination: DataDirectoryLocation) -> String {
-        // The subject ends where the verb follows: "The new location, /a,"
-        // or, through a link, "The new location, /link, leads to /a, which".
-        let newLocation = destination.isAlias
-            ? "The new location, \(destination.named.path), leads to \(destination.real.path), which"
-            : "The new location, \(destination.real.path),"
+        // Each case is a whole sentence for each way the new location, and for
+        // the first case the current one, may be reached through a link.
+        let named = destination.named.path
+        let real = destination.real.path
+        let first: String
+        let advice: String
         switch self {
         case .sameFolder:
             // One folder: its real path was just named, so only a link to
             // the current data directory is added.
-            let currentLink = source.isAlias ? ", where \(source.named.path) leads" : ""
-            return "\(newLocation) is the current data directory\(currentLink). Choose another location."
+            switch (destination.isAlias, source.isAlias) {
+            case (false, false):
+                // Translators: First sentence of why a move of the data directory was refused: the new location is the current data directory. %@ is the new location's path.
+                first = InterfaceText.line("dataDirectoryOverlap.sameFolder.location", "The new location, \(real), is the current data directory.")
+            case (true, false):
+                // Translators: First sentence of why a move of the data directory was refused. %1$@ is the new location's link; %2$@ is the folder it leads to, which is the current data directory.
+                first = InterfaceText.line("dataDirectoryOverlap.sameFolder.leadsWhich", "The new location, \(named), leads to \(real), which is the current data directory.")
+            case (false, true):
+                // Translators: First sentence of why a move of the data directory was refused. %1$@ is the new location's path; %2$@ is a link that leads to the current data directory.
+                first = InterfaceText.line("dataDirectoryOverlap.newIsCurrent", "The new location, \(real), is the current data directory, where \(source.named.path) leads.")
+            case (true, true):
+                // Translators: First sentence of why a move of the data directory was refused. %1$@ is the new location's link; %2$@ is the folder it leads to, which is the current data directory; %3$@ is a link that leads to the current data directory.
+                first = InterfaceText.line("dataDirectoryOverlap.sameFolder.whichWhere", "The new location, \(named), leads to \(real), which is the current data directory, where \(source.named.path) leads.")
+            }
+            advice = DataDirectoryMoveWording.chooseAnotherLocation
         case .destinationInsideSource:
-            return "\(newLocation) is inside the current data directory, \(source.realDescription). "
-                + "Choose a location outside it."
+            first = destination.isAlias
+                // Translators: First sentence of why a move of the data directory was refused. %1$@ is the new location's link; %2$@ is the folder it leads to; %3$@ is the current data directory, with the link that leads to it when there is one.
+                ? InterfaceText.line("dataDirectoryOverlap.newLinkInsideCurrent", "The new location, \(named), leads to \(real), which is inside the current data directory, \(source.realDescription).")
+                // Translators: First sentence of why a move of the data directory was refused. %1$@ is the new location's path; %2$@ is the current data directory, with the link that leads to it when there is one.
+                : InterfaceText.line("dataDirectoryOverlap.newInsideCurrent", "The new location, \(real), is inside the current data directory, \(source.realDescription).")
+            // Translators: Last sentence of why a move of the data directory was refused because the new location is inside the current data directory. "It" is the current data directory.
+            advice = InterfaceText.line("dataDirectoryOverlap.chooseOutsideCurrent", "Choose a location outside it.")
         case .sourceInsideDestination:
-            return "\(newLocation) contains the current data directory, \(source.realDescription). "
-                + "Choose a location that does not contain it."
+            first = destination.isAlias
+                // Translators: First sentence of why a move of the data directory was refused. %1$@ is the new location's link; %2$@ is the folder it leads to; %3$@ is the current data directory, with the link that leads to it when there is one.
+                ? InterfaceText.line("dataDirectoryOverlap.newLinkHoldsCurrent", "The new location, \(named), leads to \(real), which contains the current data directory, \(source.realDescription).")
+                // Translators: First sentence of why a move of the data directory was refused. %1$@ is the new location's path; %2$@ is the current data directory, with the link that leads to it when there is one.
+                : InterfaceText.line("dataDirectoryOverlap.newHoldsCurrent", "The new location, \(real), contains the current data directory, \(source.realDescription).")
+            // Translators: Last sentence of why a move of the data directory was refused because the new location contains the current data directory. "It" is the current data directory.
+            advice = InterfaceText.line("dataDirectoryOverlap.chooseNotHoldingCurrent", "Choose a location that does not contain it.")
         }
+        return SentenceWording.joined([first, advice])
     }
 }
 
@@ -239,20 +304,38 @@ struct DataDirectoryDestinationChange {
     /// Library and library.json. TextMouth left them there and is still
     /// using /Users/me/.TextMouth. Choose an empty location and try again."
     var explanation: String {
-        let prefix = "While TextMouth was copying its data,"
-        let inUse = "is still using \(source.namedDescription)."
+        let using = source.namedDescription
+        // Translators: Last sentence of why a move of the data directory did not finish because the new location changed while the data was copied: what to do.
+        let emptyLocation = InterfaceText.line("dataDirectoryDestinationChange.emptyLocation", "Choose an empty location and try again.")
         switch finding {
         case .items(let names):
-            let count = CountWording.phrase(names.count, singular: "item", plural: "items")
-            let them = names.count == 1 ? "it" : "them"
-            return "\(prefix) \(count) appeared in \(destination.realDescription): \(Self.listing(names)). "
-                + "TextMouth left \(them) there and \(inUse) Choose an empty location and try again."
+            return SentenceWording.joined([
+                // Translators: First sentence of why a move of the data directory did not finish: items appeared in the new location while the data was copied. %1$lld is how many; %2$@ is the new location's path; %3$@ is their names as a list.
+                InterfaceText.line("dataDirectoryDestinationChange.items.appeared", "While TextMouth was copying its data, \(number: names.count) items appeared in \(destination.realDescription): \(Self.listing(names))."),
+                names.count == 1
+                    // Translators: Second sentence of why a move of the data directory did not finish, when one item appeared: TextMouth left the item and kept using the current data directory. %@ is the current data directory's path.
+                    ? InterfaceText.line("dataDirectoryDestinationChange.leftThereStill", "TextMouth left it there and is still using \(using).")
+                    // Translators: Second sentence of why a move of the data directory did not finish, when several items appeared: TextMouth left the items and kept using the current data directory. %@ is the current data directory's path.
+                    : InterfaceText.line("dataDirectoryDestinationChange.items.there", "TextMouth left them there and is still using \(using)."),
+                emptyLocation,
+            ])
         case .replaced:
-            return "\(prefix) something else was put at \(destination.realDescription). "
-                + "TextMouth left it there and \(inUse) Choose an empty location and try again."
+            return SentenceWording.joined([
+                // Translators: First sentence of why a move of the data directory did not finish: something else was put at the new location while the data was copied. %@ is the new location's path.
+                InterfaceText.line("dataDirectoryDestinationChange.replaced", "While TextMouth was copying its data, something else was put at \(destination.realDescription)."),
+                // Translators: Second sentence of why a move of the data directory did not finish: TextMouth left what was put there and kept using the current data directory. %@ is the current data directory's path.
+                InterfaceText.line("dataDirectoryDestinationChange.leftThereStill", "TextMouth left it there and is still using \(using)."),
+                emptyLocation,
+            ])
         case .redirected(let path):
-            return "\(prefix) \(destination.named.path) was changed to lead to \(path) instead of "
-                + "\(destination.real.path). TextMouth \(inUse) Try again."
+            return SentenceWording.joined([
+                // Translators: First sentence of why a move of the data directory did not finish: the new location's link was changed while the data was copied. %1$@ is the link's path; %2$@ is where it leads now; %3$@ is where it led before.
+                InterfaceText.line("dataDirectoryDestinationChange.redirected", "While TextMouth was copying its data, \(destination.named.path) was changed to lead to \(path) instead of \(destination.real.path)."),
+                // Translators: Second sentence of why a move of the data directory did not finish: TextMouth kept using the current data directory. %@ is the current data directory's path.
+                InterfaceText.line("dataDirectoryDestinationChange.redirected.still", "TextMouth is still using \(using)."),
+                // Translators: Last sentence of why a move of the data directory did not finish: what to do.
+                InterfaceText.line("dataDirectoryDestinationChange.redirected.again", "Try again."),
+            ])
         }
     }
 
@@ -262,14 +345,10 @@ struct DataDirectoryDestinationChange {
     static func listing(_ names: [String]) -> String {
         var parts = Array(names.prefix(3))
         if names.count > parts.count {
-            parts.append("\(names.count - parts.count) more")
+            // Translators: The last entry of a short list of names: how many more names there are. %lld is that number.
+            parts.append(InterfaceText.line("common.countMore", "\(number: names.count - parts.count) more"))
         }
-        switch parts.count {
-        case 0: return ""
-        case 1: return parts[0]
-        case 2: return "\(parts[0]) and \(parts[1])"
-        default: return parts.dropLast().joined(separator: ", ") + ", and " + parts[parts.count - 1]
-        }
+        return CountWording.list(parts)
     }
 }
 
@@ -351,13 +430,19 @@ enum DataDirectoryMigrator {
     /// (TODO S10), as in "Done. Data is now at /Users/me/Archive, which leads
     /// to /Volumes/Archive/.TextMouth."
     static func doneMessage(dataAt destination: DataDirectoryLocation, copiedFrom source: DataDirectoryLocation) -> String {
-        var message = "Done. Data is now at \(destination.namedDescription)."
+        var sentences = [
+            // Translators: First sentence of the message after the data directory moved.
+            InterfaceText.line("common.doneSentence", "Done."),
+            // Translators: Second sentence of the message after the data directory moved. %@ is the new location's path, with where it leads when it is a link.
+            InterfaceText.line("dataDirectoryMigrator.doneMessage.nowAt", "Data is now at \(destination.namedDescription)."),
+        ]
         // A data directory reached through a link was copied from the folder
         // the link leads to; nothing was copied when the data stayed put.
         if source.isAlias, source.real.path != destination.real.path {
-            message += " It was copied from \(source.realDescription)."
+            // Translators: Last sentence of the message after the data directory moved: where the copy was made from. %@ is the folder, with the link that leads to it.
+            sentences.append(InterfaceText.line("dataDirectoryMigrator.doneMessage.copied", "It was copied from \(source.realDescription)."))
         }
-        return message
+        return SentenceWording.joined(sentences)
     }
 
     // MARK: Steps
@@ -510,6 +595,13 @@ enum DataDirectoryMigrator {
         for index in migratedLibrary.books.indices {
             if let moved = source.relocating(migratedLibrary.books[index].filePath, to: destination.named) {
                 migratedLibrary.books[index].filePath = moved
+            } else if !migratedLibrary.books[index].filePath.hasPrefix(destinationPath + "/") {
+                // Neither in the data directory nor already in the new
+                // location: the copy never held this book, so it is not
+                // "missing from the copy" (`missingBook`) but stored apart.
+                throw DataDirectoryMigrationError.bookOutsideDataDirectory(
+                    title: migratedLibrary.books[index].title, path: migratedLibrary.books[index].filePath
+                )
             }
 
             let stagedBookPath = staging.path + String(
@@ -671,7 +763,7 @@ private enum DestinationContents: Equatable {
             self = .notAFolder
             return
         }
-        self = .folder(try fileManager.contentsOfDirectory(atPath: url.path).sorted())
+        self = .folder(try fileManager.contentsOfDirectory(atPath: url.path).sortedStably())
     }
 
     /// What makes this more than the empty folder, or nothing, that a copy
@@ -742,9 +834,127 @@ extension DataDirectoryMigrator {
     @TaskLocal static var copyObserver: DataDirectoryCopyObserver?
 }
 
+/// The names a save gives the temporary file it writes beside its target
+/// before it renames the file into place (B14), so a copy of the data
+/// directory can tell a file that is only on its way to being a save from
+/// a file the user has.
+///
+/// A temporary file is whole or half written, and gone the moment its save
+/// ends: copying it would put a stray file in the new library, and a
+/// listing that names it can find it renamed away before it is reached,
+/// which stopped the move. Three names are made beside the target, inside
+/// the data directory:
+/// - Foundation's own, for every `Data.write(to:options: .atomic)` and
+///   `String.write(to:atomically:encoding:)` (the rules, the statistics,
+///   config.json, library.json, the feeds' files, and the rest). Apple
+///   documents no name, and it differs with the macOS: measured on
+///   November 16, 2026, macOS 26.3.1 makes a dot, "dat.nosync", the writing
+///   process's number in hexadecimal (upper case), a dot, and six letters
+///   or digits, as ".dat.nosync1F4C.AbC123"; the hosted runner's macOS
+///   (Xcode 26.0.1) makes the target's name, ".sb-", eight hexadecimal
+///   digits, a dash, and six letters or digits, as
+///   "config.json.sb-42f471cf-2CWLTV". Both are known. macOS 14 and 15 are
+///   unmeasured, so a canary test (`DataDirectoryCopyTests`) watches what
+///   an atomic write leaves, and fails on a name this does not know;
+/// - TextMouth's own, a file staged whole beside the one it is to become
+///   and moved into place (`stagedName(for:)`): a dot, the target's name, a
+///   dot, and a UUID. Only the targets in `stagedTargets` are known, since
+///   a folder the user named ".Old Books.<UUID>" must never be taken for
+///   one (a library folder may begin with a dot).
+///
+/// `FileManager.replaceItemAt` writes nothing beside its target (measured the
+/// same day), and the caches' ".partial" files live in this Mac's Caches
+/// folder, outside any data directory.
+enum SaveTemporaryNames {
+    /// What begins every name Foundation gives a temporary file of an
+    /// atomic write.
+    private static let foundationPrefix = ".dat.nosync"
+    /// What follows the target's name in the other name Foundation gives a
+    /// temporary file of an atomic write.
+    private static let safeSaveMarker = ".sb-"
+    /// How many hexadecimal digits follow that marker, before a dash.
+    private static let safeSaveProcessDigits = 8
+    /// How many letters or digits end either name, after a dot or a dash.
+    private static let foundationSuffixLength = 6
+    /// The most digits the writing process's number takes in hexadecimal
+    /// (macOS's process numbers stay under 100000, five digits; eight is
+    /// room to spare, not a licence for other names).
+    private static let foundationMostProcessDigits = 8
+
+    /// The names of the files that are saved by staging a copy whole and
+    /// moving it into place. Add a file's name here when a writer starts
+    /// to stage it with `stagedName(for:)`; no other name is taken for a
+    /// staged file.
+    static let stagedTargets: Set<String> = [TranscriptCleanupRuleFile.fileName]
+
+    /// The name of the file a save of the file named `target` (one of
+    /// `stagedTargets`) stages whole beside it, to move it into place:
+    /// ".<target>.<UUID>".
+    static func stagedName(for target: String) -> String {
+        ".\(target).\(UUID().uuidString)"
+    }
+
+    /// Whether `name` is the name of a save's temporary file, as described
+    /// above, and nothing else: a hidden file the user or another program
+    /// made, such as ".DS_Store" or ".dat.nosync", is not. It says nothing of
+    /// what the name is on disk: a caller that lists a folder never takes a
+    /// folder for a temporary file.
+    static func isTemporary(_ name: String) -> Bool {
+        isFoundationTemporary(name) || isSafeSaveTemporary(name) || isStaged(name)
+    }
+
+    /// Whether `name` is a target's name, ".sb-", eight hexadecimal digits,
+    /// a dash, and six letters or digits: the other name Foundation gives an
+    /// atomic write's file.
+    private static func isSafeSaveTemporary(_ name: String) -> Bool {
+        guard let marker = name.range(of: safeSaveMarker, options: .backwards), marker.lowerBound > name.startIndex else {
+            return false
+        }
+        let parts = name[marker.upperBound...].split(separator: "-", omittingEmptySubsequences: false)
+        guard parts.count == 2 else { return false }
+        let process = parts[0], random = parts[1]
+        return process.count == safeSaveProcessDigits
+            && process.allSatisfy { $0.isASCII && $0.isHexDigit }
+            && random.count == foundationSuffixLength
+            && random.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber) }
+    }
+
+    /// Whether `name` is ".dat.nosync", the process number in hexadecimal,
+    /// a dot, and six letters or digits.
+    private static func isFoundationTemporary(_ name: String) -> Bool {
+        guard name.hasPrefix(foundationPrefix) else { return false }
+        let parts = name.dropFirst(foundationPrefix.count).split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 2 else { return false }
+        let process = parts[0], random = parts[1]
+        return (1...foundationMostProcessDigits).contains(process.count)
+            && process.allSatisfy { $0.isASCII && $0.isHexDigit }
+            && random.count == foundationSuffixLength
+            && random.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber) }
+    }
+
+    /// Whether `name` is a dot, the name of one of `stagedTargets`, a dot,
+    /// and a UUID: what `stagedName(for:)` makes for them.
+    private static func isStaged(_ name: String) -> Bool {
+        // The last dot must come after the first, or there is no target's
+        // name between them (and no range to take).
+        guard name.hasPrefix("."), let lastDot = name.lastIndex(of: "."), lastDot > name.startIndex else { return false }
+        let target = String(name[name.index(after: name.startIndex)..<lastDot])
+        let identifier = String(name[name.index(after: lastDot)...])
+        // The UUID as `stagedName(for:)` writes it, in upper case: a name
+        // in lower case was not made by it.
+        return stagedTargets.contains(target)
+            && identifier == identifier.uppercased()
+            && UUID(uuidString: identifier) != nil
+    }
+}
+
 /// The items a migration copies, in the order it copies them, with their
 /// sizes (FR02): every item in the data directory's folder, hidden ones
 /// included, as a folder to make or an item to copy whole.
+///
+/// A save's temporary file (`SaveTemporaryNames`) is no item: it is not the
+/// user's, and a save made during the copy can rename it away before it is
+/// reached (B14).
 ///
 /// A book's package (a .tmb folder, or any folder the system treats as a
 /// package) is one item, copied whole, so each book arrives in one piece
@@ -799,8 +1009,31 @@ struct DataDirectoryCopyPlan: Equatable {
     private static func items(in folder: URL, at relativePath: String, fileManager: FileManager) throws -> [Item] {
         var folders: [(item: Item, url: URL)] = []
         var others: [Item] = []
-        for name in try fileManager.contentsOfDirectory(atPath: folder.path).sorted() {
+        for name in try fileManager.contentsOfDirectory(atPath: folder.path).sortedStably() {
+            // A save's temporary file is nobody's data, and may be renamed
+            // away before the copy reaches it (B14). It is left out before
+            // anything asks the file system about it, which could fail for
+            // the same reason; an earlier crash's stale one stays in the old
+            // folder, untouched, and is not copied.
+            //
+            // The file the save renames it to is copied after the rename only
+            // by the order of the copy, which is not a guarantee: the two are
+            // files of one folder, copied in name order. ".dat.nosync..." sorts
+            // before every target TextMouth saves there, but "<target>.sb-..."
+            // sorts after its target, and a target that sorted before a
+            // ".dat.nosync..." one (".DS_Store", "-notes") would do so too.
+            // Such a target is copied before the save ended and is left stale
+            // in the moved library, as any save made after its target was
+            // copied is: the writers that save outside the storage work are
+            // saved again after the move
+            // (`StorageBoundary.isProvisionalSave(of:rewrite:)`).
+            //
+            // Never a folder, whatever its name: a library folder may be named
+            // like a temporary file, and everything in it would be left out.
+            // A name that cannot be looked at (it was renamed away since the
+            // listing) is no folder.
             let url = folder.appendingPathComponent(name)
+            if SaveTemporaryNames.isTemporary(name), !isFolder(url, fileManager: fileManager) { continue }
             let path = relativePath.isEmpty ? name : relativePath + "/" + name
             // The item itself, never a link's target.
             let attributes = try fileManager.attributesOfItem(atPath: url.path)
@@ -824,6 +1057,13 @@ struct DataDirectoryCopyPlan: Equatable {
             }
         }
         return ordered + others
+    }
+
+    /// Whether the item itself at `url`, never a link's target, is a folder;
+    /// false for anything that cannot be looked at.
+    private static func isFolder(_ url: URL, fileManager: FileManager) -> Bool {
+        let attributes = try? fileManager.attributesOfItem(atPath: url.path)
+        return attributes?[.type] as? FileAttributeType == .typeDirectory
     }
 
     /// Whether the folder at `url` is copied whole: a book's .tmb package,

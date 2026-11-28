@@ -97,7 +97,7 @@ final class StorageDestinationAssessmentTests: XCTestCase {
 
     /// A folder holding another copy of the library in use, by its identity,
     /// such as the folder an earlier move left behind, can be used, and the
-    /// confirmation says it may not have the latest changes.
+    /// confirmation says which copy is newer, or that it could not tell.
     func testAnotherCopyOfTheLibraryInUseIsSaidToBeOne() throws {
         let world = try makeWorld()
         let copy = world.base.appendingPathComponent("Copy", isDirectory: true)
@@ -112,7 +112,28 @@ final class StorageDestinationAssessmentTests: XCTestCase {
         guard case .confirm(_, let message, _, _) = StorageChoice(for: assessment, current: world.summary) else {
             return XCTFail("Expected a confirmation")
         }
-        XCTAssertTrue(message.contains(StorageWording.copyOfCurrentLibrarySentence), message)
+        XCTAssertTrue(message.contains(StorageWording.copyOfCurrentLibrarySentence(nil)), message)
+        XCTAssertFalse(message.contains("may not have its latest changes"), message)
+
+        // With a comparison made, the words say which copy is newer.
+        let moby = Book(title: "Moby-Dick", format: .txt, filePath: "/m.txt", md5Hash: "m", tmbDirectoryName: "m.tmb")
+        let copyHasABook = LibraryComparison.compare(this: LibraryCopy(library: Library()), other: LibraryCopy(library: Library(books: [moby])))
+        guard case .confirm(_, let compared, _, _) = StorageChoice(
+            for: assessment,
+            current: world.summary,
+            comparison: .compared(copyHasABook)
+        ) else {
+            return XCTFail("Expected a confirmation")
+        }
+        XCTAssertTrue(compared.contains("The copy in this folder is the newer. It has 1 book the other lacks."), compared)
+        XCTAssertFalse(compared.contains("may not have its latest changes"), compared)
+
+        // A comparison the listener stopped says so, and still offers the choice.
+        guard case .confirm(_, let stopped, _, _) = StorageChoice(for: assessment, current: world.summary, comparison: .cancelled) else {
+            return XCTFail("Expected a confirmation")
+        }
+        XCTAssertTrue(stopped.contains("couldn't tell which copy is newer (you stopped the comparison)"), stopped)
+        XCTAssertTrue(LibraryComparisonWording.comparingForUseSentence.contains("up to a minute"))
     }
 
     /// The folder in use, under its own name or through a link to it, is

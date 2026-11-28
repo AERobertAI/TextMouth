@@ -135,6 +135,12 @@ final class RereadChoiceFlow<Option: Equatable & Sendable>: ObservableObject {
     /// Why the last choice changed nothing, which the sheet shows; nil when
     /// there is nothing to say.
     @Published private(set) var failureMessage: String?
+    /// When this flow last said something about its failure message, or
+    /// cleared it, in the order of every pop-up's (`RereadFailureOrder`): a
+    /// sheet with several pop-ups shows the message of the one that spoke
+    /// last, so a message of an earlier choice in another pop-up never stays
+    /// beside a newer one's.
+    private(set) var failureStamp = 0
 
     /// The book the pop-up reads again.
     let bookID: UUID
@@ -165,10 +171,10 @@ final class RereadChoiceFlow<Option: Equatable & Sendable>: ObservableObject {
     /// be read again now is not asked about: the sheet says why
     /// (`failureMessage`), and VoiceOver hears it.
     func choose(_ option: Option) async {
-        failureMessage = nil
+        setFailureMessage(nil)
         switch await library.rereadPreflight(of: bookID, access: access) {
         case .refused(let refusal):
-            failureMessage = OperationFailureNotice.message(after: .failure(refusal))
+            setFailureMessage(OperationFailureNotice.message(after: .failure(refusal)))
         case let .ready(keepsText, stopsEditing):
             pending = RereadConfirmation(option: option, keepsText: keepsText, stopsEditing: stopsEditing)
         }
@@ -186,17 +192,54 @@ final class RereadChoiceFlow<Option: Equatable & Sendable>: ObservableObject {
     /// to the model that holds it.
     func confirm(choosing choice: TextRereadChoice, thenReload reload: @MainActor () async -> Void) async {
         pending = nil
-        failureMessage = nil
+        setFailureMessage(nil)
         isWorking = true
         let outcome = await library.readTextAgain(bookID: bookID, choosing: choice, access: access)
-        failureMessage = OperationFailureNotice.message(after: outcome)
+        setFailureMessage(OperationFailureNotice.message(after: outcome))
         await reload()
         isWorking = false
+    }
+
+    /// Says `message` as this flow's failure message, or none (nil), and
+    /// notes that this flow spoke last (`failureStamp`): a choice or a
+    /// re-read of this pop-up, even one that fails nothing, replaces what an
+    /// earlier one of any pop-up left showing.
+    private func setFailureMessage(_ message: String?) {
+        failureMessage = message
+        failureStamp = RereadFailureOrder.next()
     }
 
     /// The confirmation closed without the listener confirming: nothing
     /// changes, and the pop-up shows what it showed.
     func cancel() {
         pending = nil
+    }
+}
+
+// MARK: - Which Pop-up's Refusal the Sheet Shows
+
+/// The order in which Book Information's re-read pop-ups spoke about their
+/// failures, so the sheet, which has one line for a refusal under all of its
+/// pop-ups (a BRF book's has two: Braille Code and Braille File Characters),
+/// shows the message of the one used last and only that one's. Each flow
+/// stamps its message, and its clearing, with the next number
+/// (`RereadChoiceFlow.failureStamp`).
+@MainActor
+enum RereadFailureOrder {
+    /// The last number given.
+    private static var last = 0
+
+    /// The next number, higher than every one given before.
+    static func next() -> Int {
+        last += 1
+        return last
+    }
+
+    /// The failure message to show for pop-ups that said `popUps`: the
+    /// message of the pop-up that spoke last, or nil when it cleared its
+    /// message (a new choice, or a re-read that went ahead), whatever an
+    /// earlier pop-up still holds.
+    static func latest(among popUps: [(message: String?, stamp: Int)]) -> String? {
+        popUps.max { $0.stamp < $1.stamp }?.message
     }
 }

@@ -1,0 +1,193 @@
+import XCTest
+
+/// The screens at the largest text size iOS offers (Accessibility Extra Extra
+/// Extra Large), where text must grow and wrap and never be cut: Apple's
+/// audit of Dynamic Type and of clipped text on the Library with a book,
+/// Settings, and the Add to Library sheet. Clipped text and Dynamic Type both
+/// fail a test, except findings accepted by element and kind alone: the
+/// Library's summary ("partially unsupported", `Accepted.librarySummary`) and,
+/// on the two scrolled screens only, findings that name no element: "Text
+/// clipped" for a line the screen's edge cuts (`Accepted.scrolledPastTheEdge`),
+/// and the two Dynamic Type wordings (`Accepted.unnamedUnsupported`,
+/// `Accepted.unnamedPartlyUnsupported`). The screenshots kept with the results show
+/// the text grown and wrapped, nothing cut or overlapped. Any other Dynamic
+/// Type finding, such as a fixed font on either screen, fails. The size is set at launch, as the
+/// Larger Text setting would set it, so nothing here changes the simulator's
+/// own settings. Nothing is pressed but a book's Back, Settings, and Add to
+/// Library, and nothing is typed, except in the Search in Book sheet's test,
+/// which types a search (so it runs only where sound is allowed, on a GitHub
+/// runner) and measures that the sheet's text grows, in place of failing on
+/// Dynamic Type findings, which the sheet's own audit (`SearchUITests`) reports
+/// without failing.
+final class LargeTextUITests: TextMouthUITestCase {
+
+    /// The kinds of finding that text size can cause.
+    private static let sizeFindings: XCUIAccessibilityAuditType = [.dynamicType, .textClipped]
+
+    /// The Library with a book, at the largest size.
+    func testTheLibraryWithABookHoldsAtTheLargestText() throws {
+        let app = try launchIntoTheReader(textSize: Self.largestText)
+        tap(app.navigationBars.buttons.element(boundBy: 0), until: app.navigationBars["Library"], in: app, what: "Back")
+        let rowStart = "\(Self.bookTitle), by \(Self.bookAuthor)"
+        let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", rowStart)).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: Self.patience), "No row for the book at the largest size:\n\(app.debugDescription)")
+        try audit(app, screen: "Library with a book at the largest text", types: Self.sizeFindings, accepting: LibraryUITests.systemParts + [.librarySummary])
+        // The summary row, the list's last, is below the first screen at this
+        // size: scrolled to, it is audited in place.
+        app.swipeUp()
+        try audit(app, screen: "Library with a book at the largest text, scrolled", types: Self.sizeFindings, accepting: LibraryUITests.systemParts + [.librarySummary, .scrolledPastTheEdge, .unnamedUnsupported, .unnamedPartlyUnsupported])
+    }
+
+    /// Settings, at the largest size, as it first appears.
+    func testSettingsHoldsAtTheLargestText() throws {
+        let app = try launch(sendingTheBook: false, textSize: Self.largestText)
+        tap(app.buttons["Settings"], until: app.navigationBars["Settings"], in: app, what: "Settings")
+        // Every row made once and the screen still, so that the audit reads settled layout, not rows being laid out.
+        try scrollThroughTheList(of: app)
+        try waitUntilStill(app)
+        try audit(app, screen: "Settings at the largest text", types: Self.sizeFindings, accepting: [.navigationTitle("Settings"), .brailleCaption, .unnamedUnsupported])
+        // Two screens down, where the sliders' captions and the switches are.
+        app.swipeUp()
+        app.swipeUp()
+        try waitUntilStill(app)
+        try audit(
+            app, screen: "Settings at the largest text, scrolled", types: Self.sizeFindings,
+            accepting: [.navigationTitle("Settings"), .brailleCaption, .scrolledPastTheEdge, .unnamedUnsupported, .unnamedPartlyUnsupported],
+            acceptingTextCutByTheScroll: true
+        )
+    }
+
+    /// The sleep timer switch's label, in Settings at the largest text, is taller than its words need at the frame's
+    /// width (the audit named it as clipped in trains 1123-0905, 1124-0007, and 1124-0044 with a frame that passed in others).
+    /// The words are measured in the body font at the largest size, wrapped at the frame's width: the frame must hold them
+    /// all with a point to spare.
+    func testTheSleepTimerSwitchLabelIsNeverShorterThanItsWords() throws {
+        let app = try launch(sendingTheBook: false, textSize: Self.largestText)
+        tap(app.buttons["Settings"], until: app.navigationBars["Settings"], in: app, what: "Settings")
+        let label = app.staticTexts["Close sleep timer sheet after setting a timer"]
+        // The row waits among the later ones: swipe until it is made, at most ten times, the screen still after each.
+        for _ in 0..<10 where !label.exists {
+            app.swipeUp()
+            try waitUntilStill(app)
+        }
+        XCTAssertTrue(label.exists, "No sleep timer switch label in Settings:\n\(app.debugDescription)")
+        try waitUntilStill(app)
+        let frame = label.frame
+        let traits = UITraitCollection(preferredContentSizeCategory: .accessibilityExtraExtraExtraLarge)
+        let font = UIFont.preferredFont(forTextStyle: .body, compatibleWith: traits)
+        let needed = ("Close sleep timer sheet after setting a timer" as NSString).boundingRect(
+            with: CGSize(width: frame.width, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: [.font: font],
+            context: nil
+        ).height
+        print("SLEEP-LABEL frame \(frame), needs \(needed) points at that width")
+        // A whole point to spare: before the fix the frame was 249.33 for words measuring 249.25, a fit so exact that the audit
+        // read it as clipped in some runs.
+        XCTAssertGreaterThanOrEqual(frame.height, needed + 1, "The label's frame \(frame) leaves less than a point over its words, \(needed)")
+    }
+
+    /// The Add to Library sheet, at the largest size.
+    func testAddToLibraryHoldsAtTheLargestText() throws {
+        let app = try launch(sendingTheBook: false, textSize: Self.largestText)
+        tap(app.buttons["Add to Library"], until: app.buttons["Open Book…"], in: app, what: "Add to Library")
+        try audit(app, screen: "Add to Library sheet at the largest text", types: Self.sizeFindings, accepting: [.navigationTitle("Add to Library"), .barItem("Cancel")])
+    }
+
+    // MARK: - The Search in Book sheet
+
+    /// What the Search sheet's text sizes are checked on: the search field, the line that says what was found, the
+    /// regular-expression switch, and the "Search results" heading. These four were the findings of the sheet's audit that
+    /// said "Dynamic Type font sizes are partially unsupported" in run 43032983986 and in none of the three before it.
+    private static let searchParts = [TextMouthUITestCase.searchFieldLabel, "the status line", "Use regular expression", "Search results"]
+
+    /// The height in points of each of `searchParts`, as the sheet with results shows them in `app`.
+    private func searchPartHeights(in app: XCUIApplication) throws -> [String: CGFloat] {
+        let elements = try waitForResults(in: app)
+        let labels = [Self.searchFieldLabel, "Use regular expression", "Search results"]
+        var heights = Dictionary(uniqueKeysWithValues: labels.compactMap { label in
+            elements.first { $0.label == label }.map { (label, $0.frame.height) }
+        })
+        // The status line is known by how it ends ("7 matches"): the number changes with the book.
+        if let status = elements.first(where: { $0.label.hasSuffix(" matches") || $0.label.hasSuffix(" match") }) {
+            heights["the status line"] = status.frame.height
+        }
+        XCTAssertEqual(Set(heights.keys), Set(Self.searchParts), "The sheet is missing a part. The sheet's elements: \(Self.describe(elements))")
+        return heights
+    }
+
+    /// The least each part must grow, as its height at the largest text size over its height at the default size. Each
+    /// bound lies about halfway between what the sheet measures with every part capped at Accessibility 2
+    /// (`.accessibility2`, the largest cap that still shows growth) and what it measures uncapped, so that a cap at that
+    /// size or at any smaller one fails and the sheet as it is passes, with room on both sides. The heights come from two
+    /// GitHub runs of this test: 43066870675 (the sheet as it is) and 43374972739 (the proof branch, which capped the sheet
+    /// at `.accessibility2` and was never merged; run 43378144324 of the same branch with these bounds failed this test,
+    /// naming all four parts):
+    ///
+    /// | part                          | default | largest, as is | ratio | largest, capped | ratio | bound |
+    /// | ----------------------------- | ------- | -------------- | ----- | --------------- | ----- | ----- |
+    /// | the field                     | 22.0    | 65.0           | 2.95  | 41.3            | 1.88  | 2.4   |
+    /// | the status line               | 52.0    | 93.3           | 1.79  | 69.7            | 1.34  | 1.55  |
+    /// | the regular-expression switch | 52.0    | 155.3          | 2.99  | 109.7           | 2.11  | 2.5   |
+    /// | the "Search results" heading  | 40.3    | 83.3           | 2.07  | 59.7            | 1.48  | 1.75  |
+    ///
+    /// The parts do not share one bound because they do not grow alike: the status line and the heading carry padding
+    /// that does not grow, so their ratios are lower, and the field is a single line of text.
+    private static let minimumGrowth: [String: CGFloat] = [
+        TextMouthUITestCase.searchFieldLabel: 2.4,
+        "the status line": 1.55,
+        "Use regular expression": 2.5,
+        "Search results": 1.75,
+    ]
+
+    /// The Search in Book sheet with results, at the largest size: its text grows with the text size (so the findings of
+    /// Apple's Dynamic Type audit on it, which `SearchUITests` reports and does not fail, are not that text stays small),
+    /// and none of it is cut.
+    ///
+    /// **Growth** is measured, not left to the audit: each of the four parts the audit named is at least its
+    /// `minimumGrowth` times as tall at the largest size as at the default size, in the same test, on the same book and
+    /// search. A part drawn in a fixed font would be as tall at both sizes, and one capped at Accessibility 2 or any
+    /// smaller size falls short of its bound. Every part's heights and ratio are printed on every run, and the failure
+    /// names every part that fell short, not only the first. **Clipping** is the audit's `textClipped` kind, which fails
+    /// the test but for the same findings as the other screens accept. Typing makes sound, so the test runs only where
+    /// sound is allowed, on a GitHub runner.
+    func testTheSearchSheetHoldsAtTheLargestText() throws {
+        let normal = try openSearchSheet(typing: SearchUITests.word)
+        let normalHeights = try searchPartHeights(in: normal)
+        // One app at a time: the second launch is of the same app.
+        normal.terminate()
+
+        let large = try openSearchSheet(typing: SearchUITests.word, textSize: Self.largestText)
+        let largeHeights = try searchPartHeights(in: large)
+        var shortfalls: [String] = []
+        for part in Self.searchParts {
+            let before = normalHeights[part] ?? 0
+            let after = largeHeights[part] ?? 0
+            let ratio = before > 0 ? after / before : 0
+            let bound = Self.minimumGrowth[part] ?? 0
+            // In the log on every run, so that a bound can be read against what the sheet measures.
+            let line = "SEARCH-GROWTH \"\(part)\": default \(before) points, largest \(after) points, ratio \(ratio), bound \(bound)"
+            print(line)
+            NSLog("%@", line)
+            if !(ratio >= bound) {
+                // Short, with two decimals: the failure line of a run's summary is cut at 300 characters, and it must name
+                // every part. The log's SEARCH-GROWTH lines above hold the heights.
+                shortfalls.append("\"\(part)\" grew \(String(format: "%.2f", Double(ratio)))x, needs \(bound)x")
+            }
+        }
+        XCTAssertTrue(
+            shortfalls.isEmpty,
+            "Search sheet text did not grow: " + shortfalls.joined(separator: "; ")
+        )
+        keepScreenshot(of: large, named: "Search in Book at the largest text")
+        // The keyboard's own Search key puts it away, as the sheet's audit test does, so that the audit reads the sheet.
+        let searchKey = large.keyboards.buttons["Search"]
+        if searchKey.waitForExistence(timeout: 5) {
+            searchKey.tap()
+        }
+        try audit(
+            large, screen: "Search in Book sheet at the largest text", types: .textClipped,
+            accepting: [.navigationTitle("Search in Book"), .barItem("Back to Book"), .scrolledPastTheEdge]
+        )
+    }
+}

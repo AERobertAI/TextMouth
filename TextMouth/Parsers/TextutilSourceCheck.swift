@@ -46,7 +46,7 @@ enum TextutilSourceCheck {
     static func beginsAsHTML(_ url: URL) -> Bool {
         guard let head = leadingBytes(of: url, count: htmlSniffLength) else { return false }
         let content = head.dropFirst(firstContentIndex(in: head))
-        return ["<!doctype html", "<html"].contains { beginsWith($0, content) }
+        return ["<!doctype html", "<html"].contains { beginsWith($0, content) } // l10n: no (a file signature, not interface text)
     }
 
     /// Whether `bytes` begin with the ASCII `tag`, compared without regard
@@ -184,9 +184,10 @@ enum TextutilSourceCheck {
 
     // MARK: - An OpenDocument package with a password
 
-    /// The package's manifest, and the most bytes of it that are read.
+    /// The package's manifest. It is found without regard to the case of its
+    /// path, and read up to the most TextMouth reads from one document
+    /// (`DocumentByteLimit`): a manifest of a package of many files can be large.
     private static let manifestPath = "META-INF/manifest.xml"
-    private static let manifestByteLimit: Int64 = 1_000_000
 
     /// Whether the OpenDocument package at `url` (.odt or .ott) has an
     /// encrypted part: its `META-INF/manifest.xml` holds a
@@ -194,10 +195,13 @@ enum TextutilSourceCheck {
     /// is no ZIP, the manifest is missing, too large, or unreadable.
     static func isEncryptedOpenDocument(_ url: URL) -> Bool {
         guard let archive = Archive.openedForReading(at: url),
-              let entry = archive[manifestPath], entry.type == .file,
-              let manifest = try? ArchiveEntryReader.read(entry, in: archive, limit: manifestByteLimit).data
+              let entry = archive.file(at: manifestPath),
+              let manifest = try? ArchiveEntryReader.read(entry, in: archive, limit: DocumentByteLimit.current).data
         else { return false }
 
+        // A manifest that the parser would take too long over (`XMLInputGuard`)
+        // is not read, and is taken for one with no encryption data.
+        guard XMLInputGuard.problem(with: manifest) == nil else { return false }
         let finder = EncryptionDataFinder()
         let parser = XMLParser(data: manifest)
         parser.delegate = finder
@@ -248,8 +252,18 @@ private final class EncryptionDataFinder: NSObject, XMLParserDelegate {
 /// A document protected by a password, which `textutil` would fail on as on
 /// a damaged one. Its sentence tells the listener what to do; it never
 /// names the file, which the import's failure does (`ImportFailure`).
-struct PasswordProtectedDocument: LocalizedError, Equatable {
+struct PasswordProtectedDocument: LocalizedError, LogDescribing, Equatable {
     var errorDescription: String? {
-        "This document is protected by a password. Save a copy without the password, then import that copy."
+        SentenceWording.joined([
+            // Translators: First sentence of why a document could not be imported: it is locked with a password TextMouth does not have.
+            InterfaceText.line("passwordProtectedDocument.error.locked", "This document is protected by a password."),
+            // Translators: Last sentence of why a password-protected document could not be imported: what to do.
+            InterfaceText.line("passwordProtectedDocument.error.without", "Save a copy without the password, then import that copy."),
+        ])
+    }
+
+    /// The failure in English for the debug log (FR34).
+    var logDescription: String {
+        "This document is protected by a password. Save a copy without the password, then import that copy." // l10n: no (debug log)
     }
 }

@@ -12,6 +12,121 @@ struct AudioFilterPreset: Codable, Equatable, Identifiable, Sendable {
     var name: String
     /// Its chain.
     var chain: String
+
+    /// What the editor shows and VoiceOver reads for the preset: a premade
+    /// preset that still has its premade name is shown by its title in the
+    /// interface language; every other preset by the name it was given. The
+    /// `name` is what audio-filters.json keeps, so a file shared between
+    /// Macs and languages never changes.
+    var title: String {
+        PremadeFilterPreset.allCases.first { $0.id == id && $0.englishName == name }?.title ?? name
+    }
+}
+
+/// The presets TextMouth comes with (FR04): each one's stored English name,
+/// its title in the interface language, and its chain. The stored name makes
+/// the preset's identity (`id`), so it is the same on every Mac, in every
+/// language, and after every reset.
+enum PremadeFilterPreset: CaseIterable, Sendable {
+    case removeRumble, clearerVoice, evenOutTheLevel, audiobookLoudness, shortenLongPauses
+    case trimSilenceAtBothEnds, fadeIn, fadeOut, aLittleFaster, louder, quieter, reverse
+
+    /// The name audio-filters.json keeps for the preset, and its identity's
+    /// seed: never translated, so a saved file means the same everywhere.
+    var englishName: String {
+        switch self {
+        case .removeRumble: return "Remove Rumble" // l10n: no (stored name; `title` is shown)
+        case .clearerVoice: return "Clearer Voice" // l10n: no (stored name; `title` is shown)
+        case .evenOutTheLevel: return "Even Out the Level" // l10n: no (stored name; `title` is shown)
+        case .audiobookLoudness: return "Audiobook Loudness" // l10n: no (stored name; `title` is shown)
+        case .shortenLongPauses: return "Shorten Long Pauses" // l10n: no (stored name; `title` is shown)
+        case .trimSilenceAtBothEnds: return "Trim Silence at Both Ends" // l10n: no (stored name; `title` is shown)
+        case .fadeIn: return "Fade In" // l10n: no (stored name; `title` is shown)
+        case .fadeOut: return "Fade Out (Select the Last Second)" // l10n: no (stored name; `title` is shown)
+        case .aLittleFaster: return "A Little Faster" // l10n: no (stored name; `title` is shown)
+        case .louder: return "Louder" // l10n: no (stored name; `title` is shown)
+        case .quieter: return "Quieter" // l10n: no (stored name; `title` is shown)
+        case .reverse: return "Reverse" // l10n: no (stored name; `title` is shown)
+        }
+    }
+
+    /// The preset's name in the interface language, as the editor lists it.
+    var title: String {
+        switch self {
+        case .removeRumble:
+            // Translators: Title of a premade audio filter preset: cuts the lowest rumble from a recording.
+            return InterfaceText.line("premadeFilterPreset.title.removeRumble", "Remove Rumble")
+        case .clearerVoice:
+            // Translators: Title of a premade audio filter preset: cuts the rumble and lifts the voice's presence.
+            return InterfaceText.line("premadeFilterPreset.title.clearerVoice", "Clearer Voice")
+        case .evenOutTheLevel:
+            // Translators: Title of a premade audio filter preset: compresses the audio so loud and quiet parts are closer in volume.
+            return InterfaceText.line("premadeFilterPreset.title.evenOutTheLevel", "Even Out the Level")
+        case .audiobookLoudness:
+            // Translators: Title of a premade audio filter preset: sets the whole audio's loudness to a level for audiobooks.
+            return InterfaceText.line("premadeFilterPreset.title.audiobookLoudness", "Audiobook Loudness")
+        case .shortenLongPauses:
+            // Translators: Title of a premade audio filter preset: makes every pause longer than a second one second long.
+            return InterfaceText.line("premadeFilterPreset.title.shortenLongPauses", "Shorten Long Pauses")
+        case .trimSilenceAtBothEnds:
+            // Translators: Title of a premade audio filter preset: removes the silence at the start and at the end of the audio.
+            return InterfaceText.line("premadeFilterPreset.title.trimSilenceAtBothEnds", "Trim Silence at Both Ends")
+        case .fadeIn:
+            // Translators: Title of a premade audio filter preset: fades the audio in over one second.
+            return InterfaceText.line("premadeFilterPreset.title.fadeIn", "Fade In")
+        case .fadeOut:
+            // Translators: Title of a premade audio filter preset: fades out over one second, so it is used on a selection of the last second.
+            return InterfaceText.line("premadeFilterPreset.title.fadeOut", "Fade Out (Select the Last Second)")
+        case .aLittleFaster:
+            // Translators: Title of a premade audio filter preset: plays the audio a quarter faster without raising its pitch.
+            return InterfaceText.line("premadeFilterPreset.title.aLittleFaster", "A Little Faster")
+        case .louder:
+            // Translators: Title of a premade audio filter preset: raises the volume by 6 decibels.
+            return InterfaceText.line("premadeFilterPreset.title.louder", "Louder")
+        case .quieter:
+            // Translators: Title of a premade audio filter preset: lowers the volume by 6 decibels.
+            return InterfaceText.line("premadeFilterPreset.title.quieter", "Quieter")
+        case .reverse:
+            // Translators: Title of a premade audio filter preset: plays the audio backwards.
+            return InterfaceText.line("premadeFilterPreset.title.reverse", "Reverse")
+        }
+    }
+
+    /// The filter chain the preset runs, in ffmpeg's syntax.
+    var chain: String {
+        switch self {
+        case .removeRumble: return "highpass=f=80"
+        case .clearerVoice: return "highpass=f=80,equalizer=f=3000:t=q:w=1:g=3"
+        case .evenOutTheLevel: return "acompressor=threshold=-20dB:ratio=3:attack=10:release=200:makeup=2"
+        case .audiobookLoudness: return "loudnorm=I=-18:TP=-3"
+        // Every pause longer than a second becomes a second long.
+        case .shortenLongPauses: return "silenceremove=stop_periods=-1:stop_duration=1:stop_threshold=-50dB"
+        case .trimSilenceAtBothEnds:
+            return "silenceremove=start_periods=1:start_threshold=-50dB,areverse,"
+                + "silenceremove=start_periods=1:start_threshold=-50dB,areverse"
+        case .fadeIn: return "afade=t=in:d=1"
+        case .fadeOut: return "afade=t=out:d=1"
+        case .aLittleFaster: return "atempo=1.25"
+        case .louder: return "volume=6dB"
+        case .quieter: return "volume=-6dB"
+        case .reverse: return "areverse"
+        }
+    }
+
+    /// The preset's identity, made from its stored name, so it is the same
+    /// on every Mac and after every reset.
+    var id: UUID {
+        let digest = Array(SHA256.hash(data: Data("TextMouth premade filter: \(englishName)".utf8))) // l10n: no (the seed of a stored identity)
+        return UUID(uuid: (
+            digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6], digest[7],
+            digest[8], digest[9], digest[10], digest[11], digest[12], digest[13], digest[14], digest[15]
+        ))
+    }
+
+    /// The preset as the file keeps it: its stored name, and its chain.
+    var preset: AudioFilterPreset {
+        AudioFilterPreset(id: id, name: englishName, chain: chain)
+    }
 }
 
 /// The filter presets (FR04), kept in audio-filters.json in the data
@@ -42,15 +157,25 @@ final class AudioFilterPresetLibrary: ObservableObject {
     /// The tag of the debug log's lines about the file.
     nonisolated static let logTag = "AUDIO_FILTERS_FILE"
 
-    /// The file.
-    private let url: URL
+    /// The file a test chose, or nil for the data directory's own, which is
+    /// looked up at each read and write: a Filter Presets pane stays open
+    /// through a data-directory move, and its next save belongs in the
+    /// library then in use, not in the one it began in.
+    private let chosenURL: URL?
     /// How the file is read: without downloading it, unless a test stands
     /// in a reader of its own.
     private let reader: SavedFile.Reader
 
-    /// The presets of the file at `url`, read at once through `reader`.
-    init(url: URL = TextMouthPaths.audioFiltersFile, reader: @escaping SavedFile.Reader = SavedFile.readWithoutDownloading) {
-        self.url = url
+    /// The file, where the library lives now unless a test chose one.
+    private var url: URL {
+        chosenURL ?? TextMouthPaths.audioFiltersFile
+    }
+
+    /// The presets of the file at `url`, read at once through `reader`. With
+    /// no `url`, the file is the data directory's own, wherever the data
+    /// directory is when it is read or written.
+    init(url: URL? = nil, reader: @escaping SavedFile.Reader = SavedFile.readWithoutDownloading) {
+        self.chosenURL = url
         self.reader = reader
         presets = Self.standard
         load()
@@ -65,36 +190,7 @@ final class AudioFilterPresetLibrary: ObservableObject {
     /// Silence is trimmed at the end by reversing the sound: ffmpeg's
     /// silenceremove stops at the first silence after the start, not at the
     /// end, when told to stop once (stop_periods=1).
-    static let standard: [AudioFilterPreset] = [
-        premade("Remove Rumble", "highpass=f=80"),
-        premade("Clearer Voice", "highpass=f=80,equalizer=f=3000:t=q:w=1:g=3"),
-        premade("Even Out the Level", "acompressor=threshold=-20dB:ratio=3:attack=10:release=200:makeup=2"),
-        premade("Audiobook Loudness", "loudnorm=I=-18:TP=-3"),
-        // Every pause longer than a second becomes a second long.
-        premade("Shorten Long Pauses", "silenceremove=stop_periods=-1:stop_duration=1:stop_threshold=-50dB"),
-        premade(
-            "Trim Silence at Both Ends",
-            "silenceremove=start_periods=1:start_threshold=-50dB,areverse,"
-                + "silenceremove=start_periods=1:start_threshold=-50dB,areverse"
-        ),
-        premade("Fade In", "afade=t=in:d=1"),
-        premade("Fade Out (Select the Last Second)", "afade=t=out:d=1"),
-        premade("A Little Faster", "atempo=1.25"),
-        premade("Louder", "volume=6dB"),
-        premade("Quieter", "volume=-6dB"),
-        premade("Reverse", "areverse"),
-    ]
-
-    /// A premade preset, its identity made from its name, so it is the same
-    /// on every Mac and after every reset.
-    private static func premade(_ name: String, _ chain: String) -> AudioFilterPreset {
-        let digest = Array(SHA256.hash(data: Data("TextMouth premade filter: \(name)".utf8)))
-        let uuid = UUID(uuid: (
-            digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6], digest[7],
-            digest[8], digest[9], digest[10], digest[11], digest[12], digest[13], digest[14], digest[15]
-        ))
-        return AudioFilterPreset(id: uuid, name: name, chain: chain)
-    }
+    nonisolated static let standard: [AudioFilterPreset] = PremadeFilterPreset.allCases.map(\.preset)
 
     // MARK: Changing
 
@@ -110,7 +206,8 @@ final class AudioFilterPresetLibrary: ObservableObject {
 
     /// Puts `preset` in place of the preset of the same identity, and saves.
     func update(_ preset: AudioFilterPreset) throws {
-        let checked = AudioFilterPreset(id: preset.id, name: try Self.checkedName(preset.name), chain: try Self.checkedChain(preset.chain))
+        let name = Self.storedName(of: preset, checking: try Self.checkedName(preset.name))
+        let checked = AudioFilterPreset(id: preset.id, name: name, chain: try Self.checkedChain(preset.chain))
         try change { presets in
             guard let index = presets.firstIndex(where: { $0.id == preset.id }) else { return }
             presets[index] = checked
@@ -147,6 +244,16 @@ final class AudioFilterPresetLibrary: ObservableObject {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw AudioFilterPresetError.blankName }
         return trimmed
+    }
+
+    /// The name to keep for `preset` when its name field held `typed`: a
+    /// premade preset edited under the title it was shown by keeps its
+    /// stored English name, so the file doesn't change with the language;
+    /// any other name is kept as typed.
+    private static func storedName(of preset: AudioFilterPreset, checking typed: String) -> String {
+        guard let premade = PremadeFilterPreset.allCases.first(where: { $0.id == preset.id }),
+              typed == premade.title else { return typed }
+        return premade.englishName
     }
 
     /// `chain` trimmed, or the error refusing a blank one. Its filters are
@@ -217,7 +324,7 @@ final class AudioFilterPresetLibrary: ObservableObject {
             because: reason,
             logging: Self.logTag,
             in: .storage,
-            standIn: "the premade presets stand in"
+            standIn: "the premade presets stand in" // l10n: no (a log line)
         )
         presets = Self.standard
     }
@@ -246,10 +353,37 @@ final class AudioFilterPresetLibrary: ObservableObject {
         }
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try encoder.encode(File(version: Self.currentVersion, presets: edited)).write(to: url, options: .atomic)
+        let bytes = try encoder.encode(File(version: Self.currentVersion, presets: edited))
+        try Self.write(bytes, to: url)
         presets = edited
         standsInForMissingFile = false
+        // A save made while a data-directory move copies the library lands in
+        // the folder being copied, which the copy may have passed (a first
+        // save, which has no file to be copied, is missed whole). The move
+        // writes these bytes again once it has ended, in the library then in
+        // use, as it does for the rules (`StorageBoundary.isProvisionalSave`).
+        // The bytes, not this library, are kept: its pane may be closed by
+        // then. A file a test chose is no part of any data directory.
+        if chosenURL == nil {
+            _ = StorageBoundary.shared.isProvisionalSave(of: Self.fileName) {
+                do {
+                    try Self.write(bytes, to: TextMouthPaths.audioFiltersFile)
+                } catch {
+                    DiagnosticLog.event(
+                        .storage,
+                        "\(Self.logTag): could not save \(Self.fileName) again after the data directory moved: "
+                            + TranscriptStore.describe(error)
+                    )
+                }
+            }
+        }
+    }
+
+    /// Writes `bytes` atomically to the file at `url`, making its folder
+    /// first.
+    private static func write(_ bytes: Data, to url: URL) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try bytes.write(to: url, options: .atomic)
     }
 }
 
@@ -267,11 +401,14 @@ enum AudioFilterPresetError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .blankName:
-            return "A filter preset needs a name."
+            // Translators: Said when a filter preset is saved with a blank name.
+            return InterfaceText.line("audioFilterPresetError.blankName", "A filter preset needs a name.")
         case .libraryUnavailable:
-            return "The library isn't available, so the filter presets can't be saved."
+            // Translators: Said when the filter presets can't be saved because the library's data folder can't be used.
+            return InterfaceText.line("audioFilterPresetError.libraryUnavailable", "The library isn't available, so the filter presets can't be saved.")
         case .fileArrived:
-            return "The filter presets saved on another Mac just arrived, so they replaced these. Make the change again."
+            // Translators: Said when a filter preset change is not made because the presets file synced in from another Mac while the premade presets stood in for it.
+            return InterfaceText.line("audioFilterPresetError.fileArrived", "Presets from another Mac just arrived and replaced these. Make the change again.")
         }
     }
 }

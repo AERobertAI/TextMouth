@@ -1,0 +1,1874 @@
+{
+ "language": "id",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ may be signed out or not running.",
+     "id": "dataDirectoryUnavailability.likelyCause.running",
+     "english": "%@ may be signed out or not running.",
+     "before": "%@ mungkin sudah keluar atau tidak berjalan.",
+     "after": "%@ mungkin sudah keluar dari akun atau tidak berjalan.",
+     "why": "meaning: keluar alone reads as quit; signed out is keluar dari akun"
+    },
+    {
+     "key": "%@ remaining in total",
+     "id": "libraryInfo.timeRemainingPhrase",
+     "english": "%@ remaining in total",
+     "before": "%@ tersisa secara total",
+     "after": "Total %@ tersisa",
+     "why": "natural: secara total reads as completely; Total ... tersisa matches the time bar string"
+    },
+    {
+     "key": "%@ wasn't asked for again, because the drive hasn't answered an earlier read",
+     "id": "libraryComparison.shortReason.stillBeingFetched",
+     "english": "%@ wasn't asked for again, because the drive hasn't answered an earlier read",
+     "before": "%@ tidak diminta lagi, karena drive belum menjawab pembacaan sebelumnya",
+     "after": "%@ tidak diminta lagi, karena drive belum merespons pembacaan sebelumnya",
+     "why": "natural: a drive merespons, it does not menjawab"
+    },
+    {
+     "key": "%@ wasn't downloaded",
+     "id": "libraryCloud.downloadFinished.wasnt",
+     "english": "%@ wasn't downloaded",
+     "before": "%@ tidak diunduh",
+     "after": "%@ gagal diunduh",
+     "why": "meaning: tidak diunduh says nobody tried; the download failed"
+    },
+    {
+     "key": "%lld books weren't downloaded: %@",
+     "id": "libraryCloud.downloadFinished.werent",
+     "english": {
+      "one": "%lld book wasn't downloaded: %@",
+      "other": "%lld books weren't downloaded: %@"
+     },
+     "before": {
+      "other": "%lld buku tidak diunduh: %@"
+     },
+     "after": {
+      "other": "%lld buku gagal diunduh: %@"
+     },
+     "why": "meaning: tidak diunduh says nobody tried; the download failed"
+    },
+    {
+     "key": "A destination folder path is invalid.",
+     "id": "libraryViewModel.invalidDestinationFolderPath",
+     "english": "A destination folder path is invalid.",
+     "before": "Path folder tujuan tidak valid.",
+     "after": "Jalur folder tujuan tidak valid.",
+     "why": "term: Apple Indonesian says jalur for a path, not the English word"
+    },
+    {
+     "key": "A folder name can't be empty, \".\" or \"..\", end in \".tmb\", or be reserved by TextMouth.",
+     "id": "folderOperationConflict.invalidName",
+     "english": "A folder name can't be empty, \".\" or \"..\", end in \".tmb\", or be reserved by TextMouth.",
+     "before": "Nama folder tidak boleh kosong, \".\" atau \"..\", diakhiri dengan \".tmb\", atau dicadangkan oleh TextMouth.",
+     "after": "Nama folder tidak boleh kosong, berupa “.” atau “..”, berakhiran “.tmb”, atau dicadangkan oleh TextMouth.",
+     "why": "grammar: the list lacked a verb before the names; curly quotes as the glossary sets"
+    },
+    {
+     "key": "A move shifts one book at a time, and several are selected. Select one book, then try again.",
+     "id": "manualBookOrder.severalBooksToMoveAnnouncement",
+     "english": "A move shifts one book at a time, and several are selected. Select one book, then try again.",
+     "before": "Pemindahan menggeser satu buku sekaligus, dan beberapa buku dipilih. Pilih satu buku, lalu coba lagi.",
+     "after": "Buku dipindahkan satu per satu, sedangkan beberapa buku sedang dipilih. Pilih satu buku, lalu coba lagi.",
+     "why": "natural: satu buku sekaligus says one book all at once; satu per satu is one at a time"
+    },
+    {
+     "key": "Add gesture step",
+     "id": "miscellaneousSettings.addStepLabel",
+     "english": "Add gesture step",
+     "before": "Tambah langkah gestur",
+     "after": "Tambah langkah gerakan",
+     "why": "term: Apple Indonesian calls a gesture gerakan (trackpad, AssistiveTouch)"
+    },
+    {
+     "key": "Appends a new step to the gesture sequence",
+     "id": "miscellaneousSettings.addStepHint",
+     "english": "Appends a new step to the gesture sequence",
+     "before": "Menambahkan langkah baru di akhir urutan gestur.",
+     "after": "Menambahkan langkah baru di akhir urutan gerakan.",
+     "why": "term: Apple Indonesian calls a gesture gerakan (trackpad, AssistiveTouch)"
+    },
+    {
+     "key": "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.",
+     "id": "manualBookOrder.noArrangedOrder.folders",
+     "english": "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.",
+     "before": "Buku tidak dapat dipindahkan dalam tampilan ini. Buka folder di Folder atau Daftar Bacaan, lalu coba lagi.",
+     "after": "Buku tidak dapat dipindahkan dalam tampilan ini. Buka folder di tampilan Folder, atau buka Daftar Bacaan, lalu coba lagi.",
+     "why": "meaning: the old text read as a folder inside the Reading List; two separate places now"
+    },
+    {
+     "key": "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
+     "id": "settings.navigationUnitControlsHint",
+     "english": "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
+     "before": "Memilih tanpa kontrol per buku, satu pemilih bersama, atau menu dengan pemilih maju dan mundur terpisah.",
+     "after": "Memilih antara tidak ada kontrol per buku, satu pemilih bersama, atau menu dengan pemilih maju dan mundur yang terpisah.",
+     "why": "meaning: Memilih tanpa read as choose without; the three choices are now a list"
+    },
+    {
+     "key": "Choose where to move the books and subfolders before deleting \"%@\".",
+     "id": "librarySheet.moveContentsExplanation",
+     "english": "Choose where to move the books and subfolders before deleting \"%@\".",
+     "before": "Pilih tujuan untuk memindahkan buku dan subfolder sebelum menghapus \"%@\".",
+     "after": "Pilih tujuan untuk memindahkan buku dan subfolder sebelum menghapus “%@”.",
+     "why": "punctuation: curly quotes as the glossary sets"
+    },
+    {
+     "key": "Condition %@ days",
+     "id": "libraryViewEditor.daysLabel",
+     "english": "Condition %@ days",
+     "before": "Kondisi %@ hari",
+     "after": "Hari kondisi %@",
+     "why": "meaning: a number before a noun reads as a count (2 hari is two days); the field name now comes first"
+    },
+    {
+     "key": "Condition %@ folder",
+     "id": "libraryViewEditor.folderLabel",
+     "english": "Condition %@ folder",
+     "before": "Kondisi %@ folder",
+     "after": "Folder kondisi %@",
+     "why": "meaning: a number before a noun reads as a count (2 hari is two days); the field name now comes first"
+    },
+    {
+     "key": "Condition %@ format",
+     "id": "libraryViewEditor.formatLabel",
+     "english": "Condition %@ format",
+     "before": "Kondisi %@ format",
+     "after": "Format kondisi %@",
+     "why": "meaning: a number before a noun reads as a count (2 hari is two days); the field name now comes first"
+    },
+    {
+     "key": "Condition %@ reading state",
+     "id": "libraryViewEditor.readingStateLabel",
+     "english": "Condition %@ reading state",
+     "before": "Kondisi %@ status baca",
+     "after": "Status baca kondisi %@",
+     "why": "meaning: a number before a noun reads as a count (2 hari is two days); the field name now comes first"
+    },
+    {
+     "key": "Condition %@ relation",
+     "id": "libraryViewEditor.relationLabel",
+     "english": "Condition %@ relation",
+     "before": "Kondisi %@ relasi",
+     "after": "Relasi kondisi %@",
+     "why": "meaning: a number before a noun reads as a count (2 hari is two days); the field name now comes first"
+    },
+    {
+     "key": "Condition %@ text",
+     "id": "libraryViewEditor.textLabel",
+     "english": "Condition %@ text",
+     "before": "Kondisi %@ teks",
+     "after": "Teks kondisi %@",
+     "why": "meaning: a number before a noun reads as a count (2 hari is two days); the field name now comes first"
+    },
+    {
+     "key": "Copy all TextMouth data to %@, validate it, and use the new location?",
+     "id": "storage.moveSentence.validate",
+     "english": "Copy all TextMouth data to %@, validate it, and use the new location?",
+     "before": "Salin semua data TextMouth ke %@, validasi, dan gunakan lokasi baru?",
+     "after": "Salin semua data TextMouth ke %@, validasikan, dan gunakan lokasi baru?",
+     "why": "grammar: validasi is a noun in a row of commands; the verb is validasikan"
+    },
+    {
+     "key": "Could not delete \"%@\" and move its contents",
+     "id": "libraryViewModel.deleteFolderFailed",
+     "english": "Could not delete \"%@\" and move its contents",
+     "before": "Tidak dapat menghapus \"%@\" dan memindahkan isinya",
+     "after": "Tidak dapat menghapus “%@” dan memindahkan isinya",
+     "why": "punctuation: curly quotes as the glossary sets"
+    },
+    {
+     "key": "Could not move \"%@\"",
+     "id": "libraryViewModel.couldNotMoveNamedFolder",
+     "english": "Could not move \"%@\"",
+     "before": "Tidak dapat memindahkan \"%@\"",
+     "after": "Tidak dapat memindahkan “%@”",
+     "why": "punctuation: curly quotes as the glossary sets"
+    },
+    {
+     "key": "Could not remove folder: its library path is invalid or has changed.",
+     "id": "libraryViewModel.couldNotRemoveFolderPathInvalid",
+     "english": "Could not remove folder: its library path is invalid or has changed.",
+     "before": "Tidak dapat membuang folder: path pustakanya tidak valid atau telah berubah.",
+     "after": "Tidak dapat membuang folder: jalur pustakanya tidak valid atau telah berubah.",
+     "why": "term: Apple Indonesian says jalur for a path, not the English word"
+    },
+    {
+     "key": "Could not rename \"%@\"",
+     "id": "libraryViewModel.couldNotRenameNamedFolder",
+     "english": "Could not rename \"%@\"",
+     "before": "Tidak dapat mengganti nama \"%@\"",
+     "after": "Tidak dapat mengganti nama “%@”",
+     "why": "punctuation: curly quotes as the glossary sets"
+    },
+    {
+     "key": "Duplicate",
+     "id": "libraryViewsSettings.duplicateAction",
+     "english": "Duplicate",
+     "before": "Duplikat",
+     "after": "Duplikatkan",
+     "why": "term: a command; Apple Indonesian Duplicate is the verb Duplikatkan, Duplikat is the noun"
+    },
+    {
+     "key": "Enable restart-timer gesture",
+     "id": "miscellaneousSettings.restartGestureTitle",
+     "english": "Enable restart-timer gesture",
+     "before": "Aktifkan gestur timer ulang",
+     "after": "Aktifkan gerakan mulai ulang timer",
+     "why": "meaning: timer ulang reads as a repeat timer; the gesture restarts the timer; gerakan as Apple says"
+    },
+    {
+     "key": "Enter or paste the text for the new book",
+     "id": "textInput.textContentHint",
+     "english": "Enter or paste the text for the new book",
+     "before": "Memasukkan atau menempel teks untuk buku baru.",
+     "after": "Menerima teks yang Anda ketik atau tempel untuk buku baru.",
+     "why": "natural: the hint had the text area doing the entering; it now says what it takes"
+    },
+    {
+     "key": "Feeds are always listed by title",
+     "id": "libraryViewPicker.feedsOrderHint",
+     "english": "Feeds are always listed by title",
+     "before": "Feed selalu didaftar menurut judul.",
+     "after": "Feed selalu diurutkan menurut judul.",
+     "why": "natural: didaftar reads as registered; the hint means sorted by title"
+    },
+    {
+     "key": "Feeds are listed by title",
+     "id": "libraryViewPicker.feedsOrderAnnouncement",
+     "english": "Feeds are listed by title",
+     "before": "Feed didaftar menurut judul",
+     "after": "Feed diurutkan menurut judul",
+     "why": "natural: didaftar reads as registered; the value means sorted by title"
+    },
+    {
+     "key": "Gesture pattern",
+     "id": "miscellaneousSettings.patternHeading",
+     "english": "Gesture pattern",
+     "before": "Pola gestur",
+     "after": "Pola gerakan",
+     "why": "term: Apple Indonesian calls a gesture gerakan (trackpad, AssistiveTouch)"
+    },
+    {
+     "key": "Gesture time window",
+     "id": "miscellaneousSettings.timeWindowLabel",
+     "english": "Gesture time window",
+     "before": "Jendela waktu gestur",
+     "after": "Jangka waktu gerakan",
+     "why": "meaning: Jendela is the app word for a window; jangka waktu as the explanation says; gerakan as Apple says"
+    },
+    {
+     "key": "Hold Shift while skipping to use a secondary skip amount.",
+     "id": "settings.shiftSkipExplanation",
+     "english": "Hold Shift while skipping to use a secondary skip amount.",
+     "before": "Tahan Shift saat melompati untuk memakai jumlah lompatan kedua.",
+     "after": "Tahan Shift saat melompat untuk memakai jumlah lompatan kedua.",
+     "why": "grammar: melompati needs an object; a skip in audio is melompat"
+    },
+    {
+     "key": "How long media commands are blocked after a Bluetooth device disconnects. Raise it if playback resumes after removing headphones.",
+     "id": "miscellaneousSettings.disconnectDelayExplanation",
+     "english": "How long media commands are blocked after a Bluetooth device disconnects. Raise it if playback resumes after removing headphones.",
+     "before": "Berapa lama perintah media diblokir setelah perangkat Bluetooth terputus. Naikkan jika pemutaran lanjut setelah headphone dilepas.",
+     "after": "Berapa lama perintah media diblokir setelah perangkat Bluetooth terputus. Naikkan jika pemutaran berlanjut setelah headphone dilepas.",
+     "why": "grammar: lanjut alone is colloquial; the verb is berlanjut"
+    },
+    {
+     "key": "If the file arrives from %@ later, it names the same library.",
+     "id": "libraryFileWait.confirmation.identity.arrives",
+     "english": "If the file arrives from %@ later, it names the same library.",
+     "before": "Jika file tiba dari %@ nanti, file itu menamai pustaka yang sama.",
+     "after": "Jika file tiba dari %@ nanti, file itu merujuk ke pustaka yang sama.",
+     "why": "meaning: menamai is to give a name; the file refers to the library"
+    },
+    {
+     "key": "It may be paused, signed out, or not running.",
+     "id": "bookCloudError.stalled.running",
+     "english": "It may be paused, signed out, or not running.",
+     "before": "Mungkin dijeda, sudah keluar, atau tidak berjalan.",
+     "after": "Mungkin dijeda, sudah keluar dari akun, atau tidak berjalan.",
+     "why": "meaning: keluar alone reads as quit; signed out is keluar dari akun"
+    },
+    {
+     "key": "Leading articles",
+     "id": "leadingArticle.pickerLabel",
+     "english": "Leading articles",
+     "before": "Artikel di awal",
+     "after": "Kata sandang di awal",
+     "why": "meaning: artikel is a news article in this app; The, A, and An are kata sandang"
+    },
+    {
+     "key": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "id": "miscellaneousSettings.patternExplanation",
+     "english": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "before": "Peristiwa kontrol media yang memicu pengulangan. Yang terakhir dikonsumsi, tidak diteruskan ke pemutaran, jadi tidak dapat memulai audio.",
+     "after": "Peristiwa kontrol media yang memicu mulai ulang. Yang terakhir ditahan dan tidak diteruskan ke pemutaran, jadi tidak dapat memulai audio.",
+     "why": "meaning: pengulangan is repetition, not a restart; dikonsumsi is a calque of consumed"
+    },
+    {
+     "key": "Most rows shown",
+     "id": "libraryViewEditor.limitFieldLabel",
+     "english": "Most rows shown",
+     "before": "Baris terbanyak yang ditampilkan",
+     "after": "Jumlah baris maksimum",
+     "why": "natural: Baris terbanyak reads as the rows with the most; the field is the largest number of rows"
+    },
+    {
+     "key": "Move \"%@\"",
+     "id": "librarySheet.moveTitle.named",
+     "english": "Move \"%@\"",
+     "before": "Pindahkan \"%@\"",
+     "after": "Pindahkan “%@”",
+     "why": "punctuation: curly quotes as the glossary sets"
+    },
+    {
+     "key": "Move Contents Out",
+     "id": "libraryList.moveContentsOut",
+     "english": "Move Contents Out",
+     "before": "Pindahkan Isi Keluar",
+     "after": "Pindahkan Isi ke Luar",
+     "why": "grammar: keluar is the verb to exit; the direction is ke luar"
+    },
+    {
+     "key": "Move Contents of \"%@\"",
+     "id": "librarySheet.moveContentsTitle",
+     "english": "Move Contents of \"%@\"",
+     "before": "Pindahkan Isi \"%@\"",
+     "after": "Pindahkan Isi “%@”",
+     "why": "punctuation: curly quotes as the glossary sets"
+    },
+    {
+     "key": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "id": "libraryComparison.newerCopySentence.differ",
+     "english": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "before": "Tidak ada yang memiliki posisi atau buku lebih baru yang tidak dimiliki salinan lain, tetapi keduanya berbeda dengan cara lain.",
+     "after": "Tidak ada salinan yang memiliki posisi lebih baru atau buku yang tidak dimiliki salinan lain, tetapi keduanya berbeda dalam hal lain.",
+     "why": "natural: lebih baru had joined books; berbeda dalam hal lain is the idiom for differ in other ways"
+    },
+    {
+     "key": "Not Within the Last",
+     "id": "libraryViewEditor.relationName.addedWithin.not",
+     "english": "Not Within the Last",
+     "before": "Tidak dalam",
+     "after": "Tidak Dalam",
+     "why": "natural: title case like its sibling items Dalam and Tidak Berisi"
+    },
+    {
+     "key": "Paste from Clipboard",
+     "id": "textInput.pasteFromClipboard",
+     "english": "Paste from Clipboard",
+     "before": "Tempel dari Clipboard",
+     "after": "Tempel dari Papan Klip",
+     "why": "term: Apple Indonesian calls the clipboard Papan Klip, as other strings here do"
+    },
+    {
+     "key": "Replaces the text with the text on the clipboard",
+     "id": "textInput.pasteHint",
+     "english": "Replaces the text with the text on the clipboard",
+     "before": "Mengganti teks dengan teks di clipboard.",
+     "after": "Mengganti teks dengan teks di papan klip.",
+     "why": "term: Apple Indonesian calls the clipboard papan klip, as other strings here do"
+    },
+    {
+     "key": "Restart Sleep Timer Gesture",
+     "id": "miscellaneousSettings.restartGestureHeader",
+     "english": "Restart Sleep Timer Gesture",
+     "before": "Gestur Mulai Ulang Timer Tidur",
+     "after": "Gerakan Mulai Ulang Timer Tidur",
+     "why": "term: Apple Indonesian calls a gesture gerakan (trackpad, AssistiveTouch)"
+    },
+    {
+     "key": "Results copied to the clipboard.",
+     "id": "libraryComparison.copiedSentence",
+     "english": "Results copied to the clipboard.",
+     "before": "Hasil disalin ke clipboard.",
+     "after": "Hasil disalin ke papan klip.",
+     "why": "term: Apple Indonesian calls the clipboard papan klip, as other strings here do"
+    },
+    {
+     "key": "Searches the entire library for books matching the selected criteria",
+     "id": "duplicateFinder.scanHint",
+     "english": "Searches the entire library for books matching the selected criteria",
+     "before": "Mencari di seluruh pustaka buku yang cocok dengan kriteria terpilih.",
+     "after": "Mencari buku yang cocok dengan kriteria terpilih di seluruh pustaka.",
+     "why": "natural: seluruh pustaka buku read as the whole book library; the place now ends the sentence"
+    },
+    {
+     "key": "Show Always",
+     "id": "libraryViewsSettings.showAction.always",
+     "english": "Show Always",
+     "before": "Tampilkan Selalu",
+     "after": "Selalu Tampilkan",
+     "why": "natural: Indonesian puts selalu before the verb"
+    },
+    {
+     "key": "Some files of “%@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %@ again.",
+     "id": "refusal.sentence.filesInCloud",
+     "english": "Some files of “%1$@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %2$@ again.",
+     "before": "Beberapa file “%@” hanya ada di cloud, dan menggantinya sekarang akan meninggalkannya. Unduh buku, lalu pilih %@ lagi.",
+     "after": "Beberapa file “%@” hanya ada di cloud, dan jika buku diganti sekarang, file itu akan tertinggal. Unduh buku, lalu pilih %@ lagi.",
+     "why": "natural: two -nya made it unclear what leaves what behind"
+    },
+    {
+     "key": "Still comparing: %lld seconds so far. Press Escape to stop.",
+     "id": "libraryComparison.progressSentence",
+     "english": {
+      "one": "Still comparing: %lld second so far. Press Escape to stop.",
+      "other": "Still comparing: %lld seconds so far. Press Escape to stop."
+     },
+     "before": {
+      "other": "Masih membandingkan: sejauh ini %lld detik. Tekan Escape untuk menghentikan."
+     },
+     "after": {
+      "other": "Masih membandingkan: sejauh ini %lld detik. Tekan Escape untuk menghentikannya."
+     },
+     "why": "grammar: menghentikan needs an object"
+    },
+    {
+     "key": "Stops playback resuming when headphones disconnect",
+     "id": "miscellaneousSettings.bluetoothHint",
+     "english": "Stops playback resuming when headphones disconnect",
+     "before": "Menghentikan pemutaran yang berlanjut saat headphone terputus.",
+     "after": "Mencegah pemutaran berlanjut sendiri saat headphone terputus.",
+     "why": "meaning: the old hint stopped playback that goes on; the switch prevents playback from resuming"
+    },
+    {
+     "key": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "id": "libraryCloud.letGoOfOneBookFirst",
+     "english": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "before": "Keluarkan dari daftar bacaan, atau kosongkan %@ di opsi Daftar Bacaan dulu.",
+     "after": "Keluarkan dari daftar bacaan, atau matikan %@ di opsi Daftar Bacaan dulu.",
+     "why": "meaning: %@ is an option, so clear is to switch it off, not kosongkan (empty)"
+    },
+    {
+     "key": "TextMouth is already moving its data directory.",
+     "id": "storageBusyError.movingDataDirectory.already",
+     "english": "TextMouth is already moving its data directory.",
+     "before": "TextMouth sudah memindahkan folder datanya.",
+     "after": "TextMouth sedang memindahkan folder datanya.",
+     "why": "meaning: sudah memindahkan says the move is done; it is still under way"
+    },
+    {
+     "key": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "id": "brailleCode.translatedAgainNote",
+     "english": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "before": "Braille diterjemahkan ke cetak lagi dengan kode ini. Tidak ada yang memeriksa apakah ini pilihan yang benar. Jika kata terbaca salah, pilih yang lain.",
+     "after": "Braille diterjemahkan ulang ke teks cetak dengan kode ini. Tidak ada yang memeriksa apakah ini pilihan yang benar. Jika kata terbaca salah, pilih yang lain.",
+     "why": "natural: ke cetak alone is not a noun for print text"
+    },
+    {
+     "key": "The clipboard has no text to paste, so the text is unchanged.",
+     "id": "textImportPolicy.noClipboardText.unchanged",
+     "english": "The clipboard has no text to paste, so the text is unchanged.",
+     "before": "Clipboard tidak berisi teks untuk ditempel, jadi teks tidak berubah.",
+     "after": "Papan klip tidak berisi teks untuk ditempel, jadi teks tidak berubah.",
+     "why": "term: Apple Indonesian calls the clipboard papan klip, as other strings here do"
+    },
+    {
+     "key": "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.",
+     "id": "miscellaneousSettings.timeWindowExplanation",
+     "english": "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.",
+     "before": "Waktu terlama yang boleh dipakai seluruh urutan. Jendela yang lebih pendek berarti lebih sedikit kecocokan tidak sengaja tetapi penekanan harus lebih cepat.",
+     "after": "Waktu terlama yang boleh dipakai seluruh urutan. Jangka waktu yang lebih pendek berarti lebih sedikit kecocokan tidak sengaja, tetapi penekanan harus lebih cepat.",
+     "why": "meaning: Jendela is the app word for a window; jangka waktu as the explanation of the setting says"
+    },
+    {
+     "key": "The view is first in the list.",
+     "id": "libraryViewsSettings.firstInListHint",
+     "english": "The view is first in the list.",
+     "before": "Tampilan ini pertama dalam daftar.",
+     "after": "Tampilan ini berada di urutan pertama dalam daftar.",
+     "why": "grammar: pertama cannot stand as the predicate alone"
+    },
+    {
+     "key": "The view is last in the list.",
+     "id": "libraryViewsSettings.lastInListHint",
+     "english": "The view is last in the list.",
+     "before": "Tampilan ini terakhir dalam daftar.",
+     "after": "Tampilan ini berada di urutan terakhir dalam daftar.",
+     "why": "grammar: terakhir cannot stand as the predicate alone"
+    },
+    {
+     "key": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.thenLetGoOfOneBook",
+     "english": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Lalu keluarkan dari daftar bacaan, atau kosongkan %@ di opsi Daftar Bacaan.",
+     "after": "Lalu keluarkan dari daftar bacaan, atau matikan %@ di opsi Daftar Bacaan.",
+     "why": "meaning: %@ is an option, so clear is to switch it off, not kosongkan (empty)"
+    },
+    {
+     "key": "Time window",
+     "id": "miscellaneousSettings.timeWindowTitle",
+     "english": "Time window",
+     "before": "Jendela waktu",
+     "after": "Jangka waktu",
+     "why": "meaning: Jendela is the app word for a window; jangka waktu as the explanation of the setting says"
+    },
+    {
+     "key": "Time window: %@",
+     "id": "miscellaneousSettings.timeWindowText",
+     "english": "Time window: %@",
+     "before": "Jendela waktu: %@",
+     "after": "Jangka waktu: %@",
+     "why": "meaning: Jendela is the app word for a window; jangka waktu as the explanation of the setting says"
+    },
+    {
+     "key": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.howToLetGo.reading",
+     "english": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Untuk melepasnya, keluarkan dari daftar bacaan, atau kosongkan %@ di opsi Daftar Bacaan.",
+     "after": "Untuk melepasnya, keluarkan dari daftar bacaan, atau matikan %@ di opsi Daftar Bacaan.",
+     "why": "meaning: %@ is an option, so clear is to switch it off, not kosongkan (empty)"
+    },
+    {
+     "key": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.howToLetGo.them",
+     "english": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Untuk melepasnya, keluarkan dari daftar bacaan, atau kosongkan %@ di opsi Daftar Bacaan.",
+     "after": "Untuk melepasnya, keluarkan dari daftar bacaan, atau matikan %@ di opsi Daftar Bacaan.",
+     "why": "meaning: %@ is an option, so clear is to switch it off, not kosongkan (empty)"
+    },
+    {
+     "key": "Type to search the book's transcript",
+     "id": "bookSearch.transcriptFieldHint",
+     "english": "Type to search the book's transcript",
+     "before": "Mengetik untuk mencari di transkrip buku.",
+     "after": "Mencari di transkrip buku saat Anda mengetik.",
+     "why": "natural: Mengetik untuk mencari had the field doing the typing; the hint now says the result"
+    },
+    {
+     "key": "Type to search the text of every book in the library",
+     "id": "librarySearch.fieldHint",
+     "english": "Type to search the text of every book in the library",
+     "before": "Mengetik untuk mencari teks setiap buku di pustaka.",
+     "after": "Mencari teks setiap buku di pustaka saat Anda mengetik.",
+     "why": "natural: Mengetik untuk mencari had the field doing the typing; the hint now says the result"
+    },
+    {
+     "key": "Type to search within the book",
+     "id": "bookSearch.fieldHint",
+     "english": "Type to search within the book",
+     "before": "Mengetik untuk mencari di dalam buku.",
+     "after": "Mencari di dalam buku saat Anda mengetik.",
+     "why": "natural: Mengetik untuk mencari had the field doing the typing; the hint now says the result"
+    },
+    {
+     "key": "Unread: %@ wasn't asked for again, because the drive hasn't answered an earlier read, %@",
+     "id": "libraryComparison.sentence.stillBeingFetched",
+     "english": "Unread: %1$@ wasn't asked for again, because the drive hasn't answered an earlier read, %2$@",
+     "before": "Tidak terbaca: %@ tidak diminta lagi, karena drive belum menjawab pembacaan sebelumnya, %@",
+     "after": "Tidak terbaca: %@ tidak diminta lagi, karena drive belum merespons pembacaan sebelumnya, %@",
+     "why": "natural: a drive merespons, it does not menjawab"
+    },
+    {
+     "key": "What happens when a book finishes playing",
+     "id": "settings.endOfBookHint",
+     "english": "What happens when a book finishes playing",
+     "before": "Apa yang terjadi saat buku selesai diputar.",
+     "after": "Memilih apa yang terjadi saat buku selesai diputar.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence that starts with a verb"
+    },
+    {
+     "key": "What happens when you hold Shift and skip backward",
+     "id": "settings.shiftSkipBackwardHint",
+     "english": "What happens when you hold Shift and skip backward",
+     "before": "Apa yang terjadi saat Anda menahan Shift dan melompat mundur.",
+     "after": "Memilih apa yang terjadi saat Anda menahan Shift dan melompat mundur.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence that starts with a verb"
+    },
+    {
+     "key": "What happens when you hold Shift and skip forward",
+     "id": "settings.shiftSkipForwardHint",
+     "english": "What happens when you hold Shift and skip forward",
+     "before": "Apa yang terjadi saat Anda menahan Shift dan melompat maju.",
+     "after": "Memilih apa yang terjadi saat Anda menahan Shift dan melompat maju.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence that starts with a verb"
+    },
+    {
+     "key": "What happens when you skip backward",
+     "id": "settings.skipBackwardHint",
+     "english": "What happens when you skip backward",
+     "before": "Apa yang terjadi saat Anda melompat mundur.",
+     "after": "Memilih apa yang terjadi saat Anda melompat mundur.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence that starts with a verb"
+    },
+    {
+     "key": "What happens when you skip forward",
+     "id": "settings.skipForwardHint",
+     "english": "What happens when you skip forward",
+     "before": "Apa yang terjadi saat Anda melompat maju.",
+     "after": "Memilih apa yang terjadi saat Anda melompat maju.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence that starts with a verb"
+    },
+    {
+     "key": "What to do with the original file after importing a book",
+     "id": "storageSettings.originalFileHint",
+     "english": "What to do with the original file after importing a book",
+     "before": "Apa yang dilakukan dengan file asli setelah mengimpor buku.",
+     "after": "Memilih apa yang dilakukan pada file asli setelah buku diimpor.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence that starts with a verb"
+    },
+    {
+     "key": "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The.",
+     "id": "leadingArticle.languagesNote.portuguese",
+     "english": "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The.",
+     "before": "Saat artikel diabaikan, buku yang metadatanya menyebut bahasa Prancis, Jerman, Spanyol, Italia, Portugis, Belanda, Katalan, Swedia, Denmark, atau Norwegia melewati artikel bahasa itu, seperti Le dan Die, dan The.",
+     "after": "Saat kata sandang diabaikan, buku yang metadatanya menyebut bahasa Prancis, Jerman, Spanyol, Italia, Portugis, Belanda, Katalan, Swedia, Denmark, atau Norwegia mengabaikan kata sandang bahasa itu, seperti Le dan Die, serta The.",
+     "why": "meaning: artikel is a news article in this app; The, Le, and Die are kata sandang"
+    },
+    {
+     "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "id": "textEncoding.placesSentence.whereNoneTheirWords",
+     "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Jika tidak ada kata mereka yang tersisa, %@, masing-masing berpindah ke titik yang kira-kira sama di babnya, atau ke bagian terdekat yang sama dalam kedua pembacaan.",
+     "after": "Jika kata-katanya tidak tersisa lagi, %@, masing-masing berpindah ke titik yang kira-kira sama di babnya, atau ke bagian terdekat yang ada di kedua pembacaan.",
+     "why": "grammar: mereka is said of people; the place and bookmarks take -nya"
+    },
+    {
+     "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "id": "textEncoding.placesSentence.whereNoneTheir",
+     "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Jika tidak ada kata mereka yang tersisa, masing-masing berpindah ke titik yang kira-kira sama di babnya, atau ke bagian terdekat yang sama dalam kedua pembacaan.",
+     "after": "Jika kata-katanya tidak tersisa lagi, masing-masing berpindah ke titik yang kira-kira sama di babnya, atau ke bagian terdekat yang ada di kedua pembacaan.",
+     "why": "grammar: mereka is said of people; the place and bookmarks take -nya"
+    },
+    {
+     "key": "While TextMouth was copying its data, %@ was changed to lead to %@ instead of %@.",
+     "id": "dataDirectoryDestinationChange.redirected",
+     "english": "While TextMouth was copying its data, %1$@ was changed to lead to %2$@ instead of %3$@.",
+     "before": "Saat TextMouth menyalin datanya, %1$@ diubah mengarah ke %2$@ bukan %3$@.",
+     "after": "Saat TextMouth menyalin datanya, %1$@ diubah sehingga mengarah ke %2$@, bukan ke %3$@.",
+     "why": "grammar: diubah mengarah lacked sehingga, and bukan needs its comma"
+    },
+    {
+     "key": "With Move Contents Out, the feed's folder moves with the rest.",
+     "id": "folderRemoval.feedsChoiceSentences.moves",
+     "english": "With Move Contents Out, the feed's folder moves with the rest.",
+     "before": "Dengan Pindahkan Isi Keluar, folder feed ikut dipindahkan bersama yang lain.",
+     "after": "Dengan Pindahkan Isi ke Luar, folder feed ikut dipindahkan bersama yang lain.",
+     "why": "term: names the button by its fixed text Pindahkan Isi ke Luar"
+    },
+    {
+     "key": "With Move Contents Out, their folders move with the rest.",
+     "id": "folderRemoval.feedsChoiceSentences.contents",
+     "english": "With Move Contents Out, their folders move with the rest.",
+     "before": "Dengan Pindahkan Isi Keluar, folder mereka ikut dipindahkan bersama yang lain.",
+     "after": "Dengan Pindahkan Isi ke Luar, folder feed tersebut ikut dipindahkan bersama yang lain.",
+     "why": "term: names the button by its fixed text Pindahkan Isi ke Luar; mereka is said of people"
+    },
+    {
+     "key": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "id": "folderRemoval.choiceMessage.contents",
+     "english": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "before": "Dengan Pindahkan Isi Keluar, semuanya tetap berada di pustaka dan hanya folder yang dihapus.",
+     "after": "Dengan Pindahkan Isi ke Luar, semuanya tetap berada di pustaka dan hanya folder yang dihapus.",
+     "why": "term: names the button by its fixed text Pindahkan Isi ke Luar"
+    },
+    {
+     "key": "You can open and read books, and reading positions are still saved with each book, but changes to the library itself are not saved until you choose one of the options below.",
+     "id": "libraryIndexRecovery.summary.positions",
+     "english": "You can open and read books, and reading positions are still saved with each book, but changes to the library itself are not saved until you choose one of the options below.",
+     "before": "Anda dapat membuka dan membaca buku, dan posisi baca tetap disimpan di setiap buku, tetapi perubahan pada pustaka sendiri tidak disimpan sampai Anda memilih salah satu opsi di bawah.",
+     "after": "Anda dapat membuka dan membaca buku, dan posisi baca tetap disimpan di setiap buku, tetapi perubahan pada pustaka itu sendiri tidak disimpan sampai Anda memilih salah satu opsi di bawah.",
+     "why": "meaning: pustaka sendiri reads as your own library; the library itself is pustaka itu sendiri"
+    },
+    {
+     "key": "iCloud Drive may be turned off or signed out, or this Mac may be offline. Check that, then choose Try Again.",
+     "id": "dataDirectoryUnavailability.whatToCheck.offline",
+     "english": "iCloud Drive may be turned off or signed out, or this Mac may be offline. Check that, then choose Try Again.",
+     "before": "iCloud Drive mungkin dimatikan atau keluar, atau Mac ini mungkin offline. Periksa itu, lalu pilih Coba Lagi.",
+     "after": "iCloud Drive mungkin dimatikan atau Anda sudah keluar dari iCloud, atau Mac ini mungkin offline. Periksa hal itu, lalu pilih Coba Lagi.",
+     "why": "meaning: keluar alone said iCloud Drive quit; signed out is keluar dari iCloud"
+    },
+    {
+     "key": "iCloud Drive may be turned off or signed out.",
+     "id": "dataDirectoryUnavailability.likelyCause.icloud",
+     "english": "iCloud Drive may be turned off or signed out.",
+     "before": "iCloud Drive mungkin dimatikan atau keluar.",
+     "after": "iCloud Drive mungkin dimatikan atau Anda sudah keluar dari iCloud.",
+     "why": "meaning: keluar alone said iCloud Drive quit; signed out is keluar dari iCloud"
+    },
+    {
+     "key": "so nothing in %@ was compared.",
+     "id": "libraryComparison.sentence.libraryIndex.compared",
+     "english": "so nothing in %@ was compared.",
+     "before": "sehingga tidak ada yang di %@ dibandingkan.",
+     "after": "sehingga tidak ada apa pun di %@ yang dibandingkan.",
+     "why": "grammar: the relative clause was split around the place"
+    }
+   ]
+  },
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ are in your library, unsubscribed. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "id": "feed.importFoundUnsubscribed",
+     "english": "%1$@ are in your library, unsubscribed. Choose %2$@ on a feed's row, or in its %3$@, to check it again.",
+     "before": "%1$@ ada di pustaka Anda, tetapi tidak berlangganan. Pilih %2$@ pada baris feed, atau di %3$@, untuk memeriksanya lagi.",
+     "after": "%1$@ ada di pustaka Anda, tetapi tidak lagi dilanggan. Pilih %2$@ pada baris feed, atau di %3$@, untuk memeriksanya lagi.",
+     "why": "grammar: a feed is subscribed to, not a subscriber; tidak berlangganan made the feed the one subscribing"
+    },
+    {
+     "key": "%@ couldn't send the feed (error %@). Try again later.",
+     "id": "feedFetchError.message.serverError",
+     "english": "%1$@ couldn't send the feed (error %2$@). Try again later.",
+     "before": "%1$@ tidak dapat mengirim feed (galat %2$@). Coba lagi nanti.",
+     "after": "%1$@ tidak dapat mengirim feed (kesalahan %2$@). Coba lagi nanti.",
+     "why": "term: Apple and the rest of this catalog say kesalahan for error; galat is used nowhere else"
+    },
+    {
+     "key": "%@ couldn't send the file (error %@). Try again later.",
+     "id": "feedFetchError.downloadMessage.serverError",
+     "english": "%1$@ couldn't send the file (error %2$@). Try again later.",
+     "before": "%1$@ tidak dapat mengirim file (galat %2$@). Coba lagi nanti.",
+     "after": "%1$@ tidak dapat mengirim file (kesalahan %2$@). Coba lagi nanti.",
+     "why": "term: Apple and the rest of this catalog say kesalahan for error; galat is used nowhere else"
+    },
+    {
+     "key": "%@ didn't answer for %lld seconds.",
+     "id": "feedFetchError.didntAnswerSeconds",
+     "english": {
+      "one": "%@ didn't answer for %lld second.",
+      "other": "%@ didn't answer for %lld seconds."
+     },
+     "before": {
+      "other": "%@ tidak menjawab selama %lld detik."
+     },
+     "after": {
+      "other": "%@ tidak merespons selama %lld detik."
+     },
+     "why": "natural: a server that times out tidak merespons; menjawab is a person answering"
+    },
+    {
+     "key": "%@ is in your library, unsubscribed. Choose %@ on its row, or in its %@, to check it again.",
+     "id": "feedSubscribeError.message.unsubscribedAlready",
+     "english": "%1$@ is in your library, unsubscribed. Choose %2$@ on its row, or in its %3$@, to check it again.",
+     "before": "%1$@ ada di pustaka Anda, tetapi tidak berlangganan. Pilih %2$@ pada barisnya, atau di %3$@, untuk memeriksanya lagi.",
+     "after": "%1$@ ada di pustaka Anda, tetapi tidak lagi dilanggan. Pilih %2$@ pada barisnya, atau di %3$@, untuk memeriksanya lagi.",
+     "why": "grammar: a feed is subscribed to, not a subscriber; tidak berlangganan made the feed the one subscribing"
+    },
+    {
+     "key": "%@ is unsubscribed, so TextMouth doesn't check it. Choose %@ to check it again.",
+     "id": "feed.notChecked",
+     "english": "%1$@ is unsubscribed, so TextMouth doesn't check it. Choose %2$@ to check it again.",
+     "before": "%1$@ tidak berlangganan, jadi TextMouth tidak memeriksanya. Pilih %2$@ untuk memeriksanya lagi.",
+     "after": "%1$@ tidak lagi dilanggan, jadi TextMouth tidak memeriksanya. Pilih %2$@ untuk memeriksanya lagi.",
+     "why": "grammar: a feed is subscribed to, not a subscriber; tidak berlangganan made the feed the one subscribing"
+    },
+    {
+     "key": "%@ plays sections that are stretches of its tracks, so its tracks can't be edited yet.",
+     "id": "audioEditor.sectionsNotEditable",
+     "english": "%@ plays sections that are stretches of its tracks, so its tracks can't be edited yet.",
+     "before": "%@ memutar bagian yang merupakan potongan dari trek-nya, sehingga trek-nya belum dapat diedit.",
+     "after": "%@ memutar bagian yang merupakan potongan dari treknya, sehingga treknya belum dapat diedit.",
+     "why": "punctuation: trek is an Indonesian word, so -nya joins it without a hyphen"
+    },
+    {
+     "key": "%@ waits for a network without data limits to refresh by itself.",
+     "id": "feedFetchError.message.constrainedNetwork",
+     "english": "%@ waits for a network without data limits to refresh by itself.",
+     "before": "%@ menunggu jaringan tanpa batas data untuk menyegarkan sendiri.",
+     "after": "%@ menunggu jaringan tanpa batas data untuk menyegarkan secara otomatis.",
+     "why": "natural: menyegarkan sendiri reads as refreshing oneself; by itself here means automatically"
+    },
+    {
+     "key": "%lld edits are undone. Redo brings them back until you make another edit.",
+     "id": "audioEditor.revertExplanation.another",
+     "english": {
+      "one": "%lld edit is undone. Redo brings them back until you make another edit.",
+      "other": "%lld edits are undone. Redo brings them back until you make another edit."
+     },
+     "before": {
+      "other": "%lld edit diurungkan. Ulangi mengembalikannya sampai Anda melakukan edit lain."
+     },
+     "after": {
+      "other": "%lld edit diurungkan. Pilih Ulangi untuk mengembalikannya sebelum Anda melakukan edit lain."
+     },
+     "why": "natural: Ulangi as a subject reads as the command Repeat; the sentence says choosing Redo brings the edits back"
+    },
+    {
+     "key": "%lld were subscribed already.",
+     "id": "opmlImportSummary.sentence.already",
+     "english": {
+      "one": "%lld was subscribed already.",
+      "other": "%lld were subscribed already."
+     },
+     "before": {
+      "other": "%lld sudah berlangganan."
+     },
+     "after": {
+      "other": "%lld sudah dilanggan."
+     },
+     "why": "grammar: the feeds were already subscribed to; sudah berlangganan made them the subscribers"
+    },
+    {
+     "key": "Checks this feed again from now on, and at once",
+     "id": "feed.resubscribeHint",
+     "english": "Checks this feed again from now on, and at once",
+     "before": "Memeriksa feed ini lagi mulai sekarang, dan langsung saat ini.",
+     "after": "Memeriksa feed ini lagi mulai sekarang, dan langsung memeriksanya.",
+     "why": "natural: dan langsung saat ini dangled without a verb; at once means it checks the feed right away"
+    },
+    {
+     "key": "Close it",
+     "id": "feedBookUse.remedy.openInReader",
+     "english": "Close it",
+     "before": "Tutup",
+     "after": "Tutup bukunya",
+     "why": "natural: a bare Tutup reads as the Close button; the request needs its object, the book"
+    },
+    {
+     "key": "Converting %@ failed (the converter ended with code %@).",
+     "id": "failure.processFailed",
+     "english": "Converting %1$@ failed (the converter ended with code %2$@).",
+     "before": "Mengonversi %1$@ gagal (konverter berakhir dengan kode %2$@).",
+     "after": "Gagal mengonversi %1$@ (konverter berakhir dengan kode %2$@).",
+     "why": "natural: Indonesian puts gagal first; Mengonversi X gagal copies the English order"
+    },
+    {
+     "key": "Elapsed",
+     "id": "recording.elapsedLabel",
+     "english": "Elapsed",
+     "before": "Berlalu",
+     "after": "Waktu berlalu",
+     "why": "natural: a bare Berlalu reads as the verb passed; the label names the time elapsed"
+    },
+    {
+     "key": "Elapsed: %@",
+     "id": "transcription.elapsedLine",
+     "english": "Elapsed: %@",
+     "before": "Berlalu: %@",
+     "after": "Waktu berlalu: %@",
+     "why": "natural: a bare Berlalu reads as the verb passed; the label names the time elapsed"
+    },
+    {
+     "key": "Every article listed, downloads by hand",
+     "id": "feed.itemPolicyTitle.byHandArticle",
+     "english": "Every article listed, downloads by hand",
+     "before": "Semua artikel tercantum, unduh manual",
+     "after": "Semua artikel tercantum, diunduh manual",
+     "why": "natural: unduh manual reads as a command; the choice names a state, as its sibling %lld terbaru diunduh does"
+    },
+    {
+     "key": "Every episode listed, downloads by hand",
+     "id": "feed.itemPolicyTitle.byHandEpisode",
+     "english": "Every episode listed, downloads by hand",
+     "before": "Semua episode tercantum, unduh manual",
+     "after": "Semua episode tercantum, diunduh manual",
+     "why": "natural: unduh manual reads as a command; the choice names a state, as its sibling %lld terbaru diunduh does"
+    },
+    {
+     "key": "Every feed is unsubscribed, so none was checked. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "id": "feed.everyFeedUnsubscribed",
+     "english": "Every feed is unsubscribed, so none was checked. Choose %1$@ on a feed's row, or in its %2$@, to check it again.",
+     "before": "Semua feed tidak berlangganan, jadi tidak ada yang diperiksa. Pilih %1$@ pada baris feed, atau di %2$@-nya, untuk memeriksanya lagi.",
+     "after": "Semua feed tidak lagi dilanggan, jadi tidak ada yang diperiksa. Pilih %1$@ pada baris feed, atau di %2$@-nya, untuk memeriksanya lagi.",
+     "why": "grammar: a feed is subscribed to, not a subscriber; tidak berlangganan made the feed the one subscribing"
+    },
+    {
+     "key": "Every item listed, downloads by hand",
+     "id": "feed.itemPolicyTitle.byHandItem",
+     "english": "Every item listed, downloads by hand",
+     "before": "Semua item tercantum, unduh manual",
+     "after": "Semua item tercantum, diunduh manual",
+     "why": "natural: unduh manual reads as a command; the choice names a state, as its sibling %lld terbaru diunduh does"
+    },
+    {
+     "key": "Inserted %@ of new recording, which is selected.",
+     "id": "audioEditor.recordingInserted",
+     "english": "Inserted %@ of new recording, which is selected.",
+     "before": "Rekaman baru berdurasi %@ disisipkan, dan sedang dipilih.",
+     "after": "Rekaman baru berdurasi %@ disisipkan dan kini terpilih.",
+     "why": "meaning: sedang dipilih says it is being chosen; the new recording is now selected"
+    },
+    {
+     "key": "It",
+     "id": "feedDownloadInUseError.errorDescription",
+     "english": "It",
+     "before": "Itu",
+     "after": "Buku ini",
+     "why": "natural: a bare Itu as a sentence subject reads oddly; the note says it is always the book"
+    },
+    {
+     "key": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "id": "feedItemPackageError.staysInItsFeed",
+     "english": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "before": "Ini milik feed-nya selama masih diunduh. %@ membuang file-nya dan mempertahankan posisi serta markahnya.",
+     "after": "Ini milik feed-nya selama masih berupa unduhan. %@ membuang file-nya dan mempertahankan posisi serta markahnya.",
+     "why": "meaning: selama masih diunduh reads as while it is still downloading; it means while it is a download"
+    },
+    {
+     "key": "Its %@ are kept for when you download it again.",
+     "id": "keptParts.keptForRedownloadSentence.valueWhen",
+     "english": "Its %@ are kept for when you download it again.",
+     "before": "%@ disimpan untuk saat Anda mengunduhnya lagi.",
+     "after": "%@ disimpan untuk dipakai saat Anda mengunduhnya lagi.",
+     "why": "natural: untuk saat Anda copies the English for when; kept to be used when reads as Indonesian"
+    },
+    {
+     "key": "Its %@ is kept for when you download it again.",
+     "id": "keptParts.keptForRedownloadSentence.value",
+     "english": "Its %@ is kept for when you download it again.",
+     "before": "%@ disimpan untuk saat Anda mengunduhnya lagi.",
+     "after": "%@ disimpan untuk dipakai saat Anda mengunduhnya lagi.",
+     "why": "natural: untuk saat Anda copies the English for when; kept to be used when reads as Indonesian"
+    },
+    {
+     "key": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "id": "cueSheet.timesPastAudio",
+     "english": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "before": "Trek-nya melewati akhir audio yang disebutkan, jadi file ini dibuat untuk salinan audio yang lain.",
+     "after": "Treknya melewati akhir audio yang disebutkan, jadi file ini dibuat untuk salinan audio yang lain.",
+     "why": "punctuation: trek is an Indonesian word, so -nya joins it without a hyphen"
+    },
+    {
+     "key": "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "id": "feed.everyListedDownloadsByHand.article",
+     "english": "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Mencantumkan setiap artikel; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau hari setelah diputarnya berlalu.",
+     "after": "Mencantumkan setiap artikel; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau batas harinya setelah diputar terlewati.",
+     "why": "natural: hari setelah diputarnya reads as the day after it played it; batas harinya names the setting of days"
+    },
+    {
+     "key": "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "id": "feed.everyListedDownloadsByHand.episodeArticle",
+     "english": "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Mencantumkan setiap episode dan artikel; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau hari setelah diputarnya berlalu.",
+     "after": "Mencantumkan setiap episode dan artikel; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau batas harinya setelah diputar terlewati.",
+     "why": "natural: hari setelah diputarnya reads as the day after it played it; batas harinya names the setting of days"
+    },
+    {
+     "key": "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "id": "feed.everyListedDownloadsByHand.episodeDownload",
+     "english": "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Mencantumkan setiap episode; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau hari setelah diputarnya berlalu.",
+     "after": "Mencantumkan setiap episode; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau batas harinya setelah diputar terlewati.",
+     "why": "natural: hari setelah diputarnya reads as the day after it played it; batas harinya names the setting of days"
+    },
+    {
+     "key": "No markers yet. Add Marker drops one at the cursor.",
+     "id": "audioEditor.noMarkers",
+     "english": "No markers yet. Add Marker drops one at the cursor.",
+     "before": "Belum ada penanda. Tambah Penanda menaruh satu di posisi kursor.",
+     "after": "Belum ada penanda. Pilih Tambah Penanda untuk memasang satu di posisi kursor.",
+     "why": "natural: a one-word command name as the subject reads as the command itself; the sentence says what choosing it does"
+    },
+    {
+     "key": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "id": "audioEditor.revertNoOriginal",
+     "english": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "before": "Audio asli tidak disimpan, sehingga tidak dapat dikembalikan ke semula. Urungkan menarik kembali edit sejak penyimpanan terakhir.",
+     "after": "Audio asli tidak disimpan, sehingga tidak dapat dikembalikan ke semula. Pilih Urungkan untuk menarik kembali edit sejak penyimpanan terakhir.",
+     "why": "natural: a one-word command name as the subject reads as the command itself; the sentence says what choosing it does"
+    },
+    {
+     "key": "Not Now",
+     "id": "transcription.offerNotNowTitle",
+     "english": "Not Now",
+     "before": "Nanti Saja",
+     "after": "Jangan Sekarang",
+     "why": "term: Apple names the Not Now button Jangan Sekarang"
+    },
+    {
+     "key": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "id": "audioEditor.closeExplanation",
+     "english": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "before": "Belum ada di audio buku. Buang mengurungkannya; saat Anda mengedit buku ini lagi, Ulangi mengembalikannya sampai Anda melakukan edit lain.",
+     "after": "Belum ada di audio buku. Pilih Buang untuk mengurungkannya; saat Anda mengedit buku ini lagi, pilih Ulangi untuk mengembalikannya sebelum Anda melakukan edit lain.",
+     "why": "natural: a one-word command name as the subject reads as the command itself; the sentence says what choosing it does"
+    },
+    {
+     "key": "Put the feed's folder in",
+     "id": "feed.folderCaption",
+     "english": "Put the feed's folder in",
+     "before": "Taruh folder feed di",
+     "after": "Tempatkan folder feed di",
+     "why": "register: taruh is casual speech; Apple-style captions say tempatkan"
+    },
+    {
+     "key": "Put the feeds' folders in",
+     "id": "feed.importFolderCaption",
+     "english": "Put the feeds' folders in",
+     "before": "Taruh folder feed di",
+     "after": "Tempatkan folder feed di",
+     "why": "register: taruh is casual speech; Apple-style captions say tempatkan"
+    },
+    {
+     "key": "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list.",
+     "id": "importDecisionChoice.replaceExistingAcrossKinds",
+     "english": "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list.",
+     "before": "Menaruh salinan baru menggantikan yang sudah ada di pustaka, dengan hanya mempertahankan folder dan posisi salinan yang ada di Daftar Bacaan.",
+     "after": "Mengganti salinan yang sudah ada di pustaka dengan salinan baru, dan hanya mempertahankan folder serta posisi salinan yang ada di Daftar Bacaan.",
+     "why": "natural: menaruh X menggantikan Y copies puts X in place of Y; Indonesian says mengganti Y dengan X"
+    },
+    {
+     "key": "Puts the new copy in place of the one already in the library, keeping the existing copy's reading position, bookmarks, and settings.",
+     "id": "importDecisionChoice.replaceExisting",
+     "english": "Puts the new copy in place of the one already in the library, keeping the existing copy's reading position, bookmarks, and settings.",
+     "before": "Menaruh salinan baru menggantikan yang sudah ada di pustaka, dengan mempertahankan posisi baca, markah, dan pengaturan salinan yang ada.",
+     "after": "Mengganti salinan yang sudah ada di pustaka dengan salinan baru, dan mempertahankan posisi baca, markah, serta pengaturan salinan yang ada.",
+     "why": "natural: menaruh X menggantikan Y copies puts X in place of Y; Indonesian says mengganti Y dengan X"
+    },
+    {
+     "key": "Recording over %@ at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "id": "audioEditor.punchInStarting.over",
+     "english": "Recording over %1$@ at %2$@, from %3$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "Merekam menimpa %1$@ pada %2$@, dari %3$@, setelah bunyi bip. Rekam Menimpa atau Berhenti mengakhirinya; Kosongkan Pilihan membuangnya.",
+     "after": "Merekam menimpa %1$@ pada %2$@, dari %3$@, setelah bunyi bip. Rekam Menimpa atau Berhenti untuk mengakhirinya; Kosongkan Pilihan untuk membuangnya.",
+     "why": "natural: Berhenti mengakhirinya reads as stop ending it; X untuk Y names each command and what it does"
+    },
+    {
+     "key": "Recording to insert at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "id": "audioEditor.punchInStarting.insert",
+     "english": "Recording to insert at %1$@, from %2$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "Merekam untuk disisipkan pada %1$@, dari %2$@, setelah bunyi bip. Rekam Menimpa atau Berhenti mengakhirinya; Kosongkan Pilihan membuangnya.",
+     "after": "Merekam untuk disisipkan pada %1$@, dari %2$@, setelah bunyi bip. Rekam Menimpa atau Berhenti untuk mengakhirinya; Kosongkan Pilihan untuk membuangnya.",
+     "why": "natural: Berhenti mengakhirinya reads as stop ending it; X untuk Y names each command and what it does"
+    },
+    {
+     "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "id": "audioEditor.explanation.editorPunchIn",
+     "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "before": "Merekam menimpa pilihan, atau di posisi kursor, setelah bunyi bip. Tekan lagi, atau Berhenti, untuk mengakhirinya.",
+     "after": "Merekam menimpa pilihan, atau di posisi kursor, setelah bunyi bip. Pilih lagi, atau Berhenti, untuk mengakhirinya.",
+     "why": "voiceover: tekan names a press; the English says choosing it again, or Stop, ends it"
+    },
+    {
+     "key": "Replaced %@ with %@ of new recording, which is selected.",
+     "id": "audioEditor.punchedIn",
+     "english": "Replaced %1$@ with %2$@ of new recording, which is selected.",
+     "before": "%1$@ diganti dengan rekaman baru berdurasi %2$@, dan sedang dipilih.",
+     "after": "%1$@ diganti dengan rekaman baru berdurasi %2$@ yang kini terpilih.",
+     "why": "meaning: sedang dipilih says it is being chosen; the new recording is now selected"
+    },
+    {
+     "key": "Resubscribed to %@. Checking it now…",
+     "id": "feed.resubscribed",
+     "english": "Resubscribed to %@. Checking it now…",
+     "before": "Berlangganan lagi ke %@. Memeriksanya sekarang…",
+     "after": "Berhasil berlangganan %@ lagi. Memeriksanya sekarang…",
+     "why": "meaning: Berlangganan %@ is the Subscribe button label word for word; the announcement says the subscription is made"
+    },
+    {
+     "key": "Reverted to the original audio. Redo brings back the %lld edits.",
+     "id": "audioEditor.reverted.original",
+     "english": {
+      "one": "Reverted to the original audio. Redo brings back the %lld edit.",
+      "other": "Reverted to the original audio. Redo brings back the %lld edits."
+     },
+     "before": {
+      "other": "Dikembalikan ke audio asli semula. Ulangi mengembalikan %lld edit."
+     },
+     "after": {
+      "other": "Dikembalikan ke audio asli semula. Pilih Ulangi untuk mengembalikan %lld edit."
+     },
+     "why": "natural: a one-word command name as the subject reads as the command itself; the sentence says what choosing it does"
+    },
+    {
+     "key": "Seconds between level announcements",
+     "id": "recording.announceIntervalLabel",
+     "english": "Seconds between level announcements",
+     "before": "Detik antar pengumuman level",
+     "after": "Detik antarpengumuman level",
+     "why": "punctuation: antar is a bound form and joins its noun, as antarpenyegaran does elsewhere"
+    },
+    {
+     "key": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "id": "transcription.languagePickerHint",
+     "english": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "before": "Mengatur bahasa transkripsi. Bahasa yang ditandai perlu diunduh hanya dapat diunduh dari lembar Transkripsikan Audio.",
+     "after": "Mengatur bahasa transkripsi. Bahasa yang ditandai “perlu diunduh” hanya dapat diunduh dari lembar Transkripsikan Audio.",
+     "why": "meaning: without quotation marks the status word perlu diunduh ran into the sentence and garbled it"
+    },
+    {
+     "key": "Still working. Close once the change is done.",
+     "id": "audioEditor.closeWhileWorking",
+     "english": "Still working. Close once the change is done.",
+     "before": "Masih bekerja. Tutup setelah perubahan selesai.",
+     "after": "Masih memproses. Tutup setelah perubahan selesai.",
+     "why": "natural: masih bekerja is a person at work; the app says masih memproses, as the line before does"
+    },
+    {
+     "key": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "id": "feed.insecureMessage",
+     "english": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "before": "Berlangganan %@. Feed ini memakai http biasa, sehingga orang lain dapat membaca atau mengubah apa yang dikirimnya; TextMouth tetap memuatnya.",
+     "after": "Berhasil berlangganan %@. Feed ini memakai http biasa, sehingga orang lain dapat membaca atau mengubah apa yang dikirimnya; TextMouth tetap memuatnya.",
+     "why": "meaning: Berlangganan %@ is the Subscribe button label word for word; the announcement says the subscription is made"
+    },
+    {
+     "key": "Subscribed to %@: %@.",
+     "id": "feed.subscribed",
+     "english": "Subscribed to %1$@: %2$@.",
+     "before": "Berlangganan %1$@: %2$@.",
+     "after": "Berhasil berlangganan %1$@: %2$@.",
+     "why": "meaning: Berlangganan %@ is the Subscribe button label word for word; the announcement says the subscription is made"
+    },
+    {
+     "key": "Subscribed to %lld feeds.",
+     "id": "opmlImportSummary.sentence.feeds",
+     "english": {
+      "one": "Subscribed to %lld feed.",
+      "other": "Subscribed to %lld feeds."
+     },
+     "before": {
+      "other": "Berlangganan %lld feed."
+     },
+     "after": {
+      "other": "Berhasil berlangganan %lld feed."
+     },
+     "why": "meaning: Berlangganan %@ is the Subscribe button label word for word; the announcement says the subscription is made"
+    },
+    {
+     "key": "TextMouth cannot open copy-protected files.",
+     "id": "refusedFormatAdvice.copyProtected",
+     "english": "TextMouth cannot open copy-protected files.",
+     "before": "TextMouth tidak dapat membuka file yang dilindungi hak cipta.",
+     "after": "TextMouth tidak dapat membuka file yang dilindungi dari penyalinan.",
+     "why": "meaning: dilindungi hak cipta means copyrighted, which nearly every book is; copy-protected is dilindungi dari penyalinan"
+    },
+    {
+     "key": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+     "id": "feedDownloadProgress.comingBack.checks",
+     "english": {
+      "one": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+      "other": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens."
+     },
+     "before": {
+      "other": "TextMouth mengunduh ulang %lld di antaranya pada pemeriksaan berikutnya feed-nya, atau saat TextMouth dibuka lagi."
+     },
+     "after": {
+      "other": "TextMouth mengunduh ulang %lld di antaranya pada pemeriksaan feed-nya yang berikutnya, atau saat TextMouth dibuka lagi."
+     },
+     "why": "grammar: the possessor goes before berikutnya; pemeriksaan berikutnya feed-nya is out of order"
+    },
+    {
+     "key": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "id": "feedDownloadProgress.comingBack.check",
+     "english": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "before": "TextMouth mengunduh ulang 1 di antaranya pada pemeriksaan berikutnya feed-nya, atau saat TextMouth dibuka lagi.",
+     "after": "TextMouth mengunduh ulang 1 di antaranya pada pemeriksaan feed-nya yang berikutnya, atau saat TextMouth dibuka lagi.",
+     "why": "grammar: the possessor goes before berikutnya; pemeriksaan berikutnya feed-nya is out of order"
+    },
+    {
+     "key": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "id": "audioEditor.quitExplanation",
+     "english": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "before": "TextMouth akan keluar dan audio buku belum memuat edit ini. Buang mengurungkannya; saat Anda mengedit buku ini lagi, Ulangi mengembalikannya sampai Anda melakukan edit lain. Batal membiarkan TextMouth tetap terbuka.",
+     "after": "TextMouth akan keluar dan audio buku belum memuat edit ini. Pilih Buang untuk mengurungkannya; saat Anda mengedit buku ini lagi, pilih Ulangi untuk mengembalikannya sebelum Anda melakukan edit lain. Pilih Batal agar TextMouth tetap terbuka.",
+     "why": "natural: a one-word command name as the subject reads as the command itself; the sentence says what choosing it does"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "id": "feed.notificationsRefused",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "TextMouth tidak diizinkan menampilkan notifikasi. Aktifkan di Pengaturan Sistem, Notifikasi, TextMouth.",
+     "after": "TextMouth tidak diizinkan menampilkan notifikasi. Aktifkan di Pengaturan Sistem, Pemberitahuan, TextMouth.",
+     "why": "term: Apple names the System Settings pane Pemberitahuan; a listener looking for Notifikasi will not find it"
+    },
+    {
+     "key": "The disk is too full to keep this audio for pasting.",
+     "id": "audioEditor.diskTooFullToKeepClip",
+     "english": "The disk is too full to keep this audio for pasting.",
+     "before": "Disk terlalu penuh untuk menyimpan audio ini untuk ditempel.",
+     "after": "Disk terlalu penuh untuk menyimpan audio ini agar dapat ditempel.",
+     "why": "natural: two untuk in a row; agar dapat ditempel, as the catalog says elsewhere"
+    },
+    {
+     "key": "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book.",
+     "id": "audioEditingSettings.policyHint",
+     "english": "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book.",
+     "before": "Audio asli adalah hasil rekaman tanpa kehilangan kualitas tempat sebuah rekaman disimpan, atau salinan file buku audio dari sebelum edit pertamanya. Dengan mempertahankannya, setiap edit dapat diurungkan tanpa kehilangan kualitas; audio asli rekaman memakan sekitar 345 MB per jam. Perubahan juga berlaku untuk audio asli yang sudah dipertahankan, dan di pustaka cloud, audio asli ikut tersinkron dengan bukunya.",
+     "after": "Audio asli adalah rekaman mentah tanpa kehilangan kualitas yang menjadi sumber rekaman saat disimpan, atau salinan file buku audio dari sebelum edit pertamanya. Dengan mempertahankannya, setiap edit dapat diurungkan tanpa kehilangan kualitas; audio asli rekaman memakan sekitar 345 MB per jam. Perubahan juga berlaku untuk audio asli yang sudah dipertahankan, dan di pustaka cloud, audio asli ikut tersinkron dengan bukunya.",
+     "why": "meaning: tempat sebuah rekaman disimpan said where a recording is stored; the take is what the recording is saved from"
+    },
+    {
+     "key": "The podcast directory at %@ couldn't answer the search (error %@). Try again later.",
+     "id": "feedFetchError.searchMessage.serverError",
+     "english": "The podcast directory at %1$@ couldn't answer the search (error %2$@). Try again later.",
+     "before": "Direktori podcast di %1$@ tidak dapat menjawab pencarian (galat %2$@). Coba lagi nanti.",
+     "after": "Direktori podcast di %1$@ tidak dapat memproses pencarian (kesalahan %2$@). Coba lagi nanti.",
+     "why": "term: kesalahan for error as everywhere else, and a server memproses a search rather than menjawab it"
+    },
+    {
+     "key": "The podcast directory at %@ didn't answer for %lld seconds.",
+     "id": "feedFetchError.searchMessage.timedOut",
+     "english": {
+      "one": "The podcast directory at %@ didn't answer for %lld second.",
+      "other": "The podcast directory at %@ didn't answer for %lld seconds."
+     },
+     "before": {
+      "other": "Direktori podcast di %1$@ tidak menjawab selama %2$lld detik."
+     },
+     "after": {
+      "other": "Direktori podcast di %1$@ tidak merespons selama %2$lld detik."
+     },
+     "why": "natural: a server that times out tidak merespons; menjawab is a person answering"
+    },
+    {
+     "key": "The podcast directory couldn't answer the search. Try again later.",
+     "id": "feedFetchError.searchMessage.notFound",
+     "english": "The podcast directory couldn't answer the search. Try again later.",
+     "before": "Direktori podcast tidak dapat menjawab pencarian. Coba lagi nanti.",
+     "after": "Direktori podcast tidak dapat memproses pencarian. Coba lagi nanti.",
+     "why": "natural: a server memproses a search; menjawab pencarian reads as a person answering"
+    },
+    {
+     "key": "The podcast directory sent an answer TextMouth can't read. Try again later.",
+     "id": "feedSearchError.message.unreadableAnswer",
+     "english": "The podcast directory sent an answer TextMouth can't read. Try again later.",
+     "before": "Direktori podcast mengirim jawaban yang tidak dapat dibaca TextMouth. Coba lagi nanti.",
+     "after": "Direktori podcast mengirim respons yang tidak dapat dibaca TextMouth. Coba lagi nanti.",
+     "why": "natural: a server sends a respons; jawaban is a person answering, and merespons is used elsewhere"
+    },
+    {
+     "key": "The podcast directory's answer is larger than TextMouth reads.",
+     "id": "feedFetchError.searchMessage.tooLarge",
+     "english": "The podcast directory's answer is larger than TextMouth reads.",
+     "before": "Jawaban direktori podcast lebih besar dari yang dibaca TextMouth.",
+     "after": "Respons direktori podcast lebih besar dari yang dibaca TextMouth.",
+     "why": "natural: a server sends a respons; jawaban is a person answering, and merespons is used elsewhere"
+    },
+    {
+     "key": "The recording couldn't be saved: %@ It is kept; choose %@ or %@.",
+     "id": "recording.saveFailed",
+     "english": "The recording couldn't be saved: %1$@ It is kept; choose %2$@ or %3$@.",
+     "before": "Rekaman tidak dapat disimpan: %1$@ Rekaman tetap disimpan; pilih %2$@ atau %3$@.",
+     "after": "Rekaman tidak dapat disimpan: %1$@ Rekaman masih ada; pilih %2$@ atau %3$@.",
+     "why": "meaning: tetap disimpan right after tidak dapat disimpan read as a contradiction; the recording is still there"
+    },
+    {
+     "key": "There are no subscriptions to export: every feed in your library is unsubscribed.",
+     "id": "feed.nothingSubscribedToExport",
+     "english": "There are no subscriptions to export: every feed in your library is unsubscribed.",
+     "before": "Tidak ada langganan untuk diekspor: semua feed di pustaka Anda tidak berlangganan.",
+     "after": "Tidak ada langganan untuk diekspor: semua feed di pustaka Anda tidak lagi dilanggan.",
+     "why": "grammar: a feed is subscribed to, not a subscriber; tidak berlangganan made the feed the one subscribing"
+    },
+    {
+     "key": "This book's audio could not be converted from Ogg to AAC. TextMouth tries again the next time it starts.",
+     "id": "readerOgg.conversionFailed",
+     "english": "This book's audio could not be converted from Ogg to AAC. TextMouth tries again the next time it starts.",
+     "before": "Audio buku ini tidak dapat dikonversi dari Ogg ke AAC. TextMouth akan mencoba lagi saat dimulai berikutnya.",
+     "after": "Audio buku ini tidak dapat dikonversi dari Ogg ke AAC. TextMouth akan mencoba lagi saat peluncuran berikutnya.",
+     "why": "natural: saat dimulai berikutnya is a calque; the catalog says saat peluncuran berikutnya"
+    },
+    {
+     "key": "This comic book archive holds more than the %@ pictures TextMouth reads.",
+     "id": "pageImage.tooManyPictures",
+     "english": "This comic book archive holds more than the %@ pictures TextMouth reads.",
+     "before": "Arsip buku komik ini berisi lebih dari %@ gambar yang dibaca TextMouth.",
+     "after": "Arsip buku komik ini berisi lebih dari %@ gambar, batas yang dapat dibaca TextMouth.",
+     "why": "meaning: the old text read as more than N pictures TextMouth did read; N is the most it reads"
+    },
+    {
+     "key": "Type a podcast's title or publisher, then press Return to search Apple's directory",
+     "id": "feed.searchHint",
+     "english": "Type a podcast's title or publisher, then press Return to search Apple's directory",
+     "before": "Mengetik judul atau penerbit podcast, lalu menekan Return untuk mencari di direktori Apple.",
+     "after": "Ketik judul atau penerbit podcast, lalu tekan Return untuk mencari di direktori Apple.",
+     "why": "meaning: the hint tells the listener what to do; the third-person form said the field itself types and presses Return"
+    },
+    {
+     "key": "Type or paste a feed or web page address, then press Return",
+     "id": "feed.addressHint",
+     "english": "Type or paste a feed or web page address, then press Return",
+     "before": "Mengetik atau menempel alamat feed atau halaman web, lalu menekan Return.",
+     "after": "Ketik atau tempel alamat feed atau halaman web, lalu tekan Return.",
+     "why": "meaning: the hint tells the listener what to do; the third-person form said the field itself types and presses Return"
+    },
+    {
+     "key": "Undoes every edit, back to the original; Redo brings them back.",
+     "id": "audioEditor.explanation.editorRevert",
+     "english": "Undoes every edit, back to the original; Redo brings them back.",
+     "before": "Mengurungkan setiap edit, kembali ke audio asli; Ulangi mengembalikannya.",
+     "after": "Mengurungkan setiap edit, kembali ke audio asli; pilih Ulangi untuk mengembalikannya.",
+     "why": "natural: a one-word command name as the subject reads as the command itself; the sentence says what choosing it does"
+    },
+    {
+     "key": "the server sent no answer",
+     "id": "feedNetwork.serverSentNo",
+     "english": "the server sent no answer",
+     "before": "server tidak mengirim jawaban",
+     "after": "server tidak mengirim respons",
+     "why": "natural: a server sends a respons; jawaban is a person answering, and merespons is used elsewhere"
+    },
+    {
+     "key": "the top of your library",
+     "id": "feed.movedToLibrary.topLibrary",
+     "english": "the top of your library",
+     "before": "bagian teratas pustaka Anda",
+     "after": "tingkat atas pustaka Anda",
+     "why": "term: the glossary calls the library root Tingkat Atas Pustaka; bagian teratas reads as the top of a list"
+    },
+    {
+     "key": "“%@” is already being added to the library.",
+     "id": "feed.alreadyBeingAdded",
+     "english": "“%@” is already being added to the library.",
+     "before": "“%@” sudah sedang ditambahkan ke pustaka.",
+     "after": "“%@” sedang ditambahkan ke pustaka.",
+     "why": "grammar: sudah and sedang do not combine; sedang alone says the adding is under way"
+    },
+    {
+     "key": "“%@” is still working. Quit once the change is done.",
+     "id": "audioEditor.quitWhileWorking",
+     "english": "“%@” is still working. Quit once the change is done.",
+     "before": "“%@” masih bekerja. Keluar setelah perubahan selesai.",
+     "after": "“%@” masih memproses. Keluar setelah perubahan selesai.",
+     "why": "natural: masih bekerja is a person at work; the app says masih memproses, as its other busy lines do"
+    }
+   ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "\"%@\" is not a number.",
+     "id": "jumpInputValidator.notANumber",
+     "english": "\"%@\" is not a number.",
+     "before": "\"%@\" bukan angka.",
+     "after": "“%@” bukan angka.",
+     "why": "punctuation: straight quotes; the language uses “…” as the rest of the catalog does"
+    },
+    {
+     "key": "%@ has its default, %@",
+     "id": "shortcutsSettings.defaultsHeldElsewhere",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%1$@ memiliki pintasan default, %2$@",
+     "after": "%1$@ memakai pintasan default tindakan ini, %2$@",
+     "why": "meaning: said in the row of the action that lost its key, the text read as the holder's own default; now this action's default"
+    },
+    {
+     "key": "%lld books finished all time",
+     "id": "readingStatsTile.wording.booksFinishedAllTime",
+     "english": {
+      "one": "%lld book finished all time",
+      "other": "%lld books finished all time"
+     },
+     "before": {
+      "other": "%lld buku selesai sepanjang waktu"
+     },
+     "after": {
+      "other": "%lld buku selesai sepanjang masa"
+     },
+     "why": "meaning: sepanjang waktu means all the time (constantly); the all-time count is sepanjang masa"
+    },
+    {
+     "key": "About",
+     "id": "phoneSettings.aboutSection",
+     "english": "About",
+     "before": "Tentang",
+     "after": "Mengenai",
+     "why": "term: Apple says Mengenai for About (iPhone Settings, General, and the app menu About item)"
+    },
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "id": "bookExport.settingHint",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "Menambahkan tombol Ekspor ke bilah alat setiap pembaca. File, Ekspor berfungsi dengan kedua cara.",
+     "after": "Menambahkan tombol Ekspor ke bar alat setiap pembaca. File, Ekspor tetap berfungsi dalam kedua kasus.",
+     "why": "term: Apple says bar alat for toolbar (bilah alat is not Apple word); dengan kedua cara copied either way"
+    },
+    {
+     "key": "All Time",
+     "id": "readingStatsTile.title.allTime",
+     "english": "All Time",
+     "before": "Sepanjang Waktu",
+     "after": "Sepanjang Masa",
+     "why": "meaning: sepanjang waktu means all the time (constantly); the all-time tile is sepanjang masa"
+    },
+    {
+     "key": "Begin",
+     "id": "keyBinding.localizedKeyWords.begin",
+     "english": "Begin",
+     "before": "Awal",
+     "after": "Mulai",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (Begin = Mulai)"
+    },
+    {
+     "key": "Books Finished All Time",
+     "id": "readingStatsTile.title.booksFinishedAllTime",
+     "english": "Books Finished All Time",
+     "before": "Buku Selesai Sepanjang Waktu",
+     "after": "Buku Selesai Sepanjang Masa",
+     "why": "meaning: sepanjang waktu means all the time (constantly); the all-time tile is sepanjang masa"
+    },
+    {
+     "key": "Break",
+     "id": "keyBinding.localizedKeyWords.break",
+     "english": "Break",
+     "before": "Break",
+     "after": "Pemisah",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (Break = Pemisah); was left in English"
+    },
+    {
+     "key": "Find",
+     "id": "common.find",
+     "english": "Find",
+     "before": "Cari",
+     "after": "Temukan",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (Find = Temukan), as Apple Edit menu Find also says"
+    },
+    {
+     "key": "Help",
+     "id": "keyBinding.localizedKeyWords.help",
+     "english": "Help",
+     "before": "Help",
+     "after": "Bantuan",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (Help = Bantuan); was left in English"
+    },
+    {
+     "key": "Hide Others",
+     "id": "keyBinding.localizedSystemCommand.others",
+     "english": "Hide Others",
+     "before": "Sembunyikan yang Lain",
+     "after": "Sembunyikan Lainnya",
+     "why": "term: Apple app menu says Sembunyikan Lainnya, and the sentence names that command"
+    },
+    {
+     "key": "Hides jump to page controls",
+     "id": "readerPage.hideHint",
+     "english": "Hides jump to page controls",
+     "before": "Menyembunyikan kontrol buka halaman.",
+     "after": "Menyembunyikan kontrol lompat ke halaman.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke halaman, so the hint names it so"
+    },
+    {
+     "key": "Hides jump to percent controls",
+     "id": "readerView.hidePercentHint",
+     "english": "Hides jump to percent controls",
+     "before": "Menyembunyikan kontrol buka persentase.",
+     "after": "Menyembunyikan kontrol lompat ke persen.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke persen, so the hint names it so"
+    },
+    {
+     "key": "Hides jump to time controls",
+     "id": "readerView.hideTimeHint",
+     "english": "Hides jump to time controls",
+     "before": "Menyembunyikan kontrol buka waktu.",
+     "after": "Menyembunyikan kontrol lompat ke waktu.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke waktu, so the hint names it so"
+    },
+    {
+     "key": "In the spoken text, whose offsets the speech log gives: speech stopped at character %@; the refused text runs from character %@ to %@.",
+     "id": "speechRefusal.stoppedInSpokenText",
+     "english": "In the spoken text, whose offsets the speech log gives: speech stopped at character %1$@; the refused text runs from character %2$@ to %3$@.",
+     "before": "Dalam teks yang diucapkan, yang posisinya diberikan log ucapan: ucapan berhenti di karakter %1$@; teks yang ditolak berjalan dari karakter %2$@ hingga %3$@.",
+     "after": "Dalam teks yang diucapkan, yang posisinya diberikan log ucapan: ucapan berhenti di karakter %1$@; teks yang ditolak mencakup karakter %2$@ hingga %3$@.",
+     "why": "natural: berjalan (walks) copied the English runs from; a span of text mencakup its characters"
+    },
+    {
+     "key": "Insert Character",
+     "id": "keyBinding.localizedKeyWords.insertCharacter",
+     "english": "Insert Character",
+     "before": "Insert Character",
+     "after": "Sisipkan Karakter",
+     "why": "term: left in English; glossary Insert = Sisipkan, matching Hapus Karakter beside it"
+    },
+    {
+     "key": "Insert Line",
+     "id": "keyBinding.localizedKeyWords.insertLine",
+     "english": "Insert Line",
+     "before": "Insert Line",
+     "after": "Sisipkan Baris",
+     "why": "term: left in English; glossary Insert = Sisipkan, matching Hapus Baris beside it"
+    },
+    {
+     "key": "Jumped to page %@, the %@ page labelled %@.",
+     "id": "readerPage.jumped.labelled",
+     "english": "Jumped to page %1$@, the %2$@ page labelled %3$@.",
+     "before": "Melompat ke halaman %1$@, halaman berlabel %3$@ urutan %2$@.",
+     "after": "Melompat ke halaman %1$@, halaman berlabel %3$@ yang %2$@.",
+     "why": "natural: urutan kedua tacked on without a link; yang kedua is how the language picks one of several same-named pages"
+    },
+    {
+     "key": "Minimize",
+     "id": "keyBinding.localizedSystemCommand.minimize",
+     "english": "Minimize",
+     "before": "Minimalkan",
+     "after": "Minikan",
+     "why": "term: Apple Window menu says Minikan, and the sentence names that command"
+    },
+    {
+     "key": "Minimize All",
+     "id": "keyBinding.localizedSystemCommand.minimizeAll",
+     "english": "Minimize All",
+     "before": "Minimalkan Semua",
+     "after": "Minikan Semua",
+     "why": "term: Apple Window menu says Minikan Semua, and the sentence names that command"
+    },
+    {
+     "key": "Mode Switch",
+     "id": "keyBinding.localizedKeyWords.switch",
+     "english": "Mode Switch",
+     "before": "Mode Switch",
+     "after": "Pengalihan Mode",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (Mode Switch = Pengalihan Mode); was left in English"
+    },
+    {
+     "key": "Moves back or forward by bookmark.",
+     "id": "phoneReader.playHint.bookmark",
+     "english": "Moves back or forward by bookmark.",
+     "before": "Bergerak mundur atau maju menurut markah.",
+     "after": "Bergerak mundur atau maju per markah.",
+     "why": "natural: menurut (according to) is the sorting word; moving by a unit is per"
+    },
+    {
+     "key": "Moves back or forward by heading.",
+     "id": "phoneReader.playHint.heading",
+     "english": "Moves back or forward by heading.",
+     "before": "Bergerak mundur atau maju menurut tajuk.",
+     "after": "Bergerak mundur atau maju per tajuk.",
+     "why": "natural: menurut (according to) is the sorting word; moving by a unit is per"
+    },
+    {
+     "key": "Moves back or forward by page.",
+     "id": "phoneReader.playHint.page",
+     "english": "Moves back or forward by page.",
+     "before": "Bergerak mundur atau maju menurut halaman.",
+     "after": "Bergerak mundur atau maju per halaman.",
+     "why": "natural: menurut (according to) is the sorting word; moving by a unit is per"
+    },
+    {
+     "key": "Moves back or forward by paragraph.",
+     "id": "phoneReader.playHint.paragraph",
+     "english": "Moves back or forward by paragraph.",
+     "before": "Bergerak mundur atau maju menurut paragraf.",
+     "after": "Bergerak mundur atau maju per paragraf.",
+     "why": "natural: menurut (according to) is the sorting word; moving by a unit is per"
+    },
+    {
+     "key": "Moves back or forward by sentence.",
+     "id": "phoneReader.playHint.sentence",
+     "english": "Moves back or forward by sentence.",
+     "before": "Bergerak mundur atau maju menurut kalimat.",
+     "after": "Bergerak mundur atau maju per kalimat.",
+     "why": "natural: menurut (according to) is the sorting word; moving by a unit is per"
+    },
+    {
+     "key": "Moves back or forward by subheading.",
+     "id": "phoneReader.playHint.subheading",
+     "english": "Moves back or forward by subheading.",
+     "before": "Bergerak mundur atau maju menurut subtajuk.",
+     "after": "Bergerak mundur atau maju per subtajuk.",
+     "why": "natural: menurut (according to) is the sorting word; moving by a unit is per"
+    },
+    {
+     "key": "Next",
+     "id": "keyBinding.localizedKeyWords.next",
+     "english": "Next",
+     "before": "Next",
+     "after": "Berikutnya",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id and glossary (Next = Berikutnya); was left in English"
+    },
+    {
+     "key": "Opens jump to page controls",
+     "id": "readerPage.openHint",
+     "english": "Opens jump to page controls",
+     "before": "Membuka kontrol buka halaman.",
+     "after": "Membuka kontrol lompat ke halaman.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke halaman, so the hint names it so"
+    },
+    {
+     "key": "Opens jump to percent controls",
+     "id": "readerView.openPercentHint",
+     "english": "Opens jump to percent controls",
+     "before": "Membuka kontrol buka persentase.",
+     "after": "Membuka kontrol lompat ke persen.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke persen, so the hint names it so"
+    },
+    {
+     "key": "Opens jump to time controls",
+     "id": "readerView.openTimeHint",
+     "english": "Opens jump to time controls",
+     "before": "Membuka kontrol buka waktu.",
+     "after": "Membuka kontrol lompat ke waktu.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke waktu, so the hint names it so"
+    },
+    {
+     "key": "Plays the book; it stops at its end anyway.",
+     "id": "sleepTimerView.endOfBookHint.stop",
+     "english": "Plays the book; it stops at its end anyway.",
+     "before": "Memutar buku; buku berhenti di akhirnya pula.",
+     "after": "Memutar buku; buku memang berhenti di akhirnya.",
+     "why": "meaning: pula (also) lost the English anyway; memang says the book stops at its end regardless"
+    },
+    {
+     "key": "Press the new key, or Escape to cancel.",
+     "id": "shortcutsSettings.recordingHint",
+     "english": "Press the new key, or Escape to cancel.",
+     "before": "Menekan tombol baru, atau Escape untuk membatalkan.",
+     "after": "Tekan tombol baru, atau Escape untuk membatalkan.",
+     "why": "meaning: Menekan made the hint say the button presses a key; the English tells the listener what to press"
+    },
+    {
+     "key": "Previous",
+     "id": "keyBinding.localizedKeyWords.previous",
+     "english": "Previous",
+     "before": "Previous",
+     "after": "Sebelumnya",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id and glossary (Previous = Sebelumnya); was left in English"
+    },
+    {
+     "key": "Print",
+     "id": "keyBinding.localizedKeyWords.print",
+     "english": "Print",
+     "before": "Print",
+     "after": "Cetak",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (Print = Cetak); was left in English"
+    },
+    {
+     "key": "Print Screen",
+     "id": "keyBinding.localizedKeyWords.screen",
+     "english": "Print Screen",
+     "before": "Print Screen",
+     "after": "Cetak Layar",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (Print Screen = Cetak Layar); was left in English"
+    },
+    {
+     "key": "Quitting TextMouth",
+     "id": "quitHold.title",
+     "english": "Quitting TextMouth",
+     "before": "Keluar dari TextMouth",
+     "after": "Sedang keluar dari TextMouth",
+     "why": "meaning: Keluar dari TextMouth reads as the Quit command; the panel says TextMouth is quitting"
+    },
+    {
+     "key": "Reader Toolbar",
+     "id": "bookExport.settingSection",
+     "english": "Reader Toolbar",
+     "before": "Bilah Alat Pembaca",
+     "after": "Bar Alat Pembaca",
+     "why": "term: Apple says bar alat for toolbar (Tampilkan Bar Alat); bilah alat is not Apple word"
+    },
+    {
+     "key": "Say the page in Where Am I?",
+     "id": "readerPage.sayInWhereAmITitle",
+     "english": "Say the page in Where Am I?",
+     "before": "Ucapkan halaman di Di mana saya?",
+     "after": "Ucapkan halaman dalam Di mana saya?",
+     "why": "natural: di Di mana saya? stutters aloud; dalam names the summary without the repeated di"
+    },
+    {
+     "key": "Scroll Lock",
+     "id": "keyBinding.localizedKeyWords.scroll",
+     "english": "Scroll Lock",
+     "before": "Scroll Lock",
+     "after": "Kunci Gulir",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (Scroll Lock = Kunci Gulir); was left in English"
+    },
+    {
+     "key": "Show Export in the reader toolbar",
+     "id": "bookExport.settingTitle",
+     "english": "Show Export in the reader toolbar",
+     "before": "Tampilkan Ekspor di bilah alat pembaca",
+     "after": "Tampilkan Ekspor di bar alat pembaca",
+     "why": "term: Apple says bar alat for toolbar (Tampilkan Bar Alat); bilah alat is not Apple word"
+    },
+    {
+     "key": "Show the Export button in the reader toolbar",
+     "id": "bookExport.settingLabel",
+     "english": "Show the Export button in the reader toolbar",
+     "before": "Tampilkan tombol Ekspor di bilah alat pembaca",
+     "after": "Tampilkan tombol Ekspor di bar alat pembaca",
+     "why": "term: Apple says bar alat for toolbar (Tampilkan Bar Alat); bilah alat is not Apple word"
+    },
+    {
+     "key": "Switches to jump to page controls",
+     "id": "readerPage.switchHint",
+     "english": "Switches to jump to page controls",
+     "before": "Beralih ke kontrol buka halaman.",
+     "after": "Beralih ke kontrol lompat ke halaman.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke halaman, so the hint names it so"
+    },
+    {
+     "key": "Switches to jump to percent controls",
+     "id": "readerView.switchPercentHint",
+     "english": "Switches to jump to percent controls",
+     "before": "Beralih ke kontrol buka persentase.",
+     "after": "Beralih ke kontrol lompat ke persen.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke persen, so the hint names it so"
+    },
+    {
+     "key": "Switches to jump to time controls",
+     "id": "readerView.switchTimeHint",
+     "english": "Switches to jump to time controls",
+     "before": "Beralih ke kontrol buka waktu.",
+     "after": "Beralih ke kontrol lompat ke waktu.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke waktu, so the hint names it so"
+    },
+    {
+     "key": "System",
+     "id": "keyBinding.localizedKeyWords.system",
+     "english": "System",
+     "before": "System",
+     "after": "Sistem",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (System = Sistem); was left in English"
+    },
+    {
+     "key": "TextMouth exports one spoken audio file at a time. Export this once the current one has finished.",
+     "id": "speechExportError.busy",
+     "english": "TextMouth exports one spoken audio file at a time. Export this once the current one has finished.",
+     "before": "TextMouth mengekspor satu file audio ucapan dalam satu waktu. Ekspor ini setelah yang sekarang selesai.",
+     "after": "TextMouth mengekspor satu file audio ucapan dalam satu waktu. Ekspor lagi setelah ekspor yang sedang berjalan selesai.",
+     "why": "natural: Ekspor ini setelah reads as the noun phrase this export, not a command; now export again once the running one ends"
+    },
+    {
+     "key": "TextMouth hasn't read the latest save yet.",
+     "id": "bookTextEdit.notReadYet",
+     "english": "TextMouth hasn't read the latest save yet.",
+     "before": "TextMouth belum membaca simpanan terbaru.",
+     "after": "TextMouth belum membaca versi terakhir yang disimpan.",
+     "why": "meaning: simpanan reads as savings or a stash; the last saved version is meant"
+    },
+    {
+     "key": "The %@ page labelled %@",
+     "id": "readerPage.namedAtStart",
+     "english": "The %1$@ page labelled %2$@",
+     "before": "Halaman berlabel %2$@ urutan %1$@",
+     "after": "Halaman berlabel %2$@ yang %1$@",
+     "why": "natural: urutan kedua tacked on without a link; yang kedua picks one of several same-named pages, as in the Jumped to page sentence"
+    },
+    {
+     "key": "The MP3 has chapters for the first %@ of its %lld headings; export as M4B for a chapter for each.",
+     "id": "speechExport.mp3ChaptersKept",
+     "english": {
+      "one": "The MP3 has chapters for the first %@ of its %lld heading; export as M4B for a chapter for each.",
+      "other": "The MP3 has chapters for the first %@ of its %lld headings; export as M4B for a chapter for each."
+     },
+     "before": {
+      "other": "MP3 memiliki bab untuk %@ pertama dari %lld tajuknya; ekspor sebagai M4B untuk satu bab bagi masing-masing."
+     },
+     "after": {
+      "other": "MP3 memiliki bab untuk %@ pertama dari %lld tajuknya; ekspor sebagai M4B agar setiap tajuk memiliki bab."
+     },
+     "why": "natural: untuk satu bab bagi masing-masing copied for a chapter for each word by word; now so that every heading has a chapter"
+    },
+    {
+     "key": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "id": "ownAudio.sentence.truncated",
+     "english": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "before": "File audio %@ berakhir sebelum audionya, sehingga tidak dapat dikonversi.",
+     "after": "File audio %@ berakhir sebelum audionya selesai, sehingga tidak dapat dikonversi.",
+     "why": "natural: berakhir sebelum audionya left out the verb, so it could mean before its audio starts"
+    },
+    {
+     "key": "The braille code the book is written in.",
+     "id": "brailleExport.codeHint",
+     "english": "The braille code the book is written in.",
+     "before": "Kode braille tempat buku ditulis.",
+     "after": "Kode braille yang dipakai untuk menulis buku.",
+     "why": "natural: tempat (a place) for the code a book is written in; now the code used to write the book"
+    },
+    {
+     "key": "The language of the braille code the book is written in.",
+     "id": "brailleExport.languageHint",
+     "english": "The language of the braille code the book is written in.",
+     "before": "Bahasa kode braille tempat buku ditulis.",
+     "after": "Bahasa kode braille yang dipakai untuk menulis buku.",
+     "why": "natural: tempat (a place) for the code a book is written in; now the code used to write the book"
+    },
+    {
+     "key": "This range has %lld headings, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each.",
+     "id": "speechExport.mp3ChapterLimit",
+     "english": {
+      "one": "This range has %lld heading, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each.",
+      "other": "This range has %lld headings, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each."
+     },
+     "before": {
+      "other": "Rentang ini memiliki %lld tajuk, tetapi MP3 hanya memiliki bab untuk %@ yang pertama. Pilih M4B untuk satu bab bagi masing-masing."
+     },
+     "after": {
+      "other": "Rentang ini memiliki %lld tajuk, tetapi MP3 hanya memiliki bab untuk %@ yang pertama. Pilih M4B agar setiap tajuk memiliki bab."
+     },
+     "why": "natural: untuk satu bab bagi masing-masing copied for a chapter for each word by word; now so that every heading has a chapter"
+    },
+    {
+     "key": "Toggle Bookmark",
+     "id": "shortcutAction.title.addBookmark",
+     "english": "Toggle Bookmark",
+     "before": "Aktifkan atau Nonaktifkan Markah",
+     "after": "Tambah atau Buang Markah",
+     "why": "meaning: Aktifkan atau Nonaktifkan (enable or disable) is not what a bookmark toggle does; it adds or removes one, as the bookmark button says"
+    },
+    {
+     "key": "Type a percent from 0 to 100, such as 47.5.",
+     "id": "readerTime.percentFieldHint",
+     "english": "Type a percent from 0 to 100, such as 47.5.",
+     "before": "Mengetik persentase dari 0 sampai 100, misalnya 47.5.",
+     "after": "Ketik persentase dari 0 sampai 100, misalnya 47.5.",
+     "why": "meaning: Mengetik made the field the one that types; the hint tells the listener what to type (47.5 kept: the field reads only a period)"
+    },
+    {
+     "key": "User",
+     "id": "keyBinding.localizedKeyWords.user",
+     "english": "User",
+     "before": "User",
+     "after": "Pengguna",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (User = Pengguna); was left in English"
+    },
+    {
+     "key": "While playing, moves Book content on with the speech, even as you read it.",
+     "id": "phoneSettings.followInBrailleHint.playing",
+     "english": "While playing, moves Book content on with the speech, even as you read it.",
+     "before": "Saat diputar, menggerakkan Konten buku mengikuti ucapan, bahkan saat Anda membacanya.",
+     "after": "Saat diputar, menggerakkan Isi buku mengikuti ucapan, bahkan saat Anda membacanya.",
+     "why": "term: names the text area, which VoiceOver calls Isi buku (Book content), not Konten buku"
+    },
+    {
+     "key": "it does not load in TextMouth's liblouis %@",
+     "id": "refusal.reason.doesNotLoad",
+     "english": "it does not load in TextMouth's liblouis %@",
+     "before": "tidak dapat dimuat di liblouis TextMouth %@",
+     "after": "tidak dapat dimuat di liblouis %@ milik TextMouth",
+     "why": "natural: liblouis TextMouth 3.34 put the version after TextMouth; the number is liblouis own"
+    },
+    {
+     "key": "on the %@ page labelled %@",
+     "id": "readerPage.cursorPlace.labelled",
+     "english": "on the %1$@ page labelled %2$@",
+     "before": "pada halaman berlabel %2$@ urutan %1$@",
+     "after": "pada halaman berlabel %2$@ yang %1$@",
+     "why": "natural: urutan kedua tacked on without a link; yang kedua picks one of several same-named pages, as in the Jumped to page sentence"
+    },
+    {
+     "key": "the braille helper failed",
+     "id": "refusal.helperFailed",
+     "english": "the braille helper failed",
+     "before": "pembantu braille gagal",
+     "after": "program bantu braille gagal",
+     "why": "meaning: pembantu alone reads as a person (a household helper); the braille helper is a program, program bantu"
+    },
+    {
+     "key": "the braille helper was stopped because %@",
+     "id": "refusal.helperStopped",
+     "english": "the braille helper was stopped because %@",
+     "before": "pembantu braille dihentikan karena %@",
+     "after": "program bantu braille dihentikan karena %@",
+     "why": "meaning: pembantu alone reads as a person (a household helper); the braille helper is a program, program bantu"
+    }
+   ]
+  }
+ ]
+}

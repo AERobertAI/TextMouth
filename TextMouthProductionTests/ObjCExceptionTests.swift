@@ -3,6 +3,9 @@ import XCTest
 
 /// `ObjCException.catching(_:)`: the way a framework call that may raise an
 /// Objective-C exception is made without ending the process.
+///
+/// The two tests that raise one run on GitHub's runner only (`TestMachine.skipUnlessGitHubRunner`): were
+/// the catcher broken, the exception would end the host and put a crash report on the Mac's screen.
 final class ObjCExceptionTests: XCTestCase {
     /// A block that raises nothing runs once, and no exception comes back.
     func testABlockThatRaisesNothingRunsAndYieldsNil() {
@@ -17,6 +20,7 @@ final class ObjCExceptionTests: XCTestCase {
     /// A block that raises comes back as that very exception, name, reason,
     /// and user info intact, and the test goes on.
     func testABlockThatRaisesYieldsTheExceptionItRaised() throws {
+        try TestMachine.skipUnlessGitHubRunner("This test raises an Objective-C exception on purpose")
         let name = NSExceptionName("TextMouthTestException")
 
         let caught = ObjCException.catching {
@@ -29,9 +33,23 @@ final class ObjCExceptionTests: XCTestCase {
         XCTAssertEqual(exception.userInfo?["key"] as? Int, 1)
     }
 
+    /// A call that raises nothing gives what it made, and what a raised
+    /// exception becomes says its name and reason, or that it gave none,
+    /// as the log line does.
+    func testMakingGivesItsValueAndARaisedExceptionSaysItself() throws {
+        XCTAssertEqual(try ObjCException.making { 7 }, 7)
+
+        let withReason = ObjCException.Raised(NSException(name: .genericException, reason: "the depth", userInfo: nil))
+        let withoutReason = ObjCException.Raised(name: "NSInvalidArgumentException", reason: nil)
+
+        XCTAssertEqual(withReason.summary, "NSGenericException: the depth")
+        XCTAssertEqual(withoutReason.summary, "NSInvalidArgumentException: no reason given")
+    }
+
     /// The statements before the raise ran, and the catcher is usable again
     /// after it caught one.
-    func testTheCatcherWorksAgainAfterCatching() {
+    func testTheCatcherWorksAgainAfterCatching() throws {
+        try TestMachine.skipUnlessGitHubRunner("This test raises an Objective-C exception on purpose")
         var steps: [String] = []
 
         let first = ObjCException.catching {

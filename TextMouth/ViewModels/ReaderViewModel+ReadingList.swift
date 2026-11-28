@@ -78,9 +78,10 @@ extension ReaderViewModel {
     /// book stops resting finished as it says so
     /// (`handOverToNextBook(to:titled:askingWith:)`). Nothing follows for Stop,
     /// at that end of the list, or past only finished books, and the book
-    /// says which, and rests finished. The sleep timer keeps its rules: this
-    /// reader's timer in effect starts nothing, since it could never pause
-    /// the next book, and a timer that stopped playback here says so last.
+    /// says which, and rests finished. A running sleep timer of this reader's
+    /// goes on with the next book; one that ends listening here (it fades
+    /// out, or waits for a place this end spends) starts nothing, and a timer
+    /// that stopped playback here says so last.
     ///
     /// - Parameters:
     ///   - sleepTimerEndsListening: Whether this reader's sleep timer was in
@@ -95,6 +96,9 @@ extension ReaderViewModel {
         sleepTimerStoppedHere: Bool,
         replayingAFinishedEnd: Bool
     ) {
+        // The book stays the list's while this reader rests on it, even when
+        // the list drops finished books: held before the end is told.
+        holdFinishedBookOnReadingList()
         finishAtTheEnd(replayingAFinishedEnd: replayingAFinishedEnd)
         followReadingListPastThisBook(
             sleepTimerEndsListening: sleepTimerEndsListening,
@@ -108,8 +112,9 @@ extension ReaderViewModel {
     /// Play on a book resting at its end, `playFromTheEnd()`): the book
     /// below or above it, passing over finished books while the list says
     /// so, takes listening over (`handOverToNextBook(to:titled:askingWith:)`),
-    /// unless this reader's sleep timer is in effect, which could never
-    /// pause it, or nothing follows: Stop, that end of the list, or only
+    /// unless this reader's sleep timer ends listening here (it fades out, or
+    /// waits for a place this end spends), or nothing follows: Stop, that end
+    /// of the list, or only
     /// finished books beyond. Then `say` says that the book finished and
     /// why nothing follows.
     ///
@@ -126,10 +131,10 @@ extension ReaderViewModel {
         sayingNothingFollows say: (String) -> Void
     ) {
         let succession = libraryViewModel.readingListContinuation(after: book.id).map(BookSuccession.book)
-            ?? .nothing(note: readingListEndNote())
+            ?? readingListEndSuccession()
         goOnPastThisBook(
             to: succession,
-            in: "the reading list",
+            in: "the reading list", // l10n: no (named in the debug log only)
             startingWith: { self.continueThroughReadingList(to: $0) },
             sleepTimerEndsListening: sleepTimerEndsListening,
             sleepTimerStoppedHere: sleepTimerStoppedHere,
@@ -145,17 +150,23 @@ extension ReaderViewModel {
     /// the notification that opens its window or brings it forward.
     func continueThroughReadingList(to nextBookID: UUID) {
         readingListRequests.request(for: nextBookID)
-        continueToNextBook(nextBookID)
+        continueToNextBook(nextBookID, under: readingListMoveWindowChoice)
+        // This reader has moved on from its finished book.
+        releaseFinishedBookOnReadingList()
     }
 
     /// Why nothing follows this book at its end in the reading list, as the
     /// sentence after "Finished: <title>." says it: Stop is chosen, or no
     /// book, or only finished books, lie the way the list continues.
-    private func readingListEndNote() -> String {
+    private func readingListEndSuccession() -> BookSuccession {
         guard let direction = libraryViewModel.readingList.continuation.direction else {
-            return ReadingListReaderWording.stopNote
+            return .nothing(note: ReadingListReaderWording.stopNote, logName: ReadingListReaderWording.stopLogName)
         }
-        return ReadingListReaderWording.endNote(readingListEnd(going: direction), going: direction)
+        let end = readingListEnd(going: direction)
+        return .nothing(
+            note: ReadingListReaderWording.endNote(end, going: direction),
+            logName: ReadingListReaderWording.endLogName(end, going: direction)
+        )
     }
 
     /// What lies beyond this book going `direction` through the reading
@@ -182,9 +193,8 @@ extension ReaderViewModel {
     /// begin: "Starting: <title>" for one that plays, which continues as a
     /// finished book continues through the list
     /// (`continueThroughReadingList(to:)`); "Opening: <title>" for one that
-    /// does not (`openFromReadingList(_:)`). This reader's sleep timer in
-    /// effect keeps the book from starting, since it could never pause it,
-    /// and the announcement says so.
+    /// does not (`openFromReadingList(_:)`). This reader's running sleep timer
+    /// goes on with the book (`noteMoveAnnounced(to:)`).
     ///
     /// With no book that way it says so, and why when only finished books
     /// lie there. A reader not reading its book from the list says that
@@ -204,45 +214,65 @@ extension ReaderViewModel {
             announceToVoiceOver(ReadingListReaderWording.noNeighbor(readingListEnd(going: direction), going: direction))
             return
         }
-        // Playing: speech or audio under way, or paused only while a Where
-        // Am I announcement speaks, or until the end sound of one that ended
-        // has played (`whereAmIWillPlayBook`).
-        let wasPlaying = isPlaybackUnderWay || whereAmIWillPlayBook
-        let sleepTimerKeepsItFromStarting = wasPlaying && sleepTimerEndsListeningHere
-        // The pause ends a Where Am I announcement too, without resuming
-        // this book, even for a book that was not playing, whose
-        // announcement would otherwise speak over the one below.
-        if wasPlaying || isWhereAmIUnderWay {
-            pause(playingPauseSound: false)
-        }
-        let plays = wasPlaying && !sleepTimerKeepsItFromStarting
-        announceToVoiceOver(
-            plays
-                ? EndOfBookWording.starting(neighbor.title)
-                : ReadingListReaderWording.opening(neighbor.title, sleepTimerKeptItFromStarting: sleepTimerKeepsItFromStarting)
-        )
+        // The pause, the sleep timer's rule, the announcement, and the
+        // moment before the book is asked for are the folder commands' too.
+        let start = beginMoveToAnotherBook()
         DiagnosticLog.trace(
             .playback,
-            "reading list: opening the book \(ReadingListReaderWording.side(direction)) this one; plays: \(plays)"
+            "reading list: opening the book \(ReadingListReaderWording.side(direction)) this one; plays: \(start.plays)"
         )
-        // Asked for once VoiceOver has begun the announcement, as Continue
-        // to Next Book asks for its book.
-        DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
-            if plays {
-                self.continueThroughReadingList(to: neighbor.id)
-            } else {
-                self.openFromReadingList(neighbor.id)
-            }
-        }
+        announceMove(to: neighbor.id, titled: neighbor.title, start: start, through: .readingList)
     }
 
     /// Opens the book `bookID` to be read from the reading list, without
     /// starting it: the request to read it from the list first, so a reader
     /// already open for it claims it at once, then `.openBookWindow`, which
     /// opens its window or brings it forward, as a book an import opens is
-    /// opened (`LibraryWindowRouter`).
+    /// opened (`LibraryWindowRouter`); or, as the global setting says, this
+    /// window shows it (`showNextBook`).
     func openFromReadingList(_ bookID: UUID) {
         readingListRequests.request(for: bookID)
-        notificationCenter.post(name: .openBookWindow, object: bookID)
+        showNextBook(bookID, under: readingListMoveWindowChoice) {
+            notificationCenter.post(name: .openBookWindow, object: bookID)
+        }
+        // This reader has moved on from its finished book.
+        releaseFinishedBookOnReadingList()
+    }
+
+    // MARK: - Resting on a Finished Book
+
+    /// Tells the library that this reader rests on its book, finished, read
+    /// from the reading list, so the book is not dropped from the list for
+    /// being finished (`ReadingList.removesFinished`) while the reader still
+    /// asks the list about it: a rewind's replayed end, Play at the end, and
+    /// Next in Reading List all do (the user's rule of October 7, 2026 that
+    /// the list overrides the book's own end rule). Once for the reader,
+    /// however many ends it rests at; released when it moves on to another
+    /// book (`continueThroughReadingList(to:)`, `openFromReadingList(_:)`)
+    /// or closes (`close()`).
+    func holdFinishedBookOnReadingList() {
+        guard !holdsFinishedBookOnReadingList else { return }
+        holdsFinishedBookOnReadingList = true
+        libraryViewModel.holdFinishedBookOnReadingList(book.id)
+    }
+
+    /// Rests on this book, marked played by hand while the list drops
+    /// finished books, when this reader reads it from the list: the book
+    /// stays the list's until this reader moves on or closes, as a book
+    /// finished at its end does (`holdFinishedBookOnReadingList()`). A
+    /// reader that does not read it from the list, or has closed, holds
+    /// nothing, so the book leaves at once.
+    func restOnBookMarkedPlayedByHand() {
+        guard !hasClosed, isOpenedFromReadingList else { return }
+        holdFinishedBookOnReadingList()
+    }
+
+    /// Lets go of what `holdFinishedBookOnReadingList()` holds, if this
+    /// reader holds it: a finished book the list is to drop leaves the list
+    /// then, if no other reader of it holds it.
+    func releaseFinishedBookOnReadingList() {
+        guard holdsFinishedBookOnReadingList else { return }
+        holdsFinishedBookOnReadingList = false
+        libraryViewModel.releaseFinishedBookFromReadingList(book.id)
     }
 }

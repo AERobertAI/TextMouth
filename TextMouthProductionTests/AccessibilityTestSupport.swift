@@ -12,6 +12,9 @@ struct AccessibleControl {
     let element: NSAccessibilityProtocol
     let role: NSAccessibility.Role
     let label: String
+    /// The control's accessibility title, which VoiceOver reads beside its label: a hidden title that repeats the
+    /// label reads twice ("Adjust minutes, Adjust minutes"), so a test can require it empty.
+    let title: String
     let valueDescription: String
     let hint: String
 }
@@ -274,6 +277,7 @@ extension XCTestCase {
                 element: node,
                 role: role,
                 label: node.accessibilityLabel() ?? "",
+                title: node.accessibilityTitle() ?? "",
                 valueDescription: node.accessibilityValueDescription() ?? "",
                 hint: node.accessibilityHelp() ?? ""
             ))
@@ -572,13 +576,37 @@ extension XCTestCase {
     @MainActor
     @discardableResult
     func recordingAnnouncements(_ body: () throws -> Void) rethrows -> AnnouncementRecorder {
-        let recorder = AnnouncementRecorder()
-        let previousPoster = VoiceOverAnnouncer.poster
-        VoiceOverAnnouncer.poster = { announcement, window in
-            recorder.record(announcement, window: window)
-        }
+        let (recorder, previousPoster) = startRecordingAnnouncements()
         defer { VoiceOverAnnouncer.poster = previousPoster }
         try body()
         return recorder
     }
+
+    /// Run `body`, which may suspend, with VoiceOver announcements recorded
+    /// instead of posted, as `recordingAnnouncements(_:)` runs a body that
+    /// does not, then put the previous poster back, even when `body` throws.
+    /// Named apart from it, so a call in an async test that does not await
+    /// still means that one.
+    /// - Returns: The recorder holding everything announced while `body`
+    ///   ran, by `body` and by the work it waited for.
+    @MainActor
+    @discardableResult
+    func recordingAnnouncementsWhileAwaiting(_ body: () async throws -> Void) async rethrows -> AnnouncementRecorder {
+        let (recorder, previousPoster) = startRecordingAnnouncements()
+        defer { VoiceOverAnnouncer.poster = previousPoster }
+        try await body()
+        return recorder
+    }
+}
+
+/// Puts a new recorder in place of VoiceOver's poster, and returns it with
+/// the poster it replaced, for the caller to put back.
+@MainActor
+private func startRecordingAnnouncements() -> (recorder: AnnouncementRecorder, previousPoster: VoiceOverAnnouncer.Poster) {
+    let recorder = AnnouncementRecorder()
+    let previousPoster = VoiceOverAnnouncer.poster
+    VoiceOverAnnouncer.poster = { announcement, window in
+        recorder.record(announcement, window: window)
+    }
+    return (recorder, previousPoster)
 }

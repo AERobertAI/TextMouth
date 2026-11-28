@@ -1,0 +1,107 @@
+<!-- page: 1 -->
+
+
+# Shortening numbered headings
+in header\/footer using a custom character style
+
+
+## Introduction
+
+
+Interoperability developments by **Skyler Grey** \(Collabora Productivity\, UK\)\, **Michael Stahl** \(allotropia\, Germany\) and **László Németh** \(Csevej\, Hungary\) allow shortening the numbered headings for header\/footer\:
+- to refer only the **beginning** of the headings in a **fully interoperable way**\,
+- to refer the beginning and extend it **with an ellipsis** or arbitrary other characters **a semi\-interoperable way** \(the ellipsis is not visible in MSO\)\,
+- to shorten the heading **with arbitrary text** using **file\-level interoperability** \(the replacement text is not visible in MSO\, but it’s possible to edit the DOCX document in Word without losing the custom short heading in Writer\)\.
+
+## Two fields in the header for numbering and shortening
+
+- A Styles field \(STYLEREF in DOCX\) **referring the number** of the paragraph which contains the text formatted with “Heading 1 Character”\. Use always the custom character style\, here\, not the default paragraph style\, e\.g\. “Heading 1 Character” instead of “Heading 1”  – otherwise the interoperability is not guaranteed\,
+- A Styles field referring to the content of text formatted with “Heading 1 Character”\.
+
+## Formatting of headings in the body text
+
+- Short headings are formatted completely also with the referred character style\, here “Heading 1” with “Heading 1 Character”\;
+- Long headings are formatted only at the beginning by the referred character style\, shortening their text for the formatted part\;
+- If the beginning needs optional ellipsis in the header\, there is a hidden ellipsis after the beginning\, still formatted with the referred character style\;
+- it’s possible to replace the text of the heading completely by defining an invisible variable in the heading\, and formatting only that with the referred characters style\, e\.g\. x\=\"Quite new text\"\.
+
+## Notes
+
+
+For demonstration purposes only\, the custom character style “Heading 1 Character” has got a yellow highlighting in this test document\. On the Character Styles pane of the Styles sidebar\, click on  the“Edit Style…” menu item of the local menu of “Heading 1 Character” to modify it\.
+
+**To update** the Styles fields in the header\/footer\, **press F9**\.
+
+**To format all the headings with “Heading 1 Character” style**\,
+1. enable “Paragraph Styles” in the Find \& Replace dialog window\;
+2. choose Heading 1\, click on “Find All”\, and
+3. in the Styles sidebar\, choose the Character Styles pane\,
+4. and format the selected headings by clicking on your custom character style\, for example “Heading 1 Character”\.
+
+**To refer to other headings\, create new character styles for them by using the New… menu item of the local menu of “No Character Style” on the Styles sidebar**\.
+
+In this test document\, other page styles \, e\.g\. “First page” and the custom “Last page” were used to disable the header of the Default Page Style\. The first pages without the headers were inserted by Format→Title Page… and Insert new title pages\.
+
+**Alternative option without numbering**\: When there is no need for numbering \(in the header\)\, there is a fully back\-compatible way to do it\: hiding shortened headings immediately after \(and before\) the heading\, referring them in the header\/footer with Insert→Field→More Fields…→Document→Heading→Heading Contents\. This way neither the table of contents\, nor the PDF outline will not contain the hidden headings\, similar to the previous solution\.
+
+## Acknowledgments
+
+
+Special thanks to **Dr\. Dávid Pénzes PhD**\, who\, as the editor and composer of *Neveléstudomány* \(educational journal of ELTE University\, Budapest\, which university was the conference venue of LiboCon 2025\)\, has been asking me for advice on shortening headings for a very long time\.
+
+László Németh
+
+<!-- page: 2 -->
+
+
+# Do not shorten this short heading
+
+
+Custom character style “Heading 1 Character” is applied on the whole heading\.
+
+<!-- page: 3 -->
+
+
+# Beginning of the paragraph\: Custom character style “Heading 1 Character” is applied only on the first part of the long heading
+
+
+If all headings got “Heading 1 Character” character style \(see Notes\)\, to remove the “Heading 1 Character” on the selected second part of the heading\, double click on “No Character Style”… on Character Style pane of the Styles sidebar\.
+
+<!-- page: 4 -->
+
+
+# Beginning of the paragraph \+ ellipsis\: the ellipsis is a hidden text after the shortened title\, still formatted also with the referred character style
+
+
+Enable View→Field Names to see more\, and double\-click on the Set variable field to modify it \(or positionate the text cursor at the beginning of the field\, and use Edit → Fields… \)\.
+
+<!-- page: 5 -->
+
+
+Praesent tincidunt neque eu pellentesque pharetra\. Fusce pellentesque est orci\.
+
+<!-- page: 6 -->
+
+
+# Replace the heading completely using the referred character style only on the invisible text
+
+
+Enable View→Field Names to see more\, and double\-click on the Set variable field to modify it \(or positionate the text cursor at the beginning of the field\, and use Edit → Fields… \)\.
+
+<!-- page: 7 -->
+
+
+Nullam vehicula vestibulum est vel ultricies\.
+
+<!-- page: 8 -->
+
+
+Table of Contents
+
+1 	Do not shorten this short heading	3
+
+2 	Beginning of the paragraph\: Custom character style “Heading 1 Character” is applied only on the first part of the long heading	4
+
+3 	Beginning of the paragraph \+ ellipsis\: the ellipsis is a hidden text after the shortened title\, still formatted also with the referred character style	5
+
+4 	Replace the heading completely using the referred character style only on the invisible text	7

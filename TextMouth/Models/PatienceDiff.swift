@@ -157,7 +157,7 @@ enum PatienceDiff {
         return occurrences.values
             .filter { $0.oldCount == 1 && $0.newCount == 1 }
             .map { FixedPoint(old: $0.oldIndex, new: $0.newIndex) }
-            .sorted { $0.old < $1.old }
+            .sortedStably { $0.old < $1.old }
     }
 
     /// The longest chain of `points` (in the old text's order) whose places

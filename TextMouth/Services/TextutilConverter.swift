@@ -22,21 +22,40 @@ enum TextutilInputFormat: String, CaseIterable, Sendable {
     /// Word 2003 XML, whatever its file name.
     case wordml
 
-    /// The kind of document, in the words a refusal uses.
-    var documentName: String {
+    /// The kind of document in English with its article, for the debug log
+    /// (FR34): "a rich text document", "an OpenDocument text document".
+    var logName: String {
         switch self {
-        case .rtf: return "rich text document"
-        case .rtfd: return "rich text document with attachments"
-        case .doc: return "Word 97-2003 document"
-        case .odt: return "OpenDocument text document"
-        case .wordml: return "Word 2003 XML document"
+        case .rtf: return "a rich text document" // l10n: no (debug log)
+        case .rtfd: return "a rich text document with attachments" // l10n: no (debug log)
+        case .doc: return "a Word 97-2003 document" // l10n: no (debug log)
+        case .odt: return "an OpenDocument text document" // l10n: no (debug log)
+        case .wordml: return "a Word 2003 XML document" // l10n: no (debug log)
         }
     }
 
-    /// The indefinite article that goes before `documentName`: "an" before
-    /// a vowel sound ("OpenDocument"), "a" before the rest.
-    var article: String {
-        self == .odt ? "an" : "a"
+    /// The refusal of a file that textutil could not read as this kind of
+    /// document: "This file could not be read as a rich text document.", a
+    /// whole sentence for each kind, so each language puts the kind's name
+    /// and its article where it needs them.
+    var unreadableSentence: String {
+        switch self {
+        case .rtf:
+            // Translators: Why a file was refused at import: it could not be read as a rich text (RTF) document. A sentence saying it may be damaged follows.
+            return InterfaceText.line("textutilInputFormat.unreadableSentence.rtf", "This file could not be read as a rich text document.")
+        case .rtfd:
+            // Translators: Why a file was refused at import: it could not be read as a rich text (RTFD) document with attachments. A sentence saying it may be damaged follows.
+            return InterfaceText.line("textutilInputFormat.unreadableSentence.rtfd", "This file could not be read as a rich text document with attachments.")
+        case .doc:
+            // Translators: Why a file was refused at import: it could not be read as a Word 97-2003 (.doc) document. A sentence saying it may be damaged follows.
+            return InterfaceText.line("textutilInputFormat.unreadableSentence.doc", "This file could not be read as a Word 97-2003 document.")
+        case .odt:
+            // Translators: Why a file was refused at import: it could not be read as an OpenDocument text (.odt) document. A sentence saying it may be damaged follows.
+            return InterfaceText.line("textutilInputFormat.unreadableSentence.odt", "This file could not be read as an OpenDocument text document.")
+        case .wordml:
+            // Translators: Why a file was refused at import: it could not be read as a Word 2003 XML document. A sentence saying it may be damaged follows.
+            return InterfaceText.line("textutilInputFormat.unreadableSentence.wordml", "This file could not be read as a Word 2003 XML document.")
+        }
     }
 }
 
@@ -61,7 +80,7 @@ enum TextutilConverter {
     /// Why a document could not be read; each sentence is read to the
     /// listener after the import's own ("Could not import ... failed: "), so
     /// none names the file.
-    enum Failure: LocalizedError, Equatable {
+    enum Failure: LocalizedError, LogDescribing, Equatable {
         /// textutil could not read the file as this format: damaged, or
         /// another kind of file.
         case unreadable(TextutilInputFormat)
@@ -72,10 +91,23 @@ enum TextutilConverter {
         var errorDescription: String? {
             switch self {
             case let .unreadable(format):
-                return "This file could not be read as \(format.article) \(format.documentName). "
-                    + "It may be damaged, or another kind of file."
+                // Translators: Second sentence of the refusal of a document that could not be read: the file may be damaged or of another kind.
+                let damaged = InterfaceText.line("failure.unreadable.damaged", "It may be damaged, or another kind of file.")
+                return SentenceWording.joined([format.unreadableSentence, damaged])
             case let .stopped(reason):
-                return "TextMouth stopped reading this document because \(reason)."
+                // The reason is a clause in English (`KillReason.words`), which the debug log writes too.
+                // Translators: Why a document was refused at import: the program that reads it ran too long or used too much memory and was stopped. %@ is the reason, a clause in English that follows "because".
+                return InterfaceText.line("failure.stopped.document", "TextMouth stopped reading this document because \(reason).")
+            }
+        }
+
+        /// The failure in English for the debug log (FR34).
+        var logDescription: String {
+            switch self {
+            case let .unreadable(format):
+                return "This file could not be read as \(format.logName). It may be damaged, or another kind of file." // l10n: no (debug log)
+            case let .stopped(reason):
+                return "TextMouth stopped reading this document because \(reason)." // l10n: no (debug log)
             }
         }
     }
@@ -317,12 +349,12 @@ enum TextutilConverter {
             // textutil exits 0 when it cannot read a file, writing no output
             // file: a missing one means the file could not be read.
             guard FileManager.default.fileExists(atPath: output.path) else {
-                throw unreadable(format, name: name, because: "wrote nothing")
+                throw unreadable(format, name: name, because: "wrote nothing") // l10n: no (debug log text)
             }
         case let .exited(status):
-            throw unreadable(format, name: name, because: "exited with status \(status)")
+            throw unreadable(format, name: name, because: "exited with status \(status)") // l10n: no (debug log text)
         case .couldNotStart:
-            throw unreadable(format, name: name, because: "could not start")
+            throw unreadable(format, name: name, because: "could not start") // l10n: no (debug log text)
         case let .killed(reason):
             DiagnosticLog.event(.import, "TEXTUTIL_KILLED: \(name): \(reason.words)")
             throw Failure.stopped(reason: reason.words)

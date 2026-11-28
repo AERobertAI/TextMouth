@@ -225,12 +225,24 @@ enum FeedItemState: Equatable, Sendable {
     /// downloads section's (FR10).
     var visibleNote: String {
         switch self {
-        case .notDownloaded: return "Not Downloaded"
-        case .downloading: return "Downloading"
-        case .waiting: return "Waiting to Download"
-        case .failed: return "Download Failed"
-        case .downloaded: return "Downloaded"
-        case .inLibrary: return "In Library"
+        case .notDownloaded:
+            // Translators: The note on a feed's episode or article row, and in a book's row, when its file is not on this Mac. Title case.
+            return InterfaceText.line("feedItemState.visibleNote.notDownloaded", "Not Downloaded")
+        case .downloading:
+            // Translators: The note on a feed's episode or article row while its file downloads. Title case.
+            return InterfaceText.line("feedItemState.visibleNote.downloading", "Downloading")
+        case .waiting:
+            // Translators: The note on a feed's episode or article row whose automatic download waits for a network without data limits or for room on this Mac. Title case.
+            return InterfaceText.line("feedItemState.visibleNote.waiting", "Waiting to Download")
+        case .failed:
+            // Translators: The note on a feed's episode or article row whose last download failed. A reason may follow it. Title case.
+            return InterfaceText.line("common.downloadFailed", "Download Failed")
+        case .downloaded:
+            // Translators: The note on a feed's episode or article row whose file is on this Mac. Title case.
+            return InterfaceText.line("common.downloaded", "Downloaded")
+        case .inLibrary:
+            // Translators: The note on a feed's episode or article row that was moved into the library as a book of its own. Title case.
+            return InterfaceText.line("feedItemState.visibleNote.inLibrary", "In Library")
         }
     }
 
@@ -397,8 +409,13 @@ enum FeedMediaKind: String, Equatable, Sendable {
     static let videoExtensions: Set<String> = ["mp4", "m4v", "mov"]
 
     /// The extensions of audio files: those the import pipeline takes as
-    /// audiobooks (`BookFormat.audio`), but for video's.
-    static let audioExtensions = Set(BookFormat.audio.fileExtensions).subtracting(videoExtensions)
+    /// audiobooks (`BookFormat.audio`), but for video's, and but for the
+    /// formats only an installed ffmpeg converts (`FFmpegAudioConverter`,
+    /// FMT31): a feed fetches none of those, so an episode in one, such as
+    /// Windows Media Audio, fails before its download, as it always has.
+    static let audioExtensions = Set(BookFormat.audio.fileExtensions)
+        .subtracting(videoExtensions)
+        .subtracting(FFmpegAudioConverter.extensions)
 
     /// The kind of a file whose MIME type is `mimeType` and whose address is
     /// `url`: by the type's top-level part when it is audio or video, and

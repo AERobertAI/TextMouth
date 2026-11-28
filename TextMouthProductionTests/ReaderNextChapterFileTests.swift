@@ -103,7 +103,7 @@ final class ReaderNextChapterFileTests: XCTestCase {
     /// timer set for the end of the book, which lets every chapter but the
     /// last roll on into the next.
     func testAnEndOfHeadingSleepTimerNamesNoFileToFollow() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("Next Chapter File Timer")
         let book = try world.makeSilentAudioBook(title: "Harbour Soundings", trackDurations: [5, 5])
         let reader = world.openReader(for: book)

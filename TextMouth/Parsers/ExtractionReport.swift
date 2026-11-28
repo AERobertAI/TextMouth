@@ -64,7 +64,9 @@ struct ExtractionReport: Equatable, Sendable {
     var blankChapterCount: Int
     /// The chapters that could not be read, in reading order.
     var omissions: [ExtractionOmission]
-    /// How each page of a PDF was read; nil for every other format.
+    /// How each page of a PDF was read, or of a book of pictures, whose
+    /// pages text recognition reads as it reads a scanned PDF's (FMT34); nil
+    /// for every other format.
     var pdf: PDFExtractionDiagnostics?
 
     /// A report of `chapterCount` chapters, `blankChapterCount` of them
@@ -72,7 +74,7 @@ struct ExtractionReport: Equatable, Sendable {
     /// read. The defaults describe an extraction with nothing to report, as
     /// formats that do not report yet produce.
     init(
-        container: String = "this book",
+        container: String = "this book", // l10n: no (a parser's damage reason: inside the report's English chapter problems)
         chapterCount: Int = 0,
         blankChapterCount: Int = 0,
         omissions: [ExtractionOmission] = [],
@@ -98,14 +100,35 @@ struct ExtractionReport: Equatable, Sendable {
     var message: String {
         var sentences: [String] = []
         if !omissions.isEmpty {
+            // Each chapter's problem is a parser's damage reason, in English.
             let problems = omissions.map(describe).joined(separator: "; ")
-            sentences.append("\(summary): \(problems).")
+            // Translators: Warning after an import that left chapters out: how many chapters could not be read, a colon, then each chapter with its file and why, which are in English, separated by semicolons. %1$@ is the count sentence, such as "2 of 14 chapters could not be read", and %2$@ the chapters.
+            sentences.append(InterfaceText.line("extractionReport.message.period", "\(summary): \(problems)."))
         }
         if let pageProblem = pdf?.problem {
             sentences.append(pageProblem)
         }
+        guard sentences.isEmpty else { return SentenceWording.joined(sentences) }
+        return pdf == nil
+            // Translators: Says that an import read every chapter of a book, with nothing left out.
+            ? InterfaceText.line("extractionReport.message.chapter", "Every chapter was read.")
+            // Translators: Says that an import read every page of a PDF or of a book of pictures, with nothing left out.
+            : InterfaceText.line("extractionReport.message.page", "Every page was read.")
+    }
+
+    /// `message` in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34): the log's line of a report that
+    /// left chapters out (`MarkdownCacheService`).
+    var logMessage: String {
+        var sentences: [String] = []
+        if !omissions.isEmpty {
+            sentences.append("\(logSummary): \(omissions.map(describe).joined(separator: "; ")).") // l10n: no (debug log)
+        }
+        if let pageProblem = pdf?.logProblem {
+            sentences.append(pageProblem)
+        }
         guard sentences.isEmpty else { return sentences.joined(separator: " ") }
-        return pdf == nil ? "Every chapter was read." : "Every page was read."
+        return pdf == nil ? "Every chapter was read." : "Every page was read." // l10n: no (debug log)
     }
 
     // MARK: Sentence Parts
@@ -116,21 +139,37 @@ struct ExtractionReport: Equatable, Sendable {
         // A report whose chapter count was never filled in has no total to
         // give, and must not claim an impossible one such as "2 of 0".
         guard chapterCount >= omissions.count else {
-            let count = CountWording.phrase(omissions.count, singular: "chapter", plural: "chapters")
-            return "\(count) could not be read"
+            // Translators: Starts the warning after an import that left chapters out, when the book's chapter count is not known. %lld is how many chapters could not be read. Has no full stop.
+            return InterfaceText.line("extractionReport.summary.count", "\(number: omissions.count) chapters could not be read")
         }
         guard omissions.count == chapterCount else {
-            return "\(omissions.count) of \(chapterCount) chapters could not be read"
+            // Translators: Starts the warning after an import that left chapters out: some of the book's chapters could not be read. %1$@ is how many could not be read, with digit grouping, and %2$lld how many chapters the book has, always two or more. Has no full stop.
+            return InterfaceText.line("extractionReport.summary.value", "\(omissions.count.interfaceFormatted()) of \(number: chapterCount) chapters could not be read")
         }
         return chapterCount == 1
-            ? "The only chapter could not be read"
-            : "None of the \(chapterCount) chapters could be read"
+            // Translators: Starts the warning after an import of a book of one chapter that could not be read. Has no full stop.
+            ? InterfaceText.line("extractionReport.summary.chapter", "The only chapter could not be read")
+            // Translators: Starts the warning after an import where none of a book's chapters could be read. %lld is how many chapters the book has, always two or more. Has no full stop.
+            : InterfaceText.line("extractionReport.summary.none", "None of the \(number: chapterCount) chapters could be read")
+    }
+
+    /// `summary` in English for the debug log (FR34).
+    private var logSummary: String {
+        guard chapterCount >= omissions.count else {
+            return "\(omissions.count) chapter\(omissions.count == 1 ? "" : "s") could not be read" // l10n: no (debug log)
+        }
+        guard omissions.count == chapterCount else {
+            return "\(omissions.count) of \(chapterCount) chapters could not be read" // l10n: no (debug log)
+        }
+        return chapterCount == 1
+            ? "The only chapter could not be read" // l10n: no (debug log)
+            : "None of the \(chapterCount) chapters could be read" // l10n: no (debug log)
     }
 
     /// One omission as a clause: the chapter's number, its file in curly
     /// quotation marks as `PackageDamage` quotes file names, and the problem.
     private func describe(_ omission: ExtractionOmission) -> String {
-        "chapter \(omission.chapterNumber) (“\(omission.member)”) \(problem(omission.reason))"
+        "chapter \(omission.chapterNumber) (“\(omission.member)”) \(problem(omission.reason))" // l10n: no (a parser's damage reason)
     }
 
     /// The words that complete "chapter N (“file”) …" for each reason.
@@ -138,17 +177,17 @@ struct ExtractionReport: Equatable, Sendable {
     private func problem(_ reason: ExtractionOmission.Reason) -> String {
         switch reason {
         case .missingMember:
-            return "is missing from \(container)"
+            return "is missing from \(container)" // l10n: no (a parser's damage reason)
         case .unreadableMember:
-            return "is damaged or incomplete"
+            return "is damaged or incomplete" // l10n: no (a parser's damage reason)
         case .malformedMarkup:
-            return "has markup that could not be read"
+            return "has markup that could not be read" // l10n: no (a parser's damage reason)
         case .unlistedItem:
-            return "has no file listed in \(container)"
+            return "has no file listed in \(container)" // l10n: no (a parser's damage reason)
         case .unsupportedMediaType(let type):
             return type.isEmpty
-                ? "has no media type, so TextMouth cannot read it"
-                : "is a “\(type)” file, which TextMouth cannot read"
+                ? "has no media type, so TextMouth cannot read it" // l10n: no (a parser's damage reason)
+                : "is a “\(type)” file, which TextMouth cannot read" // l10n: no (a parser's damage reason)
         }
     }
 }

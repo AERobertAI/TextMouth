@@ -1,0 +1,871 @@
+"""Tests of build-train.py --remote: a train whose tests run on GitHub Actions.
+
+Run with: python3 -I -B -m unittest discover -s Scripts/agents/tests
+
+The train is real, and so are its merges and its push, but all in throwaway places
+(see remote_case.py): a repository in a temporary folder is both the main checkout and
+the train's worktree, the push goes to a bare repository beside it, `gh` is a stand-in,
+and the clock is pretend. The train's records are in the temporary folder too. The
+heavy-work lock is replaced by a trap that fails the test if a remote train asks for it.
+"""
+import io
+import json
+import time
+import unittest
+from contextlib import redirect_stderr, redirect_stdout
+from types import SimpleNamespace
+from unittest import mock
+
+from remote_case import (FAILING_LOG, FAILING_SUMMARY, PASSING_LOG, PASSING_SUMMARY, STARTED, RemoteTestCase,
+                         results)
+import github_run  # noqa: E402
+import heavy_lock  # noqa: E402
+import test_command  # noqa: E402
+
+train = test_command.load_build_train()
+
+# A finished run, as `gh run view` shows one.
+DONE = {"status": "completed", "conclusion": "success", "url": "https://github.example/runs/7001"}
+DONE_FAILED = {**DONE, "conclusion": "failure"}
+DONE_CANCELLED = {**DONE, "conclusion": "cancelled"}
+# The summary of a build that did not compile, as run-area.py prints it.
+BROKEN_SUMMARY = "no tests ran\nERROR Broken.swift:1:1: error: does not compile\nFAILED in 30 seconds\n"
+
+
+class RemoteTrainCase(RemoteTestCase):
+    """A remote train in a throwaway repository, with its records in a temporary folder."""
+
+    def setUp(self):
+        super().setUp()
+        records = self.folder / "train"
+        self.patch(train, TRAIN_DIR=records, QUEUE=records / "queue", TRAINS=records / "trains",
+                   RESULTS=records / "results", LOCK=records / "lock", STATE=records / "lock" / "state.txt",
+                   NEXT=records / "next.txt", ROOT=self.repo, WORKTREE=self.repo)
+        # Never let a test reach the real records, checkout or lock: every path must be temporary.
+        for path in (train.TRAIN_DIR, train.QUEUE, train.TRAINS, train.RESULTS, train.LOCK, train.ROOT,
+                     train.WORKTREE):
+            self.assertTrue(str(path).startswith(str(self.folder)), path)
+        self.assertIs(train.github_run, github_run)
+        self.posts = []
+        self.patch(train, post=lambda to, topic, tag="build": self.posts.append((to, topic, tag)),
+                   short_path=str, regenerate_project=lambda: False,
+                   known_names=lambda cwd: ({"all", "stats", "logs"}, {"FooTests", "BarTests"}))
+
+        def no_census(train_dir):
+            raise AssertionError("a remote train must not run the iOS census on this Mac")
+
+        def no_lock(*args, **more):
+            raise AssertionError("a remote train must not take the heavy-work lock")
+
+        self.patch(train, ios_census=no_census)
+        patcher = mock.patch.object(heavy_lock, "held", no_lock)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.counter = 0
+
+    def patch(self, module, **values):
+        """Sets each of `values` on `module` for this test only."""
+        for name, value in values.items():
+            self.addCleanup(setattr, module, name, getattr(module, name))
+            setattr(module, name, value)
+
+    def branch(self, agent, files, areas=("stats",), classes=("FooTests",), **more):
+        """Makes a branch for `agent` off main that adds `files` (a dict of name to text), queues
+        a request for it as `build-train.py request` does (with any more fields of `more`, such as
+        ios_size=True), and returns the request."""
+        self.git("checkout", "-q", "-b", agent, "main")
+        head = ""
+        for name, text in files.items():
+            head = self.commit(name, text)
+        self.git("checkout", "-q", "main")
+        request = {"agent": agent, "branch": agent, "head": head, "classes": list(classes), "areas": list(areas),
+                   "note": "", "time": "2026-11-09T09:00:00", **more}
+        train.QUEUE.mkdir(parents=True, exist_ok=True)
+        self.counter += 1
+        (train.QUEUE / f"{self.counter:013d}-{agent}.json").write_text(json.dumps(request))
+        return request
+
+    def queued(self):
+        """The names of the request files waiting in the queue."""
+        return sorted(path.name for path in train.QUEUE.glob("*.json")) if train.QUEUE.exists() else []
+
+    def gh_runs(self, *downloads, view=DONE):
+        """Tells the fake gh a run starts, ends as `view` says, and uploads each of `downloads` in turn."""
+        self.gh_state({"list": [[STARTED]], "view": [view], "download": list(downloads)})
+
+    def run_train(self, remote=True):
+        """Runs one train as the loop does, quietly; returns its outcome."""
+        with redirect_stdout(io.StringIO()):
+            return train.run_one_train(SimpleNamespace(base="main", remote=remote))
+
+    def result_of(self, agent):
+        """The text of an agent's result file."""
+        return (train.RESULTS / f"{agent}.md").read_text()
+
+    def posts_to(self, agent):
+        """What the train posted to `agent` on the board."""
+        return [topic for to, topic, _ in self.posts if to == agent]
+
+
+class RemoteTrainRunTests(RemoteTrainCase):
+    """A train that goes through: merged here, tested there, reported here."""
+
+    def test_the_merged_tree_and_a_request_are_pushed_to_testbuild_and_nothing_else(self):
+        self.branch("alpha", {"a.txt": "a"}, areas=["stats"], classes=["FooTests"])
+        self.branch("beta", {"b.txt": "b"}, areas=["logs"], classes=["BarTests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.assertEqual(self.run_train(), "ran")
+        refs = self.pushed_refs()
+        self.assertEqual(list(refs), ["refs/heads/TestBuild"], "nothing but TestBuild may be pushed")
+        request = self.pushed_request(refs["refs/heads/TestBuild"])
+        self.assertEqual((request["areas"], request["classes"], request["full"]),
+                         (["stats", "logs"], ["FooTests", "BarTests"], False))
+        self.assertEqual([r["agent"] for r in request["requests"]], ["alpha", "beta"])
+        tree = self.git("ls-tree", "-r", "--name-only", refs["refs/heads/TestBuild"], cwd=self.remote).split()
+        self.assertEqual(sorted(tree), sorted(["base.txt", "a.txt", "b.txt", github_run.REQUEST_PATH]),
+                         "both branches should be merged into the pushed tree")
+
+    def test_a_long_request_asks_for_more_shards_and_a_short_one_for_one(self):
+        self.branch("alpha", {"a.txt": "a"}, areas=["stats"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        # 1500 seconds of tests, by the times file: three shards at 600 seconds each at most.
+        self.patch(train, selected_classes=lambda areas, classes: ["BigTests"],
+                   shard=SimpleNamespace(load_times=lambda path: {"BigTests": 1500}, shard_count=train.shard.shard_count))
+        self.run_train()
+        long_request = self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"])
+        self.assertEqual(long_request["shards"], 3)
+
+    def test_a_short_request_is_one_shard(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.patch(train, selected_classes=lambda areas, classes: ["SmallTests"])
+        self.run_train()
+        request = self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"])
+        self.assertEqual(request["shards"], 1)
+
+    def test_each_agent_is_told_the_result_and_given_the_runs_link(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.run_train()
+        text = self.result_of("alpha")
+        self.assertIn("Verdict of the whole train: PASSED", text)
+        self.assertIn("Executed 12 tests, with 0 failures", text)
+        self.assertIn("Run on GitHub: https://github.example/runs/7001", text)
+        self.assertTrue(any("PASSED" in topic for topic in self.posts_to("alpha")), self.posts)
+        train_dir = next(train.TRAINS.iterdir())
+        self.assertEqual((train_dir / "run.log").read_text(), PASSING_LOG, "the log should be kept in the train's folder")
+        self.assertEqual((train_dir / "run-summary.txt").read_text(), PASSING_SUMMARY)
+        self.assertEqual(json.loads((train_dir / "remote.json").read_text())["url"], DONE["url"])
+        self.assertIn("Run on GitHub", (train_dir / "summary.md").read_text())
+
+    def test_failing_tests_are_a_result_and_the_requests_are_not_put_back(self):
+        self.branch("alpha", {"a.txt": "a"}, classes=["FooTests"])
+        self.gh_runs(results(FAILING_SUMMARY, FAILING_LOG), view=DONE_FAILED)
+        self.assertEqual(self.run_train(), "ran")
+        text = self.result_of("alpha")
+        self.assertIn("Verdict of the whole train: FAILED", text)
+        self.assertIn("Failures in the classes you asked for: 1", text)
+        self.assertEqual(self.queued(), [], "a run with failing tests is a result, not a reason to ask again")
+
+    def test_the_train_takes_its_own_lock_and_frees_it_and_never_the_heavy_one(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.run_train()  # The heavy-work lock trap in setUp fails the test if the train asks for it.
+        self.assertFalse(train.LOCK.exists(), "the train should release its own lock")
+        self.assertEqual(self.queued(), [])
+
+    def test_names_the_merged_tree_does_not_know_run_nothing_and_push_nothing(self):
+        self.branch("alpha", {"a.txt": "a"}, areas=["nosucharea"], classes=["NoSuchTests"])
+        self.assertEqual(self.run_train(), "ran")
+        self.assertEqual(self.pushed_refs(), {}, "with nothing to run there is nothing to push")
+        self.assertEqual(self.gh_calls(), [])
+        self.assertIn("nosucharea", self.result_of("alpha"))
+
+    def test_a_local_train_is_unchanged_by_the_option_existing(self):
+        # The default asks for the heavy-work lock (here the trap, which fails the call).
+        self.branch("alpha", {"a.txt": "a"})
+        self.patch(train, free_gigabytes=lambda: 100)
+        with self.assertRaises(AssertionError) as caught:
+            self.run_train(remote=False)
+        self.assertIn("heavy-work lock", str(caught.exception))
+        self.assertEqual(self.pushed_refs(), {})
+
+
+def with_iphone_build(download, summary, errors=""):
+    """A `gh run download` answer that also holds the iPhone build's files, as the join uploads them."""
+    return {"files": {**download["files"], "ios-summary.txt": summary, "ios-errors.txt": errors,
+                      "ios.log": "xcodebuild output\n"}}
+
+
+IOS_PASSED = "iOS build: PASSED\nErrors in the app: 0 in 0 files\nMinutes: 3.1\n"
+
+
+class IPhoneBuildTests(RemoteTrainCase):
+    """A remote train reports the iPhone build its run made, by file, as a Mac train's census is reported."""
+
+    def test_a_passing_iphone_build_is_in_the_summary_and_in_each_agents_result_and_the_files_are_kept(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), IOS_PASSED))
+        self.assertEqual(self.run_train(), "ran")
+        text = self.result_of("alpha")
+        self.assertIn(f"- {train.IOS_BUILD_LABEL}: PASSED, 0 errors in 0 files", text)
+        self.assertIn("iOS errors in files your branch changes: 0", text)
+        train_dir = next(train.TRAINS.iterdir())
+        self.assertIn("iOS build of the merged tree on GitHub", (train_dir / "summary.md").read_text())
+        self.assertEqual((train_dir / "ios-summary.txt").read_text(), IOS_PASSED)
+        self.assertTrue((train_dir / "ios.log").exists())
+        self.assertTrue(any("iOS errors in your files: 0" in topic for topic in self.posts_to("alpha")), self.posts)
+
+    def test_the_errors_are_listed_by_the_files_each_branch_changes(self):
+        self.branch("alpha", {"TextMouth/Phone/A.swift": "a"})
+        self.branch("beta", {"TextMouth/Services/B.swift": "b"}, classes=["BarTests"])
+        errors = ("TextMouth/Phone/A.swift:3:4: error: cannot find 'NSWorkspace' in scope\n"
+                  "TextMouth/Services/B.swift:9:1: error: expected declaration\n"
+                  "TextMouth/Elsewhere.swift:1:1: error: nobody here changed this\n")
+        summary = "iOS build: FAILED\nErrors in the app: 3 in 3 files\nMinutes: 4.0\n"
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), summary, errors))
+        self.run_train()
+        alpha, beta = self.result_of("alpha"), self.result_of("beta")
+        self.assertIn("iOS errors in files your branch changes: 1", alpha)
+        self.assertIn("TextMouth/Phone/A.swift:3:4: error: cannot find 'NSWorkspace' in scope", alpha)
+        self.assertNotIn("B.swift", alpha)
+        self.assertIn("iOS errors in files your branch changes: 1", beta)
+        self.assertIn("TextMouth/Services/B.swift:9:1: error: expected declaration", beta)
+        self.assertNotIn("Elsewhere", alpha + beta)
+        self.assertIn("FAILED, 3 errors in 3 files", alpha)
+
+    def test_a_failed_iphone_build_does_not_change_the_trains_verdict_on_the_tests(self):
+        self.branch("alpha", {"a.txt": "a"})
+        summary = "iOS build: FAILED\nErrors in the app: 0 in 0 files\nReason: the runner image lacks the iOS Simulator platform or SDK that this build needs\n"
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), summary))
+        self.assertEqual(self.run_train(), "ran")
+        text = self.result_of("alpha")
+        self.assertIn("Verdict of the whole train: PASSED", text)
+        self.assertIn("FAILED, 0 errors in 0 files (the runner image lacks the iOS Simulator platform or SDK", text)
+        self.assertEqual(self.queued(), [], "an iPhone build that failed is a result, not a reason to ask again")
+
+    def test_a_run_with_no_iphone_build_has_no_iphone_line(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.run_train()
+        self.assertNotIn("iOS", self.result_of("alpha").replace("iOS errors", "").replace("Names left out", ""))
+        self.assertNotIn("iOS build", (next(train.TRAINS.iterdir()) / "summary.md").read_text())
+
+    def test_the_remote_train_never_runs_the_census_on_this_mac(self):
+        # setUp replaces ios_census with a trap; a train with an iPhone build to report passes through it.
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), IOS_PASSED))
+        self.assertEqual(self.run_train(), "ran")
+
+    # The two errors of train 1116-1349's iPhone build, in the form ios-errors.txt lists them: in no file of the repository.
+    STALE_ERRORS = (
+        "error: Clang dependency scanner failure: fatal error: file '/Applications/Xcode_26.0.1.app/Contents/Developer/"
+        "Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/clang/include/module.modulemap' has been modified since the module "
+        "file '.../ModuleCache.noindex/1TV4X376J16CB/_Builtin_stdbool-FTUUUU4ZHFEK.pcm' was built: mtime changed\n"
+        "error: file '/Applications/Xcode_26.0.1.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/"
+        "clang/include/module.modulemap' has been modified since the module file '.../Darwin-2KVQ5G7PKP4YG.pcm' was built\n")
+    STALE_SUMMARY = "iOS build: FAILED\nErrors in the app: 2 in 0 files\nMinutes: 3.2\n"
+
+    def test_a_build_whose_only_errors_are_the_stale_module_cache_says_the_runners_cache_was_stale_not_the_code(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), self.STALE_SUMMARY, self.STALE_ERRORS))
+        self.run_train()
+        train_dir = next(train.TRAINS.iterdir())
+        for text in (self.result_of("alpha"), (train_dir / "summary.md").read_text()):
+            self.assertIn(f"FAILED, 2 errors in 0 files ({train.runner_module_cache.STALE_SENTENCE})", text)
+            self.assertIn("not this branch's code", text)
+        self.assertTrue(any("the iPhone build failed for the runner's stale module cache, not for your code" in topic
+                            for topic in self.posts_to("alpha")), self.posts)
+
+    def test_a_stale_cache_error_among_real_errors_is_not_called_the_runners_fault(self):
+        self.branch("alpha", {"TextMouth/Phone/A.swift": "a"})
+        errors = self.STALE_ERRORS + "TextMouth/Phone/A.swift:3:4: error: cannot find 'NSWorkspace' in scope\n"
+        summary = "iOS build: FAILED\nErrors in the app: 3 in 1 files\nMinutes: 3.2\n"
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), summary, errors))
+        self.run_train()
+        self.assertNotIn("stale", self.result_of("alpha"))
+        self.assertTrue(all("stale" not in topic for topic in self.posts_to("alpha")), self.posts)
+
+    def test_a_build_the_script_ran_twice_says_so_in_the_trains_line(self):
+        self.branch("alpha", {"a.txt": "a"})
+        summary = ("iOS build: PASSED\nErrors in the app: 0 in 0 files\nMinutes: 6.0\n"
+                   "Retried: the first try (3.1 minutes) failed with \"has been modified since the module file\", so the module "
+                   "caches were emptied and the build ran once more\n")
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), summary))
+        self.run_train()
+        self.assertIn("PASSED, 0 errors in 0 files (the first try (3.1 minutes) failed with", self.result_of("alpha"))
+
+    def test_a_request_for_the_size_asks_the_run_for_it_and_the_results_show_it(self):
+        self.branch("alpha", {"a.txt": "a"}, ios_size=True)
+        self.branch("beta", {"b.txt": "b"}, classes=["BarTests"])
+        summary = IOS_PASSED + "\n".join(SIZE_LINES) + "\n"
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), summary))
+        self.assertEqual(self.run_train(), "ran")
+        train_dir = next(train.TRAINS.iterdir())
+        self.assertIn('"ios_size": true', (train_dir / "command.txt").read_text(),
+                      "one request for the size gives the whole train's run the measurement")
+        for agent in ("alpha", "beta"):
+            self.assertIn("- iPhone app size: iPhone app: 20.1 MB (20,123,456 bytes) in 90 files, within the 30 MB limit.",
+                          self.result_of(agent))
+        # The details are in the train's summary, indented under the headlines.
+        text = (train_dir / "summary.md").read_text()
+        self.assertIn("  - 9.0 MB (9,000,000 bytes)  TextMouth", text)
+        self.assertNotIn("9,000,000", self.result_of("alpha"), "an agent's result keeps to the headlines")
+
+    def test_a_train_that_nobody_asked_the_size_of_does_not_ask_for_it(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_runs(with_iphone_build(results(PASSING_SUMMARY, PASSING_LOG), IOS_PASSED))
+        self.run_train()
+        train_dir = next(train.TRAINS.iterdir())
+        self.assertNotIn("ios_size", (train_dir / "command.txt").read_text())
+        self.assertNotIn("iPhone app size", self.result_of("alpha"))
+
+    def test_the_request_command_records_the_size_flag_only_when_given(self):
+        self.git("checkout", "-q", "-b", "alpha", "main")
+        self.git("checkout", "-q", "main")
+        for flag in (False, True):
+            args = SimpleNamespace(agent="alpha", branch="alpha", classes="FooTests", areas="stats", note="", ios_size=flag)
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(train.command_request(args), 0)
+            queued = json.loads(sorted(train.QUEUE.glob("*.json"))[-1].read_text())
+            self.assertEqual(queued.get("ios_size"), True if flag else None, f"ios_size={flag}")
+            self.assertEqual(queued["areas"], ["stats"])
+
+    def test_an_unreadable_summary_is_read_as_what_it_is(self):
+        folder = self.folder / "ios-dir"
+        folder.mkdir()
+        (folder / "ios-summary.txt").write_text("iOS build: NOT RUN\nReason: its job reported nothing\n")
+        count, errors, label = train.remote_ios_result(folder)
+        self.assertEqual((count, errors, label), ("NOT RUN (its job reported nothing)", [], train.IOS_BUILD_LABEL))
+        self.assertIsNone(train.remote_ios_result(self.folder / "no-such-folder"))
+
+
+# The size lines a run asked for the iPhone app's size adds to ios-summary.txt (Scripts/ios/app-size.py): three headlines,
+# then details.
+SIZE_LINES = ["Size: iPhone app: 20.1 MB (20,123,456 bytes) in 90 files, within the 30 MB limit.",
+              "Size: iPhone app IPA: 8.0 MB (8,000,000 bytes).",
+              "Size: iPhone app App Store download, estimated (Mach-O files at full size): 14.0 MB (14,000,000 bytes), "
+              "within the 30 MB limit.",
+              "Size detail: 9.0 MB (9,000,000 bytes)  TextMouth"]
+
+
+def with_interface_tests(download, summary):
+    """A `gh run download` answer that also holds the interface tests' summary and log, as the join uploads them."""
+    return {"files": {**download["files"], "ios-ui-summary.txt": summary, "ios-ui.log": "xcodebuild output\n"}}
+
+
+UI_PASSED = ("iOS UI tests: PASSED\nExecuted 30 tests, with 6 tests skipped and 0 failures (0 unexpected) in 200.000 (200.000) seconds\n"
+             "Classes: every class\n")
+UI_FAILED = ("iOS UI tests: FAILED\nExecuted 30 tests, with 6 tests skipped and 2 failures (0 unexpected) in 200.000 (200.000) seconds\n"
+             "Classes: SearchUITests\n"
+             "FAILED SearchUITests.testA at TextMouthiOSUITests/SearchUITests.swift:9: no results\n"
+             "FAILED ReaderUITests.testB at TextMouthiOSUITests/ReaderUITests.swift:3: wrong\nReason: 2 test(s) failed\n")
+UI_NOT_ASKED = "iOS UI tests: NOT ASKED\nReason: the request does not ask for the interface tests\n"
+
+
+class InterfaceTestsTests(RemoteTrainCase):
+    """A remote train sends the iPhone's interface test classes to the iPhone job and reports what it made of them."""
+
+    FILES = {"TextMouthiOSUITests/SearchUITests.swift": "final class SearchUITests: TextMouthUITestCase {}\n",
+             "TextMouthiOSUITests/ReaderUITests.swift": "final class ReaderUITests: TextMouthUITestCase {}\n"}
+
+    def setUp(self):
+        super().setUp()
+        self.patch(train, known_names=lambda cwd: ({"all", "stats", "logs"}, {"FooTests", "BarTests", "SearchUITests", "ReaderUITests"}))
+
+    def test_interface_classes_go_in_the_request_apart_from_the_mac_classes(self):
+        self.branch("alpha", self.FILES, areas=["stats"], classes=["FooTests", "SearchUITests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.assertEqual(self.run_train(), "ran")
+        request = self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"])
+        self.assertEqual((request["areas"], request["classes"], request["ios_ui_classes"]),
+                         (["stats"], ["FooTests"], ["SearchUITests"]))
+        self.assertNotIn("SearchUITests", self.result_of("alpha").split("Names left out")[1], "an interface class is a known name")
+
+    def test_a_request_of_only_interface_classes_still_runs(self):
+        self.branch("alpha", self.FILES, areas=[], classes=["SearchUITests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.assertEqual(self.run_train(), "ran")
+        request = self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"])
+        self.assertEqual((request["areas"], request["classes"], request["ios_ui_classes"]), ([], [], ["SearchUITests"]))
+
+    def test_a_request_with_no_interface_class_has_no_such_key(self):
+        self.branch("alpha", self.FILES, areas=["stats"], classes=["FooTests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.run_train()
+        self.assertNotIn("ios_ui_classes", self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"]))
+
+    def test_the_interface_tests_verdict_and_failures_are_in_the_summary_and_the_asking_agents_result(self):
+        self.branch("alpha", self.FILES, areas=["stats"], classes=["SearchUITests"])
+        self.branch("beta", {"b.txt": "b"}, areas=["logs"], classes=["BarTests"])
+        self.gh_runs(with_interface_tests(results(PASSING_SUMMARY, PASSING_LOG), UI_FAILED))
+        self.assertEqual(self.run_train(), "ran")
+        alpha, beta = self.result_of("alpha"), self.result_of("beta")
+        self.assertIn(f"- {train.IOS_UI_LABEL}: FAILED; Executed 30 tests", alpha)
+        self.assertIn("Failures in the iPhone test classes you asked for: 1", alpha)
+        self.assertIn("  - FAILED SearchUITests.testA at TextMouthiOSUITests/SearchUITests.swift:9: no results", alpha)
+        self.assertNotIn("ReaderUITests.testB", alpha, "a failure in a class the agent did not ask for is not listed as theirs")
+        self.assertIn("FAILED; Executed 30 tests", beta, "every agent is told the verdict")
+        self.assertNotIn("iPhone test classes you asked for", beta)
+        summary = (next(train.TRAINS.iterdir()) / "summary.md").read_text()
+        self.assertIn("## iPhone test failures", summary)
+        self.assertIn("- FAILED ReaderUITests.testB at TextMouthiOSUITests/ReaderUITests.swift:3: wrong", summary)
+        self.assertIn("- Verdict: FAILED (iPhone tests)", summary, "failed interface tests fail the whole train (TL23)")
+        self.assertIn("- Mac suite verdict: PASSED", summary, "the Mac suite's own verdict stays visible")
+
+    def test_a_failed_unit_test_is_told_to_the_agent_that_asked_for_its_class_with_both_counts_and_fails_the_whole_train(self):
+        unit = ("iOS UI tests: FAILED\nExecuted 52 tests, with 0 tests skipped and 1 failures (0 unexpected) in 9.0 (9.0) seconds\n"
+                "Unit tests (TextMouthiOSTests): 19 ran, 0 skipped, 1 failed\n"
+                "Interface tests (TextMouthiOSUITests): 33 ran, 0 skipped, 0 failed\n"
+                "FAILED IOSRuntimeTests.testA (TextMouthiOSTests) at TextMouthiOSTests/IOSRuntimeTests.swift:9: no\n"
+                "Reason: 1 test(s) failed\n")
+        files = {**self.FILES, "TextMouthiOSTests/IOSRuntimeTests.swift": "final class IOSRuntimeTests: XCTestCase {}\n"}
+        self.patch(train, known_names=lambda cwd: ({"all", "stats"}, {"FooTests", "IOSRuntimeTests", "SearchUITests"}))
+        self.branch("alpha", files, areas=["stats"], classes=["IOSRuntimeTests"])
+        self.gh_runs(with_interface_tests(results(PASSING_SUMMARY, PASSING_LOG), unit))
+        self.assertEqual(self.run_train(), "ran")
+        request = self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"])
+        self.assertEqual((request["classes"], request["ios_ui_classes"]), ([], ["IOSRuntimeTests"]),
+                         "an iPhone-only unit class goes to the iPhone job, not to the Mac")
+        alpha = self.result_of("alpha")
+        self.assertIn("unit tests (TextMouthiOSTests): 19 ran, 0 skipped, 1 failed", alpha)
+        self.assertIn("interface tests (TextMouthiOSUITests): 33 ran", alpha)
+        self.assertIn("Failures in the iPhone test classes you asked for: 1", alpha)
+        self.assertIn("- Verdict: FAILED (iPhone tests)", (next(train.TRAINS.iterdir()) / "summary.md").read_text())
+
+    def test_a_class_the_two_bundles_share_runs_on_the_mac_and_on_the_iphone(self):
+        # A Mac test file that project.yml lists for the iPhone's unit bundle: its class is in both bundles. Before
+        # November 21, 2026 the train sent such a class to the iPhone job only, so a request that named one without an
+        # area covering it never ran it on the Mac.
+        files = {**self.FILES,
+                 "TextMouthProductionTests/FeedParserTests.swift": "final class FeedParserTests: XCTestCase {\n    func testA() {}\n}\n",
+                 "project.yml": ("targets:\n  TextMouthiOSTests:\n    sources:\n      - TextMouthiOSTests\n"
+                                 "      - TextMouthProductionTests/FeedParserTests.swift\n    settings:\n      base:\n        X: y\n")}
+        self.patch(train, known_names=lambda cwd: ({"all", "stats"}, {"FooTests", "FeedParserTests", "SearchUITests"}))
+        self.branch("alpha", files, areas=["stats"], classes=["FooTests", "FeedParserTests", "SearchUITests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.assertEqual(self.run_train(), "ran")
+        request = self.pushed_request(self.pushed_refs()["refs/heads/TestBuild"])
+        self.assertEqual((request["classes"], request["ios_ui_classes"]),
+                         (["FooTests", "FeedParserTests"], ["FeedParserTests", "SearchUITests"]),
+                         "the shared class runs in both places; the interface class on the iPhone only")
+
+    def test_the_summary_and_the_log_are_kept_in_the_trains_folder(self):
+        self.branch("alpha", self.FILES, areas=["stats"], classes=["SearchUITests"])
+        self.gh_runs(with_interface_tests(results(PASSING_SUMMARY, PASSING_LOG), UI_PASSED))
+        self.run_train()
+        folder = next(train.TRAINS.iterdir())
+        self.assertEqual((folder / "ios-ui-summary.txt").read_text(), UI_PASSED)
+        self.assertTrue((folder / "ios-ui.log").exists())
+
+    def test_a_run_that_was_not_asked_for_them_has_no_interface_line(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_runs(with_interface_tests(results(PASSING_SUMMARY, PASSING_LOG), UI_NOT_ASKED))
+        self.run_train()
+        self.assertNotIn("interface tests", self.result_of("alpha"))
+        self.assertNotIn("interface", (next(train.TRAINS.iterdir()) / "summary.md").read_text())
+
+    def test_interface_classes_asked_for_but_not_run_are_told_to_the_agent(self):
+        # A run whose iPhone job left no summary (the workflow from before the interface tests, or the step cut off).
+        self.branch("alpha", self.FILES, areas=["stats"], classes=["SearchUITests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.run_train()
+        self.assertIn("iPhone test classes you asked for (SearchUITests) did not run", self.result_of("alpha"))
+
+    def test_the_reading_of_the_summary(self):
+        folder = self.folder / "ui-dir"
+        folder.mkdir()
+        (folder / "ios-ui-summary.txt").write_text(UI_FAILED)
+        verdict, executed, failures, reasons = train.remote_ios_ui_result(folder)
+        self.assertEqual(verdict, "FAILED")
+        self.assertTrue(executed.startswith("Executed 30 tests"))
+        self.assertEqual(len(failures), 2)
+        self.assertEqual(reasons, ["2 test(s) failed"])
+        self.assertIsNone(train.remote_ios_ui_result(self.folder / "no-such-folder"))
+        self.assertEqual(train.ios_ui_line(None), "")
+
+
+class WholeTrainVerdictTests(RemoteTrainCase):
+    """A train's verdict counts the iPhone tests as well as the Mac suite (TL23), in summary.md, the agent's result, and
+    the board post. All results here are made up."""
+
+    FILES = {"TextMouthiOSUITests/SearchUITests.swift": "final class SearchUITests: TextMouthUITestCase {}\n"}
+
+    def setUp(self):
+        super().setUp()
+        self.patch(train, known_names=lambda cwd: ({"all", "stats"}, {"FooTests", "SearchUITests"}))
+
+    def run_with(self, mac, mac_log, ui, view=DONE):
+        """Runs one train for `alpha` (asking for a Mac class and an iPhone class) whose run made the Mac result and
+        the iPhone summary `ui` (None: no iPhone summary at all). Returns (summary.md, alpha's result, alpha's post)."""
+        self.branch("alpha", self.FILES, areas=["stats"], classes=["FooTests", "SearchUITests"])
+        download = results(mac, mac_log)
+        self.gh_runs(with_interface_tests(download, ui) if ui is not None else download, view=view)
+        self.assertEqual(self.run_train(), "ran")
+        summary = (next(train.TRAINS.iterdir()) / "summary.md").read_text()
+        return summary, self.result_of("alpha"), self.posts_to("alpha")[-1]
+
+    def test_the_mac_passed_and_the_iphone_tests_failed(self):
+        summary, result, post = self.run_with(PASSING_SUMMARY, PASSING_LOG, UI_FAILED, DONE_FAILED)
+        self.assertIn("- Verdict: FAILED (iPhone tests)", summary)
+        self.assertIn("- Mac suite verdict: PASSED", summary)
+        self.assertIn("- Verdict of the whole train: FAILED (iPhone tests)", result)
+        self.assertIn("- Mac suite verdict: PASSED", result)
+        self.assertRegex(post, r"^train \S+: FAILED \(iPhone tests\); yours: 0 Mac failures, 1 iPhone failure, 0 compile errors")
+
+    def test_both_passed(self):
+        summary, result, post = self.run_with(PASSING_SUMMARY, PASSING_LOG, UI_PASSED)
+        self.assertIn("- Verdict: PASSED", summary)
+        self.assertIn("- Verdict of the whole train: PASSED", result)
+        self.assertRegex(post, r"^train \S+: PASSED; yours: 0 Mac failures, 0 iPhone failures, 0 compile errors")
+
+    def test_the_mac_failed_and_the_iphone_tests_passed(self):
+        summary, result, post = self.run_with(FAILING_SUMMARY, FAILING_LOG, UI_PASSED, DONE_FAILED)
+        self.assertIn("- Verdict: FAILED (Mac suite)", summary)
+        self.assertIn("- Mac suite verdict: FAILED", summary)
+        self.assertIn("- Verdict of the whole train: FAILED (Mac suite)", result)
+        self.assertRegex(post, r"^train \S+: FAILED \(Mac suite\); yours: 1 Mac failure, 0 iPhone failures")
+
+    def test_both_failed(self):
+        summary, result, post = self.run_with(FAILING_SUMMARY, FAILING_LOG, UI_FAILED, DONE_FAILED)
+        self.assertIn("- Verdict: FAILED (Mac suite and iPhone tests)", summary)
+        self.assertIn("- Verdict of the whole train: FAILED (Mac suite and iPhone tests)", result)
+        self.assertRegex(post, r"^train \S+: FAILED \(Mac suite and iPhone tests\); yours: 1 Mac failure, 1 iPhone failure")
+
+    def test_no_iphone_summary_leaves_the_macs_verdict_and_the_plain_count(self):
+        summary, result, post = self.run_with(PASSING_SUMMARY, PASSING_LOG, None)
+        self.assertIn("- Verdict: PASSED", summary)
+        self.assertIn("- Verdict of the whole train: PASSED", result)
+        self.assertRegex(post, r"^train \S+: PASSED; yours: 0 failures, 0 compile errors")
+
+    def test_iphone_tests_not_asked_for_leave_the_macs_verdict(self):
+        summary, _, post = self.run_with(FAILING_SUMMARY, FAILING_LOG, UI_NOT_ASKED, DONE_FAILED)
+        self.assertIn("- Verdict: FAILED\n", summary, "a Mac failure is a plain FAILED when the iPhone tests were not asked for")
+        self.assertRegex(post, r"^train \S+: FAILED; yours: 1 failure, 0 compile errors")
+
+    def test_a_failure_outside_the_asked_for_iphone_classes_is_not_the_agents(self):
+        # UI_FAILED fails SearchUITests (asked) and ReaderUITests (not asked); asking only for a Mac class leaves 0.
+        self.branch("alpha", {"a.txt": "a"}, areas=["stats"], classes=["FooTests"])
+        self.gh_runs(with_interface_tests(results(PASSING_SUMMARY, PASSING_LOG), UI_FAILED), view=DONE_FAILED)
+        self.assertEqual(self.run_train(), "ran")
+        self.assertRegex(self.posts_to("alpha")[-1], r"FAILED \(iPhone tests\); yours: 0 Mac failures, 0 iPhone failures")
+
+    def test_the_post_stays_within_the_boards_limit_and_keeps_the_verdict_and_counts(self):
+        # A realistic Executed line and result path: the cut falls on the Executed line, which is last.
+        executed = ("Executed 9323 tests, with 75 tests skipped and 12 failures (0 unexpected) in 1234.567 (1240.000) seconds")
+        post = train.result_post("1125-0148", "FAILED (Mac suite and iPhone tests)",
+                                 train.yours_words(12, 3, 0), "; iOS errors in your files: 0",
+                                 "build/orchestrator/train/results/trainverdict.md", executed)
+        self.assertLessEqual(len(post), train.TOPIC_LIMIT)
+        self.assertIn("FAILED (Mac suite and iPhone tests); yours: 12 Mac failures, 3 iPhone failures, 0 compile errors", post)
+        self.assertIn("see build/orchestrator/train/results/trainverdict.md", post)
+
+    def test_the_verdict_function_on_every_pair(self):
+        passed, failed = ("PASSED", "", [], []), ("FAILED", "", [], [])
+        for mac, interface, expected in [
+                ("PASSED", None, "PASSED"), ("FAILED", None, "FAILED"),
+                ("PASSED", (train.IOS_UI_NOT_ASKED, "", [], []), "PASSED"),
+                ("FAILED", (train.IOS_UI_NOT_ASKED, "", [], []), "FAILED"),
+                ("PASSED", passed, "PASSED"), ("PASSED", failed, "FAILED (iPhone tests)"),
+                ("PASSED", ("NOT RUN", "", [], []), "FAILED (iPhone tests)"),
+                ("FAILED", passed, "FAILED (Mac suite)"), ("FAILED", failed, "FAILED (Mac suite and iPhone tests)"),
+                ("NOT RUN", failed, "NOT RUN"), ("NOT RUN", None, "NOT RUN")]:
+            verdict = train.train_verdict(mac, interface)
+            self.assertEqual(verdict, expected, (mac, interface))
+            self.assertTrue(verdict.startswith("PASSED") or verdict.startswith("FAILED") or verdict == "NOT RUN")
+
+
+class NotRunOnGitHubTests(RemoteTrainCase):
+    """A remote result names what the runner left out of what an agent asked for (review finding 3)."""
+
+    SKIPS = ("ReaderAudioFailureTests  # it plays audio; it still runs on the development Mac\n"
+             "FooTests.testHangs  # it hangs there; it still runs on the development Mac")
+
+    def branch_with_skips(self, agent, files=None, **more):
+        """A branch whose tree carries a skips file."""
+        return self.branch(agent, {"Scripts/agents/runner-skips.conf": self.SKIPS, **(files or {})}, **more)
+
+    def test_an_agent_is_told_which_of_its_classes_the_runner_skipped_and_why(self):
+        self.branch_with_skips("alpha", classes=["ReaderAudioFailureTests", "FooTests", "BarTests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.patch(train, selected_classes=lambda areas, classes: ["ReaderAudioFailureTests", "FooTests", "BarTests"])
+        self.assertEqual(self.run_train(), "ran")
+        text = self.result_of("alpha")
+        self.assertIn("- Not run on GitHub, no verdict: ReaderAudioFailureTests (it plays audio; it still runs on the development Mac)", text)
+        self.assertIn("- Not run on GitHub, no verdict: FooTests.testHangs (it hangs there; it still runs on the development Mac)", text)
+        self.assertIn("local `build-train.py run`", text, "the result says how to run them here")
+        self.assertTrue(any("NOT RUN on GitHub" in topic for topic in self.posts_to("alpha")), self.posts)
+        self.assertIn("Verdict of the whole train: PASSED", text, "a PASSED verdict is for what ran, and the lines say what did not")
+
+    def test_an_agent_who_asked_for_nothing_the_runner_skips_hears_nothing_of_it(self):
+        self.branch_with_skips("alpha", classes=["BarTests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.patch(train, selected_classes=lambda areas, classes: ["BarTests"])
+        self.run_train()
+        self.assertNotIn("Not run on GitHub", self.result_of("alpha"))
+
+    def test_each_agent_hears_only_about_its_own_request(self):
+        self.branch_with_skips("alpha", classes=["ReaderAudioFailureTests"])
+        self.branch("beta", {"b.txt": "b"}, classes=["BarTests"])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.patch(train, selected_classes=lambda areas, classes: list(classes) or ["BarTests"])
+        self.run_train()
+        self.assertIn("Not run on GitHub", self.result_of("alpha"))
+        self.assertNotIn("Not run on GitHub", self.result_of("beta"))
+
+    def test_the_classes_of_an_area_count_as_asked_for(self):
+        self.branch_with_skips("alpha", areas=["stats"], classes=[])
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.patch(train, selected_classes=lambda areas, classes: ["ReaderAudioFailureTests", "BarTests"])
+        self.run_train()
+        self.assertIn("Not run on GitHub, no verdict: ReaderAudioFailureTests", self.result_of("alpha"))
+
+    def test_a_request_of_only_skipped_classes_pushes_nothing_and_says_why_it_has_no_verdict(self):
+        self.branch_with_skips("alpha", classes=["ReaderAudioFailureTests"])
+        self.patch(train, selected_classes=lambda areas, classes: ["ReaderAudioFailureTests"])
+        self.assertEqual(self.run_train(), "ran")
+        self.assertEqual(self.pushed_refs(), {}, "with nothing to run there is nothing to push")
+        text = self.result_of("alpha")
+        self.assertIn("Not run on GitHub, no verdict: ReaderAudioFailureTests", text)
+        self.assertIn("the GitHub runner does not run", next(train.TRAINS.iterdir()).joinpath("run-summary.txt").read_text())
+
+    def test_a_malformed_skips_file_in_the_merged_tree_stops_the_train_and_puts_the_requests_back(self):
+        self.branch("alpha", {"Scripts/agents/runner-skips.conf": "ReaderAudioFailureTests,  # a stray comma"})
+        self.patch(train, selected_classes=lambda areas, classes: ["FooTests"])
+        self.assertEqual(self.run_train(), "failed")
+        self.assertEqual(len(self.queued()), 1)
+        self.assertIn("malformed", next(train.TRAINS.iterdir()).joinpath("remote-failure.txt").read_text())
+
+
+class RemoteTrainFailureTests(RemoteTrainCase):
+    """A push or run that fails leaves nothing half done: the requests wait for the next train."""
+
+    def assert_put_back(self, requests):
+        """Checks that every request is queued again, and the agents were told."""
+        self.assertEqual(len(self.queued()), len(requests), "every request should be back in the queue")
+        self.assertFalse(train.LOCK.exists(), "the train should release its own lock")
+        for request in requests:
+            agent = request["agent"]
+            self.assertTrue(any("waits for the next train" in topic for topic in self.posts_to(agent)), self.posts)
+            self.assertIn("back in the queue", self.result_of(agent))
+        self.assertTrue(any(to == "orchestrator" and tag == "notice" for to, _, tag in self.posts), self.posts)
+        train_dir = next(train.TRAINS.iterdir())
+        self.assertTrue((train_dir / "remote-failure.txt").exists())
+        self.assertFalse((train_dir / "summary.md").exists(), "a failed train reports no result")
+
+    def test_a_push_that_fails_puts_the_requests_back_and_tells_each_agent(self):
+        requests = [self.branch("alpha", {"a.txt": "a"}), self.branch("beta", {"b.txt": "b"})]
+        before = self.queued()
+        self.patch_github(PUSH_REMOTE=str(self.folder / "no-such-remote.git"))
+        self.assertEqual(self.run_train(), "failed")
+        self.assert_put_back(requests)
+        self.assertEqual(self.queued(), before, "the requests should keep their names, so their order")
+        self.assertEqual(self.gh_calls_about_the_run(), [])
+
+    def test_a_run_cancelled_by_a_newer_push_puts_the_requests_back(self):
+        requests = [self.branch("alpha", {"a.txt": "a"})]
+        self.gh_runs({"fail": True}, view=DONE_CANCELLED)
+        self.assertEqual(self.run_train(), "failed")
+        self.assert_put_back(requests)
+        self.assertIn("cancelled", next(train.TRAINS.iterdir()).joinpath("remote-failure.txt").read_text())
+
+    def test_a_cancelled_run_is_no_verdict_even_when_it_uploaded_partial_results(self):
+        # The workflow uploads whatever it has even when it is cancelled; a half-run is not a result.
+        requests = [self.branch("alpha", {"a.txt": "a"})]
+        self.gh_runs(results(FAILING_SUMMARY, FAILING_LOG), view=DONE_CANCELLED)
+        self.assertEqual(self.run_train(), "failed")
+        self.assert_put_back(requests)
+
+    def test_a_run_that_leaves_no_results_puts_the_requests_back(self):
+        requests = [self.branch("alpha", {"a.txt": "a"})]
+        self.gh_runs({"fail": True}, view=DONE_FAILED)
+        self.assertEqual(self.run_train(), "failed")
+        self.assert_put_back(requests)
+
+    def test_a_run_that_never_starts_puts_the_requests_back(self):
+        requests = [self.branch("alpha", {"a.txt": "a"})]
+        self.gh_state({"list": [[]]})
+        self.assertEqual(self.run_train(), "failed")
+        self.assert_put_back(requests)
+
+    def test_a_run_that_never_ends_puts_the_requests_back(self):
+        requests = [self.branch("alpha", {"a.txt": "a"})]
+        self.gh_state({"list": [[STARTED]], "view": [{"status": "in_progress", "conclusion": ""}]})
+        self.patch_github(RUN_LIMIT_MINUTES=5)
+        self.assertEqual(self.run_train(), "failed")
+        self.assert_put_back(requests)
+
+    def test_gh_failing_puts_the_requests_back(self):
+        requests = [self.branch("alpha", {"a.txt": "a"})]
+        self.gh_state({"fail": "list"})
+        self.assertEqual(self.run_train(), "failed")
+        self.assert_put_back(requests)
+
+    def test_the_requests_put_back_go_with_the_next_train_without_asking_again(self):
+        self.branch("alpha", {"a.txt": "a"})
+        good_remote = github_run.PUSH_REMOTE
+        self.patch_github(PUSH_REMOTE=str(self.folder / "no-such-remote.git"))
+        self.assertEqual(self.run_train(), "failed")
+        # The next train, with the push working again.
+        self.patch_github(PUSH_REMOTE=good_remote)
+        self.gh_runs(results(PASSING_SUMMARY, PASSING_LOG))
+        self.assertEqual(self.run_train(), "ran")
+        self.assertEqual(self.queued(), [])
+        self.assertIn("Verdict of the whole train: PASSED", self.result_of("alpha"))
+
+
+class RemoteTrainLostConnectionTests(RemoteTrainCase):
+    """TL07: a train that loses GitHub keeps watching, and the next train collects the run it could not."""
+
+    def test_a_train_that_loses_github_for_a_while_still_ends_with_the_runs_results_and_says_how_long(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_state({"list": [[STARTED]], "view": [DONE], "download": [results(PASSING_SUMMARY, PASSING_LOG)],
+                       "fail_first": {"view": 10}})
+        self.assertEqual(self.run_train(), "ran")
+        remote = json.loads(next(train.TRAINS.iterdir()).joinpath("remote.json").read_text())
+        self.assertGreater(remote["lost_minutes"], 0)
+        self.assertIn("Verdict of the whole train: PASSED", self.result_of("alpha"))
+
+    def test_the_next_train_collects_the_run_a_lost_connection_left_and_pushes_nothing(self):
+        self.branch("alpha", {"a.txt": "a"})
+        self.gh_state({"list": [[STARTED]], "fail": "view"})
+        self.patch_github(RUN_LIMIT_MINUTES=5)
+        self.assertEqual(self.run_train(), "failed")
+        commit = self.pushed_refs()["refs/heads/TestBuild"]
+        # GitHub is back and the run had passed; the next train is another train of the same tree.
+        self.gh_state({"view": [{**DONE, "headSha": commit}], "download": [results(PASSING_SUMMARY, PASSING_LOG)]})
+        self.assertEqual(self.run_train(), "ran")
+        self.assertEqual(self.pushed_refs()["refs/heads/TestBuild"], commit, "the same commit, not pushed again")
+        line = train.remote_line(next(path for path in sorted(train.TRAINS.iterdir())[-1:]))
+        self.assertIn("collected", line)
+        self.assertIn("earlier train's run", line)
+        self.assertEqual(self.queued(), [])
+        self.assertIn("Verdict of the whole train: PASSED", self.result_of("alpha"))
+
+
+class RemoteTrainRetryTests(RemoteTrainCase):
+    """A build that fails to compile is retried without the branch that broke it, on GitHub again."""
+
+    def test_the_branch_that_broke_the_build_is_left_out_and_the_rest_run_in_a_second_run(self):
+        self.branch("broken", {"Broken.swift": "does not compile"})
+        self.branch("fine", {"fine.txt": "fine"})
+        self.gh_runs(results(BROKEN_SUMMARY, "compile error\n"), results(PASSING_SUMMARY, PASSING_LOG))
+        self.assertEqual(self.run_train(), "ran")
+        runs = [call for call in self.gh_calls() if call[:2] == ["run", "download"]]
+        self.assertEqual(len(runs), 2, "a second run should have tested the rest")
+        refs = self.pushed_refs()
+        request = self.pushed_request(refs["refs/heads/TestBuild"])
+        self.assertEqual([r["agent"] for r in request["requests"]], ["fine"], "the last push leaves the broken one out")
+        self.assertIn("first build failed to compile", self.result_of("broken"))
+        self.assertTrue(any("LEFT OUT" in topic for topic in self.posts_to("broken")), self.posts)
+        self.assertIn("Verdict of the whole train: PASSED", self.result_of("fine"))
+        train_dir = next(train.TRAINS.iterdir())
+        self.assertTrue((train_dir / "run-with-all.log").exists(), "the first run's log should be kept")
+        self.assertTrue((train_dir / "remote-1").is_dir() and (train_dir / "remote-2").is_dir())
+        self.assertEqual(self.queued(), [])
+
+
+class NextTrainTimeTests(unittest.TestCase):
+    """When the loop's next train leaves."""
+
+    HOUR = 3600
+
+    def args(self, **more):
+        """A loop's arguments: hourly, not remote, no early trains, unless `more` says otherwise."""
+        return SimpleNamespace(every=60, soon=0, remote=False, **more)
+
+    def test_by_default_a_train_leaves_on_the_next_hour(self):
+        now = 5 * self.HOUR + 20 * 60
+        self.assertEqual(train.next_train_time(self.args(), now, []), 6 * self.HOUR)
+
+    def test_a_train_leaves_on_the_hour_whether_or_not_a_request_waits(self):
+        now = 5 * self.HOUR + 20 * 60
+        self.assertEqual(train.next_train_time(self.args(), now, [now - 60]), 6 * self.HOUR)
+
+    def test_exactly_on_the_hour_the_next_train_is_an_hour_later(self):
+        self.assertEqual(train.next_train_time(self.args(), 5 * self.HOUR, []), 6 * self.HOUR)
+
+    def test_a_failed_train_s_retry_time_holds_back_the_next_one(self):
+        now = 5 * self.HOUR
+        self.assertEqual(train.next_train_time(self.args(), now, [], not_before=now + 2 * self.HOUR),
+                         now + 2 * self.HOUR)
+
+    def test_with_soon_no_request_means_no_train(self):
+        self.assertIsNone(train.next_train_time(SimpleNamespace(every=60, soon=5, remote=True), 1000, []))
+
+    def test_with_soon_a_train_leaves_that_many_minutes_after_the_oldest_request(self):
+        args = SimpleNamespace(every=60, soon=5, remote=True)
+        self.assertEqual(train.next_train_time(args, 1000, [2000, 1500]), 1500 + 300)
+
+    def test_with_soon_a_request_that_has_waited_long_enough_leaves_at_once(self):
+        args = SimpleNamespace(every=60, soon=5, remote=True)
+        self.assertEqual(train.next_train_time(args, 5000, [1000]), 5000)
+
+    def test_with_soon_the_retry_time_still_holds_a_train_back(self):
+        args = SimpleNamespace(every=60, soon=5, remote=True)
+        self.assertEqual(train.next_train_time(args, 5000, [1000], not_before=8000), 8000)
+
+
+class FakeClock:
+    """A stand-in for the time module: sleeping moves the clock, and nothing waits."""
+
+    def __init__(self):
+        self.now = time.time()
+        self.sleeps = []
+
+    def time(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.sleeps.append(seconds)
+        self.now += seconds
+
+
+class LoopTests(RemoteTrainCase):
+    """The loop's options."""
+
+    def test_soon_without_remote_is_refused(self):
+        # A pretend clock, so that a loop which wrongly started would end at its deadline, not hang.
+        self.patch(train, time=FakeClock(), run_one_train=lambda args: self.fail("a train must not run"))
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            status = train.command_loop(SimpleNamespace(every=60, soon=5, remote=False, hours=1, base="main"))
+        self.assertEqual(status, 2)
+
+    def test_the_options_reach_the_loop(self):
+        seen = {}
+        self.patch(train, command_loop=lambda args: seen.update(vars(args)) or 0)
+        train.main(["loop", "--remote", "--soon", "3", "--every", "30"])
+        self.assertEqual((seen["remote"], seen["soon"], seen["every"]), (True, 3, 30))
+        seen.clear()
+        train.main(["loop"])
+        self.assertEqual((seen["remote"], seen["soon"], seen["every"]), (False, 0, 60), "the default stays hourly")
+        seen.clear()
+        self.patch(train, command_run=lambda args: seen.update(vars(args)) or 0)
+        train.main(["run", "--remote"])
+        self.assertTrue(seen["remote"])
+
+    def test_a_loop_with_soon_sends_a_train_after_a_request_and_waits_after_a_failure(self):
+        clock = FakeClock()
+        self.patch(train, time=clock)
+        request = self.branch("alpha", {"a.txt": "a"})
+        # The queued file was just written, so its time is the real clock's, which the fake clock started from.
+        calls = []
+
+        def fake_train(args):
+            calls.append(clock.now)
+            if len(calls) == 1:
+                return "failed"  # The request stays in the queue, as a failed train leaves it.
+            for path in train.QUEUE.glob("*.json"):
+                path.rename(path.with_suffix(".done"))
+            return "ran"
+
+        self.patch(train, run_one_train=fake_train)
+        with redirect_stdout(io.StringIO()):
+            train.command_loop(SimpleNamespace(every=60, soon=2, remote=True, hours=1, base="main"))
+        self.assertEqual(len(calls), 2)
+        self.assertAlmostEqual(calls[1] - calls[0], train.REMOTE_RETRY_MINUTES * 60, delta=1)
+        self.assertEqual(request["agent"], "alpha")
+
+
+if __name__ == "__main__":
+    unittest.main()

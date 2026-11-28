@@ -1,5 +1,57 @@
 import SwiftUI
 
+// MARK: - Menu Titles
+
+/// The titles of the menu bar's own menus, in the interface language. Each
+/// `CommandMenu` shows its title as a String, so the menu bar reads what this
+/// says. `MenuVisibilityManager` hides a menu by its title, matching the
+/// title in the interface language and in English (`titles(for:languages:)`),
+/// so each member here is listed in its `readerMenuWording` or
+/// `libraryMenuWording`; a test checks they agree.
+enum MenuWording {
+    /// The Edit menu's Find submenu, which holds Search Library.
+    static var find: String {
+        // Translators: Title of the Find submenu of the Edit menu, which holds the command that searches the whole library.
+        InterfaceText.line("common.find", "Find")
+    }
+
+    /// The Playback menu, which only reader windows show.
+    static var playback: String {
+        // Translators: Title of the Playback menu in the menu bar, which holds the commands that play, pause, skip, and change the speed. Only a reader window shows it.
+        InterfaceText.line("common.playback", "Playback")
+    }
+
+    /// The Navigate menu, which only reader windows show.
+    static var navigate: String {
+        // Translators: Title of the Navigate menu in the menu bar, which holds the commands that move around a book, such as Go to Library and Next Heading. Only a reader window shows it.
+        InterfaceText.line("menu.navigate", "Navigate")
+    }
+
+    /// The Library menu, which only Library windows show.
+    static var library: String {
+        // Translators: Title of the Library menu in the menu bar, which holds the commands for the library's books and folders. Only a Library window shows it.
+        InterfaceText.line("common.library", "Library")
+    }
+
+    /// The Bookmarks menu, which only reader windows show.
+    static var bookmarks: String {
+        // Translators: Title of the Bookmarks menu in the menu bar, which holds the commands that add and move between a book's bookmarks. Only a reader window shows it.
+        InterfaceText.line("common.bookmarks", "Bookmarks")
+    }
+
+    /// The Book menu, which only reader windows show.
+    static var book: String {
+        // Translators: Title of the Book menu in the menu bar, which holds the commands about the open book, such as exporting or editing it. Only a reader window shows it.
+        InterfaceText.line("common.book", "Book")
+    }
+
+    /// The Library menu's Move to Folder command, which asks for the folder.
+    static var moveToFolder: String {
+        // Translators: Menu command of the Library menu that moves the selected books into a folder, asking which one. The three periods say that a question follows.
+        InterfaceText.line("common.moveToFolder", "Move to Folder...")
+    }
+}
+
 // MARK: - Window Type Tracking
 
 /// Identifies which type of window currently has focus. The AppKit-backed
@@ -48,10 +100,9 @@ extension FocusedValues {
 }
 
 /// Whether the book of the reader whose window is key has pages (PG02),
-/// which Navigate > Next Page, Previous Page, and Go to Page… need. The
-/// reader's window publishes it as a scene value (`BookReaderWindowView`),
-/// so the commands stay available while VoiceOver reads the window's text,
-/// which holds no keyboard focus.
+/// which Navigate > Go to Page… needs. The reader's window publishes it as a
+/// scene value (`BookReaderWindowView`), so the command stays available while
+/// VoiceOver reads the window's text, which holds no keyboard focus.
 struct ReaderHasPagesKey: FocusedValueKey {
     typealias Value = Bool
 }
@@ -60,6 +111,24 @@ extension FocusedValues {
     var readerHasPages: Bool? {
         get { self[ReaderHasPagesKey.self] }
         set { self[ReaderHasPagesKey.self] = newValue }
+    }
+}
+
+/// Whether the key window is a reader, which Navigate > Next in Folder and
+/// Previous in Folder need (0.2.5). The reader's window publishes it as a
+/// scene value (`BookReaderWindowView`), so the commands stay available while
+/// VoiceOver reads the window's text, which holds no keyboard focus, and
+/// after a window switches to another book, which takes the focused view
+/// away. (`activeWindowType` is a plain focused value, which leaves a menu
+/// command dimmed then.)
+struct IsReaderWindowKey: FocusedValueKey {
+    typealias Value = Bool
+}
+
+extension FocusedValues {
+    var isReaderWindow: Bool? {
+        get { self[IsReaderWindowKey.self] }
+        set { self[IsReaderWindowKey.self] = newValue }
     }
 }
 
@@ -106,6 +175,8 @@ extension FocusedValues {
 /// its action works (FR12's branch E): New from Text… in Library windows,
 /// so a reader's Shift-Command-T is Show Sleep Timer's.
 struct FileCommands: Commands {
+    /// The interface language, observed so the menu bar's titles are read again after a switch (FR39).
+    @ObservedObject private var language = InterfaceLanguage.observer
     /// The shortcuts, observed so each item's key equivalent follows a
     /// change at once.
     @ObservedObject var shortcuts: KeyboardShortcutManager
@@ -143,7 +214,48 @@ struct FileCommands: Commands {
     }
 }
 
+/// Edit > Find > Search Library…, which opens the Search Library window
+/// (`LibrarySearchWindowController`) from any window, the Library's, a
+/// reader's, and the Search Library window itself among them. Its key is the
+/// menu item's key equivalent in force (`ShortcutAction.searchLibrary`,
+/// Option-Command-F unless changed in the Shortcuts tab), shown while the
+/// action's scope admits the window in front, which for the one scope it can
+/// have, every window, is always.
+///
+/// The submenu follows the Edit menu's own items (`.textEditing`), so
+/// VoiceOver reads Search Library… where it reads the other ways of finding.
+struct EditCommands: Commands {
+    /// The interface language, observed so the menu bar's titles are read again after a switch (FR39).
+    @ObservedObject private var language = InterfaceLanguage.observer
+    /// The shortcuts, observed so the item's key equivalent follows a change
+    /// at once.
+    @ObservedObject var shortcuts: KeyboardShortcutManager
+    /// The window in front, observed so the item acts only where its command
+    /// works, as every menu command's does.
+    @ObservedObject private var front = FrontWindowKind.shared
+
+    /// The Edit menu's Find submenu, its key that of `shortcuts`.
+    init(shortcuts: KeyboardShortcutManager) {
+        _shortcuts = ObservedObject(wrappedValue: shortcuts)
+    }
+
+    var body: some Commands {
+        CommandGroup(after: .textEditing) {
+            Menu(MenuWording.find) {
+                // The window listens for this name once a Library window has
+                // appeared (`LibrarySearchWindowController.attach`).
+                Button(ShortcutAction.searchLibrary.title) {
+                    NotificationCenter.default.post(name: .searchLibrary, object: nil)
+                }
+                .menuCommandKey(.searchLibrary, shortcuts: shortcuts, frontKind: front.kind)
+            }
+        }
+    }
+}
+
 struct PlaybackCommands: Commands {
+    /// The interface language, observed so the menu bar's titles are read again after a switch (FR39).
+    @ObservedObject private var language = InterfaceLanguage.observer
     @FocusedValue(\.canReleaseMediaControls) var canReleaseMediaControls
     /// The shortcuts, observed so Copy Reading Position's and Search in
     /// Book's key equivalents follow a change at once (FR12's branch D).
@@ -158,46 +270,46 @@ struct PlaybackCommands: Commands {
     }
 
     var body: some Commands {
-        CommandMenu("Playback") {
-            Button("Play / Pause") {
+        CommandMenu(MenuWording.playback) {
+            Button(ShortcutAction.togglePlayback.title) {
                 NotificationCenter.default.post(name: .togglePlayback, object: nil)
             }
 
             Divider()
 
-            Button("Skip Forward") {
+            Button(ShortcutAction.skipForward.title) {
                 NotificationCenter.default.post(name: .skipForward, object: nil)
             }
 
-            Button("Skip Backward") {
+            Button(ShortcutAction.skipBackward.title) {
                 NotificationCenter.default.post(name: .skipBackward, object: nil)
             }
 
             Divider()
 
-            Button("Cycle Forward Navigation Unit") {
+            Button(ShortcutAction.cycleForwardNavigationUnit.title) {
                 NotificationCenter.default.post(name: .cycleForwardNavigationUnit, object: nil)
             }
             // Customizable shortcuts are handled by KeyboardShortcutManager.
             // A SwiftUI keyboardShortcut here would post an untargeted duplicate.
 
-            Button("Cycle Backward Navigation Unit") {
+            Button(ShortcutAction.cycleBackwardNavigationUnit.title) {
                 NotificationCenter.default.post(name: .cycleBackwardNavigationUnit, object: nil)
             }
 
             Divider()
 
-            Button("Increase Speed") {
+            Button(ShortcutAction.increaseSpeed.title) {
                 NotificationCenter.default.post(name: .increaseSpeed, object: nil)
             }
 
-            Button("Decrease Speed") {
+            Button(ShortcutAction.decreaseSpeed.title) {
                 NotificationCenter.default.post(name: .decreaseSpeed, object: nil)
             }
 
             Divider()
 
-            Button("Where Am I?") {
+            Button(ShortcutAction.whereAmI.title) {
                 NotificationCenter.default.post(name: .whereAmI, object: nil)
             }
 
@@ -211,7 +323,7 @@ struct PlaybackCommands: Commands {
             if canReleaseMediaControls == true {
                 Divider()
 
-                Button("Release Media Controls") {
+                Button(ShortcutAction.releaseMediaControls.title) {
                     NotificationCenter.default.post(name: .releaseMediaControls, object: nil)
                 }
             }
@@ -232,48 +344,45 @@ struct PlaybackCommands: Commands {
 }
 
 struct NavigationCommands: Commands {
+    /// The interface language, observed so the menu bar's titles are read again after a switch (FR39).
+    @ObservedObject private var language = InterfaceLanguage.observer
     /// Whether the key reader reads its book from the reading list (FR09).
     @FocusedValue(\.readsFromReadingList) var readsFromReadingList
-    /// Whether the key reader's book has pages (PG02), which Next Page,
-    /// Previous Page, and Go to Page… need.
+    /// Whether the key reader's book has pages (PG02), which Go to Page…
+    /// needs.
     @FocusedValue(\.readerHasPages) var readerHasPages
+    /// Whether the key window is a reader, so Next in Folder and Previous in
+    /// Folder are offered in a reader window alone.
+    @FocusedValue(\.isReaderWindow) var isReaderWindow
 
     var body: some Commands {
-        CommandMenu("Navigate") {
-            Button("Go to Library") {
+        CommandMenu(MenuWording.navigate) {
+            Button(ShortcutAction.goToLibrary.title) {
                 NotificationCenter.default.post(name: .goToLibrary, object: nil)
             }
 
-            Button("Go Back") {
+            Button(ShortcutAction.goBack.title) {
                 NotificationCenter.default.post(name: .goBack, object: nil)
             }
 
-            Button("Go Forward") {
+            Button(ShortcutAction.goForward.title) {
                 NotificationCenter.default.post(name: .goForward, object: nil)
             }
 
             Divider()
 
-            Button("Next Heading") {
+            Button(ShortcutAction.nextHeading.title) {
                 NotificationCenter.default.post(name: .nextHeading, object: nil)
             }
 
-            Button("Previous Heading") {
+            Button(ShortcutAction.previousHeading.title) {
                 NotificationCenter.default.post(name: .previousHeading, object: nil)
             }
 
-            // Pages (PG02, PG03): available while the key reader's book has
-            // pages. Their keys are the manager's, as the headings' are.
-            Button(ShortcutAction.nextPage.title) {
-                NotificationCenter.default.post(name: .nextPage, object: nil)
-            }
-            .disabled(readerHasPages != true)
-
-            Button(ShortcutAction.previousPage.title) {
-                NotificationCenter.default.post(name: .previousPage, object: nil)
-            }
-            .disabled(readerHasPages != true)
-
+            // Go to Page… (PG03): available while the key reader's book has
+            // more than one page. Its key is the manager's, as the headings'
+            // are, and in any other book it says why it opens nothing. Moving
+            // from page to page is the Page navigation unit's (PG02).
             Button(ShortcutAction.goToPage.title) {
                 NotificationCenter.default.post(name: .goToPage, object: nil)
             }
@@ -295,19 +404,32 @@ struct NavigationCommands: Commands {
             }
             .disabled(readsFromReadingList != true)
 
+            // The item below or above this book in its folder or feed
+            // (0.2.5), available in a reader window. They have no keys until
+            // the user gives them some, as the reading list's commands.
+            Button(ShortcutAction.nextInFolder.title) {
+                NotificationCenter.default.post(name: .nextInFolder, object: nil)
+            }
+            .disabled(isReaderWindow != true)
+
+            Button(ShortcutAction.previousInFolder.title) {
+                NotificationCenter.default.post(name: .previousInFolder, object: nil)
+            }
+            .disabled(isReaderWindow != true)
+
             Divider()
 
-            Button("Show Headings") {
+            Button(ShortcutAction.showHeadingList.title) {
                 NotificationCenter.default.post(name: .showHeadingList, object: nil)
             }
 
-            Button("Show Sleep Timer") {
+            Button(ShortcutAction.showSleepTimer.title) {
                 NotificationCenter.default.post(name: .showSleepTimer, object: nil)
             }
 
             Divider()
 
-            Button("Book Info") {
+            Button(ShortcutAction.showBookInfo.title) {
                 NotificationCenter.default.post(name: .showBookInfo, object: nil)
             }
             // Cmd+I is handled by KeyboardShortcutManager which includes window focus
@@ -318,6 +440,8 @@ struct NavigationCommands: Commands {
 }
 
 struct LibraryCommands: Commands {
+    /// The interface language, observed so the menu bar's titles are read again after a switch (FR39).
+    @ObservedObject private var language = InterfaceLanguage.observer
     /// The removal preferences, observed so the Remove command's title
     /// always says what choosing it will do (TODO A08).
     @ObservedObject private var removal = RemovalPreferencesModel.shared
@@ -333,14 +457,23 @@ struct LibraryCommands: Commands {
     /// The window in front, observed so those items act only where their
     /// commands work (FR12's branch E).
     @ObservedObject private var front = FrontWindowKind.shared
+    /// Whether sync is on, observed so Sync Now is in the menu only then (FR43, R1).
+    @ObservedObject private var sync = SyncCenter.shared
 
     /// The Library menu, its keys in force those of `shortcuts`.
     init(shortcuts: KeyboardShortcutManager) {
         _shortcuts = ObservedObject(wrappedValue: shortcuts)
     }
 
+    /// Whether a Library window can take a command this menu posts: one is
+    /// in front, or no window is open at all, as a menu's items must act
+    /// then (`ShortcutScope.admitsMenuCommand(in:)`).
+    private var libraryWindowCanTakeCommands: Bool {
+        ShortcutScope.library.admitsMenuCommand(in: front.kind)
+    }
+
     var body: some Commands {
-        CommandMenu("Library") {
+        CommandMenu(MenuWording.library) {
             // Chooses DAISY books kept as loose files by their folders, in a
             // folder-only panel the Library window presents (TODO I02). The
             // Open Book… panel stays file-only, so Return on a folder there
@@ -421,33 +554,47 @@ struct LibraryCommands: Commands {
 
             Divider()
 
-            Button("Edit Mode") {
+            Button(ShortcutAction.toggleEditMode.title) {
                 NotificationCenter.default.post(name: .toggleEditMode, object: nil)
             }
             // Cmd+E handled by KeyboardShortcutManager for window targeting
 
             Divider()
 
-            Button("New Folder") {
+            Button(ShortcutAction.newFolder.title) {
                 NotificationCenter.default.post(name: .newFolder, object: nil)
             }
             // Cmd+Shift+N handled by KeyboardShortcutManager for window targeting
 
-            Button("Move to Folder...") {
+            Button(MenuWording.moveToFolder) {
                 NotificationCenter.default.post(name: .moveToFolder, object: nil)
             }
             // Cmd+Shift+M handled by KeyboardShortcutManager for window targeting
 
+            // Syncs the library with the iPhone now, and says what came of
+            // it (FR43). Not in the menu until a sync folder is set up.
+            if sync.status.isOn {
+                Button(ShortcutAction.syncNow.title) {
+                    SyncCenter.shared.syncNow()
+                }
+                .menuCommandKey(.syncNow, shortcuts: shortcuts, frontKind: front.kind)
+            }
+
             Divider()
 
-            Button("Move Book Up") {
+            // Only a Library window takes these two, and says what it did or
+            // why it could not, so they are dimmed in any other window,
+            // where nothing would answer.
+            Button(ShortcutAction.moveBookUp.title) {
                 NotificationCenter.default.post(name: .moveBookUp, object: nil)
             }
+            .disabled(!libraryWindowCanTakeCommands)
             // Cmd+Shift+Up handled by KeyboardShortcutManager
 
-            Button("Move Book Down") {
+            Button(ShortcutAction.moveBookDown.title) {
                 NotificationCenter.default.post(name: .moveBookDown, object: nil)
             }
+            .disabled(!libraryWindowCanTakeCommands)
             // Cmd+Shift+Down handled by KeyboardShortcutManager
 
             Divider()
@@ -493,6 +640,25 @@ struct LibraryCommands: Commands {
                 NotificationCenter.default.post(name: .stopKeepingOnThisMac, object: nil)
             }
 
+            // Keeps the selected books on every device that syncs, or stops
+            // (FR43, section 16). Not in the menu until a sync folder is set
+            // up; it has no key, and the key Library window acts on its
+            // selection.
+            if sync.status.isOn {
+                Button(SyncWording.keepTitle) {
+                    NotificationCenter.default.post(name: .keepOnAllDevices, object: nil)
+                }
+
+                Button(SyncWording.stopKeepingTitle) {
+                    NotificationCenter.default.post(name: .stopKeepingOnAllDevices, object: nil)
+                }
+
+                // Frees the selected books' space on this device while they stay in iCloud Drive (FR46).
+                Button(LibraryCloudWording.removeDownloadTitle(count: 1, forSelection: false)) {
+                    NotificationCenter.default.post(name: .removeDownload, object: nil)
+                }
+            }
+
             Divider()
 
             // "Remove from Library..." when it asks first; with confirmation
@@ -533,23 +699,25 @@ struct LibraryCommands: Commands {
 /// the Shortcuts tab, config.json, and every message use, so the menu and
 /// the Shortcuts tab cannot drift apart again (#1937).
 struct BookmarkCommands: Commands {
+    /// The interface language, observed so the menu bar's titles are read again after a switch (FR39).
+    @ObservedObject private var language = InterfaceLanguage.observer
     var body: some Commands {
-        CommandMenu("Bookmarks") {
-            Button(ShortcutAction.addBookmark.rawValue) {
+        CommandMenu(MenuWording.bookmarks) {
+            Button(ShortcutAction.addBookmark.title) {
                 NotificationCenter.default.post(name: .addBookmark, object: nil)
             }
 
-            Button(ShortcutAction.showBookmarkList.rawValue) {
+            Button(ShortcutAction.showBookmarkList.title) {
                 NotificationCenter.default.post(name: .showBookmarkList, object: nil)
             }
 
             Divider()
 
-            Button(ShortcutAction.nextBookmark.rawValue) {
+            Button(ShortcutAction.nextBookmark.title) {
                 NotificationCenter.default.post(name: .nextBookmark, object: nil)
             }
 
-            Button(ShortcutAction.previousBookmark.rawValue) {
+            Button(ShortcutAction.previousBookmark.title) {
                 NotificationCenter.default.post(name: .previousBookmark, object: nil)
             }
         }
@@ -598,6 +766,22 @@ extension FocusedValues {
     }
 }
 
+/// Whether the book of the reader whose window is key is an audiobook that
+/// Attach Transcript… can give a transcript from a file (FMT23): one in a
+/// package of its own that no transcript is being attached to already
+/// (`TranscriptAttachments.canAttach`). The reader publishes it as a scene
+/// value (`ReaderBookCommandsSupport`).
+struct CanAttachBookTranscriptKey: FocusedValueKey {
+    typealias Value = Bool
+}
+
+extension FocusedValues {
+    var canAttachBookTranscript: Bool? {
+        get { self[CanAttachBookTranscriptKey.self] }
+        set { self[CanAttachBookTranscriptKey.self] = newValue }
+    }
+}
+
 /// Whether the book of the reader whose window is key is a transcribed
 /// audiobook whose transcript Delete Transcript… can delete (FR05). The
 /// reader publishes it as a scene value (`ReaderBookCommandsSupport`).
@@ -618,20 +802,26 @@ extension FocusedValues {
 /// decides for itself through `WindowCommandRouting`. The reader's Book
 /// menu opens its book's text in the user's own editor, and transcribes an
 /// audiobook's audio (Retranscribe Audio… once it has a transcript),
-/// cleans up its transcript, or deletes it, and Edit
+/// attaches a WebVTT or SubRip file as its transcript instead (Attach
+/// Transcript…, FMT23), cleans up its transcript, or deletes it, and Edit
 /// Audio… opens an audiobook in the audio editor (FR04);
 /// MenuVisibilityManager shows it only while a reader is in front. Edit
 /// Text is unavailable for an audiobook without a transcript, Edit Manifest
 /// for any book but an audiobook of tracks (FR17), Transcribe
-/// Audio… and Edit Audio… for a text book, and Clean Up Transcript
-/// (Experimental)… and Delete Transcript… for a book without a transcript.
+/// Audio… and Edit Audio… for a text book, Attach Transcript… for a text
+/// book and while a transcript is being attached to the book, and Clean Up
+/// Transcript (Experimental)… and Delete Transcript… for a book without a
+/// transcript.
 /// Move to Library… moves an episode or article out of its feed into a
 /// folder of the library (FR11, branch D), and is unavailable for any other
 /// book.
 struct BookCommands: Commands {
+    /// The interface language, observed so the menu bar's titles are read again after a switch (FR39).
+    @ObservedObject private var language = InterfaceLanguage.observer
     @FocusedValue(\.canEditBookText) var canEditBookText
     @FocusedValue(\.canEditBookManifest) var canEditBookManifest
     @FocusedValue(\.canTranscribeBookAudio) var canTranscribeBookAudio
+    @FocusedValue(\.canAttachBookTranscript) var canAttachBookTranscript
     @FocusedValue(\.canCleanUpBookTranscript) var canCleanUpBookTranscript
     @FocusedValue(\.canDeleteBookTranscript) var canDeleteBookTranscript
     @FocusedValue(\.canEditBookAudio) var canEditBookAudio
@@ -646,7 +836,7 @@ struct BookCommands: Commands {
             }
         }
 
-        CommandMenu("Book") {
+        CommandMenu(MenuWording.book) {
             Button(BookTextEditWording.editTitle) {
                 NotificationCenter.default.post(name: .editBookText, object: nil)
             }
@@ -678,6 +868,14 @@ struct BookCommands: Commands {
                 NotificationCenter.default.post(name: .transcribeBookAudio, object: nil)
             }
             .disabled(canTranscribeBookAudio != true)
+
+            // A WebVTT or SubRip file as the audiobook's transcript, in
+            // place of transcribing it (FMT23); dimmed while one is being
+            // attached to the book.
+            Button(TranscriptionWording.attachCommandTitle) {
+                NotificationCenter.default.post(name: .attachBookTranscript, object: nil)
+            }
+            .disabled(canAttachBookTranscript != true)
 
             Button(TranscriptCleanupWording.commandTitle) {
                 NotificationCenter.default.post(name: .cleanUpBookTranscript, object: nil)
@@ -723,63 +921,6 @@ extension FocusedValues {
     var canMoveBookToLibrary: Bool? {
         get { self[CanMoveBookToLibraryKey.self] }
         set { self[CanMoveBookToLibraryKey.self] = newValue }
-    }
-}
-
-// MARK: - The Window in Front (FR12's Branch E)
-
-/// The kind of window in front, which the menus act on: the main window's,
-/// or the key window's while no window is main, as the menu bar's own
-/// menus go by (`MenuVisibilityManager`); nil with no window at all. A menu
-/// command working in one kind of window shows its key and acts only while
-/// a window of that kind is in front (`menuCommandKey(_:shortcuts:frontKind:)`).
-@MainActor
-final class FrontWindowKind: ObservableObject {
-    /// The app's one.
-    static let shared = FrontWindowKind()
-
-    /// The kind of window in front, or nil with none.
-    @Published private(set) var kind: ShortcutWindowKind?
-
-    /// The notification observers, kept for the app's life.
-    private var observers: [NSObjectProtocol] = []
-
-    /// Follows the window in front from now on.
-    private init() {
-        kind = Self.kind(of: NSApp.mainWindow ?? NSApp.keyWindow)
-        let center = NotificationCenter.default
-        // A window that becomes main or key is in front at once; one that
-        // resigns, or the app going away or coming back, leaves the next
-        // window to settle first, as the menu bar's own update does.
-        for name in [NSWindow.didBecomeMainNotification, NSWindow.didBecomeKeyNotification] {
-            observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.refresh() }
-            })
-        }
-        for name in [
-            NSWindow.didResignMainNotification, NSWindow.didResignKeyNotification,
-            NSApplication.didBecomeActiveNotification, NSApplication.didResignActiveNotification,
-        ] {
-            observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                DispatchQueue.main.async {
-                    MainActor.assumeIsolated { self?.refresh() }
-                }
-            })
-        }
-    }
-
-    /// Takes the kind of the window now in front, published when it changed.
-    private func refresh() {
-        let current = Self.kind(of: NSApp.mainWindow ?? NSApp.keyWindow)
-        if current != kind {
-            kind = current
-        }
-    }
-
-    /// The kind of `window`, as the shortcut manager tells kinds of window
-    /// apart, or nil for no window.
-    static func kind(of window: NSWindow?) -> ShortcutWindowKind? {
-        window.flatMap(KeyboardShortcutManager.windowKind(ofKeyWindow:))
     }
 }
 
@@ -876,12 +1017,6 @@ extension Notification.Name {
     static let decreaseSpeed = Notification.Name("decreaseSpeed")
     static let nextHeading = Notification.Name("nextHeading")
     static let previousHeading = Notification.Name("previousHeading")
-    /// Posted by Navigate > Next Page, and by its key (PG02): the key reader
-    /// moves to the start of the next page.
-    static let nextPage = Notification.Name("nextPage")
-    /// Posted by Navigate > Previous Page, and by its key (PG02): the key
-    /// reader moves to the start of the page being read, or the one before.
-    static let previousPage = Notification.Name("previousPage")
     /// Posted by Navigate > Go to Page…, and by its key (PG03): the key
     /// reader opens its page field.
     static let goToPage = Notification.Name("goToPage")
@@ -893,6 +1028,8 @@ extension Notification.Name {
     /// the user gave it one (FR09): the key reader, reading its book from
     /// the reading list, opens the book above it there.
     static let previousInReadingList = Notification.Name("previousInReadingList")
+    static let nextInFolder = Notification.Name("nextInFolder")
+    static let previousInFolder = Notification.Name("previousInFolder")
     static let addBookmark = Notification.Name("addBookmark")
     static let nextBookmark = Notification.Name("nextBookmark")
     static let previousBookmark = Notification.Name("previousBookmark")
@@ -970,6 +1107,15 @@ extension Notification.Name {
     /// Posted by Library > Stop Keeping on This Mac: the key Library window
     /// stops keeping its selected books on this Mac.
     static let stopKeepingOnThisMac = Notification.Name("stopKeepingOnThisMac")
+    /// Posted by Library > Keep on All Devices: the key Library window keeps
+    /// its selected books on every device that syncs (FR43).
+    static let keepOnAllDevices = Notification.Name("keepOnAllDevices")
+    /// Posted by Library > Stop Keeping on All Devices: the key Library
+    /// window stops keeping its selected books on all devices (FR43).
+    static let stopKeepingOnAllDevices = Notification.Name("stopKeepingOnAllDevices")
+    /// Posted by Library > Remove Download, with sync on: the key Library
+    /// window removes its selected books' downloads from this Mac (FR46).
+    static let removeDownload = Notification.Name("removeDownload")
     static let showHeadingList = Notification.Name("showHeadingList")
     static let showBookmarkList = Notification.Name("showBookmarkList")
     static let showSleepTimer = Notification.Name("showSleepTimer")
@@ -996,6 +1142,9 @@ extension Notification.Name {
     /// Posted by Book > Transcribe Audio… (FR05): the key reader opens the
     /// Transcribe Audio sheet for its audiobook.
     static let transcribeBookAudio = Notification.Name("transcribeBookAudio")
+    /// Posted by Book > Attach Transcript… (FMT23): the key reader asks for
+    /// a WebVTT or SubRip file to make its audiobook's transcript.
+    static let attachBookTranscript = Notification.Name("attachBookTranscript")
     /// Posted by Book > Delete Transcript… (FR05): the key reader asks to
     /// delete its audiobook's transcript.
     static let deleteBookTranscript = Notification.Name("deleteBookTranscript")

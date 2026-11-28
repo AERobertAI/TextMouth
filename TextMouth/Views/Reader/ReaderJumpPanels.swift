@@ -69,12 +69,50 @@ enum JumpInputValidator {
     /// ignored.
     static func percent(_ raw: String) -> PercentResult {
         let trimmed = raw.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return .error("Enter a percent.") }
-        guard let value = Double(trimmed) else { return .error("\"\(trimmed)\" is not a number.") }
+        guard !trimmed.isEmpty else { return .error(emptyPercent) }
+        guard let value = Double(trimmed) else { return .error(notANumber(trimmed)) }
         guard (0...100).contains(value) else {
-            return .error("Percent must be between 0 and 100.")
+            return .error(percentOutOfRange)
         }
         return .value(value)
+    }
+
+    // MARK: Words of the refusals
+
+    /// What Go to Percent says to an empty field.
+    static var emptyPercent: String {
+        // Translators: Message when Go to Percent is chosen with nothing typed in its field.
+        InterfaceText.line("jumpInputValidator.emptyPercent", "Enter a percent.")
+    }
+
+    /// What Go to Percent says to text that is no number. `typed` is what was typed.
+    static func notANumber(_ typed: String) -> String {
+        // Translators: Message when the text typed in Go to Percent is no number. %@ is what the user typed, shown in quotation marks.
+        InterfaceText.line("jumpInputValidator.notANumber", "\"\(typed)\" is not a number.")
+    }
+
+    /// What Go to Percent says to a number outside 0 to 100.
+    static var percentOutOfRange: String {
+        // Translators: Message when the number typed in Go to Percent is below 0 or above 100.
+        InterfaceText.line("jumpInputValidator.percentOutOfRange", "Percent must be between 0 and 100.")
+    }
+
+    /// The jump button's title.
+    static var jumpTitle: String {
+        // Translators: Button of a jump panel (Go to Percent, Time or Page) that jumps to what was typed.
+        InterfaceText.line("jumpInputValidator.jumpTitle", "Jump")
+    }
+
+    /// The cancel button's title.
+    static var cancelTitle: String {
+        // Translators: Button of a jump panel (Go to Percent, Time or Page) that closes it without jumping.
+        InterfaceText.line("common.cancel", "Cancel")
+    }
+
+    /// What VoiceOver says for a refusal shown under a jump field.
+    static func errorSpoken(_ message: String) -> String {
+        // Translators: What VoiceOver says for the refusal shown under a jump panel's field. %@ is the refusal's sentence.
+        InterfaceText.line("common.errorValue", "Error: \(message)")
     }
 
     /// How far past the end of a book's clock a typed time still names its
@@ -229,7 +267,8 @@ struct JumpToPagePanel: View {
     var body: some View {
         JumpFieldPanel(
             label: ReaderPageWording.fieldLabel,
-            hint: ReaderPageWording.fieldHint,
+            // The book's pages, so the listener knows the range to type in.
+            hint: ReaderPageWording.fieldHint(for: viewModel.bookPages),
             fieldWidth: 80,
             // The current page's label, so the user can adjust it rather
             // than type from nothing.
@@ -332,9 +371,9 @@ struct JumpFieldPanel: View {
                     }
                     .accessibilityLabel(label)
                     .accessibilityHint(hint)
-                Button("Jump", action: take)
+                Button(JumpInputValidator.jumpTitle, action: take)
                     .keyboardShortcut(.defaultAction)
-                Button("Cancel", action: onCancel)
+                Button(JumpInputValidator.cancelTitle, action: onCancel)
                     .keyboardShortcut(.cancelAction)
                 Spacer()
             }
@@ -342,7 +381,7 @@ struct JumpFieldPanel: View {
                 Text(errorMessage)
                     .font(.caption)
                     .foregroundColor(.red)
-                    .accessibilityLabel("Error: \(errorMessage)")
+                    .accessibilityLabel(JumpInputValidator.errorSpoken(errorMessage))
             }
         }
         .padding(.horizontal)

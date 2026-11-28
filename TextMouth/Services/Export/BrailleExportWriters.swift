@@ -68,7 +68,7 @@ enum BrailleExportBlocks {
                 for row in table.rows {
                     result.append(textBlock(EmphasizedText(row.joined(separator: "; ")), itemDepth: itemDepth))
                 }
-            case .thematicBreak:
+            case .thematicBreak, .pageBreak, .navigationTarget:
                 // A break holds no text, so braille has nothing to write.
                 break
             }
@@ -197,7 +197,10 @@ struct BRFExportWriter: TextExportWriter {
     let name = "BRF"
     /// The picker's hint. It says "braille", not "braille ASCII": the options
     /// may write a BRF in Eurobraille or in Unicode braille patterns.
-    let hint = "Braille Ready Format: pages of braille, for braille displays and embossers."
+    var hint: String {
+        // Translators: The hint of the Convert to picker in the Export dialog while BRF is chosen. Braille Ready Format is the name of the file format.
+        InterfaceText.line("brfExportWriter.hint", "Braille Ready Format: pages of braille, for braille displays and embossers.")
+    }
     let fileExtension = "brf"
 
     /// The user's defaults: 40 cells by 25 lines, page numbers on, CR LF,
@@ -231,7 +234,10 @@ struct BRFExportWriter: TextExportWriter {
 struct PEFExportWriter: TextExportWriter {
     let id = "pef"
     let name = "PEF"
-    let hint = "Portable Embosser Format: pages of Unicode braille in XML, for embossers."
+    var hint: String {
+        // Translators: The hint of the Convert to picker in the Export dialog while PEF is chosen. Portable Embosser Format is the name of the file format.
+        InterfaceText.line("pefExportWriter.hint", "Portable Embosser Format: pages of Unicode braille in XML, for embossers.")
+    }
     let fileExtension = "pef"
 
     /// The user's defaults, as the BRF writer's.

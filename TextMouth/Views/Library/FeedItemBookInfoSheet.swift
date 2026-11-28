@@ -50,6 +50,9 @@ struct FeedItemBookInfoSheet: View {
     let info: LibraryBookInfo
     /// The title of the feed it belongs to, while the feed's record is here.
     let feedTitle: String?
+    /// What the episode's transcript came from, once it has been read; empty
+    /// until then, and for an episode or article without a transcript.
+    @StateObject private var transcript = TranscriptBookInfoModel()
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -67,7 +70,10 @@ struct FeedItemBookInfoSheet: View {
             Divider()
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
-                    ForEach(FeedItemBookInfoWording.details(of: book, info: info, feedTitle: feedTitle), id: \.label) { detail in
+                    ForEach(
+                        FeedItemBookInfoWording.details(of: book, info: info, feedTitle: feedTitle, transcriptLine: transcript.line),
+                        id: \.label
+                    ) { detail in
                         FeedInfoValue(label: detail.label, value: detail.value, spokenValue: detail.spokenValue)
                     }
                 }
@@ -84,7 +90,13 @@ struct FeedItemBookInfoSheet: View {
         }
         .padding()
         .frame(width: 450, height: 440)
-        .navigationTitle("Info: \(book.title)")
+        .navigationTitle(FeedItemBookInfoWording.title(of: book.title))
+        // The transcript is read off the main thread, without downloading
+        // it; its row appears once it has answered, in the scrolling list,
+        // so the sheet keeps its size.
+        .task(id: book.id) {
+            await transcript.load(for: book)
+        }
         // Escape closes the sheet too, wherever focus is, as Return does.
         .background(SilentKeyEquivalent(key: .escape, action: { dismiss() }))
     }
@@ -97,16 +109,28 @@ struct FeedItemBookInfoSheet: View {
 /// edits.
 enum FeedItemBookInfoWording {
     /// The sheet's heading, as every Book Info's.
-    static let heading = "Book Information"
+    static var heading: String {
+        // Translators: Heading of a book's information sheet, as every Book Information sheet has it. Title case.
+        InterfaceText.line("common.bookInformation", "Book Information")
+    }
     /// The button that closes the sheet.
-    static let done = "Done"
+    static var done: String { FeedWording.doneTitle }
+    /// The sheet's window title, naming the book.
+    static func title(of bookTitle: String) -> String {
+        // Translators: The window title of the read-only Book Information sheet of a feed's episode or article. %@ is the book's title.
+        InterfaceText.line("common.infoValue", "Info: \(bookTitle)")
+    }
 
     /// The line under the heading saying why nothing can be changed, and
     /// the way out (FR11, branch D): "An episode's details come from its
     /// feed; Move to Library… makes it a book you can edit."
     static func whyReadOnly(isArticle: Bool) -> String {
-        "\(isArticle ? "An article's" : "An episode's") details come from its feed; "
-            + "\(ShortcutAction.moveToLibrary.title) makes it a book you can edit."
+        let moveName = ShortcutAction.moveToLibrary.title
+        return isArticle
+            // Translators: The line under the heading of an article's read-only Book Information sheet: why nothing can be changed, and the way out. %@ is the name of the Move to Library command.
+            ? InterfaceText.line("feedItemBookInfo.whyReadOnly.article", "An article's details come from its feed; \(moveName) makes it a book you can edit.")
+            // Translators: The line under the heading of an episode's read-only Book Information sheet: why nothing can be changed, and the way out. %@ is the name of the Move to Library command.
+            : InterfaceText.line("feedItemBookInfo.whyReadOnly.episode", "An episode's details come from its feed; \(moveName) makes it a book you can edit.")
     }
 
     /// What VoiceOver says for the reader's Book Info button: "Edit book
@@ -114,7 +138,11 @@ enum FeedItemBookInfoWording {
     /// information" for an episode or article in its feed, whose Book Info
     /// is read-only (`Book.hasReadOnlyBookInfo`).
     static func readerButtonLabel(readOnly: Bool) -> String {
-        readOnly ? "Show book information" : "Edit book metadata"
+        readOnly
+            // Translators: VoiceOver label of the reader's Book Info button for a feed's episode or article, whose Book Info only shows.
+            ? InterfaceText.line("feedItemBookInfo.readerButtonLabel.information", "Show book information")
+            // Translators: VoiceOver label of the reader's Book Info button for a book the listener can edit.
+            : InterfaceText.line("feedItemBookInfo.readerButtonLabel.metadata", "Edit book metadata")
     }
 
     /// The details of `book`, an episode or article, in the order the sheet
@@ -124,8 +152,15 @@ enum FeedItemBookInfoWording {
     /// genre, year, duration, and file format from `info`, an article's
     /// format and word count, and when it was added and last opened. An
     /// episode's duration is the measured one when the library has it,
-    /// spoken in words.
-    static func details(of book: Book, info: LibraryBookInfo, feedTitle: String?) -> [BookInfoDetail] {
+    /// spoken in words. An episode's "Transcript" follows its format, saying
+    /// where its transcript came from (`transcriptLine`,
+    /// `TranscriptStore.bookInfoLine(for:)`), and is left out without one.
+    static func details(
+        of book: Book,
+        info: LibraryBookInfo,
+        feedTitle: String?,
+        transcriptLine: String? = nil
+    ) -> [BookInfoDetail] {
         var details = [BookInfoDetail(label: "Title", value: book.title)]
         switch info {
         case .audio(let metadata, _):
@@ -136,17 +171,20 @@ enum FeedItemBookInfoWording {
             details.append(BookInfoDetail(label: "Year", value: metadata.year))
             details.append(duration(of: book, read: metadata.duration))
             details.append(BookInfoDetail(label: "Format", value: metadata.fileFormat))
+            details.append(BookInfoDetail(label: TranscriptionWording.bookInfoLabel, value: transcriptLine ?? ""))
         case .epub, .simple:
             details.append(BookInfoDetail(label: "Author", value: book.author))
             details.append(BookInfoDetail(label: "Feed", value: feedTitle ?? ""))
             details.append(BookInfoDetail(label: "Format", value: book.format.displayName))
             if let words = book.totalWordCount {
-                details.append(BookInfoDetail(label: "Word count", value: "\(words)"))
+                // Translators: Label of a book's number of words in its read-only Book Information sheet.
+                details.append(BookInfoDetail(label: InterfaceText.line("feedItemBookInfo.wordCount", "Word count"), value: "\(words)"))
             }
         }
         details.append(BookInfoDetail(label: "Added", value: FeedWording.itemDate(book.dateAdded)))
         if let lastOpened = book.lastOpened {
-            details.append(BookInfoDetail(label: "Last opened", value: FeedWording.itemDate(lastOpened)))
+            // Translators: Label of when a book was last opened, in its read-only Book Information sheet.
+            details.append(BookInfoDetail(label: InterfaceText.line("feedItemBookInfo.lastOpened", "Last opened"), value: FeedWording.itemDate(lastOpened)))
         }
         return details.filter { !$0.value.isEmpty }
     }

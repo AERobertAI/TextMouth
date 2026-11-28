@@ -12,13 +12,22 @@ enum TimeEntry: Equatable {
     case problem(String)
 
     /// What a field holding nothing, or something that isn't a time, says.
-    static let howToType = "Type a time, such as 12:04.3, 1:02:03, or 75.5."
+    static var howToType: String {
+        // Translators: Shown or spoken when a time field holds nothing, or something that is not a time (Go to Time, Insert Silence, the reader's Go to Time). The examples are clock times and seconds.
+        InterfaceText.line("timeEntry.howToType", "Type a time, such as 12:04.3, 1:02:03, or 75.5.")
+    }
 
     /// What a time whose seconds, after minutes or hours, reach 60 says.
-    static let secondsTooLarge = "Seconds must be less than 60."
+    static var secondsTooLarge: String {
+        // Translators: Problem said of a typed time whose seconds, after minutes or hours, reach 60.
+        InterfaceText.line("timeEntry.secondsTooLarge", "Seconds must be less than 60.")
+    }
 
     /// What a time whose minutes, after hours, reach 60 says.
-    static let minutesTooLarge = "Minutes must be less than 60."
+    static var minutesTooLarge: String {
+        // Translators: Problem said of a typed time whose minutes, after hours, reach 60.
+        InterfaceText.line("timeEntry.minutesTooLarge", "Minutes must be less than 60.")
+    }
 
     /// The time `text` names: seconds alone ("75.5", "3723"), minutes and
     /// seconds ("12:04.3", "62:03"), or hours, minutes, and seconds

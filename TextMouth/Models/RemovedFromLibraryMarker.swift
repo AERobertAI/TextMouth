@@ -38,6 +38,11 @@ struct RemovedFromLibraryMarker: Codable, Equatable, Sendable {
     /// refuses a rebuild after a macOS update changed its table. Nil for a
     /// bundled table and for a marker written before it was kept.
     let brailleTableVersion: String?
+    /// Who chose the braille table (`Book.brailleTableOrigin`, brfguess), so
+    /// a book added back keeps "guessed" said of its table. Nil for every
+    /// other book and for a marker written before it was kept; a value that
+    /// cannot be read is nil too, and never makes the marker unreadable.
+    @LenientOptional var brailleTableOrigin: BrailleTableOrigin? = nil
     /// The braille file characters the book's BRF or BRL file was read in
     /// (`Book.brailleFileCode`, braillecodes), by the code's id. bookInfo.json,
     /// which also holds it, is deleted by the removal, so a book added back
@@ -87,6 +92,7 @@ struct RemovedFromLibraryMarker: Codable, Equatable, Sendable {
         // The wrapped fields last, once every stored constant is set.
         brailleFileCode = book.brailleFileCode
         textEncodingSource = book.textEncodingSource
+        brailleTableOrigin = book.brailleTableOrigin
         editedText = book.editedText
         textCacheFingerprint = book.textCacheFingerprint
     }
@@ -213,8 +219,11 @@ enum LibraryRemovalError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .couldNotMarkPackage(let packageName, let underlying):
-            return "TextMouth could not record the removal in its package, \(packageName). "
-                + underlying.localizedDescription
+            return SentenceWording.joined([
+                // Translators: First sentence of the error shown when Remove from Library Only cannot mark the book's package, so the book stays in the library. %@ is the package's folder name. The sentence that says why follows it.
+                InterfaceText.line("libraryRemovalError.couldNotMarkPackage", "TextMouth could not record the removal in its package, \(packageName)."),
+                underlying.localizedDescription,
+            ])
         }
     }
 }

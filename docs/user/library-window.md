@@ -1,88 +1,342 @@
 # The Library window
+<!-- id: library-window; keys: Library view, library list, book list, folders; src: TextMouth/Views/Library/LibraryView.swift, TextMouth/ViewModels/LibraryViewModel.swift -->
 
 Part of [TextMouth's documentation](../../README.md).
 
-- Choose what the window lists in the View pop-up, a pop-up button above the list. Its visible label is "View", and VoiceOver calls it "Library view", reading its value first, as in "Unopened, Library view, pop-up button"; a braille display shows the value and the label. Choosing an item says nothing more than VoiceOver's own reading of the item. The pop-up is no wider than 320 points, so a long name never makes the window's content wider than the window. TextMouth ships six views: Folders, All Items, Unopened, Recently Opened, Reading List, and Feeds; you arrange them, hide them, and make views of your own in the Library tab of Settings (see [Settings](settings.md)).
-  - Which views the pop-up offers: the views set to Always; those set to When Applicable, while they list something; and the view the window shows, whatever its setting. They come in the order of the Library tab's list. Folders is always offered. The Reading List lists something while it holds a book, an episode, or an article. Any other view lists something while it finds at least one row, a book or a feed; Feeds, as shipped, lists something while there is a feed, subscribed or not. TextMouth ships Folders, All Items, Unopened, Recently Opened, and the Reading List set to Always, and Feeds set to When Applicable, last in the list.
-  - A window keeps its view until you choose another. A view you hide in Settings, or that stops listing anything, while a window shows it, stays shown in that window, and in its pop-up, until you choose another view, and then leaves the pop-up; nothing moves under VoiceOver's cursor, and nothing is said. A view deleted while a window shows it cannot stay: the window shows the first view its pop-up offers instead, and says, as in "The view this window showed was deleted. It now shows Folders." A new Library window opens at the first view its pop-up offers, which is Folders until you move another view above it.
-  - Folders shows one folder at a time, with the folders' breadcrumbs, the Folders section, and the commands of folders; the rest of this page says what is in a folder. Every other view lists books from every folder. Where there are feeds, a Feeds section follows the folders in Folders (see [Podcasts and article feeds](feeds.md)). A feed's downloaded episodes and articles are listed in its feed's folder, where the feed's row stands for them in Folders and in a view that lists feeds. Of the shipped views, only Recently Opened lists them, and the Reading List holds the ones you add to it; a view of your own lists them when it is set to list Episodes or Articles.
-  - All Items, as shipped, lists every book and every feed, sorted by title until you choose another sort. Unopened, as shipped, lists every book you have never opened, from every folder, and a book leaves it once you open it, and a feed only while it has a new episode or article among those it lists, one published, or, undated, first seen, since you subscribed and neither played nor opened, so a podcast's back catalog never keeps it there. It took the place of No Folder on October 7, 2026: the books in no folder, which No Folder listed, are at the top of the library in Folders. Recently Opened, as shipped, lists the ten books, episodes, and articles you opened last, and of each feed's episodes and articles only the one you opened last, which takes one of the ten places; it was called Recent until October 10, 2026, and keeps the sort you chose for it then. The Reading List lists the books you add to it, in the order you arrange (below).
-  - Feeds, the sixth view, lists the feeds alone, each by title, as the Feeds section lists them. It has no Books section, so no "Books (0)" appears. The window's title is "Library: Feeds", with no sort in it. Its Sort button, which VoiceOver calls "Sort feeds by Title", has one item, "Title", checked, with the hint "Feeds are always listed by title"; choosing it says "Feeds are listed by title". Opening a feed's row there opens the feed's folder, in Folders, as it does in the Feeds section.
-  - A view of your own, or a built-in view you changed, lists what its conditions find. Its window title is "Library: Unread EPUBs (Date Added Descending)", the view's name and the sort shown; a view that lists only feeds is named alone, as Feeds is. A view without a Books section that lists nothing, such as Feeds, a view of your own, or a built-in view you changed to list feeds alone, shows one row, "Nothing matches this view now." The summary bar and Speak Info count the rows the view lists, as in "23 books, 2 feeds" or "5 episodes". The shipped views look as they always have, and a shipped view with nothing to list shows no such row.
-  - Go to View goes to a view by number. Command-1 to Command-9, the Shortcuts tab's actions "Go to View 1" to "Go to View 9" under Library, work in a Library window and go to the first to the ninth view its pop-up offers a window showing no view of its own, counting the views set to Always and those set to When Applicable that list something, and never one a pop-up keeps only because its window shows it, so a key always goes to the same view. The Library menu's Go to View submenu lists those views by name, the first nine with their keys; with no Library window in front it has one dimmed item, "No Library Window". Going to a view says its name and what it lists, as in "All Items, 743 books, 2 feeds", or, for a view of your own or a built-in filter view that lists nothing, "New Episodes, nothing matches this view now."; a key with no view says "There is no view 7. Go to View reaches 6 views."
-- Sort by title, author, date added, last opened, file size, or your own manual order. Each folder and each view remembers its own sort, except the Reading List, and a view that lists only feeds, which always lists them by title, which always shows the order you give it (below). Until you choose a sort in Unopened, it uses the sort you chose for No Folder, unless that was manual order, and otherwise sorts by date added, newest first. In the Sort menu a checkmark marks the field shown; choosing that field again keeps the sort as it is, and VoiceOver says the sort shown, as in "Sorted by Title, ascending". The item below the fields, Sort Descending or Sort Ascending, reverses the order; it is dimmed in manual order, which has no direction.
-- A book's author comes from its file. An EPUB names its author in a creator element, or, in files some converters write, only in a dcterms:creator meta element or in a contributor marked as the author; TextMouth reads them all, since October 7, 2026, preferring a creator marked as the author to one listed before it, such as an illustrator, and reading a creator that says only Unknown as naming no one. On that day, 150 of a library's 729 EPUBs named their author in a meta element alone, and every one was listed under Unknown. A book whose file names no one is listed under Unknown, and Book Info, or an EPUB's metadata editor, lets you type an author in, which is kept whatever the file says.
-- In manual order, Move Book Up and Move Book Down (Library menu, Shift-Command-Up Arrow and Shift-Command-Down Arrow), or dragging, rearrange a folder in Folders, the top of the library included, and at the Reading List they rearrange the list. All Items, Unopened, and Recently Opened mix books from many folders, which share no one order, so nothing rearranges them there.
-- Where the list shows an order you arrange, a folder in manual order or the Reading List, a book's row also offers Move Up and Move Down in its context menu and as the first of its actions in VoiceOver's Actions menu (VO-Command-Space), each only where the book can make that move: the first book offers Move Down alone, and a book alone in the list offers neither. The VoiceOver actions move the book one place and say where it now stands, as in "Dune, 3 of 12"; the context menu's items, and Move Book Up and Move Book Down from the Library menu or the keyboard, say which book the move passed, as in "Moved Dune above Almanac". Should the list change after the row offered a move it can no longer make, the action says so, as in "Dune can't move up."
-- The Reading List lists books from any folder in an order you arrange, each book once. Add to Reading List, in a book's context menu, its actions in VoiceOver's Actions menu, and the Library menu, adds the selected books to its end, and Remove from Reading List takes them off it, leaving them in the library. For several books selected, each command counts them, as in "Add 3 Books to Reading List", and a selection holding books of both kinds offers both. VoiceOver says what changed, as in "Added to reading list: Moby-Dick", or why nothing did, as in "Moby-Dick is already in the reading list." Neither command has a key until you give it one in the Shortcuts tab of Settings, under Library. In every other view, a book in the list says "In reading list" right after its title and author in its row's VoiceOver label, as in "Loose Pages, by Ines Okonkwo-Varga, In reading list, New, Plain Text", so it is in the same place on every row; in edit mode a selected row still begins "Selected", and the row has no VoiceOver value of its own. At the Reading List, Move Book Up, Move Book Down, and dragging rearrange the list, its Sort menu names its one order, Reading List Order, and an empty list says how to add a book; Remove from Library… and the Delete key still remove a book from the library there, so take a book off the list alone with Remove from Reading List. A book that leaves the library leaves the list too, one taken out with Remove from Library Only included, even when the next launch is what takes it out. At the Reading List, Open Book…, Import Folder…, and New from Text…, whether chosen in the Add to Library sheet or from their menus, put their books in the folder the window showed last, as anywhere else, and add them to the end of the reading list; VoiceOver says where the books themselves went, as in "Added to reading list: Moby-Dick. The book is in Essays/Sea.", calling the top of the library Library Root, as the folder pickers do, and says it after the import's own words, not over them. A ZIP archive's books join together, a duplicate joins once you keep both, and a book opened from Finder never joins. Replace on a duplicate gives the new copy the old one's place on the reading list, wherever you import it; at the Reading List, the new copy of a book that wasn't on the list joins its end, and VoiceOver says so. Above the list, When a book ends chooses what a book opened from the list does at its end: Play the book below, the default, Play the book above, or Stop (see [Reader windows](reader-windows.md)). Skip finished books, checked unless you clear it, passes over the books Books Finished counts, in the Stats tab of Settings: a book joins them when it is played or read to its end and doesn't start again, and stays when you read it again.
-- Edit Mode selects several books at once to move or remove them, or to add them to the reading list or take them off it. The bar above the list counts the books selected, in the list or with edit mode's checks, as in "Edit mode, 3 of 12 books selected", counting only books the list shows, and the toolbar's Done counts them the same way in its hint. Select All becomes Deselect All once every book listed is selected, and is dimmed while no book is listed. In edit mode, the bar above the list offers Add to Reading List and Remove from Reading List beside Move, for the books selected: Add for those not in the list, Remove for those in it, and both for a selection holding each. VoiceOver hears how many books each acts on, as in "Add 3 books to the reading list", and each says what it did, as the context menu's commands do. With nothing selected, the bar shows the one the view suggests, dimmed: Remove from Reading List at the Reading List, and Add to Reading List elsewhere. At the Reading List, books you take off the list leave the selection too. Leave edit mode with the toolbar's Done, which VoiceOver calls Exit edit mode, or Edit Mode in the Library menu, Command-E; the bar has no Done of its own.
-- A row's hint says what it does, never a gesture or a key, since VoiceOver, a braille display, and the keyboard each do it their own way: a folder's row says "Opens the folder.", and a book's "Opens the book.", or, in edit mode, "Selects this book." or "Deselects this book."
-- The Move dialog puts the selected books in a folder chosen from its pop-up, or in one its New Folder fields make. New Folder… opens those fields with the keyboard in their name field, where VoiceOver lands. While they are shown, Return presses their Create, and Escape, like Cancel New Folder, closes them, keeps the folder chosen, and says so, as in "New Folder cancelled. Destination folder: Reports."; Create makes the folder and says so, with the new folder chosen, as in "Folder Q3 created. Destination folder: Reports/Q3."; once they close, Return presses Move again and Escape closes the dialog. Episodes and articles stay in their feeds' folders: their rows offer no Move to Folder… (Move to Library…, on a downloaded one's row, makes it a book of the library's own; see [Podcasts and article feeds](feeds.md)), and with only episodes and articles selected, the Library menu's Move to Folder… (Shift-Command-M) and the edit bar's Move open no Move dialog, while a selection holding books too moves only its books; either way VoiceOver says which stayed, a moment after the dialog has closed when there is one, as in "Left “Ep. 368” where it is: episodes and articles stay in their feeds; Move to Library… makes one a book of your library." A move, a folder's rename or move, or Delete Folder's Move Contents that fails keeps its sheet open with the reason, which VoiceOver hears once, and trying again clears that reason until the new attempt answers. Book Info, in a book's context menu, edits a plain text, Markdown, or HTML book's title and author (an EPUB's or an audiobook's metadata opens in an editor of its own, and an episode's or article's in its feed opens read-only; see [Podcasts and article feeds](feeds.md)): Save waits for a title of more than spaces, and drops the spaces typed around the title or the author. A braille book's sheet, under the heading Book Information, has the same fields and one more row, "Braille Code", after Format, which names the code the book was imported with, such as "Unified English Braille, contracted (Grade 2)", and which VoiceOver reads as "Braille Code, Unified English Braille, contracted (Grade 2)". A book read with one of this Mac's tables (see [Settings](settings.md)) has its language after the code, as in "French braille, contracted (Grade 2), in French", or, for a table that states no contraction, "Italian braille, in Italian"; Speak Full Info says the same words after "Braille code: ". When this Mac no longer has the table, the row gives the table's stored name instead, as in "mac:fr-bfu-g2.ctb". A plain text, Markdown, or HTML book you added from a file has one more row in its Book Information sheet, "Text Encoding", after Format, a pop-up button that names the encoding the book's file is read in and reads the file again in another when you choose one (see Text Encoding, below). Command-I opens Book Info for the selected book and Feed Info for a feed's row, and, for a folder, which has no Info sheet, speaks the folder's full summary, as Speak Full Info does (below). With several rows selected it acts on the first in the list's order, in Edit Mode on the first book selected, and with none it does nothing.
-- TextMouth records which of a book's details you typed yourself. When you save Book Info, or the metadata editor of an EPUB or an audiobook, each field whose value you changed is marked as edited by hand, in library.json and in the book's record: the title, the author (an audiobook's artist), an EPUB's publisher and publication date, and an audiobook's album, genre, and year. The next time you open Book Info, from the Library window or from a reader, VoiceOver says "edited by hand" after the label of each such field, as in "Book title, edited by hand"; in a reader, that includes a field you saved there a moment before. Saving changes, and marks, only the fields you changed in that editor since it opened. A field you leave as the editor showed it is neither saved nor marked, even where the editor showed what the book's file says, and even if another window, or the metadata refresh after an update, changed it while the editor was open: that change stays. The Book Info sheet of a plain text, Markdown, or HTML book trims the spaces around the title and the author as it saves, so a title or an author that differs from what the sheet showed only in those spaces counts as unchanged; the EPUB and audiobook editors save what you type as it is. While a book's file is only in the cloud, its editor shows empty each detail TextMouth doesn't know, such as an EPUB's publisher and date or an audiobook's album, genre, and year; a detail you leave empty there stays unknown, so the file's own values show once the book is downloaded. When you also check Also write to the library's copy of the EPUB file, the file takes the book's title, author, publisher, and date as the library has them at that moment, your changes included. A field once marked stays marked, even if you later type back what the file says. The metadata refresh after an update never replaces a field edited by hand (see library.json, under [Where TextMouth keeps your library](where-your-library-lives.md)).
-- Text Encoding, in Book Information, is a pop-up button that names the encoding a plain text, Markdown, or HTML book's file is read in, and reads the file again in another when you choose one. Book Info opens it, from the Library window or from a reader. VoiceOver says its value first, then its label, as in "Windows-1251 (Cyrillic), guessed, Text Encoding", and its hint is "Choose another encoding to read the book's file again in it."
-  - Which books have it: a plain text, Markdown, or HTML book you added from a file, with Open Book…, from Finder, or in a ZIP of books, and any other book of those formats that records an encoding. Text you typed or pasted with New from Text…, a feed's article, a book of any other format, and a book added back after Remove from Library Only that recorded no encoding have none.
-  - Its items are "Automatic", "UTF-8", "Windows-1252 (Western European)", and then the encodings TextMouth guesses among, named and ordered as [What TextMouth reads](what-textmouth-reads.md) lists them. Automatic reads the file as TextMouth reads a file you add, so it takes back a choice. UTF-16 and UTF-32 have no item of their own: Automatic finds them by their byte order mark, and UTF-16 by its zero bytes too. Shift JIS, GBK, Big5, and EUC-KR are one item each, though each stands for two encodings, Windows' variant and the standard it extends, and a choice reads the file in whichever of the two reads every byte.
-  - The item selected is the encoding the book is read in now, and its name says what decided it:
-    - "Shift JIS (Japanese), chosen": you chose it.
-    - "Windows-1251 (Cyrillic), guessed": TextMouth guessed it, when you added the file or when you chose Automatic.
-    - "UTF-8, from its byte order mark": the file begins with a byte order mark. For UTF-16 it is "UTF-16 (little-endian), from its byte order mark" or "UTF-16 (big-endian), from its byte order mark".
-    - "UTF-16 (little-endian), recognized by its bytes": a UTF-16 file with no byte order mark, found by its zero bytes. The other byte order is "UTF-16 (big-endian), recognized by its bytes".
-    - "UTF-8": the bytes are valid UTF-8, which needs no more.
-    - "ISO 8859-2 (Central European), declared in the file": an HTML file declares it.
-    - "Windows-1252 (Western European), the default": nothing in the file says, and no guess was made.
-    - "Checking the file": the book records no encoding, and TextMouth is working out what its file says. The pop-up is dimmed meanwhile.
-    - "Not known until the book is downloaded": the book records no encoding and its file is only in the cloud, which is never downloaded to find out (see [Keeping your library in the cloud](cloud-library.md)).
-    - "Not known, since the file can't be read": the book records no encoding and its file can't be read.
-  - When no item names the encoding, as with UTF-16 and UTF-32, or while it is checked or not known, one more item stands last in the list, selected, and says so. Choosing it, or the item already selected, changes nothing.
-  - Choosing another item asks first, in an alert.
-    - Its title is "Read “Moby-Dick” again as Shift JIS (Japanese)?", or, for Automatic, "Read “Moby-Dick” again automatically?".
-    - Its message is these sentences, in this order, with a space between them:
-      - For Automatic only: "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds."
-      - "Its text is replaced by the new reading."
-      - "Your place and bookmarks move with their words. Where none of their words are left, as when garbled letters become Cyrillic, each goes to about the same point in its chapter, or to the nearest passage the two readings share."
-      - Only when the book's text holds text TextMouth did not write, an edit made with Edit Text or a save that no edit took: "An edit of its text is kept beside the new reading, as a copy in the book's package."
-      - Only while Edit Text is open on the book: "Edit Text stops for this book; choose Edit Text again to edit the new reading."
-    - Its buttons are Read Again, which Return presses, and Cancel, which Escape presses. Cancel changes nothing, the pop-up included.
-  - Read Again reads the file again, in the encoding chosen or as Automatic reads it.
-    - The book's text is replaced. Your reading position, bookmarks, and skipped sections move to their words (see [Reader windows](reader-windows.md)), and a reader that has the book open shows the new text, its cursor on the same words as near as TextMouth can find them (see [Editing a book's text](editing-book-text.md)).
-    - A choice is recorded with the book, and every later reading of its text uses it, whatever its bytes say of themselves (see [What TextMouth reads](what-textmouth-reads.md) and [Where TextMouth keeps your library](where-your-library-lives.md)).
-    - While it works, the sheet shows "Reading the book again..." with a spinner, and the pop-up, Cancel, and Save are dimmed. The sheet stays open until the book has been read again.
-  - When it is done, the pop-up shows the new encoding, and VoiceOver says what the book is read in now, as in "“Moby-Dick” is now read as KOI8-R (Russian), chosen." or "“Moby-Dick” is now read as UTF-8." When TextMouth can't work out what that is, because the book's file went to the cloud as it was read, it says "“Moby-Dick” was read again." instead. When text TextMouth did not write was kept, VoiceOver adds "Its earlier text was kept as content.md.edited-…, in the book's package.", with the dots standing for the date and time in the copy's name, and when Edit Text was open on the book it adds, after that, "Edit Text has stopped for Moby-Dick, since its file was read again. Choose Edit Text again to edit the new text."
-  - A book that can't be read again changes nothing: not its text, its places, nor its record. The sheet shows why below the form, which VoiceOver reads as "Error: " and the sentence and also announces once, and the pop-up keeps showing what the book is read in.
-    - Before the alert, choosing an item says one of these:
-      - "TextMouth is reading the library's text again. Try again when that finishes." while TextMouth reads the library's text again, at launch or for Redo Text Extraction.
-      - "TextMouth is reading “Moby-Dick” again in another encoding. Try again when that finishes." while that book is being read again already.
-      - "“Moby-Dick” is being exported. Wait until the export ends, then try again."
-      - "TextMouth is moving books between folders. Try again when that finishes.", "TextMouth is rebuilding its data directory. Try again when that finishes.", "TextMouth is already moving its data directory. Try again once that move is done.", or "TextMouth is switching to another library and opening again on it.", while the library's storage is busy with that (see [Where TextMouth keeps your library](where-your-library-lives.md)).
-    - After Read Again, it says one of these:
-      - "“Moby-Dick” can't be read as Shift JIS (Japanese): it holds bytes that are not valid in that encoding. Nothing was changed." (see Choosing the encoding in [What TextMouth reads](what-textmouth-reads.md) for what is not valid).
-      - "Moby-Dick isn't downloaded. Download it first: select it in the library, then choose Download Now." when the book's file is only in the cloud.
-      - "TextMouth couldn't keep the text you changed in “Moby-Dick” beside the new reading, so it left the book as it was." when no copy of the text TextMouth did not write could be made.
-      - "TextMouth couldn't read “Moby-Dick” again, so it left the book as it was." when the reading failed, with a colon and the reason after "as it was" when there is one.
-    - Before the alert or after Read Again, when the book has left the library meanwhile: "The book is no longer in the library, so it was not read again."
-- Braille File Characters, in Book Information, is a pop-up button that names the braille file characters a BRF or BRL book's file is read with, and reads the file again with others when you choose them. It stands after the sheet's Braille Code row, and VoiceOver says its value first, then its label, as in "North American Braille ASCII, Braille File Characters, pop-up button"; its hint is "Choose other characters to read the book's file again with them." It works as the Text Encoding pop-up does, which this page describes above, except as follows.
-  - Which books have it: a braille book whose file is a BRF or a BRL. A PEF, whose rows are always Unicode braille patterns, a feed's item, and a book of any other format have none.
-  - Its items are the three codes, "North American Braille ASCII", "Eurobraille, six-dot (German-speaking countries)", and "Unicode braille patterns", with the book's own selected. A book that records no code shows North American Braille ASCII. A code this TextMouth does not know, as a newer TextMouth may have recorded, shows as the last item, selected, as in "“ascii-braillo-no-047-01”, which this version of TextMouth can't read"; choosing it changes nothing. There is no Automatic, since nothing is guessed.
-  - Choosing another item asks first, in an alert whose title is "Read “Ledger” again as Eurobraille, six-dot (German-speaking countries)?" and whose buttons are Read Again and Cancel. Its message begins "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another." for a choice between the two seven-bit codes. For a choice to or from Unicode braille patterns, which the reading checks, it begins "If the file is not written in Unicode braille patterns, TextMouth refuses it, and nothing changes.", naming the code chosen. It goes on "Its text is replaced by the new reading. Your place and bookmarks move with their words. Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share." and then, as for an encoding, the sentences about an edit of the text being kept and about Edit Text stopping, where they apply.
-  - Read Again records the choice with the book, as the encoding's does, and says "“Ledger” is now read as Eurobraille, six-dot (German-speaking countries)." with the same added sentences.
-  - A file that is not braille in the code chosen changes nothing, and the sheet says why: "“Ledger” can't be read as Eurobraille, six-dot (German-speaking countries): Line 3 holds “é”, which is not Eurobraille. Nothing was changed." The reader's sentence inside it is one of those listed in [Adding books](adding-books.md). While TextMouth reads a book again with other braille file characters, a second re-read, Edit Text, Redo Text Extraction, and Replace Existing of that book wait and say "TextMouth is reading “Ledger” again with other braille file characters. Try again when that finishes." The other refusals are the encoding's.
-- In a Library window, a letter pressed alone moves to the first book or folder whose name starts with it. That is the list's own letter navigation, and no shortcut takes such a key there, or in a sheet over a Library window, however the Shortcuts tab sets it. Shortcuts that are a letter alone, W, J, K, L, F, and B by default, work in reader windows only. Space is not a letter, so Play / Pause keeps it. A letter with Shift, Option, Command, or Control still runs its shortcut in a Library window, as a Shift-R you gave Release Media Controls does. Shift-J and Shift-L no longer fall back to the actions of J and L there, so the list takes them (see the Shortcuts tab, in [Settings](settings.md)). Speak Info and Speak Full Info had I and I twice until October 17, 2026; unless you changed their keys, they follow the new defaults, described next.
-- Speak Info, Shift-Command-I or Library menu, Speak Info (in a reader window the same key speaks that window's book, as [Reader windows](reader-windows.md) says), speaks the selected row's brief summary in TextMouth's own voice, the voice and speed set in the Voice tab of Settings, as Where Am I? speaks a position in a reader, so it works with VoiceOver off too. A book's summary gives its title, its author unless none is known, its format, its folder or "Not in a folder", or, for a feed's episode or article, its feed, as in "In The Digital Antiquarian, a feed", its place in the reading list, for a book in it, in every view, as in "In reading list, 3 of 12", its progress and time left as its row says them, and "Unopened" for a book never opened, as in "Middlemarch. By George Eliot. EPUB. In Classics. In reading list, 3 of 12. 42 percent. 2 hours, 5 minutes remaining." A folder's gives its name, "Folder", its books, in it and in every folder inside it, with how many are unopened, and its feeds, when it holds any. A feed's gives its title, "Feed", "Unsubscribed" while you are unsubscribed from it, "Folder missing" when its folder is gone, its items counted as its row counts them (see Feeds in the library, under [Podcasts and article feeds](feeds.md)), and its last check, or, for a feed you unsubscribed from, since when it hasn't been checked, as in "Finish It!. Feed. Unsubscribed. 10 of 381 episodes listed. Not checked since October 9 at 3:05 PM." With nothing selected it says "Nothing is selected."
-- Speak Full Info, Shift-Command-I pressed twice quickly or Library menu, Speak Full Info, speaks the selected row's full summary: the first Shift-Command-I starts the brief summary at once, and a second within the double-press time (see the Shortcuts tab, below) switches to the full one. A press of Shift-Command-I while a summary speaks stops it, as Speak Full Info does while the full one speaks, and Shift-Command-I on another row while a summary speaks speaks that row's summary instead, or, with nothing selected, says "Nothing is selected." However soon it follows the last summary, Shift-Command-I speaks the brief one: the three-second rule of earlier versions, under which a quick third press reached the full summary, is gone. Where Am I? works the same way in a reader, with W and W twice, Where Am I? Full Summary, which the Playback menu offers too, as does the reader toolbar's Where Am I? button among its actions in VoiceOver's Actions menu (VO-Command-Space): the book stays paused, with no second start sound, until the full summary ends. Play/Pause pressed while Where Am I? speaks, from the keyboard, the AirPods, or a media key, a Pause from the AirPods or a media key, and the book's sleep timer running out end the announcement without resuming the book, and so do the AirPods disconnecting, a recording starting, and another book starting while the book counts as playing, as it does while the announcement holds it paused or holds a Play for it (below); a book the announcement paused then stays paused as any pause leaves it: no time after it counts as listening, a sleep timer's countdown waits for Play, and an audiobook's Play/Pause button says Play. A Play from the AirPods, a media key, or Control Center while Where Am I? speaks waits for it: a book the announcement paused plays again as it ends, and a book paused or stopped before it starts once its end sound has played, with the play sound. Until the book plays again, it still counts as playing: a sleep timer running out, a Pause from the AirPods or their leaving, a recording or another book starting, or Play/Pause in that moment leaves it paused, and Where Am I? pressed in the moment after the announcement has ended, before the book plays again, keeps it paused until the new announcement ends, while a skip in that moment resumes it at once. Over a book paused or stopped before the announcement began, with no Play pressed, the announcement goes on when another book starts. Release Media Controls ends the announcement with the book, so the book stays stopped and the AirPods stay released, and so does anything else that stops the book, as a chapter that can't be downloaded or played does. A jump while Where Am I? speaks, by Next Heading or Previous Heading, a heading, bookmark, or search result picked from its list, Go to a percent or a time, or Return to previous position, ends the announcement as a skip does: a book it paused plays on from where the jump lands, and a book a Play was pressed for starts there. With Auto-play on navigate, a heading, bookmark, or search result picked from its list also plays a book paused or stopped before the announcement, from where the jump lands. Should the speech engine cancel the announcement before it ends, whatever waited for it starts as the announcement's end would have started it: a book you pressed Play for during the announcement, the one it paused included; a chapter whose files arrived during it; and a book waiting for its chapter's speech, at once or as soon as the speech is ready. With no Play pressed, the book the announcement paused stays paused, and Play/Pause resumes it. Play/Pause during Where Am I? also pauses, without the pause sound, a book waiting to start, as it does without the announcement: one waiting for its chapter's speech, for a chapter's files to download, or for the library to finish moving it. A Play pressed while Where Am I?'s end sound plays changes nothing: the book, or a chapter whose files arrived during the announcement, starts once the end sound has played, with no play sound. A pause between two chapters of an audiobook that ends during the end sound, or speech that a Play was waiting for becoming ready then, is held for the sound as well: the book goes on counting as playing, and plays once the sound has passed. If the sound output changes while Where Am I? speaks over a book it paused, as when AirPods connect, or the library moves that audiobook's files meanwhile, the book plays on afresh from where it paused once the announcement ends, on the new output or from the files' new place; a text book keeps speaking in the voice. Edit Text taken while Where Am I? speaks over a playing book ends the announcement, and the book plays on in the edited text from its place. Setting a sleep timer while Where Am I? speaks lets the announcement finish and plays the book as it ends. In a library in the cloud, a chapter whose files arrive while Where Am I? speaks plays once the announcement has ended, even if the library moves the book meanwhile, from the book's new place. A book's full summary adds when it was added and last opened, its bookmarks, a braille book's code, said right after the bookmarks as "Braille code: Unified English Braille, contracted (Grade 2)", and, for a BRF or BRL book, its braille file characters right after the code, as "Braille characters: North American Braille ASCII", its file size, unless its files are in the cloud, which are never downloaded to measure them, its cloud note and whether it is kept on this Mac, and whether a reader window has it open; a folder's adds its subfolders and the time left in all its books; and a feed's adds its folder and its address. The full summary of a text book that records an encoding, guessed or chosen (see [What TextMouth reads](what-textmouth-reads.md)), says so right after the bookmarks, in the sentence "Text encoding: Windows-1251 (Cyrillic), guessed." or "Text encoding: Shift JIS (Japanese), chosen."; the brief summary does not, and a book that records no encoding has no such sentence, since Speak Full Info never reads a book's file to find one. Shift-Command-I has Command in it, so it works from the search field, or any text field, as Command-I does. The Shortcuts tab lists Speak Info and Speak Full Info under Information, after Where Am I? and Where Am I? Full Summary, and leaves either without a key while you have given its key to another action.
-- A book's context menu, and its actions in VoiceOver's Actions menu (VO-Command-Space), include Show in Finder, which selects the book's package in Finder. In a library in the cloud they also offer Download Now, Remove Download, and Keep on This Mac (see [Keeping your library in the cloud](cloud-library.md)). An audiobook's also offer Edit Audio… (see [Editing audio](editing-audio.md)) and Transcribe Audio…, which reads Retranscribe Audio… once the book has a transcript, and a transcribed audiobook's Clean Up Transcript (Experimental)… and Delete Transcript… (see [Transcribing an audiobook](transcribing.md)); a feed's episode, whose audio can't be edited, offers no Edit Audio….
-- File menu, Export… exports the books selected in the Library window, and a book's context menu (VO-Shift-M) has Export… too, or Export 3 Books… for a selection of three (see [Exporting books](exporting-books.md)); with no book selected, VoiceOver says "No books are selected." With neither a Library window nor a book's window in front, as when only Settings is open, File menu, Export… says so instead: "No Library window or book is open, so there is nothing to export." or "To export, switch to a Library window or a book's window, then choose Export again." A text book's context menu, and a transcribed audiobook's, also has Edit Text in Default Editor and Edit Text With…, unless several books are selected or the book is a feed's article (see [Editing a book's text](editing-book-text.md)). These commands aren't among the row's actions in VoiceOver's Actions menu.
-- A summary line gives each location's book count and its listening time remaining at the current speed, and, in a library in the cloud, how many of its books are in the cloud and how many are kept on this Mac. The count never counts a feed's episodes and articles as books: where the Feeds section lists feeds, it names them beside the books, as in "743 books, 2 feeds", or "2 feeds" where there is no book; in Recently Opened and the Reading List, which list episodes and articles beside books, it counts each kind, as in "9 books, 1 article", as the list's heading does, "Books (9), Articles (1)"; and in a feed's folder it counts the feed's episodes instead (see Feeds in the library, under [Podcasts and article feeds](feeds.md)). VoiceOver hears the same words entering a folder, as in "Library, 743 books, 2 feeds", and in a folder's row, as in "Podcasts, 3 books, 2 feeds". Storage settings' Library Statistics count the books, then the feeds, where there are any, the folders, and the books kept in packages, and Use This Library's confirmation counts the library in use the same way.
-- The Continue button names the book last opened, as in "Continue: Emma", and opens it. It shows that book's time left as a row does, as in "16:00 left", and VoiceOver says it as a row does, as in "Continue listening to Emma, 16 minutes remaining"; for a finished book, which has no time left, it shows and says none, as in "Continue listening to Emma".
-- The toolbar's buttons for adding and for settings:
-  - Add to Library, a plus button between Up One Level, where that shows, and the edit mode button, opens the sheet of ways to add to the library (see [Adding books](adding-books.md)). On October 17, 2026 it took the place of the Import, New from Text, and Add Feed buttons.
-  - Feed Settings or Folder Settings, between New Folder and the Sort menu, shows only in a folder of the Folders view: never at the top of the library, and in no other view. A feed's folder, the folder that lists the feed's episodes or articles, gets Feed Settings, even when it also holds books of your own; any other folder gets Folder Settings.
-    - Feed Settings opens the feed's Feed Info, the sheet that Command-I opens on the feed's row (see [Podcasts and article feeds](feeds.md)). VoiceOver calls the button "Feed settings for" and the feed's title, as in "Feed settings for Planet Money", and its hint is "Opens the settings of this feed: where its downloads go, what it lists and downloads, and what happens when an episode ends".
-    - Folder Settings opens the Folder Settings sheet (below). VoiceOver calls the button "Folder settings for" and the folder's name, as in "Folder settings for Classics", and its hint is "Opens the settings of this folder: what it holds, and what happens when one of its books ends".
-  - Folder or Feed Settings, in the Library menu after Remove from Reading List and among the Library actions of the Shortcuts tab of Settings, does what the button does for the folder the window shows. It has no key until you give it one. Where the window shows no folder, because it is at the top of the library or in another category, VoiceOver says "Open a folder first to see its settings".
-- The Folder Settings sheet shows a plain folder's facts and how listening goes on from one of its books to another:
-  - Its title is "Folder Settings", and the folder's name is its heading. Under the heading are read-only rows. Each is one element that VoiceOver says as its label, a comma, and its value, and its value can be selected and copied: "Location", the path of the folder that holds this one, or "Library Root" at the top of the library; "Books", the books in the folder and in every folder inside it, with how many are unopened, as in "12 books, 3 unopened"; "Subfolders" and "Feeds", each only when the folder has any; and "Time remaining", only when it is known, as in "14 hours, 3 minutes remaining in total".
-  - Under a heading, "Listening", are two controls, each saved as you choose it. The pop-up button "When a book ends" offers "Use the global setting (…)", which names the Playback tab's When book ends choice, as in "Use the global setting (Continue to Next Book)", then "Play the book below", "Play the book above", and "Stop". Its hint is "What happens when one of this folder's books ends: play the book below it or the one above it in the folder, stop, or follow the global setting". The checkbox "Skip finished books", checked unless you clear it, has the hint "When listening goes on to another book, pass over the books already finished". What they do is under When a book ends, in [Reader windows](reader-windows.md). A folder's choices apply to the books directly in it, never to those in the folders inside it.
-  - Done closes the sheet, and so do Return and Escape, since nothing in the sheet takes typing. If another window deletes the folder while the sheet is open, the sheet says "This folder is no longer in the library." in place of the folder.
-- If a file cannot be saved (a full disk or a missing volume, for example), a banner in the Library window says what is unsaved, with Retry and Dismiss buttons. Quitting while something is unsaved asks first.
-- A Library window showing a folder that another window deletes, as Delete Folder… or Delete Feed… can, goes to the nearest folder above it still in the library, and one showing a folder another window renames or moves follows it to its new place. Nothing moves while the library's index is being recovered.
-- An audiobook of tracks' row offers Edit Manifest in Default Editor and Edit Manifest With… in its context menu, after Edit Text's commands (see [The audiobook manifest](audiobook-manifest.md#editing-an-imported-books-manifest)).
+## Choosing a view
+<!-- id: choosing-view; keys: View pop-up, Library view, view picker, categories, categoryPickerLabel; src: TextMouth/Models/LibraryViewPickerWording.swift, TextMouth/ViewModels/LibraryViewModel+Views.swift, TextMouth/Views/Library/LibraryView.swift -->
+
+Choose what the window lists in the View pop-up, a pop-up button above the list.
+Its visible label is "View", and VoiceOver calls it "Library view", reading its value first, as in "Unopened, Library view, pop-up button"; a braille display shows the value and the label.
+Choosing an item says nothing more than VoiceOver's own reading of the item.
+The pop-up is no wider than 320 points, so a long name never makes the window's content wider than the window.
+TextMouth ships six views: Folders, All Items, Unopened, Recently Opened, Reading List, and Feeds; you arrange them, hide them, and make views of your own in the Library tab of Settings (see [Settings](settings-library.md)).
+
+### Which views the pop-up offers
+<!-- id: which-views-pop-up-offers; keys: Always, When Applicable, hidden view, Library tab, view order; src: TextMouth/Models/LibraryViewDefinition.swift, TextMouth/Models/LibraryViewDefinitionList.swift, TextMouth/ViewModels/LibraryViewModel+Views.swift, TextMouth/Models/LibraryViewsSettingsWording.swift -->
+
+Which views the pop-up offers: the views set to Always; those set to When Applicable, while they list something; and the view the window shows, whatever its setting.
+They come in the order of the Library tab's list.
+Folders is always offered.
+The Reading List lists something while it holds a book, an episode, or an article.
+Any other view lists something while it finds at least one row, a book or a feed; Feeds, as shipped, lists something while there is a feed, subscribed or not.
+TextMouth ships Folders, All Items, Unopened, Recently Opened, and the Reading List set to Always, and Feeds set to When Applicable, last in the list.
+
+### A window keeps its view
+<!-- id: window-keeps-view; keys: view deleted, hidden view, shownViewID, per-window view, new window; src: TextMouth/ViewModels/LibraryViewModel+Views.swift, TextMouth/Models/LibraryViewPickerWording.swift, TextMouth/Views/Library/LibraryView.swift -->
+
+A window keeps its view until you choose another.
+A view you hide in Settings, or that stops listing anything, while a window shows it, stays shown in that window, and in its pop-up, until you choose another view, and then leaves the pop-up; nothing moves under VoiceOver's cursor, and nothing is said.
+A view deleted while a window shows it cannot stay: the window shows the first view its pop-up offers instead, and says, as in "The view this window showed was deleted.
+It now shows Folders."
+A new Library window opens at the first view its pop-up offers, which is Folders until you move another view above it.
+
+### The Folders view
+<!-- id: folders-view; keys: breadcrumbs, folder navigation, Up One Level, Feeds section, feed folder; src: TextMouth/Views/Library/LibraryView.swift, TextMouth/Models/FolderNavigationWording.swift, TextMouth/Views/Feeds/LibraryFeedFolders.swift -->
+
+Folders shows one folder at a time, with the folders' breadcrumbs, the Folders section, and the commands of folders; the rest of this page says what is in a folder.
+Every other view lists books from every folder.
+Where there are feeds, a Feeds section follows the folders in Folders (see [Podcasts and article feeds](feeds.md)).
+A feed's downloaded episodes and articles are listed in its feed's folder, where the feed's row stands for them in Folders and in a view that lists feeds.
+Of the shipped views, only Recently Opened lists them, and the Reading List holds the ones you add to it; a view of your own lists them when it is set to list Episodes or Articles.
+
+### What the shipped views list
+<!-- id: what-shipped-views-list; keys: built-in views, default views, view definition, one episode per feed; src: TextMouth/Models/LibraryViewDefinition.swift, TextMouth/Models/LibraryViewFilterEvaluator.swift, TextMouth/Models/LibraryViewDefinitionStore.swift -->
+
+All Items, as shipped, lists every book and every feed, sorted by title until you choose another sort.
+Unopened, as shipped, lists every book you have never opened, from every folder, and a book leaves it once you open it, and a feed only while it has a new episode or article among those it lists, one published, or, undated, first seen, since you subscribed and neither played nor opened.
+So a podcast's back catalog never keeps it there.
+It replaces No Folder: the books in no folder, which No Folder listed, are at the top of the library in Folders.
+Recently Opened, as shipped, lists the ten books, episodes, and articles you opened last, and of each feed's episodes and articles only the one you opened last, which takes one of the ten places; it keeps the sort you chose for it under its old name, Recent.
+The Reading List lists the books you add to it, in the order you arrange (below).
+
+### The Feeds view
+<!-- id: choosing-feeds-view; keys: feed list, Sort feeds by Title, feedsSortMenuLabel, subscribed feeds; src: TextMouth/Models/LibraryViewPickerWording.swift, TextMouth/ViewModels/LibraryViewModel+Views.swift -->
+
+Feeds, the sixth view, lists the feeds alone, each by title, as the Feeds section lists them.
+It has no Books section, so no "Books (0)" appears.
+The window's title is "Library: Feeds", with no sort in it.
+Its Sort button, which VoiceOver calls "Sort feeds by Title", has one item, "Title", checked, with the hint "Feeds are always listed by title"; choosing it says "Feeds are listed by title".
+Opening a feed's row there opens the feed's folder, in Folders, as it does in the Feeds section.
+
+### Views of your own
+<!-- id: views-your-own; keys: custom view, view editor, filter view, conditions, smart view; src: TextMouth/Models/LibraryViewFilterEvaluator.swift, TextMouth/Models/LibraryViewDefinition.swift, TextMouth/ViewModels/LibraryViewEditorModel.swift, TextMouth/Models/LibraryViewPickerWording.swift -->
+
+A view of your own, or a built-in view you changed, lists what its conditions find.
+Its window title is "Library: Unread EPUBs (Date Added Descending)", the view's name and the sort shown; a view that lists only feeds is named alone, as Feeds is.
+A view without a Books section that lists nothing, such as Feeds, a view of your own, or a built-in view you changed to list feeds alone, shows one row, "Nothing matches this view now."
+The summary bar and Speak Info count the rows the view lists, as in "23 books, 2 feeds" or "5 episodes".
+The shipped views look as they always have, and a shipped view with nothing to list shows no such row.
+
+### Go to View
+<!-- id: go-view; keys: Command-1, Go to View 1, goToView, Library menu, number keys; src: TextMouth/Models/KeyboardShortcut.swift, TextMouth/Models/LibraryViewPickerWording.swift, TextMouth/ViewModels/LibraryViewModel+Views.swift, TextMouth/App/MenuCommands.swift -->
+
+Go to View goes to a view by number.
+Command-1 to Command-9, the Shortcuts tab's actions "Go to View 1" to "Go to View 9" under Library, work in a Library window.
+They go to the first to the ninth view its pop-up offers a window showing no view of its own.
+They count the views set to Always and those set to When Applicable that list something, and never one a pop-up keeps only because its window shows it, so a key always goes to the same view.
+The Library menu's Go to View submenu lists those views by name, the first nine with their keys; with no Library window in front it has one dimmed item, "No Library Window".
+Going to a view says its name and what it lists, as in "All Items, 743 books, 2 feeds", or, for a view of your own or a built-in filter view that lists nothing, "New Episodes, nothing matches this view now."; a key with no view says "There is no view 7.
+Go to View reaches 6 views."
+
+## Sorting
+<!-- id: sorting; keys: Sort menu, sort order, ascending, descending, title sort, manual order, LibrarySortState; src: TextMouth/Models/LibrarySortState.swift, TextMouth/Models/LibraryBookSorter.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift -->
+
+Sort by title, author, date added, last opened, file size, or your own manual order.
+Each folder and each view remembers its own sort, except the Reading List, and a view that lists only feeds, which always lists them by title, which always shows the order you give it (below).
+Until you choose a sort in Unopened, it uses the sort you chose for No Folder, unless that was manual order, and otherwise sorts by date added, newest first.
+In the Sort menu a checkmark marks the field shown; choosing that field again keeps the sort as it is, and VoiceOver says the sort shown, as in "Sorted by Title, ascending".
+The item below the fields, Sort Descending or Sort Ascending, reverses the order; it is dimmed in manual order, which has no direction.
+Whether a title's leading article counts when the Title sort orders books, and when a tie is broken by title, is the Leading articles setting's choice, in the Library tab of Settings (see [Settings](settings-library.md)); as shipped it counts, and The Hobbit sorts among the T's.
+
+## Where a book's author comes from
+<!-- id: where-book-author-comes-from; keys: creator, Unknown author, EPUB metadata, contributor, Book Info; src: TextMouth/Parsers/EPUBParser.swift, TextMouth/Services/FileImportService.swift, TextMouth/Models/BookInfo.swift -->
+
+A book's author comes from its file.
+An EPUB names its author in a creator element, or, in files some converters write, only in a dcterms:creator meta element or in a contributor marked as the author.
+TextMouth reads them all, preferring a creator marked as the author to one listed before it, such as an illustrator, and reading a creator that says only Unknown as naming no one.
+A book whose file names no one is listed under Unknown, and Book Info, or an EPUB's metadata editor, lets you type an author in, which is kept whatever the file says.
+
+## Moving books in manual order
+<!-- id: moving-books-manual-order; keys: reorder, drag to reorder, Move Book Up, Move Book Down, manual sort; src: TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/Models/LibrarySortState.swift, TextMouth/App/MenuCommands.swift -->
+
+In manual order, Move Book Up and Move Book Down (Library menu, Shift-Command-Up Arrow and Shift-Command-Down Arrow), or dragging, rearrange a folder in Folders, the top of the library included, and at the Reading List they rearrange the list.
+All Items, Unopened, and Recently Opened mix books from many folders, which share no one order, so nothing rearranges them there.
+Move Book Up and Move Book Down say why when they can't move a book, and are dimmed in any window but a Library window.
+In a folder in Folders that is not in manual order they say "Books can be moved only in a folder sorted by Manual Order, and this folder is not.
+Choose Manual Order in the Sort menu, then try again."
+In any other view, a view of your own and Feeds included, they say "Books can't be moved in this view.
+Go to a folder in Folders, or to the Reading List, then try again."
+With no book selected they say "No book is selected.
+Select the book to move, then try again.", and with several "A move shifts one book at a time, and several are selected.
+Select one book, then try again."
+A feed's episode or article in a folder can't be moved, and they say "TITLE is an item of a feed, and a feed's items can't be moved."; at the Reading List it moves like any book.
+
+## Move Up and Move Down on a row
+<!-- id: move-up-move-down-row; keys: row actions, Actions menu, accessibility action, LibraryManualMove; src: TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift -->
+
+Where the list shows an order you arrange, a folder in manual order or the Reading List, a book's row also offers Move Up and Move Down in its context menu and as the first of its actions in VoiceOver's Actions menu (VO-Command-Space), each only where the book can make that move.
+The first book offers Move Down alone, and a book alone in the list offers neither.
+The VoiceOver actions move the book one place and say where it now stands, as in "Dune, 3 of 12"; the context menu's items, and Move Book Up and Move Book Down from the Library menu or the keyboard, say which book the move passed, as in "Moved Dune above Almanac".
+Should the list change after the row offered a move it can no longer make, the action says so, as in "Dune can't move up."
+
+## The Reading List
+<!-- id: library-window-reading-list; keys: reading list, playlist, queue, ReadingList; src: TextMouth/Models/ReadingList.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/ViewModels/LibraryViewModel+ReadingList.swift, TextMouth/Views/Library/ReadingListOptionsBar.swift -->
+
+The Reading List lists books from any folder in an order you arrange, each book once.
+
+### Adding and removing books
+<!-- id: adding-removing-books; keys: Add to Reading List, Remove from Reading List, ReadingListCommand, reading list label; src: TextMouth/Models/ReadingListCommand.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/ViewModels/LibraryViewModel+ReadingList.swift, TextMouth/Views/Library/LibrarySubviews.swift -->
+
+Add to Reading List, in a book's context menu, its actions in VoiceOver's Actions menu, and the Library menu, adds the selected books to its end, and Remove from Reading List takes them off it, leaving them in the library.
+For several books selected, each command counts them, as in "Add 3 Books to Reading List", and a selection holding books of both kinds offers both.
+VoiceOver says what changed, as in "Added to reading list: Moby-Dick", or why nothing did, as in "Moby-Dick is already in the reading list."
+Neither command has a key until you give it one in the Shortcuts tab of Settings, under Library.
+In every other view, a book in the list says "In reading list" right after its title and author in its row's VoiceOver label, as in "Loose Pages, by Ines Okonkwo-Varga, In reading list, New, Plain Text", so it is in the same place on every row.
+In edit mode a selected row still begins "Selected", and the row has no VoiceOver value of its own.
+
+### Rearranging and removing at the Reading List
+<!-- id: rearranging-removing-at-reading-list; keys: Reading List Order, empty list, Delete key, Remove from Library; src: TextMouth/Models/ReadingListWording.swift, TextMouth/ViewModels/LibraryViewModel+SortAndOrder.swift, TextMouth/ViewModels/LibraryViewModel+ReadingList.swift -->
+
+At the Reading List, Move Book Up, Move Book Down, and dragging rearrange the list, its Sort menu names its one order, Reading List Order, and an empty list says how to add a book.
+Remove from Library… and the Delete key still remove a book from the library there, so take a book off the list alone with Remove from Reading List.
+A book that leaves the library leaves the list too, one taken out with Remove from Library Only included, even when the next launch is what takes it out.
+
+### Importing at the Reading List
+<!-- id: importing-at-reading-list; keys: import to reading list, duplicate, Replace, Library Root, ZIP; src: TextMouth/ViewModels/LibraryViewModel+ReadingList.swift, TextMouth/ViewModels/LibraryViewModel+Import.swift, TextMouth/ViewModels/LibraryViewModel+Duplicates.swift, TextMouth/Models/ReadingListWording.swift -->
+
+At the Reading List, Open Book…, Import Folder…, and New from Text…, whether chosen in the Add to Library sheet or from their menus, put their books in the folder the window showed last, as anywhere else, and add them to the end of the reading list.
+VoiceOver says where the books themselves went, as in "Added to reading list: Moby-Dick.
+The book is in Essays/Sea.", calling the top of the library Library Root, as the folder pickers do, and says it after the import's own words, not over them.
+A ZIP archive's books join together, a duplicate joins once you keep both, and a book opened from Finder never joins.
+Replace on a duplicate gives the new copy the old one's place on the reading list, wherever you import it; at the Reading List, the new copy of a book that wasn't on the list joins its end, and VoiceOver says so.
+
+### The options above the list
+<!-- id: options-above-list; keys: options bar, When a book ends, Skip finished books, EndOfBookRule; src: TextMouth/Views/Library/ReadingListOptionsBar.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/Models/EndOfBookRule.swift -->
+
+Above the list, When a book ends chooses what a book opened from the list does at its end: Play the book below, the default, Play the book above, or Stop (see [Reader windows](reader-book-end.md)).
+Skip finished books, checked unless you clear it, passes over the books Books Finished counts, in the Stats tab of Settings: a book joins them when it is played or read to its end and doesn't start again, and stays when you read it again.
+
+### Remove books when finished
+<!-- id: remove-books-when-finished; keys: removeFinishedLabel, finished books, auto remove, Books Finished; src: TextMouth/Models/ReadingListWording.swift, TextMouth/ViewModels/LibraryViewModel+ReadingList.swift, TextMouth/ViewModels/ReaderViewModel+ReadingList.swift -->
+
+Remove books when finished, unchecked unless you check it (VoiceOver reads its hint, "Takes each finished book off the list when its window moves on or closes.
+Books finished before you turn it on stay."), takes a book off the list as soon as it is finished, whether you opened it from the list or not, the same way Remove from Reading List does, so the book stays in the library and is saved off the list at once.
+Nothing is said of it, so the end of a book says what it always said, and the Reading List, if open, shows the book gone.
+A book read from the list that ends still goes on to the book that followed it, or preceded it with Play the book above, and Skip finished books still passes over finished books after it.
+While its window rests on the finished book, the book stays on the list, so Rewind, Play, and Next in Reading List in that window still follow the list as before, and it leaves the list when the window goes on to another book or closes.
+A book finished with no window resting on it leaves at once.
+A feed episode you mark played, with Mark Played or Mark All Played, is finished in the same way: it leaves at once, or, while a window reads it from the list, when that window goes on or closes.
+Mark Unplayed lets an episode still waiting to leave stay, and puts none back.
+Checking it takes off none of the books already finished; only books finished from then on leave.
+A rewind's replay of a book's end tells nothing, so a book that stayed on the list stays, and Books Finished counts a book only once.
+A book that is not on the list is not touched.
+The sleep timer, Where Am I?, and Next in Reading List are unchanged, though a book that has left the list reads as any book from then on (see [Reader windows](reader-book-end.md)).
+
+### The options bar in a cloud library and a narrow window
+<!-- id: options-bar-cloud-library-narrow; keys: Keep these books on this Mac, kept books, iCloud, narrow window; src: TextMouth/Views/Library/ReadingListOptionsBar.swift, TextMouth/Models/ReadingListWording.swift, TextMouth/ViewModels/LibraryViewModel+ReadingList.swift -->
+
+In a library in the cloud the options bar has a fourth control, the checkbox "Keep these books on this Mac", checked unless you clear it, which keeps every book on the list downloaded on this Mac (see [Cloud libraries](cloud-library.md)).
+It is this Mac's own choice, and it is not there for a library on this Mac or another drive.
+In a window too narrow for all the options on one line, the bar goes on to a second line rather than cutting a label, in the same order.
+
+## Edit Mode
+<!-- id: edit-mode; keys: select several books, Select All, Deselect All, Exit edit mode, Command-E, toggleEditMode; src: TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Models/KeyboardShortcut.swift -->
+
+Edit Mode selects several books at once to move or remove them, or to add them to the reading list or take them off it.
+The bar above the list counts the books selected, in the list or with edit mode's checks, as in "Edit mode, 3 of 12 books selected", counting only books the list shows, and the toolbar's Done counts them the same way in its hint.
+Select All becomes Deselect All once every book listed is selected, and is dimmed while no book is listed.
+In edit mode, the bar above the list offers Add to Reading List and Remove from Reading List beside Move, for the books selected: Add for those not in the list, Remove for those in it, and both for a selection holding each.
+VoiceOver hears how many books each acts on, as in "Add 3 books to the reading list", and each says what it did, as the context menu's commands do.
+With nothing selected, the bar shows the one the view suggests, dimmed: Remove from Reading List at the Reading List, and Add to Reading List elsewhere.
+At the Reading List, books you take off the list leave the selection too.
+Leave edit mode with the toolbar's Done, which VoiceOver calls Exit edit mode, or Edit Mode in the Library menu, Command-E; the bar has no Done of its own.
+
+## What a row's hint says
+<!-- id: what-row-hint-says; keys: accessibilityHint, row hint, VoiceOver hint; src: TextMouth/Views/Library/LibrarySubviews.swift -->
+
+A row's hint says what it does, never a gesture or a key, since VoiceOver, a braille display, and the keyboard each do it their own way: a folder's row says "Opens the folder.", and a book's "Opens the book.", or, in edit mode, "Selects this book." or "Deselects this book."
+
+## The Move dialog
+<!-- id: library-window-move-dialog; keys: Move to Folder, Destination folder, New Folder, Shift-Command-M, move books; src: TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/App/MenuCommands.swift -->
+
+The Move dialog puts the selected books in a folder chosen from its pop-up, or in one its New Folder fields make.
+New Folder… opens those fields with the keyboard in their name field, where VoiceOver lands.
+While they are shown, Return presses their Create, and Escape, like Cancel New Folder, closes them, keeps the folder chosen, and says so, as in "New Folder cancelled.
+Destination folder: Reports."; Create makes the folder and says so, with the new folder chosen, as in "Folder Q3 created.
+Destination folder: Reports/Q3."; once they close, Return presses Move again and Escape closes the dialog.
+
+### Episodes and articles
+<!-- id: episodes-articles; keys: feed items, Move to Library, feed folder, stay in feeds; src: TextMouth/ViewModels/LibraryViewModel+BookOperations.swift, TextMouth/ViewModels/LibraryViewModel+MoveToLibrary.swift, TextMouth/ViewModels/LibraryViewModel+FeedItemMove.swift -->
+
+Episodes and articles stay in their feeds' folders: their rows offer no Move to Folder… (Move to Library…, on a downloaded one's row, makes it a book of the library's own; see [Podcasts and article feeds](feed-commands.md)).
+With only episodes and articles selected, the Library menu's Move to Folder… (Shift-Command-M) and the edit bar's Move open no Move dialog, while a selection holding books too moves only its books.
+Either way VoiceOver says which stayed, a moment after the dialog has closed when there is one, as in "Left “Ep.
+368” where it is: episodes and articles stay in their feeds; Move to Library… makes one a book of your library."
+
+### When a move fails
+<!-- id: when-move-fails; keys: move failed, sheet stays open, Delete Folder, Move Contents, rename; src: TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/ViewModels/LibraryViewModel+FolderManagement.swift, TextMouth/Models/FolderOperationConflict.swift -->
+
+A move, a folder's rename or move, or Delete Folder's Move Contents that fails keeps its sheet open with the reason, which VoiceOver hears once, and trying again clears that reason until the new attempt answers.
+
+## Book Info and Command-I
+<!-- id: book-info-command-i; keys: Info sheet, title and author, metadata editor, showBookInfo; src: TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Library/LibraryBookInfoLoader.swift, TextMouth/Models/KeyboardShortcut.swift -->
+
+Book Info, in a book's context menu, edits a plain text, Markdown, or HTML book's title and author (an EPUB's or an audiobook's metadata opens in an editor of its own, and an episode's or article's in its feed opens read-only; see [Podcasts and article feeds](feed-commands.md)).
+Save waits for a title of more than spaces, and drops the spaces typed around the title or the author.
+
+### The Braille Code row
+<!-- id: braille-code-row; keys: braille table, braille language, bookInfoLabel, mac: table name; src: TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/Models/BrailleTableCatalog.swift -->
+
+A braille book's sheet, under the heading Book Information, has the same fields and one more row, "Braille Code", after Format, which names the code the book was imported with, such as "Unified English Braille, contracted (Grade 2)".
+VoiceOver reads it as "Braille Code, Unified English Braille, contracted (Grade 2)".
+A book read with one of this Mac's tables (see [Settings](settings.md)) has its language after the code, as in "French braille, contracted (Grade 2), in French", or, for a table that states no contraction, "Italian braille, in Italian"; Speak Full Info says the same words after "Braille code: ".
+A book an iPhone read with a table of that kind, whose stored name has no "mac:" in front, is named the same way.
+When this Mac no longer has the table, the row gives the table's stored name instead, as in "mac:fr-bfu-g2.ctb".
+A book read with a table that only writes braille (see Tables that only write braille, in [Settings](settings-braille.md)) is named the same way and keeps working.
+
+### The Text Encoding row
+<!-- id: text-encoding-row; keys: character encoding, charset, bookInfoLabel; src: TextMouth/Models/LibraryInfoWording.swift, TextMouth/Views/Library/LibrarySheetViews.swift, TextMouth/ViewModels/TextEncodingChoiceModel.swift -->
+
+A plain text, Markdown, or HTML book you added from a file has one more row in its Book Information sheet, "Text Encoding", after Format.
+It is a pop-up button that names the encoding the book's file is read in and reads the file again in another when you choose one (see Text Encoding, in [Book Information](book-information.md#text-encoding)).
+
+### Command-I
+<!-- id: command-i; keys: Info shortcut, Feed Info, folder summary, showBookInfo; src: TextMouth/Models/KeyboardShortcut.swift, TextMouth/App/MenuCommands.swift, TextMouth/ViewModels/LibraryInfoSpeaker.swift -->
+
+Command-I opens Book Info for the selected book and Feed Info for a feed's row, and, for a folder, which has no Info sheet, speaks the folder's full summary, as Speak Full Info does (see [Letter keys and Speak Info](library-typing-and-speak-info.md#speak-full-info)).
+With several rows selected it acts on the first in the list's order, in Edit Mode on the first book selected, and with none it does nothing.
+
+## Commands in a book's context menu
+<!-- id: commands-book-context-menu; keys: right-click menu, Actions menu, Download Now, Remove Download, Edit Text With, Transcribe Audio, Edit Audio; src: TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Models/LibraryCloudWording.swift, TextMouth/Models/LibraryAudioCommand.swift, TextMouth/Models/BookTextEditWording.swift -->
+
+A book's context menu, and its actions in VoiceOver's Actions menu (VO-Command-Space), include Show in Finder, which selects the book's package in Finder.
+In a library in the cloud they also offer Download Now, Remove Download, and Keep on This Mac (see [Keeping your library in the cloud](cloud-library.md)).
+An audiobook's also offer Edit Audio… (see [Editing audio](editing-audio.md)) and Transcribe Audio…, which reads Retranscribe Audio… once the book has a transcript.
+A transcribed audiobook's also offer Clean Up Transcript (Experimental)… and Delete Transcript… (see [Transcribing an audiobook](transcribing.md)).
+A feed's episode, whose audio can't be edited, offers no Edit Audio….
+
+## Exporting from the Library window
+<!-- id: exporting-from-library-window; keys: File menu, export selected books, noBooksSelected, nothing to export; src: TextMouth/Models/BookExportWording.swift, TextMouth/ViewModels/BookExportModel.swift, TextMouth/App/MenuCommands.swift -->
+
+File menu, Export… exports the books selected in the Library window, and a book's context menu (VO-Shift-M) has Export… too, or Export 3 Books… for a selection of three (see [Exporting books](exporting-books.md)); with no book selected, VoiceOver says "No books are selected."
+With neither a Library window nor a book's window in front, as when only Settings is open, File menu, Export… says so instead: "No Library window or book is open, so there is nothing to export." or "Switch to a Library or book window, then choose Export again."
+A text book's context menu, and a transcribed audiobook's, also has Edit Text in Default Editor and Edit Text With…, unless several books are selected or the book is a feed's article (see [Editing a book's text](editing-book-text.md)).
+These commands aren't among the row's actions in VoiceOver's Actions menu.
+
+## The summary line
+<!-- id: summary-line; keys: summary bar, book count, time remaining, status line, CountWording; src: TextMouth/Models/CountWording.swift, TextMouth/Models/FolderNavigationHistory.swift, TextMouth/Views/Library/LibrarySubviews.swift, TextMouth/Views/Settings/StorageSettingsView.swift -->
+
+A summary line gives each location's book count and its listening time remaining at the current speed, and, in a library in the cloud, how many of its books are in the cloud and how many are kept on this Mac.
+The count never counts a feed's episodes and articles as books: where the Feeds section lists feeds, it names them beside the books, as in "743 books, 2 feeds", or "2 feeds" where there is no book.
+In Recently Opened and the Reading List, which list episodes and articles beside books, it counts each kind, as in "9 books, 1 article", as the list's heading does, "Books (9), Articles (1)".
+And in a feed's folder it counts the feed's episodes instead (see Feeds in the library, under [Podcasts and article feeds](feeds.md)).
+VoiceOver hears the same words entering a folder, as in "Library, 743 books, 2 feeds", and in a folder's row, as in "Podcasts, 3 books, 2 feeds".
+Storage settings' Library Statistics count the books, then the feeds, where there are any, the folders, and the books kept in packages, and Use This Library's confirmation counts the library in use the same way.
+
+## The Continue button
+<!-- id: continue-button; keys: Continue listening, last opened book, resume, time left; src: TextMouth/Views/Library/LibraryView.swift, TextMouth/Models/ReaderTimeWording.swift -->
+
+The Continue button names the book last opened, as in "Continue: Emma", and opens it.
+It shows that book's time left as a row does, as in "16:00 left", and VoiceOver says it as a row does, as in "Continue listening to Emma, 16 minutes remaining"; for a finished book, which has no time left, it shows and says none, as in "Continue listening to Emma".
+
+## The toolbar's Add and Settings buttons
+<!-- id: toolbar-add-settings-buttons; keys: plus button, Add to Library, Up One Level, New Folder, Feed Settings, Folder Settings; src: TextMouth/Views/Library/LibraryFolderSettingsTarget.swift, TextMouth/Views/Library/LibraryView.swift, TextMouth/Models/AddToLibraryWording.swift, TextMouth/Views/Library/AddToLibrarySheet.swift -->
+
+The toolbar's buttons for adding and for settings:
+
+- Add to Library, a plus button between Up One Level, where that shows, and the edit mode button, opens the sheet of ways to add to the library (see [Adding books](adding-books.md)).
+  It replaces the old Import, New from Text, and Add Feed buttons.
+- Feed Settings or Folder Settings, between New Folder and the Sort menu, shows only in a folder of the Folders view: never at the top of the library, and in no other view.
+  A feed's folder, the folder that lists the feed's episodes or articles, gets Feed Settings, even when it also holds books of your own; any other folder gets Folder Settings.
+  - Feed Settings opens the feed's Feed Info, the sheet that Command-I opens on the feed's row (see [Podcasts and article feeds](feed-commands.md)).
+    VoiceOver calls the button "Feed settings for" and the feed's title, as in "Feed settings for Planet Money", and its hint is "Opens the feed's settings: where its downloads go, what it lists and downloads, and what happens when an episode ends".
+  - Folder Settings opens the Folder Settings sheet (below).
+    VoiceOver calls the button "Folder settings for" and the folder's name, as in "Folder settings for Classics", and its hint is "Opens the folder's settings: what it holds, and what happens when one of its books ends".
+- Folder or Feed Settings, in the Library menu after Remove from Reading List and among the Library actions of the Shortcuts tab of Settings, does what the button does for the folder the window shows.
+  It has no key until you give it one.
+  Where the window shows no folder, because it is at the top of the library or in another category, VoiceOver says "Open a folder first to see its settings".
+
+## The Folder Settings sheet
+<!-- id: folder-settings-sheet; keys: folder options, listening options, Open the next book in, When a book ends, Skip finished books; src: TextMouth/Views/Library/FolderSettingsSheet.swift, TextMouth/Models/FolderSettingsWording.swift, TextMouth/Models/ListeningOptions.swift, TextMouth/Models/NextBookWindow.swift -->
+
+The Folder Settings sheet shows a plain folder's facts and how listening goes on from one of its books to another:
+
+- Its title is "Folder Settings", and the folder's name is its heading.
+  Under the heading are read-only rows.
+  Each is one element that VoiceOver says as its label, a comma, and its value, and its value can be selected and copied:
+  - "Location", the path of the folder that holds this one, or "Library Root" at the top of the library
+  - "Books", the books in the folder and in every folder inside it, with how many are unopened, as in "12 books, 3 unopened"
+  - "Subfolders" and "Feeds", each only when the folder has any
+  - "Time remaining", only when it is known, as in "14 hours, 3 minutes remaining in total"
+- Under a heading, "Listening", are three controls, each saved as you choose it.
+  The pop-up button "When a book ends" offers "Use the global setting (…)", which names the Playback tab's When book ends choice, as in "Use the global setting (Continue to Next Book)", then "Play the book below", "Play the book above", and "Stop".
+  Its hint is "Chooses what happens when one of this folder's books ends".
+  The pop-up button "Open the next book in" offers "Use the global setting (…)", which names the Playback tab's Open the next book in choice, as in "Use the global setting (This Window)", then "This Window" and "A New Window".
+  Its hint is "Chooses where this folder's next book opens."
+  It is dimmed while the folder's books do not go on to another book when one ends, which is when "When a book ends" says Stop, or says Use the global setting and the global choice is not Continue to Next Book.
+  Its hint then is "Available only while this folder's books go on to another book when one ends", and it keeps its choice for when they do.
+  A dimmed choice is not in effect: Next in Folder and Previous in Folder then follow the global setting.
+  The checkbox "Skip finished books", checked unless you clear it, has the hint "Applies when listening goes on to another book".
+  What they do is under When a book ends, including Where the next book opens, in [Reader windows](reader-book-end.md).
+  A folder's choices apply to the books directly in it, never to those in the folders inside it.
+- Done closes the sheet, and so do Return and Escape, since nothing in the sheet takes typing.
+  If another window deletes the folder while the sheet is open, the sheet says "This folder is no longer in the library." in place of the folder.
+
+## When a file cannot be saved
+<!-- id: when-file-cannot-be-saved; keys: save failure, full disk, Retry, Dismiss, unsaved changes, quit; src: TextMouth/Views/Library/PersistenceFailureBanner.swift, TextMouth/Services/PersistenceFailureCenter.swift, TextMouth/App/UnsavedChangesTermination.swift -->
+
+If a file cannot be saved (a full disk or a missing volume, for example), a banner in the Library window says what is unsaved, with Retry and Dismiss buttons.
+A Retry pressed while TextMouth moves its data directory, edits a folder, or rebuilds the directory stays enabled, says when the save will come, and saves once that ends.
+Quitting while something is unsaved asks first.
+
+## When a folder is deleted or renamed in another window
+<!-- id: when-folder-deleted-renamed-another; keys: nearest folder, folder renamed, folder moved, index recovery, deleted folder; src: TextMouth/Views/Library/LibraryView.swift, TextMouth/ViewModels/LibraryViewModel+IndexRecovery.swift, TextMouth/ViewModels/LibraryViewModel+FolderManagement.swift -->
+
+A Library window showing a folder that another window deletes, as Delete Folder… or Delete Feed… can, goes to the nearest folder above it still in the library, and one showing a folder another window renames or moves follows it to its new place.
+Nothing moves while the library's index is being recovered.
+
+## Editing an audiobook's manifest
+<!-- id: editing-audiobook-manifest; keys: manifest.json, Edit Manifest With, track book, audiobook of tracks; src: TextMouth/Models/BookManifestEditWording.swift, TextMouth/Services/BookManifestEditing.swift, TextMouth/App/MenuCommands.swift -->
+
+An audiobook of tracks' row offers Edit Manifest in Default Editor and Edit Manifest With… in its context menu, after Edit Text's commands (see [The audiobook manifest](audiobook-manifest.md#editing-an-imported-books-manifest)).

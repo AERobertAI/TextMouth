@@ -55,7 +55,7 @@ struct BookmarkPanelView: View {
     /// What the panel shows of its reader: the book's title, its bookmarks,
     /// and its headings, which name where each bookmark is (PERF30). The
     /// panel draws again when these change, and only then, rather than with
-    /// each of the reader's publishes, eight a second while it plays. Its
+    /// each of the reader's publishes, about one a second while it plays. Its
     /// body reads the reader itself, whose values these are by the time it
     /// draws.
     struct ReaderState: Equatable {
@@ -163,7 +163,7 @@ struct BookmarkPanelView: View {
         Group {
             // Header bar
             HStack {
-                Text("Bookmarks")
+                Text(Self.title)
                     .font(.headline)
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
@@ -172,9 +172,12 @@ struct BookmarkPanelView: View {
                     noteText = ""
                     mode = .add
                 } label: {
-                    Label("Add Bookmark", systemImage: "plus")
+                    Label(Self.addBookmarkTitle, systemImage: "plus")
                 }
-                .accessibilityLabel("Add bookmark at current position")
+                // Its label is its title; where the bookmark goes is its hint
+                // (FR35's cut: the label was "Add bookmark at current
+                // position").
+                .accessibilityHint(Self.addBookmarkHint)
                 // Focus comes here when no bookmark is left to focus, and
                 // back here when an Add is cancelled.
                 .focused($focusedControl, equals: .addButton)
@@ -183,7 +186,7 @@ struct BookmarkPanelView: View {
                     request: focusRequest
                 ))
 
-                Button("Done") { dismiss() }
+                Button(Self.doneTitle) { dismiss() }
                     .keyboardShortcut(.escape, modifiers: [])
             }
             .padding()
@@ -193,7 +196,7 @@ struct BookmarkPanelView: View {
             if viewModel.bookmarks.isEmpty {
                 // Empty state — grouped into a single VoiceOver element
                 VStack(spacing: 8) {
-                    Text("No bookmarks yet.")
+                    Text(Self.emptyList)
                         .foregroundColor(.secondary)
                     Text(Self.emptyListHelp(keys: Self.addBookmarkKeysInForce()))
                         .font(.caption)
@@ -217,7 +220,7 @@ struct BookmarkPanelView: View {
                         }
                     }
                 }
-                .accessibilityRotor("Bookmarks") {
+                .accessibilityRotor(Self.title) {
                     // Rotor entries speak exactly what the rows say.
                     ForEach(rows, id: \.bookmark.id) { row in
                         AccessibilityRotorEntry(row.bookmarkAccessibilityLabel, id: row.bookmark.id)
@@ -356,18 +359,19 @@ struct BookmarkPanelView: View {
 
     private var addContent: some View {
         VStack(spacing: 16) {
-            Text("Add Bookmark")
+            Text(Self.addBookmarkTitle)
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
-            TextField("Note (optional)", text: $noteText)
+            TextField(Self.addNoteField, text: $noteText)
                 .textFieldStyle(.roundedBorder)
-                .accessibilityLabel("Bookmark note")
-                .accessibilityHint("Optional note to describe this bookmark")
+                // No hint: its label and its placeholder, "Note (optional)",
+                // say it (FR35's cut).
+                .accessibilityLabel(Self.noteLabel)
                 .focused($noteFieldFocused)
 
             HStack {
-                Button("Cancel") {
+                Button(Self.cancelTitle) {
                     noteText = ""
                     mode = .list
                     requestFocus(Self.focusTarget(after: .cancelAdd, in: viewModel))
@@ -376,7 +380,7 @@ struct BookmarkPanelView: View {
 
                 Spacer()
 
-                Button("Add") {
+                Button(Self.addTitle) {
                     let target = Self.add(note: noteText, to: viewModel)
                     noteText = ""
                     mode = .list
@@ -395,17 +399,17 @@ struct BookmarkPanelView: View {
 
     private func editContent(_ bookmark: Bookmark) -> some View {
         VStack(spacing: 16) {
-            Text("Edit Bookmark \(bookmark.number)")
+            Text(Self.editTitle(number: bookmark.number))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
-            TextField("Note", text: $noteText)
+            TextField(Self.editNoteField, text: $noteText)
                 .textFieldStyle(.roundedBorder)
-                .accessibilityLabel("Bookmark note")
+                .accessibilityLabel(Self.noteLabel)
                 .focused($noteFieldFocused)
 
             HStack {
-                Button("Cancel") {
+                Button(Self.cancelTitle) {
                     mode = .list
                     requestFocus(Self.focusTarget(after: .edit(bookmark.id), in: viewModel))
                 }
@@ -413,7 +417,7 @@ struct BookmarkPanelView: View {
 
                 Spacer()
 
-                Button("Save") {
+                Button(Self.saveTitle) {
                     let target = Self.saveNote(noteText, for: bookmark, in: viewModel)
                     mode = .list
                     requestFocus(target)
@@ -444,6 +448,88 @@ extension BookmarkPanelView {
     }
 }
 
+// MARK: - Wording
+
+// Every word of the panel, localized (FR35): each is computed, so it is read
+// from the String Catalog in the interface's language whenever it is asked
+// for, and each carries a comment saying where it is seen or heard and what
+// each placeholder holds. The iPhone's sheet says the same words through
+// these (`PhoneBookmarksVocabulary`).
+extension BookmarkPanelView {
+    /// The panel's title, read as its heading, and the name of its rotor.
+    nonisolated static var title: String {
+        // Translators: The name of the bookmarks, wherever it is named: the title of the Bookmarks list over a book's reader (read by VoiceOver as its heading, and the name of its rotor), the reader's Bookmarks toolbar button, and the Bookmarks menu in the menu bar.
+        InterfaceText.line("common.bookmarks", "Bookmarks")
+    }
+
+    /// The Add Bookmark button's visible words, and the Add panel's heading.
+    nonisolated static var addBookmarkTitle: String {
+        // Translators: Button of the Bookmarks list that adds a bookmark at the reading position, and the heading of the panel where its note is written.
+        InterfaceText.line("bookmarkPanelView.addBookmarkTitle", "Add Bookmark")
+    }
+
+    /// What VoiceOver says the Add Bookmark button does: where the bookmark
+    /// goes, which its title does not say.
+    nonisolated static var addBookmarkHint: String {
+        // Translators: VoiceOver hint of the Bookmarks list's Add Bookmark button: it opens the step where an optional note is written, then the bookmark is added where the book is being read.
+        InterfaceText.line("bookmarkPanelView.addBookmarkHint", "Asks for an optional note, then marks the reading position.")
+    }
+
+    /// The button that closes the panel.
+    nonisolated static var doneTitle: String {
+        // Translators: Button that finishes with a sheet or list and closes it, keeping what was done, such as the Bookmarks list over a book's reader, a feed's information, the OPML import, or the duplicate finder.
+        InterfaceText.line("common.done", "Done")
+    }
+
+    /// What the panel says while the book has no bookmark.
+    nonisolated static var emptyList: String {
+        // Translators: Shown and read in the Bookmarks list of a book with no bookmark. A sentence saying how to add one follows it.
+        InterfaceText.line("bookmarkPanelView.emptyList", "No bookmarks yet.")
+    }
+
+    /// The Add panel's note field, as it shows while empty.
+    nonisolated static var addNoteField: String {
+        // Translators: Placeholder of the note field when adding a bookmark.
+        InterfaceText.line("bookmarkPanelView.addNoteField", "Note (optional)")
+    }
+
+    /// The Edit panel's note field, as it shows while empty.
+    nonisolated static var editNoteField: String {
+        // Translators: Placeholder of the note field when editing a bookmark's note.
+        InterfaceText.line("bookmarkPanelView.editNoteField", "Note")
+    }
+
+    /// What VoiceOver calls either panel's note field.
+    nonisolated static var noteLabel: String {
+        // Translators: VoiceOver label of the note field when adding a bookmark or editing its note.
+        InterfaceText.line("bookmarkPanelView.noteLabel", "Bookmark note")
+    }
+
+    /// The button that leaves the Add or Edit panel without a change.
+    nonisolated static var cancelTitle: String {
+        // Translators: Button that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.
+        InterfaceText.line("common.cancel", "Cancel")
+    }
+
+    /// The Add panel's button that adds the bookmark.
+    nonisolated static var addTitle: String {
+        // Translators: Button of the panel for adding a bookmark: adds it, with the note written.
+        InterfaceText.line("common.add", "Add")
+    }
+
+    /// The Edit panel's button that keeps the note.
+    nonisolated static var saveTitle: String {
+        // Translators: Button that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.
+        InterfaceText.line("common.save", "Save")
+    }
+
+    /// The Edit panel's heading, as in "Edit Bookmark 3".
+    nonisolated static func editTitle(number: Int) -> String {
+        // Translators: Heading of the panel for editing a bookmark's note. %@ is the bookmark's number, an identifier written without digit grouping.
+        InterfaceText.line("bookmarkPanelView.editTitle", "Edit Bookmark \(String(number))")
+    }
+}
+
 // MARK: - The Empty List
 
 extension BookmarkPanelView {
@@ -451,11 +537,16 @@ extension BookmarkPanelView {
     /// force for adding a bookmark, in words, which a braille display shows
     /// as words rather than as signs, as in "Command + B adds a bookmark at
     /// the current position."; or, while that command has no key, by the
-    /// Add Bookmark button above. It used to say "Press Cmd+B", whatever the
+    /// Add Bookmark button above, named by its own title, so the two always
+    /// agree in every language. It used to say "Press Cmd+B", whatever the
     /// key was (TODO A10).
     nonisolated static func emptyListHelp(keys: [KeyBinding]) -> String {
-        guard !keys.isEmpty else { return "Add Bookmark adds one at the current position." }
-        return "\(KeyBinding.accessibleDisplayString(for: keys)) adds a bookmark at the current position."
+        guard !keys.isEmpty else {
+            // Translators: Help under "No bookmarks yet." in the Bookmarks list, when the add command has no keyboard shortcut. %@ is the name of the Add Bookmark button above the list.
+            return InterfaceText.line("bookmarkPanelView.emptyListHelp.onePosition", "\(addBookmarkTitle) adds one at the current position.")
+        }
+        // Translators: Help under "No bookmarks yet." in the Bookmarks list. %@ is the keyboard shortcut that adds a bookmark, spelled out in words, such as Command + B.
+        return InterfaceText.line("bookmarkPanelView.emptyListHelp.position", "\(KeyBinding.accessibleDisplayString(for: keys)) adds a bookmark at the current position.")
     }
 
     /// The keys in force for adding a bookmark (the Bookmarks menu's Toggle
@@ -537,7 +628,7 @@ extension BookmarkPanelView {
     /// The bookmarks in the order the panel lists them: by number, which is
     /// the order they were added in.
     nonisolated static func listOrder(of bookmarks: [Bookmark]) -> [Bookmark] {
-        bookmarks.sorted { $0.number < $1.number }
+        bookmarks.sortedStably { $0.number < $1.number }
     }
 
     /// Where keyboard focus and the VoiceOver cursor go after `operation`.
@@ -650,9 +741,15 @@ enum BookmarkCommand: CaseIterable {
     /// The command's name: its VoiceOver action and its context menu item.
     var title: String {
         switch self {
-        case .goTo: return "Go To"
-        case .editNote: return "Edit Note"
-        case .delete: return "Delete"
+        case .goTo:
+            // Translators: A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.
+            return InterfaceText.line("common.goTo", "Go To")
+        case .editNote:
+            // Translators: A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: edits the bookmark's note.
+            return InterfaceText.line("bookmarkCommand.title.editNote", "Edit Note")
+        case .delete:
+            // Translators: A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark.
+            return InterfaceText.line("common.delete", "Delete")
         }
     }
 
@@ -679,9 +776,15 @@ enum BookmarkCommand: CaseIterable {
     /// speaks its bookmark's full label instead.
     func buttonLabel(forBookmarkNumber number: Int) -> String {
         switch self {
-        case .goTo: return "Go to bookmark \(number)"
-        case .editNote: return "Edit note for bookmark \(number)"
-        case .delete: return "Delete bookmark \(number)"
+        case .goTo:
+            // Translators: VoiceOver label of a button that moves the book to a bookmark. %@ is the bookmark's number, an identifier written without digit grouping.
+            return InterfaceText.line("bookmarkCommand.buttonLabel.goTo", "Go to bookmark \(String(number))")
+        case .editNote:
+            // Translators: VoiceOver label of the button beside a bookmark's row that edits its note. %@ is the bookmark's number, an identifier written without digit grouping.
+            return InterfaceText.line("bookmarkCommand.buttonLabel.editNote", "Edit note for bookmark \(String(number))")
+        case .delete:
+            // Translators: VoiceOver label of the button beside a bookmark's row that deletes it. %@ is the bookmark's number, an identifier written without digit grouping.
+            return InterfaceText.line("bookmarkCommand.buttonLabel.delete", "Delete bookmark \(String(number))")
         }
     }
 }
@@ -699,7 +802,7 @@ struct BookmarkRow: View {
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Bookmark \(bookmark.number)")
+                Text(bookmark.name)
                     .font(.headline)
 
                 if let headingText {
@@ -730,7 +833,13 @@ struct BookmarkRow: View {
     /// keyboard each do it their own way (TODO A10; it said "Double-tap to
     /// navigate to this bookmark").
     var accessibilityHintText: String {
-        "Goes to this bookmark and closes the list."
+        Self.hint
+    }
+
+    /// The row's hint, localized (FR35); the phone's rows say the same.
+    nonisolated static var hint: String {
+        // Translators: VoiceOver hint of a bookmark's row in the Bookmarks list.
+        InterfaceText.line("bookmarkRow.hint", "Goes to this bookmark and closes the list.")
     }
 
     /// Spoken label shared with the Bookmarks rotor.

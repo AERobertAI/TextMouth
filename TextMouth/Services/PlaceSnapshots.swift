@@ -168,7 +168,7 @@ struct PlaceSnapshot: Equatable, Sendable {
                 try? fileManager.removeItem(at: snapshotFolder)
             }
         }
-        return finished.sorted {
+        return finished.sortedStably {
             $0.record.takenAt != $1.record.takenAt
                 ? $0.record.takenAt < $1.record.takenAt
                 : $0.folder.lastPathComponent < $1.folder.lastPathComponent

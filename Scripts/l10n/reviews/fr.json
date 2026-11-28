@@ -1,0 +1,2178 @@
+{
+ "language": "fr",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ Copy",
+     "id": "libraryViewDefinitionList.copyName.first",
+     "english": "%@ Copy",
+     "before": "Copie de %@",
+     "after": "%@ copie",
+     "why": "term: the French Finder names a duplicate “name copie”, not “Copie de name”"
+    },
+    {
+     "key": "%@ Copy %@",
+     "id": "libraryViewDefinitionList.copyName.numbered",
+     "english": "%1$@ Copy %2$@",
+     "before": "Copie %2$@ de %1$@",
+     "after": "%1$@ copie %2$@",
+     "why": "term: the French Finder numbers later duplicates “name copie 2”; “Copie 2 de name” reads oddly"
+    },
+    {
+     "key": "%@ is not a valid library folder location.",
+     "id": "folderOperationConflict.invalidPath.location",
+     "english": "%@ is not a valid library folder location.",
+     "before": "%@ n’est pas un emplacement valide de dossier de bibliothèque.",
+     "after": "%@ n’est pas un emplacement valide pour un dossier de bibliothèque.",
+     "why": "natural: four nouns chained with “de” copied the English compound"
+    },
+    {
+     "key": "%@ may be signed out or not running.",
+     "id": "dataDirectoryUnavailability.likelyCause.running",
+     "english": "%@ may be signed out or not running.",
+     "before": "%@ n’est peut-être pas connecté ou ne fonctionne pas.",
+     "after": "%@ est peut-être déconnecté ou n’est pas ouvert.",
+     "why": "meaning: “ne fonctionne pas” says broken; “not running” is an app that is not open"
+    },
+    {
+     "key": "%@ read",
+     "id": "librarySubview.percentRead",
+     "english": "%@ read",
+     "before": "%@ lu",
+     "after": "lu à %@",
+     "why": "natural: “42 pour cent lu” copies the English order; French says “lu à 42 pour cent”"
+    },
+    {
+     "key": "%@, any subfolders, and the %lld books inside will be removed from the library.",
+     "id": "folderRemoval.confirmationMessage.other",
+     "english": {
+      "one": "%@, any subfolders, and the %lld book inside will be removed from the library.",
+      "other": "%@, any subfolders, and the %lld books inside will be removed from the library."
+     },
+     "before": {
+      "many": "%@, ses sous-dossiers et son contenu de %lld de livres seront retirés de la bibliothèque.",
+      "one": "%@, ses sous-dossiers et son contenu de %lld livre seront retirés de la bibliothèque.",
+      "other": "%@, ses sous-dossiers et son contenu de %lld livres seront retirés de la bibliothèque."
+     },
+     "after": {
+      "many": "%@, ses sous-dossiers et les %lld de livres qu’il contient seront retirés de la bibliothèque.",
+      "one": "%@, ses sous-dossiers et %lld livre qu’il contient seront retirés de la bibliothèque.",
+      "other": "%@, ses sous-dossiers et les %lld livres qu’il contient seront retirés de la bibliothèque."
+     },
+     "why": "natural: “son contenu de 3 livres” is not French; “les 3 livres qu’il contient”, as the one-book string says"
+    },
+    {
+     "key": "%@: Some changes are not saved, and switching libraries would lose them.",
+     "id": "libraryViewModel.message.switching",
+     "english": "%@: Some changes are not saved, and switching libraries would lose them.",
+     "before": "%@ : des modifications ne sont pas enregistrées, et changer de bibliothèque les perdrait.",
+     "after": "%@ : des modifications ne sont pas enregistrées, et elles seraient perdues si vous changiez de bibliothèque.",
+     "why": "natural: “changer de bibliothèque les perdrait” makes switching the one that loses them, a calque"
+    },
+    {
+     "key": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "id": "libraryViewsSettings.visibilityCaption",
+     "english": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "before": "Toujours propose une vue en permanence. Si applicable la propose seulement quand elle liste quelque chose : la liste de lecture quand elle contient un livre, un épisode ou un article, et les flux quand il y a un flux. Masquée l’omet. Une fenêtre garde sa vue jusqu’à ce que vous en choisissiez une autre.",
+     "after": "« Toujours » propose une vue en permanence. « Si applicable » la propose seulement quand elle liste quelque chose : la liste de lecture quand elle contient un livre, un épisode ou un article, et la vue Flux quand il y a un flux. « Masquée » l’omet. Une fenêtre garde sa vue jusqu’à ce que vous en choisissiez une autre.",
+     "why": "meaning: option names left unquoted at a sentence start read as plain words (“Toujours propose” is “always offers”), and “les flux” meant the Feeds view"
+    },
+    {
+     "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "id": "textEncoding.keptTextNote",
+     "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "before": "Une modification de son texte est conservée à côté de la nouvelle lecture, sous forme de copie dans le paquet du livre.",
+     "after": "Une modification de son texte est conservée à côté du nouveau texte, sous forme de copie dans le paquet du livre.",
+     "why": "meaning: “la nouvelle lecture” reads as a new playback (Lecture is the glossary word for Playback); it is the text read again"
+    },
+    {
+     "key": "Compare Libraries in Storage settings lists every difference.",
+     "id": "libraryComparison.newerCopySentence.libraries",
+     "english": "Compare Libraries in Storage settings lists every difference.",
+     "before": "Comparer les bibliothèques, dans les réglages de stockage, liste toutes les différences.",
+     "after": "La commande Comparer les bibliothèques des réglages Stockage liste toutes les différences.",
+     "why": "grammar: an infinitive command name cannot be the bare subject of “liste”; and other strings say “réglages Stockage”"
+    },
+    {
+     "key": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "id": "libraryComparison.comparingForUseSentence",
+     "english": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "before": "Comparaison de cette bibliothèque avec la copie du dossier que vous avez choisi, pour dire laquelle est la plus récente. Cela peut prendre jusqu’à une minute ; choisissez Arrêter la comparaison pour l’ignorer.",
+     "after": "Comparaison de cette bibliothèque avec la copie du dossier que vous avez choisi, pour savoir laquelle est la plus récente. Cela peut prendre jusqu’à une minute ; choisissez Arrêter la comparaison pour l’interrompre.",
+     "why": "natural: “pour dire laquelle” copies “to say which”; “l’ignorer” (ignore it) for stopping a running comparison"
+    },
+    {
+     "key": "Could not read the text back from the editor's file, so the text here is unchanged.",
+     "id": "textImportPolicy.reloadFailed.unchanged",
+     "english": "Could not read the text back from the editor's file, so the text here is unchanged.",
+     "before": "Impossible de relire le texte depuis le fichier de l’éditeur, donc le texte ici est inchangé.",
+     "after": "Impossible de relire le texte depuis le fichier de l’éditeur ; le texte affiché ici n’a donc pas changé.",
+     "why": "natural: “donc le texte ici est inchangé” copies the English word order"
+    },
+    {
+     "key": "Could not relocate folder contents",
+     "id": "libraryViewModel.couldNotRelocateFolderContents",
+     "english": "Could not relocate folder contents",
+     "before": "Impossible de replacer le contenu du dossier",
+     "after": "Impossible de déplacer le contenu du dossier",
+     "why": "meaning: “replacer” means to put back, not to move to a new place"
+    },
+    {
+     "key": "Default pitch for new books. 1.0 is normal. Each book can override this.",
+     "id": "settings.defaultPitchExplanation",
+     "english": "Default pitch for new books. 1.0 is normal. Each book can override this.",
+     "before": "Hauteur par défaut pour les nouveaux livres. 1.0 est la valeur normale. Chaque livre peut la remplacer.",
+     "after": "Hauteur par défaut pour les nouveaux livres. 1,0 est la valeur normale. Chaque livre peut la remplacer.",
+     "why": "punctuation: French writes the decimal comma, as the pitch label “Normale (1,0×)” already does"
+    },
+    {
+     "key": "Deleted %@. %@ selected, %lld of %lld.",
+     "id": "libraryViewsSettings.deleted",
+     "english": "Deleted %1$@. %2$@ selected, %3$lld of %4$lld.",
+     "before": "Vue %@ supprimée. %@ sélectionnée, %lld sur %lld.",
+     "after": "Vue %@ supprimée. Vue %@ sélectionnée, %lld sur %lld.",
+     "why": "grammar: “Non ouverts sélectionnée” joins a view name to a feminine participle with nothing to agree with"
+    },
+    {
+     "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "id": "textEncoding.stopsEditingNote",
+     "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "before": "Modifier le texte s’arrête pour ce livre ; choisissez de nouveau Modifier le texte pour modifier la nouvelle lecture.",
+     "after": "La modification du texte s’arrête pour ce livre ; choisissez de nouveau Modifier le texte pour modifier le nouveau texte.",
+     "why": "meaning: a command name as subject read oddly, and “la nouvelle lecture” reads as a new playback"
+    },
+    {
+     "key": "Everything",
+     "id": "removal.everythingObject",
+     "english": "Everything",
+     "before": "Tout",
+     "after": "tout",
+     "why": "natural: the object inside “Placer %@ dans la corbeille” needs lower case: “Placer tout dans la corbeille”"
+    },
+    {
+     "key": "Everything in %@",
+     "id": "removal.everythingInObject",
+     "english": "Everything in %@",
+     "before": "Tout dans %@",
+     "after": "tout le contenu de %@",
+     "why": "natural: “Placer Tout dans « Fiction » dans la corbeille” doubled “dans” and capitalized mid-sentence"
+    },
+    {
+     "key": "Failed to rebuild to default",
+     "id": "libraryViewModel.resetFailureContext",
+     "english": "Failed to rebuild to default",
+     "before": "Échec de la restauration des valeurs par défaut",
+     "after": "Échec du retour à l’emplacement par défaut",
+     "why": "meaning: Reset to Default here moves the library back to its default location; “valeurs par défaut” said default values"
+    },
+    {
+     "key": "Folders and the Reading List have no conditions to copy.",
+     "id": "libraryViewsSettings.duplicateUnavailableHint",
+     "english": "Folders and the Reading List have no conditions to copy.",
+     "before": "Dossiers et la liste de lecture n’ont aucune condition à copier.",
+     "after": "La vue Dossiers et la liste de lecture n’ont aucune condition à copier.",
+     "why": "grammar: the bare view name “Dossiers” beside “la liste de lecture” read as the word folders"
+    },
+    {
+     "key": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "id": "libraryViewEditor.editDisabledHint",
+     "english": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "before": "Dossiers et la liste de lecture listent toujours la même chose. Vous pouvez les déplacer, et masquer la liste de lecture.",
+     "after": "La vue Dossiers et la liste de lecture listent toujours la même chose. Vous pouvez les déplacer et masquer la liste de lecture.",
+     "why": "grammar: the bare view name “Dossiers” as subject read as the word folders"
+    },
+    {
+     "key": "Folders is always shown: every folder and feed opens there.",
+     "id": "libraryViewsSettings.foldersVisibilityHint",
+     "english": "Folders is always shown: every folder and feed opens there.",
+     "before": "Dossiers est toujours affichée : chaque dossier et chaque flux s’y ouvre.",
+     "after": "La vue Dossiers est toujours affichée : chaque dossier et chaque flux s’y ouvre.",
+     "why": "grammar: “Dossiers est toujours affichée” mismatched a plural noun with a singular feminine verb"
+    },
+    {
+     "key": "In this Mac's Logs folder",
+     "id": "logsSettings.machineChoice",
+     "english": "In this Mac's Logs folder",
+     "before": "Dans le dossier Journaux de ce Mac.",
+     "after": "Dans le dossier Logs de ce Mac",
+     "why": "punctuation: a pop-up choice takes no final period, as the other choice “Dans le dossier de données” has none; meaning: the folder of this Mac is ~/Library/Logs, which the French Finder shows as Logs; “Journaux” names a folder the listener will not find"
+    },
+    {
+     "key": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "id": "folderRemoval.ownFeedsChoiceSentences.downloads",
+     "english": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "C’est le dossier du flux %@. Dans les deux cas, le flux et ses téléchargements restent, sans dossier, jusqu’à ce que Informations sur le flux lui en donne un autre ; Supprimer le flux… sur sa ligne le supprime.",
+     "after": "C’est le dossier du flux %@. Dans les deux cas, le flux et ses téléchargements restent, sans dossier, jusqu’à ce que vous lui en donniez un autre dans Informations sur le flux ; la commande Supprimer le flux… de sa ligne le supprime.",
+     "why": "grammar: “jusqu’à ce que Informations…” missed the elision, and command names as subjects did not parse"
+    },
+    {
+     "key": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "id": "folderRemoval.ownFeedsChoiceSentences.their",
+     "english": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "C’est le dossier des flux %@. Dans les deux cas, les flux et leurs téléchargements restent, sans dossier, jusqu’à ce que Informations sur le flux en donne un autre à chacun ; Supprimer le flux… sur la ligne d’un flux le supprime.",
+     "after": "C’est le dossier des flux %@. Dans les deux cas, les flux et leurs téléchargements restent, sans dossier, jusqu’à ce que vous en donniez un autre à chacun dans Informations sur le flux ; la commande Supprimer le flux… de la ligne d’un flux le supprime.",
+     "why": "grammar: as the one-feed string: the missed elision, and command names as subjects"
+    },
+    {
+     "key": "Its conditions and sort are deleted. The books, episodes, articles, and feeds it lists stay in the library, and a Library window showing it shows another view.",
+     "id": "libraryViewsSettings.deleteMessage",
+     "english": "Its conditions and sort are deleted. The books, episodes, articles, and feeds it lists stay in the library, and a Library window showing it shows another view.",
+     "before": "Ses conditions et son tri sont supprimés. Les livres, épisodes, articles et flux qu’elle liste restent dans la bibliothèque, et une fenêtre de bibliothèque qui l’affiche affiche une autre vue.",
+     "after": "Ses conditions et son tri sont supprimés. Les livres, épisodes, articles et flux qu’elle liste restent dans la bibliothèque, et une fenêtre de bibliothèque qui l’affiche passe à une autre vue.",
+     "why": "natural: “qui l’affiche affiche” repeated the verb"
+    },
+    {
+     "key": "Its text is replaced by the new reading.",
+     "id": "textEncoding.replacedNote",
+     "english": "Its text is replaced by the new reading.",
+     "before": "Son texte est remplacé par la nouvelle lecture.",
+     "after": "Son texte est remplacé par le nouveau texte lu dans le fichier.",
+     "why": "meaning: “la nouvelle lecture” reads as a new playback; it is the text read again from the file"
+    },
+    {
+     "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.episodes",
+     "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "%@ n’a pas été déplacé : les épisodes et les articles restent dans leurs flux ; %@ en fait un livre de votre bibliothèque.",
+     "after": "%@ n’a pas été déplacé : les épisodes et les articles restent dans leurs flux ; la commande %@ en fait un livre de votre bibliothèque.",
+     "why": "grammar: the command name Déplacer vers la bibliothèque as a bare subject did not parse"
+    },
+    {
+     "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.they",
+     "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "%@ n’ont pas été déplacés : les épisodes et les articles restent dans leurs flux ; %@ en fait un livre de votre bibliothèque.",
+     "after": "%@ n’ont pas été déplacés : les épisodes et les articles restent dans leurs flux ; la commande %@ en fait un livre de votre bibliothèque.",
+     "why": "grammar: the command name Déplacer vers la bibliothèque as a bare subject did not parse"
+    },
+    {
+     "key": "Lists",
+     "id": "libraryViewEditor.listsLabel",
+     "english": "Lists",
+     "before": "Liste",
+     "after": "Éléments listés",
+     "why": "meaning: the label “Liste” of the checkboxes reads as the noun list, not as what the view lists"
+    },
+    {
+     "key": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+     "id": "libraryCloud.noneSelectedBooksKeptMacChoice",
+     "english": {
+      "one": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+      "other": "None of the %@ selected books is kept on this Mac by your choice, and %lld are kept for the reading list."
+     },
+     "before": {
+      "many": "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac par votre choix, et %lld de livres le sont pour la liste de lecture.",
+      "one": "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac par votre choix, et %lld l’est pour la liste de lecture.",
+      "other": "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac par votre choix, et %lld le sont pour la liste de lecture."
+     },
+     "after": {
+      "many": "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac à votre demande, et %lld de livres le sont pour la liste de lecture.",
+      "one": "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac à votre demande, et %lld l’est pour la liste de lecture.",
+      "other": "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac à votre demande, et %lld le sont pour la liste de lecture."
+     },
+     "why": "natural: “par votre choix” copies “by your choice”; French says “à votre demande”"
+    },
+    {
+     "key": "None of the %lld selected books is kept on this Mac.",
+     "id": "libraryCloud.noneSelectedBooksKeptMac",
+     "english": {
+      "one": "None of the %lld selected books is kept on this Mac.",
+      "other": "None of the %lld selected books is kept on this Mac."
+     },
+     "before": {
+      "many": "Aucun des %lld de livres sélectionnés n’est conservé sur ce Mac.",
+      "one": "Le livre sélectionné (%lld) n’est pas conservé sur ce Mac.",
+      "other": "Aucun des %lld livres sélectionnés n’est conservé sur ce Mac."
+     },
+     "after": {
+      "many": "Aucun des %lld de livres sélectionnés n’est conservé sur ce Mac.",
+      "one": "Sur %lld livre sélectionné, aucun n’est conservé sur ce Mac.",
+      "other": "Aucun des %lld livres sélectionnés n’est conservé sur ce Mac."
+     },
+     "why": "natural: “Le livre sélectionné (1)” put the count in parentheses; “Sur 1 livre sélectionné, aucun” keeps it in the sentence"
+    },
+    {
+     "key": "One Unit for Both Directions",
+     "id": "playbackNavigationUnitControlMode.shared",
+     "english": "One Unit for Both Directions",
+     "before": "Une unité pour les deux directions",
+     "after": "Une unité pour les deux sens",
+     "why": "natural: forward and backward are “les deux sens”; “directions” is compass or management"
+    },
+    {
+     "key": "Only rewind if the pause was longer than the threshold",
+     "id": "settings.smartModeHint",
+     "english": "Only rewind if the pause was longer than the threshold",
+     "before": "Rembobine uniquement si la pause a duré plus longtemps que le seuil.",
+     "after": "Revient en arrière uniquement si la pause a duré plus longtemps que le seuil.",
+     "why": "term: the setting this hint belongs to says “Retour en arrière”; “Rembobine” named it another way"
+    },
+    {
+     "key": "Reading list: %@ is only on %@'s list, at place %@.",
+     "id": "libraryComparison.sentence.readingListBookOnlyIn",
+     "english": "Reading list: %1$@ is only on %2$@'s list, at place %3$@.",
+     "before": "Liste de lecture : %@ n’est que sur la liste de %@, à la place %@.",
+     "after": "Liste de lecture : %@ n’est que sur la liste de %@, au rang %@.",
+     "why": "meaning: “à la place 3” reads as “instead of 3”; a place in a list is “au rang 3”"
+    },
+    {
+     "key": "Reading positions are kept, but character offsets may shift slightly if the text changes.",
+     "id": "storageSettings.redoMessage.positions",
+     "english": "Reading positions are kept, but character offsets may shift slightly if the text changes.",
+     "before": "Les positions de lecture sont conservées, mais les décalages de caractères peuvent légèrement changer si le texte change.",
+     "after": "Les positions de lecture sont conservées, mais elles peuvent se décaler légèrement si le texte change.",
+     "why": "natural: “les décalages de caractères peuvent légèrement changer si le texte change” was jargon and repeated “changer”"
+    },
+    {
+     "key": "Reading the audio took longer than %@ seconds; TextMouth stopped waiting.",
+     "id": "timeLimitExceeded.sentence.readingAudioTook",
+     "english": "Reading the audio took longer than %@ seconds; TextMouth stopped waiting.",
+     "before": "La lecture de l’audio a pris plus de %@ secondes ; TextMouth a cessé d’attendre.",
+     "after": "La lecture du fichier audio a pris plus de %@ secondes ; TextMouth a cessé d’attendre.",
+     "why": "meaning: “la lecture de l’audio” reads as playing the audio; it is reading the audio file"
+    },
+    {
+     "key": "Reading the audio took longer than %lld minutes; TextMouth stopped waiting.",
+     "id": "timeLimitExceeded.sentence.minutes",
+     "english": {
+      "one": "Reading the audio took longer than %lld minute; TextMouth stopped waiting.",
+      "other": "Reading the audio took longer than %lld minutes; TextMouth stopped waiting."
+     },
+     "before": {
+      "many": "La lecture de l’audio a pris plus de %lld de minutes ; TextMouth a cessé d’attendre.",
+      "one": "La lecture de l’audio a pris plus de %lld minute ; TextMouth a cessé d’attendre.",
+      "other": "La lecture de l’audio a pris plus de %lld minutes ; TextMouth a cessé d’attendre."
+     },
+     "after": {
+      "many": "La lecture du fichier audio a pris plus de %lld de minutes ; TextMouth a cessé d’attendre.",
+      "one": "La lecture du fichier audio a pris plus de %lld minute ; TextMouth a cessé d’attendre.",
+      "other": "La lecture du fichier audio a pris plus de %lld minutes ; TextMouth a cessé d’attendre."
+     },
+     "why": "meaning: “la lecture de l’audio” reads as playing the audio; it is reading the audio file"
+    },
+    {
+     "key": "Reading the audio took longer than %lld seconds; TextMouth stopped waiting.",
+     "id": "timeLimitExceeded.sentence.readingAudio",
+     "english": {
+      "one": "Reading the audio took longer than %lld second; TextMouth stopped waiting.",
+      "other": "Reading the audio took longer than %lld seconds; TextMouth stopped waiting."
+     },
+     "before": {
+      "many": "La lecture de l’audio a pris plus de %lld de secondes ; TextMouth a cessé d’attendre.",
+      "one": "La lecture de l’audio a pris plus de %lld seconde ; TextMouth a cessé d’attendre.",
+      "other": "La lecture de l’audio a pris plus de %lld secondes ; TextMouth a cessé d’attendre."
+     },
+     "after": {
+      "many": "La lecture du fichier audio a pris plus de %lld de secondes ; TextMouth a cessé d’attendre.",
+      "one": "La lecture du fichier audio a pris plus de %lld seconde ; TextMouth a cessé d’attendre.",
+      "other": "La lecture du fichier audio a pris plus de %lld secondes ; TextMouth a cessé d’attendre."
+     },
+     "why": "meaning: “la lecture de l’audio” reads as playing the audio; it is reading the audio file"
+    },
+    {
+     "key": "Restore Default",
+     "id": "libraryViewsSettings.restoreButton",
+     "english": "Restore Default",
+     "before": "Restaurer par défaut",
+     "after": "Restaurer les valeurs par défaut",
+     "why": "term: “Restaurer par défaut” is not French; Apple’s French says “Restaurer les valeurs par défaut”"
+    },
+    {
+     "key": "Restore Default…",
+     "id": "libraryViewsSettings.restoreAction",
+     "english": "Restore Default…",
+     "before": "Restaurer par défaut…",
+     "after": "Restaurer les valeurs par défaut…",
+     "why": "term: “Restaurer par défaut” is not French; Apple’s French says “Restaurer les valeurs par défaut”"
+    },
+    {
+     "key": "Restore “%@” to its default?",
+     "id": "libraryViewsSettings.restoreTitle",
+     "english": "Restore “%@” to its default?",
+     "before": "Restaurer « %@ » par défaut ?",
+     "after": "Restaurer les valeurs par défaut de « %@ » ?",
+     "why": "grammar: “Restaurer « X » par défaut” says restore by default"
+    },
+    {
+     "key": "Retry is at the top of the Library window.",
+     "id": "persistenceBannerRow.announcement.retry",
+     "english": "Retry is at the top of the Library window.",
+     "before": "Réessayer se trouve en haut de la fenêtre de la bibliothèque.",
+     "after": "Le bouton Réessayer se trouve en haut de la fenêtre de la bibliothèque.",
+     "why": "grammar: the infinitive command name as the bare subject of “se trouve” did not parse"
+    },
+    {
+     "key": "Searched %@ of %@…",
+     "id": "librarySearch.searched",
+     "english": "Searched %1$@ of %2$@…",
+     "before": "Recherche dans %@ sur %@…",
+     "after": "Recherche : %@ sur %@…",
+     "why": "natural: “Recherche dans 30 sur 750 livres” reads as searching only 30 books; it is progress"
+    },
+    {
+     "key": "Still downloading, %@ elapsed.",
+     "id": "readerCloud.stillDownloading",
+     "english": "Still downloading, %@ elapsed.",
+     "before": "Toujours en cours de téléchargement. Temps écoulé : %@.",
+     "after": "Toujours en cours de téléchargement, temps écoulé : %@.",
+     "why": "punctuation: the English is one sentence; the French had split it in two"
+    },
+    {
+     "key": "Stop, and Play Starts Over",
+     "id": "endOfBookBehavior.title.stopAndPlayStartsOver",
+     "english": "Stop, and Play Starts Over",
+     "before": "Arrêter, et Lire repart du début",
+     "after": "Arrêter et revenir au début",
+     "why": "natural: the command name Lire as a bare subject (“et Lire repart du début”) is heard as the verb read"
+    },
+    {
+     "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "id": "textEncoding.editNotKeptRefusal",
+     "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "before": "TextMouth n’a pas pu conserver le texte que vous avez modifié dans « %@ » à côté de la nouvelle lecture, donc il a laissé le livre tel quel.",
+     "after": "TextMouth n’a pas pu conserver le texte que vous avez modifié dans « %@ » à côté du nouveau texte, donc il a laissé le livre tel quel.",
+     "why": "meaning: “la nouvelle lecture” reads as a new playback; it is the text read again"
+    },
+    {
+     "key": "TextMouth couldn't read %lld files, so this may be incomplete.",
+     "id": "libraryComparison.newerCopySentence.incomplete",
+     "english": {
+      "one": "TextMouth couldn't read %lld file, so this may be incomplete.",
+      "other": "TextMouth couldn't read %lld files, so this may be incomplete."
+     },
+     "before": {
+      "many": "TextMouth n’a pas pu lire %lld de fichiers, donc ceci peut être incomplet.",
+      "one": "TextMouth n’a pas pu lire %lld fichier, donc ceci peut être incomplet.",
+      "other": "TextMouth n’a pas pu lire %lld fichiers, donc ceci peut être incomplet."
+     },
+     "after": {
+      "many": "TextMouth n’a pas pu lire %lld de fichiers, ce résultat est donc peut-être incomplet.",
+      "one": "TextMouth n’a pas pu lire %lld fichier, ce résultat est donc peut-être incomplet.",
+      "other": "TextMouth n’a pas pu lire %lld fichiers, ce résultat est donc peut-être incomplet."
+     },
+     "why": "natural: “donc ceci peut être incomplet” copies “so this may be incomplete”"
+    },
+    {
+     "key": "TextMouth couldn't tell which copy is newer (%@).",
+     "id": "libraryComparison.newerCopySentence.couldntTell",
+     "english": "TextMouth couldn't tell which copy is newer (%@).",
+     "before": "TextMouth n’a pas pu dire quelle copie est la plus récente (%@).",
+     "after": "TextMouth n’a pas pu déterminer quelle copie est la plus récente (%@).",
+     "why": "natural: “dire” copies “tell” in the sense of find out"
+    },
+    {
+     "key": "TextMouth couldn't tell which copy is newer.",
+     "id": "libraryComparison.newerCopySentence.couldnt",
+     "english": "TextMouth couldn't tell which copy is newer.",
+     "before": "TextMouth n’a pas pu dire quelle copie est la plus récente.",
+     "after": "TextMouth n’a pas pu déterminer quelle copie est la plus récente.",
+     "why": "natural: “dire” copies “tell” in the sense of find out"
+    },
+    {
+     "key": "The %@ of %lld of them are kept.",
+     "id": "feedDownloadRemoval.completionMessage.them",
+     "english": {
+      "one": "The %@ of %lld of them are kept.",
+      "other": "The %@ of %lld of them are kept."
+     },
+     "before": {
+      "many": "Les %@ de %lld d’entre eux sont conservés.",
+      "one": "Les %@ de %lld d’entre eux sont conservés.",
+      "other": "Les %@ de %lld d’entre eux sont conservés."
+     },
+     "after": {
+      "many": "%2$lld d’entre eux gardent leurs %1$@.",
+      "one": "%2$lld d’entre eux garde ses %1$@.",
+      "other": "%2$lld d’entre eux gardent leurs %1$@."
+     },
+     "why": "grammar: “sont conservés” cannot agree with every list it takes (“les positions” needs “conservées”); the active verb needs no agreement"
+    },
+    {
+     "key": "The %lld selected books are already kept on this Mac.",
+     "id": "libraryCloud.selectedBooksAlready",
+     "english": {
+      "one": "The %lld selected book is already kept on this Mac.",
+      "other": "The %lld selected books are already kept on this Mac."
+     },
+     "before": {
+      "many": "Les %lld de livres sélectionnés sont déjà conservés sur ce Mac.",
+      "one": "Le livre sélectionné (%lld) est déjà conservé sur ce Mac.",
+      "other": "Les %lld livres sélectionnés sont déjà conservés sur ce Mac."
+     },
+     "after": {
+      "many": "Les %lld de livres sélectionnés sont déjà conservés sur ce Mac.",
+      "one": "%lld livre sélectionné est déjà conservé sur ce Mac.",
+      "other": "Les %lld livres sélectionnés sont déjà conservés sur ce Mac."
+     },
+     "why": "natural: “Le livre sélectionné (1)” put the count in parentheses; “1 livre sélectionné” keeps it in the sentence"
+    },
+    {
+     "key": "The %lld selected books are kept on this Mac for the reading list.",
+     "id": "libraryCloud.selectedBooksKept",
+     "english": {
+      "one": "The %lld selected book is kept on this Mac for the reading list.",
+      "other": "The %lld selected books are kept on this Mac for the reading list."
+     },
+     "before": {
+      "many": "Les %lld de livres sélectionnés sont conservés sur ce Mac pour la liste de lecture.",
+      "one": "Le livre sélectionné (%lld) est conservé sur ce Mac pour la liste de lecture.",
+      "other": "Les %lld livres sélectionnés sont conservés sur ce Mac pour la liste de lecture."
+     },
+     "after": {
+      "many": "Les %lld de livres sélectionnés sont conservés sur ce Mac pour la liste de lecture.",
+      "one": "%lld livre sélectionné est conservé sur ce Mac pour la liste de lecture.",
+      "other": "Les %lld livres sélectionnés sont conservés sur ce Mac pour la liste de lecture."
+     },
+     "why": "natural: “Le livre sélectionné (1)” put the count in parentheses; “1 livre sélectionné” keeps it in the sentence"
+    },
+    {
+     "key": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "id": "leadingArticle.description.ignoredForBoth",
+     "english": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "before": "The Hobbit est classé parmi les H et s’affiche comme Hobbit, The. Taper H le trouve parmi les H.",
+     "after": "The Hobbit est classé parmi les H et s’affiche comme Hobbit, The. Taper H permet de le trouver parmi les H.",
+     "why": "natural: “Taper H le trouve” makes typing the one that finds it, a calque"
+    },
+    {
+     "key": "The archive expands to %@, but the disk holding the TextMouth library has only %@ free, and TextMouth keeps %@ of it free.",
+     "id": "archiveBudgetError.notEnoughSpace.expands",
+     "english": "The archive expands to %1$@, but the disk holding the TextMouth library has only %2$@ free, and TextMouth keeps %3$@ of it free.",
+     "before": "L’archive se développe à %1$@, mais le disque contenant la bibliothèque TextMouth n’a que %2$@ libres, et TextMouth en garde %3$@ de libre.",
+     "after": "Une fois décompressée, l’archive occupe %1$@, mais le disque contenant la bibliothèque TextMouth n’a que %2$@ libres, et TextMouth en garde %3$@ en réserve.",
+     "why": "natural: “se développe à” copies “expands to”, and “en garde 1 Go de libre” is not French"
+    },
+    {
+     "key": "The archive expands to %@, more than the %@ TextMouth extracts from archives holding audio or other archives.",
+     "id": "archiveBudgetError.expandsPastLimit.holding",
+     "english": "The archive expands to %1$@, more than the %2$@ TextMouth extracts from archives holding audio or other archives.",
+     "before": "L’archive se développe à %1$@, soit plus que les %2$@ que TextMouth extrait des archives contenant de l’audio ou d’autres archives.",
+     "after": "Une fois décompressée, l’archive occupe %1$@, soit plus que les %2$@ que TextMouth extrait des archives contenant de l’audio ou d’autres archives.",
+     "why": "natural: “se développe à” copies “expands to”"
+    },
+    {
+     "key": "The archive expands to %@, more than the %@ TextMouth extracts from archives without audio.",
+     "id": "archiveBudgetError.expandsPastLimit.without",
+     "english": "The archive expands to %1$@, more than the %2$@ TextMouth extracts from archives without audio.",
+     "before": "L’archive se développe à %1$@, soit plus que les %2$@ que TextMouth extrait des archives sans audio.",
+     "after": "Une fois décompressée, l’archive occupe %1$@, soit plus que les %2$@ que TextMouth extrait des archives sans audio.",
+     "why": "natural: “se développe à” copies “expands to”"
+    },
+    {
+     "key": "The archive “%@” inside it expands to %@, but the disk holding the TextMouth library has only %@ free, and TextMouth keeps %@ of it free.",
+     "id": "archiveBudgetError.notEnoughSpace.inside",
+     "english": "The archive “%1$@” inside it expands to %2$@, but the disk holding the TextMouth library has only %3$@ free, and TextMouth keeps %4$@ of it free.",
+     "before": "L’archive « %1$@ » qu’elle contient se développe à %2$@, mais le disque contenant la bibliothèque TextMouth n’a que %3$@ libres, et TextMouth en garde %4$@ de libre.",
+     "after": "Une fois décompressée, l’archive « %1$@ » qu’elle contient occupe %2$@, mais le disque contenant la bibliothèque TextMouth n’a que %3$@ libres, et TextMouth en garde %4$@ en réserve.",
+     "why": "natural: “se développe à” copies “expands to”, and “en garde 1 Go de libre” is not French"
+    },
+    {
+     "key": "The data directory has no Logs folder, so logs go to %@ until it has one.",
+     "id": "logsSettings.status.fallback.noOne",
+     "english": "The data directory has no Logs folder, so logs go to %@ until it has one.",
+     "before": "Le dossier de données n’a pas de dossier Journaux ; les journaux vont donc dans %@ jusqu’à ce qu’il en ait un.",
+     "after": "Le dossier de données n’a pas de dossier Logs ; les journaux vont donc dans %@ jusqu’à ce qu’il en ait un.",
+     "why": "meaning: the folder is named Logs on disk and is never translated; “dossier Journaux” names a folder that does not exist"
+    },
+    {
+     "key": "The data directory's Logs folder can't be written (%@), so logs go to %@ until it can.",
+     "id": "logsSettings.status.fallback.written",
+     "english": "The data directory's Logs folder can't be written (%1$@), so logs go to %2$@ until it can.",
+     "before": "Le dossier Journaux du dossier de données n’est pas accessible en écriture (%1$@) ; les journaux vont donc dans %2$@ jusqu’à ce qu’il le soit.",
+     "after": "Le dossier Logs du dossier de données n’est pas accessible en écriture (%1$@) ; les journaux vont donc dans %2$@ jusqu’à ce qu’il le soit.",
+     "why": "meaning: the folder is named Logs on disk and is never translated; “dossier Journaux” names a folder that does not exist"
+    },
+    {
+     "key": "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another.",
+     "id": "folderRemoval.confirmationMessage.stays",
+     "english": "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another.",
+     "before": "Le flux %@ reste, avec ses téléchargements, sans dossier jusqu’à ce que Informations sur le flux lui en donne un autre.",
+     "after": "Le flux %@ reste, avec ses téléchargements, sans dossier jusqu’à ce que vous lui en donniez un autre dans Informations sur le flux.",
+     "why": "grammar: “jusqu’à ce que Informations…” missed the elision, and the sheet name as subject did not parse"
+    },
+    {
+     "key": "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another.",
+     "id": "folderRemoval.confirmationMessage.folders",
+     "english": "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another.",
+     "before": "Les flux %@ restent, avec leurs téléchargements, sans dossier jusqu’à ce que Informations sur le flux en donne un autre à chacun.",
+     "after": "Les flux %@ restent, avec leurs téléchargements, sans dossier jusqu’à ce que vous en donniez un autre à chacun dans Informations sur le flux.",
+     "why": "grammar: “jusqu’à ce que Informations…” missed the elision, and the sheet name as subject did not parse"
+    },
+    {
+     "key": "The reading list still keeps %lld of them downloaded",
+     "id": "libraryCloud.stoppedKeeping.readingListStill",
+     "english": {
+      "one": "The reading list still keeps %lld of them downloaded",
+      "other": "The reading list still keeps %lld of them downloaded"
+     },
+     "before": {
+      "many": "La liste de lecture en garde encore %lld téléchargés",
+      "one": "La liste de lecture en garde encore %lld téléchargés",
+      "other": "La liste de lecture en garde encore %lld téléchargés"
+     },
+     "after": {
+      "many": "La liste de lecture en garde encore %lld téléchargés",
+      "one": "La liste de lecture en garde encore %lld téléchargé",
+      "other": "La liste de lecture en garde encore %lld téléchargés"
+     },
+     "why": "grammar: the one form (0 or 1) used the plural “téléchargés”"
+    },
+    {
+     "key": "Their %@ are kept.",
+     "id": "feedDownloadRemoval.completionMessage.their",
+     "english": "Their %@ are kept.",
+     "before": "Leurs %@ sont conservés.",
+     "after": "Ils gardent leurs %@.",
+     "why": "grammar: “sont conservés” cannot agree with every list it takes (“les positions” needs “conservées”); the active verb needs no agreement"
+    },
+    {
+     "key": "There is no view %@. Go to View reaches %lld views.",
+     "id": "libraryViewPicker.noView",
+     "english": {
+      "one": "There is no view %@. Go to View reaches %lld view.",
+      "other": "There is no view %@. Go to View reaches %lld views."
+     },
+     "before": {
+      "many": "Il n’y a pas de vue %@. Aller à la vue en atteint %lld.",
+      "one": "Il n’y a pas de vue %@. Aller à la vue en atteint %lld.",
+      "other": "Il n’y a pas de vue %@. Aller à la vue en atteint %lld."
+     },
+     "after": {
+      "many": "Il n’y a pas de vue %@. La commande Aller à la vue en atteint %lld.",
+      "one": "Il n’y a pas de vue %@. La commande Aller à la vue en atteint %lld.",
+      "other": "Il n’y a pas de vue %@. La commande Aller à la vue en atteint %lld."
+     },
+     "why": "grammar: the command name Aller à la vue as a bare subject did not parse"
+    },
+    {
+     "key": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.howToLetGo.reading",
+     "english": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Pour le laisser partir, retirez-le de la liste de lecture, ou décochez %@ dans les options de la liste de lecture.",
+     "after": "Pour qu’il ne soit plus conservé, retirez-le de la liste de lecture, ou décochez %@ dans les options de la liste de lecture.",
+     "why": "natural: “Pour le laisser partir” copies “to let it go”; it means so that it is no longer kept downloaded"
+    },
+    {
+     "key": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.howToLetGo.them",
+     "english": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Pour les laisser partir, retirez-les de la liste de lecture, ou décochez %@ dans les options de la liste de lecture.",
+     "after": "Pour qu’ils ne soient plus conservés, retirez-les de la liste de lecture, ou décochez %@ dans les options de la liste de lecture.",
+     "why": "natural: “Pour les laisser partir” copies “to let them go”; it means so that they are no longer kept downloaded"
+    },
+    {
+     "key": "Together with the archives inside it, the archive expands to %@, more than the %@ TextMouth extracts from archives holding audio or other archives.",
+     "id": "archiveBudgetError.expandsPastLimit.innerHolding",
+     "english": "Together with the archives inside it, the archive expands to %1$@, more than the %2$@ TextMouth extracts from archives holding audio or other archives.",
+     "before": "Avec les archives qu’elle contient, l’archive se développe à %1$@, soit plus que les %2$@ que TextMouth extrait des archives contenant de l’audio ou d’autres archives.",
+     "after": "Avec les archives qu’elle contient, l’archive occupe %1$@ une fois décompressée, soit plus que les %2$@ que TextMouth extrait des archives contenant de l’audio ou d’autres archives.",
+     "why": "natural: “se développe à” copies “expands to”"
+    },
+    {
+     "key": "Together with the archives inside it, the archive expands to %@, more than the %@ TextMouth extracts from archives without audio.",
+     "id": "archiveBudgetError.expandsPastLimit.innerWithout",
+     "english": "Together with the archives inside it, the archive expands to %1$@, more than the %2$@ TextMouth extracts from archives without audio.",
+     "before": "Avec les archives qu’elle contient, l’archive se développe à %1$@, soit plus que les %2$@ que TextMouth extrait des archives sans audio.",
+     "after": "Avec les archives qu’elle contient, l’archive occupe %1$@ une fois décompressée, soit plus que les %2$@ que TextMouth extrait des archives sans audio.",
+     "why": "natural: “se développe à” copies “expands to”"
+    },
+    {
+     "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "id": "textEncoding.placesSentence.whereNoneTheirWords",
+     "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Là où aucun de leurs mots ne reste, %@, chacun va à peu près au même point de son chapitre, ou au passage le plus proche que les deux lectures partagent.",
+     "after": "Là où il ne reste aucun de leurs mots, %@, chacun va à peu près au même point de son chapitre, ou au passage le plus proche commun aux deux textes.",
+     "why": "meaning: “les deux lectures” reads as two playbacks; they are the old and new text; “aucun de leurs mots ne reste” copied the English order"
+    },
+    {
+     "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "id": "textEncoding.placesSentence.whereNoneTheir",
+     "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Là où aucun de leurs mots ne reste, chacun va à peu près au même point de son chapitre, ou au passage le plus proche que les deux lectures partagent.",
+     "after": "Là où il ne reste aucun de leurs mots, chacun va à peu près au même point de son chapitre, ou au passage le plus proche commun aux deux textes.",
+     "why": "meaning: “les deux lectures” reads as two playbacks; they are the old and new text; “aucun de leurs mots ne reste” copied the English order"
+    },
+    {
+     "key": "With %@, %@.",
+     "id": "removalChoice.optionSentence",
+     "english": "With %1$@, %2$@.",
+     "before": "Avec %@, %@.",
+     "after": "Si vous choisissez %@, %@.",
+     "why": "natural: “Avec” followed by an infinitive button name is not French"
+    },
+    {
+     "key": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "id": "folderRemoval.feedsChoiceSentences.downloads",
+     "english": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "Avec %@, le flux et ses téléchargements restent, sans dossier jusqu’à ce que Informations sur le flux lui en donne un autre ; Supprimer le flux… sur sa ligne le supprime.",
+     "after": "Si vous choisissez %@, le flux et ses téléchargements restent, sans dossier jusqu’à ce que vous lui en donniez un autre dans Informations sur le flux ; la commande Supprimer le flux… de sa ligne le supprime.",
+     "why": "grammar: “Avec” before a button name, the missed elision in “jusqu’à ce que Informations”, and command names as bare subjects"
+    },
+    {
+     "key": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "id": "folderRemoval.feedsChoiceSentences.each",
+     "english": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "Avec %@, les flux et leurs téléchargements restent, sans dossier jusqu’à ce que Informations sur le flux en donne un autre à chacun ; Supprimer le flux… sur la ligne d’un flux le supprime.",
+     "after": "Si vous choisissez %@, les flux et leurs téléchargements restent, sans dossier jusqu’à ce que vous en donniez un autre à chacun dans Informations sur le flux ; la commande Supprimer le flux… de la ligne d’un flux le supprime.",
+     "why": "grammar: “Avec” before a button name, the missed elision in “jusqu’à ce que Informations”, and command names as bare subjects"
+    },
+    {
+     "key": "With %@, the folder and everything in it leave the library, and %@.",
+     "id": "folderRemoval.choiceMessage.everything",
+     "english": "With %1$@, the folder and everything in it leave the library, and %2$@.",
+     "before": "Avec %@, le dossier et tout ce qu’il contient quittent la bibliothèque, et %@.",
+     "after": "Si vous choisissez %@, le dossier et tout ce qu’il contient quittent la bibliothèque, et %@.",
+     "why": "natural: “Avec” followed by an infinitive button name is not French"
+    },
+    {
+     "key": "With Move Contents Out, the feed's folder moves with the rest.",
+     "id": "folderRemoval.feedsChoiceSentences.moves",
+     "english": "With Move Contents Out, the feed's folder moves with the rest.",
+     "before": "Avec Déplacer le contenu hors du dossier, le dossier du flux est déplacé avec le reste.",
+     "after": "Si vous choisissez Déplacer le contenu hors du dossier, le dossier du flux est déplacé avec le reste.",
+     "why": "natural: “Avec” followed by an infinitive button name is not French"
+    },
+    {
+     "key": "With Move Contents Out, their folders move with the rest.",
+     "id": "folderRemoval.feedsChoiceSentences.contents",
+     "english": "With Move Contents Out, their folders move with the rest.",
+     "before": "Avec Déplacer le contenu hors du dossier, leurs dossiers sont déplacés avec le reste.",
+     "after": "Si vous choisissez Déplacer le contenu hors du dossier, leurs dossiers sont déplacés avec le reste.",
+     "why": "natural: “Avec” followed by an infinitive button name is not French"
+    },
+    {
+     "key": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "id": "folderRemoval.choiceMessage.contents",
+     "english": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "before": "Avec Déplacer le contenu hors du dossier, ils restent dans la bibliothèque et seul le dossier est supprimé.",
+     "after": "Si vous choisissez Déplacer le contenu hors du dossier, ils restent dans la bibliothèque et seul le dossier est supprimé.",
+     "why": "natural: “Avec” followed by an infinitive button name is not French"
+    },
+    {
+     "key": "so TextMouth can't tell whether the two copies are one library, and compared nothing.",
+     "id": "libraryComparison.identityMarker.compared",
+     "english": "so TextMouth can't tell whether the two copies are one library, and compared nothing.",
+     "before": "donc TextMouth ne peut pas dire si les deux copies sont une seule bibliothèque, et n’a rien comparé.",
+     "after": "donc TextMouth ne peut pas déterminer si les deux copies sont la même bibliothèque, et n’a rien comparé.",
+     "why": "natural: “dire” copies “tell”, and “sont une seule bibliothèque” copies “are one library”"
+    },
+    {
+     "key": "so its place and bookmarks there were taken from the library index alone.",
+     "id": "libraryComparison.sentence.record",
+     "english": "so its place and bookmarks there were taken from the library index alone.",
+     "before": "donc sa position et ses signets ont été pris dans l’index de la bibliothèque seul.",
+     "after": "donc sa position et ses signets ont été tirés du seul index de la bibliothèque.",
+     "why": "natural: “dans l’index de la bibliothèque seul” left “seul” to modify the library"
+    }
+   ]
+  },
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ of %@ transcribed",
+     "id": "transcription.secondsLine",
+     "english": "%1$@ of %2$@ transcribed",
+     "before": "%1$@ transcrites sur %2$@",
+     "after": "Transcription : %1$@ sur %2$@",
+     "why": "grammar: transcrites agreed only with minutes; 1 heure or 1 minute read wrong"
+    },
+    {
+     "key": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
+     "id": "opmlImportSummary.sentence.they",
+     "english": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
+     "before": "%@ utilisent http simple, donc d’autres peuvent lire ou modifier ce qu’ils envoient ; TextMouth les charge quand même.",
+     "after": "%@ utilisent http non chiffré, donc d’autres peuvent lire ou modifier ce qu’ils envoient ; TextMouth les charge quand même.",
+     "why": "natural: http simple copies plain http; French says unencrypted http"
+    },
+    {
+     "key": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "id": "opmlImportSummary.sentence.sends",
+     "english": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "before": "%@ utilise http simple, donc d’autres peuvent lire ou modifier ce qu’il envoie ; TextMouth le charge quand même.",
+     "after": "%@ utilise http non chiffré, donc d’autres peuvent lire ou modifier ce qu’il envoie ; TextMouth le charge quand même.",
+     "why": "natural: http simple copies plain http; French says unencrypted http"
+    },
+    {
+     "key": "%@ waits for a network without data limits to refresh by itself.",
+     "id": "feedFetchError.message.constrainedNetwork",
+     "english": "%@ waits for a network without data limits to refresh by itself.",
+     "before": "%@ attend un réseau sans limite de données pour s’actualiser tout seul.",
+     "after": "%@ attend un réseau sans limite de données pour s’actualiser automatiquement.",
+     "why": "register: tout seul is colloquial; the interface says automatiquement"
+    },
+    {
+     "key": "%lld edits, all saved",
+     "id": "audioEditor.edits.allSaved",
+     "english": {
+      "one": "%lld edit, all saved",
+      "other": "%lld edits, all saved"
+     },
+     "before": {
+      "many": "%lld de modifications, toutes enregistrées",
+      "one": "%lld modification, toutes enregistrées",
+      "other": "%lld modifications, toutes enregistrées"
+     },
+     "after": {
+      "one": "%lld modification, enregistrée",
+      "other": "%lld modifications, toutes enregistrées",
+      "many": "%lld de modifications, toutes enregistrées"
+     },
+     "why": "grammar: toutes enregistrées is plural for one edit; zero edits reads No edits instead"
+    },
+    {
+     "key": "%lld edits, not all saved",
+     "id": "audioEditor.edits.notAll",
+     "english": {
+      "one": "%lld edit, not all saved",
+      "other": "%lld edits, not all saved"
+     },
+     "before": {
+      "many": "%lld de modifications, pas toutes enregistrées",
+      "one": "%lld modification, pas toutes enregistrées",
+      "other": "%lld modifications, pas toutes enregistrées"
+     },
+     "after": {
+      "one": "%lld modification, non enregistrée",
+      "other": "%lld modifications, pas toutes enregistrées",
+      "many": "%lld de modifications, pas toutes enregistrées"
+     },
+     "why": "grammar: pas toutes enregistrées is plural for one edit; zero edits reads No edits instead"
+    },
+    {
+     "key": "%lld were subscribed already.",
+     "id": "opmlImportSummary.sentence.already",
+     "english": {
+      "one": "%lld was subscribed already.",
+      "other": "%lld were subscribed already."
+     },
+     "before": {
+      "many": "%lld étaient déjà abonnés.",
+      "one": "%lld était déjà abonné.",
+      "other": "%lld étaient déjà abonnés."
+     },
+     "after": {
+      "one": "Vous étiez déjà abonné à %lld flux.",
+      "other": "Vous étiez déjà abonné à %lld flux.",
+      "many": "Vous étiez déjà abonné à %lld de flux."
+     },
+     "why": "meaning: était déjà abonné said the feed had subscribed; the listener is the one subscribed"
+    },
+    {
+     "key": "%lld%% of %@",
+     "id": "feedDownloadProgress.transfer.count",
+     "english": {
+      "one": "%lld%% of %@",
+      "other": "%lld%% of %@"
+     },
+     "before": {
+      "many": "%lld %% sur %@",
+      "one": "%lld %% sur %@",
+      "other": "%lld %% sur %@"
+     },
+     "after": {
+      "one": "%lld %% de %@",
+      "other": "%lld %% de %@",
+      "many": "%lld %% de %@"
+     },
+     "why": "natural: a percent of a size is de in French (45 % de 63 Mo), not sur"
+    },
+    {
+     "key": "A chapter marker needs a title.",
+     "id": "audioEditor.chapterNeedsTitle",
+     "english": "A chapter marker needs a title.",
+     "before": "Un marqueur de chapitre a besoin d’un titre.",
+     "after": "Un marqueur de chapitre doit avoir un titre.",
+     "why": "natural: a besoin d’un copies needs a; French says doit avoir"
+    },
+    {
+     "key": "A filter preset needs a name.",
+     "id": "audioFilterPresetError.blankName",
+     "english": "A filter preset needs a name.",
+     "before": "Un préréglage de filtre a besoin d’un nom.",
+     "after": "Un préréglage de filtre doit avoir un nom.",
+     "why": "natural: a besoin d’un copies needs a; French says doit avoir"
+    },
+    {
+     "key": "An episode in its feed can't be edited.",
+     "id": "audioEditor.feedEpisodeNotEditable",
+     "english": "An episode in its feed can't be edited.",
+     "before": "Un épisode de son flux ne peut pas être modifié.",
+     "after": "Un épisode encore dans son flux ne peut pas être modifié.",
+     "why": "meaning: Un épisode de son flux lost that the episode is still in its feed, which is why it can't be edited"
+    },
+    {
+     "key": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "id": "transcription.offerHint",
+     "english": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "before": "Demande après chaque importation de livre audio s’il faut le transcrire. Désactivé, les livres audio ne sont transcrits qu’avec Transcrire l’audio.",
+     "after": "Demande après chaque importation de livre audio s’il faut le transcrire. Si l’option est désactivée, les livres audio ne sont transcrits qu’avec Transcrire l’audio.",
+     "why": "grammar: Désactivé, les livres audio… made the audiobooks the ones turned off"
+    },
+    {
+     "key": "Asks first, then deletes this feed, its downloads, and what it kept of downloads you removed",
+     "id": "feed.deleteFeedHint",
+     "english": "Asks first, then deletes this feed, its downloads, and what it kept of downloads you removed",
+     "before": "Demande d’abord, puis supprime ce flux, ses téléchargements et ce qu’il a conservé des téléchargements retirés.",
+     "after": "Demande confirmation, puis supprime ce flux, ses téléchargements et ce qu’il a conservé des téléchargements retirés.",
+     "why": "natural: Demande d’abord has no object; French asks for confirmation"
+    },
+    {
+     "key": "Asks first, then stops checking; the feed and its downloads stay",
+     "id": "feed.unsubscribeHint.first",
+     "english": "Asks first, then stops checking; the feed and its downloads stay",
+     "before": "Demande d’abord, puis cesse de vérifier ; le flux et ses téléchargements restent.",
+     "after": "Demande confirmation, puis cesse de vérifier ce flux, qui reste avec ses téléchargements.",
+     "why": "natural: Demande d’abord and cesse de vérifier had no object"
+    },
+    {
+     "key": "Attaching “%@” to %@.",
+     "id": "transcription.attaching",
+     "english": "Attaching “%1$@” to %2$@.",
+     "before": "Jonction du fichier « %1$@ » à %2$@.",
+     "after": "Ajout du fichier « %1$@ » à %2$@.",
+     "why": "natural: Jonction means a junction; attaching a file is un ajout"
+    },
+    {
+     "key": "Audio that TextMouth converts at import keeps only the converted file.",
+     "id": "convertedOriginal.notKeepingCaption",
+     "english": "Audio that TextMouth converts at import keeps only the converted file.",
+     "before": "L’audio que TextMouth convertit à l’importation ne conserve que le fichier converti.",
+     "after": "Pour l’audio que TextMouth convertit à l’importation, seul le fichier converti est conservé.",
+     "why": "natural: the audio itself kept the file, a literal copy of the English subject"
+    },
+    {
+     "key": "Audiobook Loudness",
+     "id": "premadeFilterPreset.title.audiobookLoudness",
+     "english": "Audiobook Loudness",
+     "before": "Intensité des livres audio",
+     "after": "Niveau sonore des livres audio",
+     "why": "natural: Intensité des livres audio is vague; the preset sets the loudness, niveau sonore"
+    },
+    {
+     "key": "Cancelling after this book...",
+     "id": "importProgress.cancelling",
+     "english": "Cancelling after this book...",
+     "before": "Annulation après ce livre...",
+     "after": "Annulation après ce livre…",
+     "why": "punctuation: French uses the ellipsis character, not three periods"
+    },
+    {
+     "key": "Cancelling...",
+     "id": "importProgress.cancellingLine",
+     "english": "Cancelling...",
+     "before": "Annulation...",
+     "after": "Annulation…",
+     "why": "punctuation: French uses the ellipsis character, not three periods"
+    },
+    {
+     "key": "Checks this feed again from now on, and at once",
+     "id": "feed.resubscribeHint",
+     "english": "Checks this feed again from now on, and at once",
+     "before": "Vérifie de nouveau ce flux à partir de maintenant, et immédiatement.",
+     "after": "Reprend la vérification de ce flux et le vérifie tout de suite.",
+     "why": "natural: à partir de maintenant, et immédiatement copied the English word order"
+    },
+    {
+     "key": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "id": "feed.importPanelMessage",
+     "english": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "before": "Choisissez un fichier OPML d’abonnements, tel qu’un autre lecteur de flux les exporte.",
+     "after": "Choisissez un fichier OPML d’abonnements, comme en exportent les autres lecteurs de flux.",
+     "why": "natural: tel qu’un autre lecteur de flux les exporte copied the English clause"
+    },
+    {
+     "key": "Deletes the recording without saving it.",
+     "id": "recording.discardHint",
+     "english": "Deletes the recording without saving it.",
+     "before": "Supprime l’enregistrement sans l’enregistrer.",
+     "after": "Supprime l’enregistrement sans le conserver.",
+     "why": "natural: sans l’enregistrer clashed with enregistrement; French says sans le conserver"
+    },
+    {
+     "key": "Deletes this recording without saving it.",
+     "id": "recording.discardRecoveredHint",
+     "english": "Deletes this recording without saving it.",
+     "before": "Supprime cet enregistrement sans l’enregistrer.",
+     "after": "Supprime cet enregistrement sans le conserver.",
+     "why": "natural: sans l’enregistrer clashed with enregistrement; French says sans le conserver"
+    },
+    {
+     "key": "Export Numbers spreadsheets from Numbers as PDF files, then import those.",
+     "id": "refusedFormatAdvice.numbers",
+     "english": "Export Numbers spreadsheets from Numbers as PDF files, then import those.",
+     "before": "Exportez les tableurs Numbers depuis Numbers en fichiers PDF, puis importez-les.",
+     "after": "Exportez les feuilles de calcul Numbers depuis Numbers en fichiers PDF, puis importez-les.",
+     "why": "meaning: un tableur is the spreadsheet program; Apple's French calls Numbers documents feuilles de calcul"
+    },
+    {
+     "key": "Extracting archive...",
+     "id": "importProgress.startingArchive",
+     "english": "Extracting archive...",
+     "before": "Extraction de l’archive...",
+     "after": "Extraction de l’archive…",
+     "why": "punctuation: French uses the ellipsis character, not three periods"
+    },
+    {
+     "key": "Extracting “%@”: %@...",
+     "id": "importProgress.extracting",
+     "english": "Extracting “%1$@”: %2$@...",
+     "before": "Extraction de « %1$@ » : %2$@...",
+     "after": "Extraction de « %1$@ » : %2$@…",
+     "why": "punctuation: French uses the ellipsis character, not three periods"
+    },
+    {
+     "key": "Found at %@. When on, the editor's filters run through ffmpeg, with every filter it has.",
+     "id": "audioEditingSettings.ffmpegHint",
+     "english": "Found at %@. When on, the editor's filters run through ffmpeg, with every filter it has.",
+     "before": "Trouvé à %@. Quand c’est activé, les filtres de l’éditeur passent par ffmpeg, avec tous ses filtres.",
+     "after": "Trouvé à %@. Si l’option est activée, les filtres de l’éditeur passent par ffmpeg, avec tous ses filtres.",
+     "why": "register: Quand c’est activé is spoken French; the interface says Si l’option est activée"
+    },
+    {
+     "key": "Go to Time",
+     "id": "audioEditor.goToTimeTitle",
+     "english": "Go to Time",
+     "before": "Aller à l’instant",
+     "after": "Aller à un instant",
+     "why": "meaning: «à l'instant» also means right away; the same as part 3's «Aller à un instant…» (set by the orchestrator after both parts merged)"
+    },
+    {
+     "key": "Import cancelled while extracting the archive, before any book was imported.",
+     "id": "zipImportCancellation.sentence.whileExtracting",
+     "english": "Import cancelled while extracting the archive, before any book was imported.",
+     "before": "Importation annulée pendant l’extraction de l’archive, avant l’importation de tout livre.",
+     "after": "Importation annulée pendant l’extraction de l’archive, avant qu’aucun livre ne soit importé.",
+     "why": "natural: avant l’importation de tout livre is stilted; French says avant qu’aucun livre ne soit importé"
+    },
+    {
+     "key": "It holds no files.",
+     "id": "importProgress.holdsNoFiles",
+     "english": "It holds no files.",
+     "before": "Elle ne contient aucun fichier.",
+     "after": "Aucun fichier ne s’y trouve.",
+     "why": "grammar: Elle fits an archive, but the sentence also follows a folder (dossier is masculine)"
+    },
+    {
+     "key": "It lists no audio track with a start that TextMouth can read.",
+     "id": "cueSheet.noTracks",
+     "english": "It lists no audio track with a start that TextMouth can read.",
+     "before": "Elle ne répertorie aucune piste audio dont TextMouth puisse lire le début.",
+     "after": "Il ne répertorie aucune piste audio dont TextMouth reconnaisse le point de départ.",
+     "why": "grammar: the catalog calls a cue sheet fichier CUE (masculine); lire le début also read as playing the start"
+    },
+    {
+     "key": "It names no audio file in its own folder that TextMouth can import.",
+     "id": "playlistImport.refusal",
+     "english": "It names no audio file in its own folder that TextMouth can import.",
+     "before": "Elle ne désigne aucun fichier audio de son propre dossier que TextMouth puisse importer.",
+     "after": "Il ne désigne aucun fichier audio de son propre dossier que TextMouth puisse importer.",
+     "why": "grammar: also said of a cue sheet (fichier CUE, masculine); Il stands for the file the sentence before names"
+    },
+    {
+     "key": "It skipped %lld entries: %@.",
+     "id": "playlistImport.skippedSentence",
+     "english": {
+      "one": "It skipped %lld entry: %@.",
+      "other": "It skipped %lld entries: %@."
+     },
+     "before": {
+      "many": "Elle a ignoré %lld d’entrées : %@.",
+      "one": "Elle a ignoré %lld entrée : %@.",
+      "other": "Elle a ignoré %lld entrées : %@."
+     },
+     "after": {
+      "one": "%lld entrée a été ignorée : %@.",
+      "other": "%lld entrées ont été ignorées : %@.",
+      "many": "%lld d’entrées ont été ignorées : %@."
+     },
+     "why": "grammar: Elle a ignoré gave the skipping to a feminine file the sentence before no longer names; the passive fits both kinds"
+    },
+    {
+     "key": "Its %@ are kept for when you download it again.",
+     "id": "keptParts.keptForRedownloadSentence.valueWhen",
+     "english": "Its %@ are kept for when you download it again.",
+     "before": "Conservés pour quand vous le téléchargerez de nouveau : %@.",
+     "after": "Conservés en vue d’un nouveau téléchargement : %@.",
+     "why": "register: pour quand vous le téléchargerez is spoken French"
+    },
+    {
+     "key": "Its %@ is kept for when you download it again.",
+     "id": "keptParts.keptForRedownloadSentence.value",
+     "english": "Its %@ is kept for when you download it again.",
+     "before": "Conservé pour quand vous le téléchargerez de nouveau : %@.",
+     "after": "Conservée en vue d’un nouveau téléchargement : %@.",
+     "why": "grammar: the one part kept is position or transcription, both feminine; pour quand is spoken French"
+    },
+    {
+     "key": "Its %@ is kept.",
+     "id": "keptParts.keptSentence.singular",
+     "english": "Its %@ is kept.",
+     "before": "Conservé : %@.",
+     "after": "Conservée : %@.",
+     "why": "grammar: the one part kept is position or transcription, both feminine"
+    },
+    {
+     "key": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "id": "cueSheet.timesPastAudio",
+     "english": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "before": "Ses pistes dépassent la fin de l’audio qu’elle désigne, donc elle a été faite pour une autre copie de cet audio.",
+     "after": "Ses pistes dépassent la fin de l’audio qu’il désigne, donc il a été fait pour une autre copie de cet audio.",
+     "why": "grammar: the catalog calls a cue sheet fichier CUE (masculine), so elle and faite were wrong"
+    },
+    {
+     "key": "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "id": "feed.everyListedDownloadsByHand.article",
+     "english": "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Répertorie tous les articles ; rien ne se télécharge tout seul, et un téléchargement reste jusqu’à ce que vous le supprimiez ou que son délai après lecture soit écoulé.",
+     "after": "Répertorie tous les articles ; rien n’est téléchargé automatiquement, et un téléchargement reste jusqu’à ce que vous le supprimiez ou que son délai après lecture soit écoulé.",
+     "why": "register: rien ne se télécharge tout seul is colloquial; the interface says automatiquement"
+    },
+    {
+     "key": "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "id": "feed.everyListedDownloadsByHand.episodeArticle",
+     "english": "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Répertorie tous les épisodes et articles ; rien ne se télécharge tout seul, et un téléchargement reste jusqu’à ce que vous le supprimiez ou que son délai après lecture soit écoulé.",
+     "after": "Répertorie tous les épisodes et articles ; rien n’est téléchargé automatiquement, et un téléchargement reste jusqu’à ce que vous le supprimiez ou que son délai après lecture soit écoulé.",
+     "why": "register: rien ne se télécharge tout seul is colloquial; the interface says automatiquement"
+    },
+    {
+     "key": "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "id": "feed.everyListedDownloadsByHand.episodeDownload",
+     "english": "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Répertorie tous les épisodes ; rien ne se télécharge tout seul, et un téléchargement reste jusqu’à ce que vous le supprimiez ou que son délai après lecture soit écoulé.",
+     "after": "Répertorie tous les épisodes ; rien n’est téléchargé automatiquement, et un téléchargement reste jusqu’à ce que vous le supprimiez ou que son délai après lecture soit écoulé.",
+     "why": "register: rien ne se télécharge tout seul is colloquial; the interface says automatiquement"
+    },
+    {
+     "key": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "id": "transcriptCleanup.applyHint",
+     "english": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "before": "Effectue ces corrections. La transcription d’avant est conservée, donc Annuler le nettoyage peut la remettre.",
+     "after": "Effectue ces corrections. La transcription précédente est conservée, donc Annuler le nettoyage peut la rétablir.",
+     "why": "register: la transcription d’avant is spoken French; the sheet says précédente elsewhere"
+    },
+    {
+     "key": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "id": "audioEditor.revertNoOriginal",
+     "english": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "before": "Aucun original n’est conservé, donc le retour à l’original est impossible. Annuler reprend les modifications faites depuis le dernier enregistrement.",
+     "after": "Aucun original n’est conservé, donc le retour à l’original est impossible. Annuler défait les modifications faites depuis le dernier enregistrement.",
+     "why": "meaning: Annuler reprend les modifications can read as resuming them; Undo takes them back"
+    },
+    {
+     "key": "Nothing Imported",
+     "id": "importProgress.nothingImportedTitle",
+     "english": "Nothing Imported",
+     "before": "Rien d’importé",
+     "after": "Aucun livre importé",
+     "why": "natural: Rien d’importé is colloquial for an alert title"
+    },
+    {
+     "key": "Now %@ long.",
+     "id": "audioEditor.nowLong",
+     "english": "Now %@ long.",
+     "before": "Durée maintenant : %@.",
+     "after": "Nouvelle durée : %@.",
+     "why": "natural: Durée maintenant copies the English word order"
+    },
+    {
+     "key": "Part of %@ could not be decoded and is kept as silence.",
+     "id": "ffmpegImport.partlyDecodedNotice.silence",
+     "english": "Part of %@ could not be decoded and is kept as silence.",
+     "before": "Une partie de %@ n’a pas pu être décodée et est conservée en silence.",
+     "after": "Une partie de %@ n’a pas pu être décodée et est remplacée par du silence.",
+     "why": "meaning: conservée en silence said the part is kept quietly; it is replaced by silence"
+    },
+    {
+     "key": "Part of %lld files, %@, could not be decoded and is kept as silence.",
+     "id": "ffmpegImport.partlyDecodedNotice.files",
+     "english": {
+      "one": "Part of %lld file, %@, could not be decoded and is kept as silence.",
+      "other": "Part of %lld files, %@, could not be decoded and is kept as silence."
+     },
+     "before": {
+      "many": "Une partie de %lld de fichiers, %@, n’a pas pu être décodée et est conservée en silence.",
+      "one": "Une partie de %lld fichier, %@, n’a pas pu être décodée et est conservée en silence.",
+      "other": "Une partie de %lld fichiers, %@, n’a pas pu être décodée et est conservée en silence."
+     },
+     "after": {
+      "one": "Une partie de %lld fichier, %@, n’a pas pu être décodée et est remplacée par du silence.",
+      "other": "Une partie de %lld fichiers, %@, n’a pas pu être décodée et est remplacée par du silence.",
+      "many": "Une partie de %lld de fichiers, %@, n’a pas pu être décodée et est remplacée par du silence."
+     },
+     "why": "meaning: conservée en silence said the part is kept quietly; it is replaced by silence"
+    },
+    {
+     "key": "Plain http: others can read or change what this feed sends.",
+     "id": "feed.insecureNote",
+     "english": "Plain http: others can read or change what this feed sends.",
+     "before": "http simple : d’autres peuvent lire ou modifier ce que ce flux envoie.",
+     "after": "http non chiffré : d’autres peuvent lire ou modifier ce que ce flux envoie.",
+     "why": "natural: http simple copies plain http; French says unencrypted http"
+    },
+    {
+     "key": "Post a notification for each feed with new episodes",
+     "id": "feedSettings.notifications",
+     "english": "Post a notification for each feed with new episodes",
+     "before": "Publier une notification pour chaque flux ayant de nouveaux épisodes",
+     "after": "Afficher une notification pour chaque flux ayant de nouveaux épisodes",
+     "why": "natural: Publier copies post; French shows a notification, as the alert switch beside it does"
+    },
+    {
+     "key": "Putting back the transcript from before…",
+     "id": "transcriptCleanup.undoingLine",
+     "english": "Putting back the transcript from before…",
+     "before": "Remise en place de la transcription d’avant…",
+     "after": "Rétablissement de la transcription précédente…",
+     "why": "register: la transcription d’avant is spoken French; précédente as elsewhere in the sheet"
+    },
+    {
+     "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "id": "audioEditor.explanation.editorPunchIn",
+     "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "before": "Enregistre sur la sélection, ou au curseur, après un bip. Appuyer à nouveau, ou Arrêter, le termine.",
+     "after": "Enregistre sur la sélection, ou au curseur, après un bip. Enregistrer par-dessus à nouveau, ou Arrêter, le termine.",
+     "why": "voiceover: Appuyer à nouveau named a gesture; the command's name says it, as the status line does"
+    },
+    {
+     "key": "Refreshed %@: %@",
+     "id": "feed.refreshedAll.withCounts",
+     "english": "Refreshed %1$@: %2$@",
+     "before": "Actualisation de %1$@ : %2$@",
+     "after": "Actualisation terminée pour %1$@ : %2$@",
+     "why": "meaning: Actualisation de read as a refresh under way; VoiceOver says it once the refresh is done"
+    },
+    {
+     "key": "Save the recording?",
+     "id": "recording.closeWithUnsavedQuestion",
+     "english": "Save the recording?",
+     "before": "Enregistrer l’enregistrement ?",
+     "after": "Sauvegarder l’enregistrement ?",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "Saved Recording as %@",
+     "id": "recording.savedAnnouncement",
+     "english": "Saved Recording as %@",
+     "before": "Enregistrement enregistré sous %@",
+     "after": "Enregistrement sauvegardé sous %@",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "Saved Recording as %@.",
+     "id": "recording.saved",
+     "english": "Saved Recording as %@.",
+     "before": "Enregistrement enregistré sous %@.",
+     "after": "Enregistrement sauvegardé sous %@.",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "Saves this recording as an audiobook in the %@ folder, titled by when it was recorded.",
+     "id": "recording.saveRecoveredHint",
+     "english": "Saves this recording as an audiobook in the %@ folder, titled by when it was recorded.",
+     "before": "Enregistre cet enregistrement comme livre audio dans le dossier choisi dans %@, avec un titre indiquant quand il a été fait.",
+     "after": "Sauvegarde cet enregistrement comme livre audio dans le dossier choisi dans %@, avec un titre indiquant quand il a été fait.",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "Saving %@ of audio as %@, the format this book keeps.",
+     "id": "audioEditor.savingDetail.format",
+     "english": "Saving %1$@ of audio as %2$@, the format this book keeps.",
+     "before": "Enregistrement de %1$@ d’audio en %2$@, le format que ce livre conserve.",
+     "after": "Écriture de %1$@ d’audio en %2$@, le format que ce livre conserve.",
+     "why": "meaning: Enregistrement de … d’audio read as recording audio; the editor is writing the edits into the book"
+    },
+    {
+     "key": "Saving %@ of audio into the book.",
+     "id": "audioEditor.savingDetail.book",
+     "english": "Saving %@ of audio into the book.",
+     "before": "Enregistrement de %@ d’audio dans le livre.",
+     "after": "Écriture de %@ d’audio dans le livre.",
+     "why": "meaning: Enregistrement de … d’audio read as recording audio; the editor is writing the edits into the book"
+    },
+    {
+     "key": "Stop and save the recording?",
+     "id": "recording.closeWhileRecordingQuestion",
+     "english": "Stop and save the recording?",
+     "before": "Arrêter et enregistrer l’enregistrement ?",
+     "after": "Arrêter et sauvegarder l’enregistrement ?",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "Stops checking; the feed and its downloads stay",
+     "id": "feed.unsubscribeHint.downloads",
+     "english": "Stops checking; the feed and its downloads stay",
+     "before": "Cesse de vérifier ; le flux et ses téléchargements restent.",
+     "after": "Cesse de vérifier ce flux, qui reste avec ses téléchargements.",
+     "why": "natural: cesse de vérifier had no object; the same hint as Unsubscribe’s"
+    },
+    {
+     "key": "Stops recording and saves it in your library as an audiobook.",
+     "id": "recording.stopHint",
+     "english": "Stops recording and saves it in your library as an audiobook.",
+     "before": "Arrête l’enregistrement et l’enregistre dans votre bibliothèque comme livre audio.",
+     "after": "Arrête l’enregistrement et le sauvegarde dans votre bibliothèque comme livre audio.",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "id": "feed.insecureMessage",
+     "english": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "before": "Abonné à %@. Ce flux utilise http simple, donc d’autres peuvent lire ou modifier ce qu’il envoie ; TextMouth le charge quand même.",
+     "after": "Abonné à %@. Ce flux utilise http non chiffré, donc d’autres peuvent lire ou modifier ce qu’il envoie ; TextMouth le charge quand même.",
+     "why": "natural: http simple copies plain http; French says unencrypted http"
+    },
+    {
+     "key": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "id": "ffmpegImport.soundNotDecoded",
+     "english": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "before": "TextMouth ne peut pas convertir le son de « %@ » : il est dans un type d’audio qu’il ne lit pas.",
+     "after": "TextMouth ne peut pas convertir le son de « %@ » : il ne sait pas lire ce type d’audio.",
+     "why": "grammar: il est dans un type d’audio qu’il ne lit pas used il for both the sound and TextMouth"
+    },
+    {
+     "key": "TextMouth can't read “%@” as %@. It may be damaged, or named for another format.",
+     "id": "ffmpegImport.notRecognized",
+     "english": "TextMouth can't read “%1$@” as %2$@. It may be damaged, or named for another format.",
+     "before": "TextMouth ne peut pas lire « %1$@ » comme %2$@. Il est peut-être endommagé, ou nommé pour un autre format.",
+     "after": "TextMouth ne peut pas lire « %1$@ » en tant que %2$@. Il est peut-être endommagé, ou son nom correspond à un autre format.",
+     "why": "natural: nommé pour un autre format copies named for another format"
+    },
+    {
+     "key": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "id": "duplicateCopy.answerUnderWay",
+     "english": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "before": "TextMouth exécute encore votre dernière réponse. Attendez qu’il ait terminé.",
+     "after": "TextMouth traite encore votre dernière réponse. Attendez qu’il ait terminé.",
+     "why": "natural: exécuter une réponse is not said; French says traiter"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "id": "feed.notificationsRefused",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "TextMouth n’est pas autorisé à publier des notifications. Activez-les dans Réglages Système, Notifications, TextMouth.",
+     "after": "TextMouth n’est pas autorisé à envoyer des notifications. Activez-les dans Réglages Système, Notifications, TextMouth.",
+     "why": "term: Apple's French asks to send notifications (envoyer); publier copies post"
+    },
+    {
+     "key": "TextMouth left out %@, which hold no sound it can read.",
+     "id": "ffmpegImport.leftOutHoldingNoSound.hold",
+     "english": "TextMouth left out %@, which hold no sound it can read.",
+     "before": "TextMouth a écarté %@, qui ne contiennent aucun son qu’il peut lire.",
+     "after": "TextMouth a écarté %@, qui ne contiennent aucun son qu’il puisse lire.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "TextMouth left out %@, which holds no sound it can read.",
+     "id": "ffmpegImport.leftOutHoldingNoSound.holds",
+     "english": "TextMouth left out %@, which holds no sound it can read.",
+     "before": "TextMouth a écarté %@, qui ne contient aucun son qu’il peut lire.",
+     "after": "TextMouth a écarté %@, qui ne contient aucun son qu’il puisse lire.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "That address isn't a web address TextMouth can open.",
+     "id": "feedFetchError.message.notAWebAddress",
+     "english": "That address isn't a web address TextMouth can open.",
+     "before": "Cette adresse n’est pas une adresse web que TextMouth peut ouvrir.",
+     "after": "Cette adresse n’est pas une adresse web que TextMouth puisse ouvrir.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "That item isn't a plain file TextMouth can read.",
+     "id": "transcription.attachNotAFile",
+     "english": "That item isn't a plain file TextMouth can read.",
+     "before": "Cet élément n’est pas un fichier ordinaire que TextMouth peut lire.",
+     "after": "Cet élément n’est pas un fichier ordinaire que TextMouth puisse lire.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "That page names %lld feeds. Choose one, then Subscribe.",
+     "id": "feed.choosePrompt",
+     "english": {
+      "one": "That page names %lld feed. Choose one, then Subscribe.",
+      "other": "That page names %lld feeds. Choose one, then Subscribe."
+     },
+     "before": {
+      "many": "Cette page désigne %lld de flux. Choisissez-en un, puis S’abonner.",
+      "one": "Cette page désigne %lld flux. Choisissez-le, puis S’abonner.",
+      "other": "Cette page désigne %lld flux. Choisissez-en un, puis S’abonner."
+     },
+     "after": {
+      "one": "Cette page désigne %lld flux. Sélectionnez-le, puis choisissez S’abonner.",
+      "other": "Cette page désigne %lld flux. Sélectionnez-en un, puis choisissez S’abonner.",
+      "many": "Cette page désigne %lld de flux. Sélectionnez-en un, puis choisissez S’abonner."
+     },
+     "why": "grammar: puis S’abonner left the button name as a bare infinitive after an imperative"
+    },
+    {
+     "key": "The %@ file holds no timed text TextMouth can use.",
+     "id": "timedTextError.noCues",
+     "english": "The %@ file holds no timed text TextMouth can use.",
+     "before": "Le fichier %@ ne contient aucun texte minuté que TextMouth peut utiliser.",
+     "after": "Le fichier %@ ne contient aucun texte minuté que TextMouth puisse utiliser.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "The %@ kept for %lld removed downloads was deleted.",
+     "id": "feed.unsubscribed.downloadsWas",
+     "english": {
+      "one": "The %@ kept for %lld removed download was deleted.",
+      "other": "The %@ kept for %lld removed downloads was deleted."
+     },
+     "before": {
+      "many": "Supprimé : %@, conservé pour %lld de téléchargements retirés.",
+      "one": "Supprimé : %@, conservé pour %lld téléchargement retiré.",
+      "other": "Supprimé : %@, conservé pour %lld téléchargements retirés."
+     },
+     "after": {
+      "one": "Ce qui était conservé pour %2$lld téléchargement retiré a été supprimé : %1$@.",
+      "other": "Ce qui était conservé pour %2$lld téléchargements retirés a été supprimé : %1$@.",
+      "many": "Ce qui était conservé pour %2$lld de téléchargements retirés a été supprimé : %1$@."
+     },
+     "why": "grammar: the one part is position or transcription, both feminine; the neutral clause fits every part"
+    },
+    {
+     "key": "The %@ kept for %lld removed downloads were deleted.",
+     "id": "feed.unsubscribed.were",
+     "english": {
+      "one": "The %@ kept for %lld removed download were deleted.",
+      "other": "The %@ kept for %lld removed downloads were deleted."
+     },
+     "before": {
+      "many": "Supprimés : %@, conservés pour %lld de téléchargements retirés.",
+      "one": "Supprimés : %@, conservés pour %lld téléchargement retiré.",
+      "other": "Supprimés : %@, conservés pour %lld téléchargements retirés."
+     },
+     "after": {
+      "one": "Ce qui était conservé pour %2$lld téléchargement retiré a été supprimé : %1$@.",
+      "other": "Ce qui était conservé pour %2$lld téléchargements retirés a été supprimé : %1$@.",
+      "many": "Ce qui était conservé pour %2$lld de téléchargements retirés a été supprimé : %1$@."
+     },
+     "why": "grammar: Supprimés was wrong for positions or transcriptions alone; the neutral clause fits every list"
+    },
+    {
+     "key": "The address of %@ doesn't hold a feed TextMouth can read.",
+     "id": "feedRefreshError.message.parse.address",
+     "english": "The address of %@ doesn't hold a feed TextMouth can read.",
+     "before": "L’adresse de %@ ne contient pas un flux que TextMouth peut lire.",
+     "after": "L’adresse de %@ ne contient aucun flux que TextMouth puisse lire.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "The article leaves the list for good, and its download, if any, is deleted.",
+     "id": "feed.deleteItemMessage.articleDownload",
+     "english": "The article leaves the list for good, and its download, if any, is deleted.",
+     "before": "L’article quitte la liste pour de bon, et son téléchargement, s’il y en a un, est supprimé.",
+     "after": "L’article quitte définitivement la liste, et son téléchargement, s’il y en a un, est supprimé.",
+     "why": "register: pour de bon is colloquial; the interface says définitivement"
+    },
+    {
+     "key": "The article leaves the list for good; the book it became in your library stays.",
+     "id": "feed.deleteItemMessage.article",
+     "english": "The article leaves the list for good; the book it became in your library stays.",
+     "before": "L’article quitte la liste pour de bon ; le livre qu’il est devenu dans votre bibliothèque reste.",
+     "after": "L’article quitte définitivement la liste ; le livre qu’il est devenu dans votre bibliothèque reste.",
+     "why": "register: pour de bon is colloquial; the interface says définitivement"
+    },
+    {
+     "key": "The audio converted from %@ could not be given its name.",
+     "id": "failure.cannotName",
+     "english": "The audio converted from %@ could not be given its name.",
+     "before": "L’audio converti à partir de %@ n’a pas pu recevoir son nom.",
+     "after": "L’audio converti à partir de %@ n’a pas pu être renommé.",
+     "why": "natural: recevoir son nom copies be given its name; the file is renamed"
+    },
+    {
+     "key": "The episode leaves the list for good, and its download, if any, is deleted.",
+     "id": "feed.deleteItemMessage.episodeDownload",
+     "english": "The episode leaves the list for good, and its download, if any, is deleted.",
+     "before": "L’épisode quitte la liste pour de bon, et son téléchargement, s’il y en a un, est supprimé.",
+     "after": "L’épisode quitte définitivement la liste, et son téléchargement, s’il y en a un, est supprimé.",
+     "why": "register: pour de bon is colloquial; the interface says définitivement"
+    },
+    {
+     "key": "The episode leaves the list for good; the book it became in your library stays.",
+     "id": "feed.deleteItemMessage.episode",
+     "english": "The episode leaves the list for good; the book it became in your library stays.",
+     "before": "L’épisode quitte la liste pour de bon ; le livre qu’il est devenu dans votre bibliothèque reste.",
+     "after": "L’épisode quitte définitivement la liste ; le livre qu’il est devenu dans votre bibliothèque reste.",
+     "why": "register: pour de bon is colloquial; the interface says définitivement"
+    },
+    {
+     "key": "The file isn't a %@ transcript TextMouth can read.",
+     "id": "timedTextError.notTimedText",
+     "english": "The file isn't a %@ transcript TextMouth can read.",
+     "before": "Le fichier n’est pas une transcription %@ que TextMouth peut lire.",
+     "after": "Le fichier n’est pas une transcription %@ que TextMouth puisse lire.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "The file's address isn't a web address TextMouth can open.",
+     "id": "feedFetchError.downloadMessage.notAWebAddress",
+     "english": "The file's address isn't a web address TextMouth can open.",
+     "before": "L’adresse du fichier n’est pas une adresse web que TextMouth peut ouvrir.",
+     "after": "L’adresse du fichier n’est pas une adresse web que TextMouth puisse ouvrir.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "The library folder the recording is saved in.",
+     "id": "recording.folderHint",
+     "english": "The library folder the recording is saved in.",
+     "before": "Le dossier de la bibliothèque où l’enregistrement est enregistré.",
+     "after": "Le dossier de la bibliothèque où l’enregistrement est sauvegardé.",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "The recording couldn't be saved: %@ It is kept; choose %@ or %@.",
+     "id": "recording.saveFailed",
+     "english": "The recording couldn't be saved: %1$@ It is kept; choose %2$@ or %3$@.",
+     "before": "L’enregistrement n’a pas pu être enregistré : %1$@ Il est conservé ; choisissez %2$@ ou %3$@.",
+     "after": "L’enregistrement n’a pas pu être sauvegardé : %1$@ Il est conservé ; choisissez %2$@ ou %3$@.",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "The selection is all the audio; nothing to trim.",
+     "id": "audioEditor.selectionIsEverything",
+     "english": "The selection is all the audio; nothing to trim.",
+     "before": "La sélection est tout l’audio ; rien à rogner.",
+     "after": "La sélection couvre tout l’audio ; rien à rogner.",
+     "why": "natural: La sélection est tout l’audio copies the English; French says couvre"
+    },
+    {
+     "key": "These edits need the original audio, which is no longer kept.",
+     "id": "audioEditError.originalNeeded.longer",
+     "english": "These edits need the original audio, which is no longer kept.",
+     "before": "Ces modifications ont besoin de l’audio original, qui n’est plus conservé.",
+     "after": "Ces modifications nécessitent l’audio original, qui n’est plus conservé.",
+     "why": "natural: ont besoin de copies need; French says nécessitent"
+    },
+    {
+     "key": "This Feed Uses Plain http",
+     "id": "feed.insecureTitle",
+     "english": "This Feed Uses Plain http",
+     "before": "Ce flux utilise http simple",
+     "after": "Ce flux utilise http non chiffré",
+     "why": "natural: http simple copies plain http; French says unencrypted http"
+    },
+    {
+     "key": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "id": "fileImportError.unsupportedXML",
+     "english": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "before": "Ce fichier XML n’est ni un livre DTBook, ni un document XML Word 2003, ni un fichier braille PEF, les seuls XML que TextMouth lit.",
+     "after": "Ce fichier XML n’est ni un livre DTBook, ni un document XML Word 2003, ni un fichier braille PEF, les seuls formats XML que TextMouth lit.",
+     "why": "natural: les seuls XML lacked a noun; French says les seuls formats XML"
+    },
+    {
+     "key": "This comic book archive holds no pictures TextMouth can read.",
+     "id": "pageImage.noPictures",
+     "english": "This comic book archive holds no pictures TextMouth can read.",
+     "before": "Cette archive de bande dessinée ne contient aucune image que TextMouth peut lire.",
+     "after": "Cette archive de bande dessinée ne contient aucune image que TextMouth puisse lire.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "This recording isn't saved. %@ tries again, %@ deletes it, and %@ keeps the window open.",
+     "id": "recording.closeWithUnsavedExplanation",
+     "english": "This recording isn't saved. %1$@ tries again, %2$@ deletes it, and %3$@ keeps the window open.",
+     "before": "Cet enregistrement n’est pas enregistré. %1$@ réessaie, %2$@ le supprime, et %3$@ garde la fenêtre ouverte.",
+     "after": "Cet enregistrement n’est pas sauvegardé. %1$@ réessaie, %2$@ le supprime, et %3$@ garde la fenêtre ouverte.",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "Tries again to save the recording as an audiobook.",
+     "id": "recording.saveAgainHint",
+     "english": "Tries again to save the recording as an audiobook.",
+     "before": "Réessaie d’enregistrer l’enregistrement comme livre audio.",
+     "after": "Réessaie de sauvegarder l’enregistrement comme livre audio.",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "Trimmed to the selection: %@ kept.",
+     "id": "audioEditor.trimmed",
+     "english": "Trimmed to the selection: %@ kept.",
+     "before": "Rogné à la sélection : %@ conservé.",
+     "after": "Rogné à la sélection ; durée conservée : %@.",
+     "why": "grammar: %@ conservé could not agree with every length (2 minutes, 1 heure)"
+    },
+    {
+     "key": "Undo Cleanup puts back the transcript from before.",
+     "id": "transcriptCleanup.alreadyCleanedUp.before",
+     "english": "Undo Cleanup puts back the transcript from before.",
+     "before": "Annuler le nettoyage remet la transcription d’avant.",
+     "after": "Annuler le nettoyage rétablit la transcription précédente.",
+     "why": "register: la transcription d’avant is spoken French; précédente as elsewhere in the sheet"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new articles%@.",
+     "id": "feed.unsubscribed.articles",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new articles%2$@.",
+     "before": "Désabonné de %1$@ : TextMouth ne vérifie plus ses nouveaux articles%2$@.",
+     "after": "Désabonné de %1$@ : TextMouth n’y recherche plus de nouveaux articles%2$@.",
+     "why": "meaning: ne vérifie plus ses nouveaux articles said it no longer checks the new ones; it no longer looks for new ones"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new episodes%@.",
+     "id": "feed.unsubscribed.episodes",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new episodes%2$@.",
+     "before": "Désabonné de %1$@ : TextMouth ne vérifie plus ses nouveaux épisodes%2$@.",
+     "after": "Désabonné de %1$@ : TextMouth n’y recherche plus de nouveaux épisodes%2$@.",
+     "why": "meaning: ne vérifie plus ses nouveaux articles said it no longer checks the new ones; it no longer looks for new ones"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new items%@.",
+     "id": "feed.unsubscribed.items",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new items%2$@.",
+     "before": "Désabonné de %1$@ : TextMouth ne vérifie plus ses nouveaux éléments%2$@.",
+     "after": "Désabonné de %1$@ : TextMouth n’y recherche plus de nouveaux éléments%2$@.",
+     "why": "meaning: ne vérifie plus ses nouveaux articles said it no longer checks the new ones; it no longer looks for new ones"
+    },
+    {
+     "key": "Waiting for the data directory move to finish...",
+     "id": "libraryViewModel.importWaitingForMoveMessage",
+     "english": "Waiting for the data directory move to finish...",
+     "before": "En attente de la fin du déplacement du dossier de données...",
+     "after": "En attente de la fin du déplacement du dossier de données…",
+     "why": "punctuation: French uses the ellipsis character, not three periods"
+    },
+    {
+     "key": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "id": "feed.useGlobalHint",
+     "english": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "before": "Si la case est cochée, ce flux suit le réglage de l’onglet %@ des Réglages ; décochez-la pour lui en donner un propre.",
+     "after": "Si la case est cochée, ce flux suit le réglage de l’onglet %@ des Réglages ; décochez-la pour lui donner son propre réglage.",
+     "why": "natural: lui en donner un propre is awkward, and un propre can read as a clean one"
+    },
+    {
+     "key": "it is %@, larger than %lld megapixels",
+     "id": "pageImage.pageTooLarge",
+     "english": {
+      "one": "it is %@, larger than %lld megapixel",
+      "other": "it is %@, larger than %lld megapixels"
+     },
+     "before": {
+      "many": "il fait %@, plus que %lld de mégapixels",
+      "one": "il fait %@, plus que %lld mégapixel",
+      "other": "il fait %@, plus que %lld mégapixels"
+     },
+     "after": {
+      "one": "elle fait %@, plus que %lld mégapixel",
+      "other": "elle fait %@, plus que %lld mégapixels",
+      "many": "elle fait %@, plus que %lld de mégapixels"
+     },
+     "why": "grammar: the subject is the page of a comic book archive, feminine in French"
+    },
+    {
+     "key": "keeping the place of your feed downloads for next time",
+     "id": "feedQuitHold.work",
+     "english": "keeping the place of your feed downloads for next time",
+     "before": "enregistrement de la position de vos téléchargements de flux pour la prochaine fois",
+     "after": "enregistrement de l’avancement de vos téléchargements de flux pour la prochaine fois",
+     "why": "meaning: la position read as a reading position; it is how far each download got"
+    }
+   ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ does the same for every such chapter of this export, without asking again.",
+     "id": "bookExportDeepChapter.message.without",
+     "english": "%@ does the same for every such chapter of this export, without asking again.",
+     "before": "%@ fait de même pour tous les chapitres de ce type dans cet export, sans redemander.",
+     "after": "%@ fait de même pour tous les chapitres de ce type dans cette exportation, sans redemander.",
+     "why": "term: the rest of the French interface calls an export 'exportation'"
+    },
+    {
+     "key": "%@ has its default, %@",
+     "id": "shortcutsSettings.defaultsHeldElsewhere",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%@ a pris sa touche par défaut, %@",
+     "after": "%@ a pris la touche par défaut, %@",
+     "why": "meaning: 'sa touche' pointed at the other action's own key; it took this action's default key"
+    },
+    {
+     "key": "%@ isn't an audiobook of tracks, so it has no manifest to edit.",
+     "id": "bookManifestEdit.noManifest",
+     "english": "%@ isn't an audiobook of tracks, so it has no manifest to edit.",
+     "before": "%@ n’est pas un livre audio en pistes, il n’a donc aucun manifeste à modifier.",
+     "after": "%@ n’est pas un livre audio composé de pistes, il n’a donc aucun manifeste à modifier.",
+     "why": "natural: 'livre audio en pistes' is a calque of 'audiobook of tracks'"
+    },
+    {
+     "key": "%@ of %lld chapters could not be read",
+     "id": "extractionReport.summary.value",
+     "english": {
+      "one": "%@ of %lld chapter could not be read",
+      "other": "%@ of %lld chapters could not be read"
+     },
+     "before": {
+      "many": "Lecture impossible pour %@ des %lld de chapitres",
+      "one": "Lecture impossible pour %@ des %lld chapitre",
+      "other": "Lecture impossible pour %@ des %lld chapitres"
+     },
+     "after": {
+      "one": "Lecture impossible pour %@ chapitre sur %lld",
+      "many": "Lecture impossible pour %@ des %lld de chapitres",
+      "other": "Lecture impossible pour %@ des %lld chapitres"
+     },
+     "why": "grammar: the one form paired the plural 'des' with a singular 'chapitre'"
+    },
+    {
+     "key": "%@ stops the whole export. Files already written stay.",
+     "id": "bookExportDeepChapter.message.already",
+     "english": "%@ stops the whole export. Files already written stay.",
+     "before": "%@ arrête tout l’export. Les fichiers déjà écrits sont conservés.",
+     "after": "%@ arrête toute l’exportation. Les fichiers déjà écrits sont conservés.",
+     "why": "term: the rest of the French interface calls an export 'exportation'"
+    },
+    {
+     "key": "%lld text books",
+     "id": "finishedBookCounts.textBooksPhrase",
+     "english": {
+      "one": "%lld text book",
+      "other": "%lld text books"
+     },
+     "before": {
+      "many": "%lld de livres de texte",
+      "one": "%lld livre de texte",
+      "other": "%lld livres de texte"
+     },
+     "after": {
+      "one": "%lld livre texte",
+      "many": "%lld de livres texte",
+      "other": "%lld livres texte"
+     },
+     "why": "term: 'livre texte' pairs with 'livre audio' and is the word the other strings of this part use"
+    },
+    {
+     "key": "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
+     "id": "readerPage.sayInWhereAmIHint",
+     "english": "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
+     "before": "Ajoute la page, par exemple « Page 12 sur 300 », aux résumés de Où suis-je ? pour les livres de plus d’une page.",
+     "after": "Ajoute la page, par exemple « Page 12 sur 300 », aux résumés d’Où suis-je ? pour les livres de plus d’une page.",
+     "why": "grammar: 'de' elides before the vowel of Où suis-je"
+    },
+    {
+     "key": "Backslash",
+     "id": "keyBinding.localizedKeyWords.backslash",
+     "english": "Backslash",
+     "before": "Barre oblique inverse",
+     "after": "Barre oblique inversée",
+     "why": "term: the backslash's French name, as Unicode's French names and VoiceOver say it"
+    },
+    {
+     "key": "Braille Ready Format: pages of braille, for braille displays and embossers.",
+     "id": "brfExportWriter.hint",
+     "english": "Braille Ready Format: pages of braille, for braille displays and embossers.",
+     "before": "Braille Ready Format : pages de braille, pour les afficheurs braille et les embosseuses.",
+     "after": "Braille Ready Format : pages de braille, pour les plages braille et les embosseuses.",
+     "why": "term: Apple's French calls a braille display a 'plage braille'"
+    },
+    {
+     "key": "Break",
+     "id": "keyBinding.localizedKeyWords.break",
+     "english": "Break",
+     "before": "Pause",
+     "after": "Attn",
+     "why": "meaning: 'Pause' is also the Pause key's name; French keyboards label the Break key Attn"
+    },
+    {
+     "key": "CR LF suits most braille displays and embossers.",
+     "id": "brailleExport.lineEndsHint",
+     "english": "CR LF suits most braille displays and embossers.",
+     "before": "CR LF convient à la plupart des afficheurs braille et des embosseuses.",
+     "after": "CR LF convient à la plupart des plages braille et des embosseuses.",
+     "why": "term: Apple's French calls a braille display a 'plage braille'"
+    },
+    {
+     "key": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "id": "bookTextEdit.stoppedBookReplaced.since",
+     "english": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "before": "Modifier le texte s’est arrêté pour %@, car une nouvelle copie l’a remplacé.",
+     "after": "La modification du texte de %@ s’est arrêtée, car une nouvelle copie l’a remplacé.",
+     "why": "grammar: the infinitive command name cannot be the subject of 's’est arrêté'"
+    },
+    {
+     "key": "Edit Text has stopped for %@, since its file was read again.",
+     "id": "bookTextEdit.stoppedBookReadAgain.since",
+     "english": "Edit Text has stopped for %@, since its file was read again.",
+     "before": "Modifier le texte s’est arrêté pour %@, car son fichier a été relu.",
+     "after": "La modification du texte de %@ s’est arrêtée, car son fichier a été relu.",
+     "why": "grammar: the infinitive command name cannot be the subject of 's’est arrêté'"
+    },
+    {
+     "key": "For trying out with a braille display.",
+     "id": "phoneSettings.followInBrailleHint.display",
+     "english": "For trying out with a braille display.",
+     "before": "Pour essayer avec un afficheur braille.",
+     "after": "Pour essayer avec une plage braille.",
+     "why": "term: Apple's French calls a braille display a 'plage braille'"
+    },
+    {
+     "key": "Go to Time…",
+     "id": "shortcutAction.title.editorGoToTime",
+     "english": "Go to Time…",
+     "before": "Aller à l’instant…",
+     "after": "Aller à un instant…",
+     "why": "meaning: 'à l’instant' is the idiom for 'right away'; the hints already say 'aller à un instant'"
+    },
+    {
+     "key": "Goes to a page, a percent, or a time.",
+     "id": "phoneReader.goToHint",
+     "english": "Goes to a page, a percent, or a time.",
+     "before": "Va à une page, un pourcentage ou un temps.",
+     "after": "Va à une page, à un pourcentage ou à un instant.",
+     "why": "natural: 'aller à un temps' is not French for a point in time; the other hints say 'un instant'"
+    },
+    {
+     "key": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "id": "brailleExport.fileCodeHint",
+     "english": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "before": "Comment le BRF écrit chaque cellule braille. La plupart des afficheurs braille et des embosseuses lisent le braille ASCII nord-américain ; ceux réglés pour l’allemand lisent l’Eurobraille. Pour partager avec un lecteur ailleurs, exportez un PEF.",
+     "after": "Comment le BRF écrit chaque cellule braille. La plupart des plages braille et des embosseuses lisent le braille ASCII nord-américain ; celles réglées pour l’allemand lisent l’Eurobraille. Pour partager avec un lecteur ailleurs, exportez un PEF.",
+     "why": "term: Apple's French calls a braille display a 'plage braille'"
+    },
+    {
+     "key": "Its headings are real headings, and the contents list links them.",
+     "id": "epubPackageBuilder.accessibilitySummary.links",
+     "english": "Its headings are real headings, and the contents list links them.",
+     "before": "Ses en-têtes sont de vrais en-têtes, et la table des matières les relie.",
+     "after": "Ses en-têtes sont de vrais en-têtes, et la table des matières y renvoie.",
+     "why": "meaning: 'les relie' says the list joins the headings to one another; it links to them"
+    },
+    {
+     "key": "Jump to time",
+     "id": "phoneGoToField.jumpLabel.time",
+     "english": "Jump to time",
+     "before": "Aller au temps",
+     "after": "Aller à cet instant",
+     "why": "natural: 'aller au temps' is not French for a point in time"
+    },
+    {
+     "key": "Make Double Press",
+     "id": "shortcutsSettings.makeDoublePress",
+     "english": "Make Double Press",
+     "before": "Faire un double appui",
+     "after": "Passer en double appui",
+     "why": "meaning: 'Faire un double appui' reads as pressing twice, not as changing the key into a double press"
+    },
+    {
+     "key": "Make Single Press",
+     "id": "shortcutsSettings.makeSinglePress",
+     "english": "Make Single Press",
+     "before": "Faire un appui simple",
+     "after": "Passer en appui simple",
+     "why": "meaning: 'Faire un appui simple' reads as pressing once, not as changing the key back to a single press"
+    },
+    {
+     "key": "Media controls not released: this book does not hold them.",
+     "id": "mediaControls.notHeld",
+     "english": "Media controls not released: this book does not hold them.",
+     "before": "Commandes multimédia non libérées : ce livre ne les détient pas.",
+     "after": "Commandes multimédias non libérées : ce livre ne les détient pas.",
+     "why": "grammar: 'multimédias' agrees with 'commandes', as in the command Libérer les commandes multimédias"
+    },
+    {
+     "key": "Media controls released",
+     "id": "mediaControls.released",
+     "english": "Media controls released",
+     "before": "Commandes multimédia libérées",
+     "after": "Commandes multimédias libérées",
+     "why": "grammar: 'multimédias' agrees with 'commandes', as in the command Libérer les commandes multimédias"
+    },
+    {
+     "key": "Minimize",
+     "id": "keyBinding.localizedSystemCommand.minimize",
+     "english": "Minimize",
+     "before": "Réduire",
+     "after": "Placer dans le Dock",
+     "why": "term: the name macOS's French Window menu gives Minimize (Command-M)"
+    },
+    {
+     "key": "Minimize All",
+     "id": "keyBinding.localizedSystemCommand.minimizeAll",
+     "english": "Minimize All",
+     "before": "Tout réduire",
+     "after": "Tout placer dans le Dock",
+     "why": "term: the name macOS's French Window menu gives Minimize All"
+    },
+    {
+     "key": "Move to Folder",
+     "id": "shortcutAction.title.moveToFolder",
+     "english": "Move to Folder",
+     "before": "Déplacer vers le dossier",
+     "after": "Déplacer vers un dossier",
+     "why": "natural: the folder is chosen after, so the definite 'le dossier' copies the English"
+    },
+    {
+     "key": "Navigation unit for text books",
+     "id": "phoneSettings.textNavigationUnit",
+     "english": "Navigation unit for text books",
+     "before": "Unité de navigation des livres de texte",
+     "after": "Unité de navigation des livres texte",
+     "why": "term: 'livre texte' pairs with 'livre audio' and is the word the other strings of this part use"
+    },
+    {
+     "key": "No more books in folder",
+     "id": "endOfBook.noMoreBooksInFolderNote",
+     "english": "No more books in folder",
+     "before": "Plus de livre dans le dossier",
+     "after": "Aucun autre livre dans le dossier",
+     "why": "meaning: spoken aloud, 'Plus de livre' can be heard as 'more books'"
+    },
+    {
+     "key": "None of the %lld chapters could be read",
+     "id": "extractionReport.summary.none",
+     "english": {
+      "one": "None of the %lld chapter could be read",
+      "other": "None of the %lld chapters could be read"
+     },
+     "before": {
+      "many": "Aucun des %lld de chapitres n’a pu être lu",
+      "one": "Aucun des %lld chapitre n’a pu être lu",
+      "other": "Aucun des %lld chapitres n’a pu être lu"
+     },
+     "after": {
+      "one": "Aucun chapitre sur %lld n’a pu être lu",
+      "many": "Aucun des %lld de chapitres n’a pu être lu",
+      "other": "Aucun des %lld chapitres n’a pu être lu"
+     },
+     "why": "grammar: the one form paired the plural 'des' with a singular 'chapitre'"
+    },
+    {
+     "key": "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@.",
+     "id": "pdfExtractionDiagnostics.problem.pages",
+     "english": {
+      "one": "OCR could not run on %@ of %lld page, so text found only in their images is missing: %@.",
+      "other": "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@."
+     },
+     "before": {
+      "many": "L’OCR n’a pas pu s’exécuter sur %@ des %lld de pages, donc le texte présent seulement dans les images est absent : %@.",
+      "one": "L’OCR n’a pas pu s’exécuter sur %@ des %lld page, donc le texte présent seulement dans les images est absent : %@.",
+      "other": "L’OCR n’a pas pu s’exécuter sur %@ des %lld pages, donc le texte présent seulement dans les images est absent : %@."
+     },
+     "after": {
+      "one": "L’OCR n’a pas pu s’exécuter pour %@ page sur %lld, donc le texte présent seulement dans ses images est absent : %@.",
+      "many": "L’OCR n’a pas pu s’exécuter sur %@ des %lld de pages, donc le texte présent seulement dans les images est absent : %@.",
+      "other": "L’OCR n’a pas pu s’exécuter sur %@ des %lld pages, donc le texte présent seulement dans les images est absent : %@."
+     },
+     "why": "grammar: the one form paired the plural 'des' with a singular 'page'"
+    },
+    {
+     "key": "OCR could not run on all %lld pages, so text found only in their images is missing: %@.",
+     "id": "pdfExtractionDiagnostics.problem.allPages",
+     "english": {
+      "one": "OCR could not run on all %lld page, so text found only in its images is missing: %@.",
+      "other": "OCR could not run on all %lld pages, so text found only in their images is missing: %@."
+     },
+     "before": {
+      "many": "L’OCR n’a pas pu s’exécuter sur la totalité des %lld de pages, donc le texte présent seulement dans les images est absent : %@.",
+      "one": "L’OCR n’a pas pu s’exécuter sur la totalité des %lld page, donc le texte présent seulement dans les images est absent : %@.",
+      "other": "L’OCR n’a pas pu s’exécuter sur la totalité des %lld pages, donc le texte présent seulement dans les images est absent : %@."
+     },
+     "after": {
+      "one": "L’OCR n’a pas pu s’exécuter sur %lld page, donc le texte présent seulement dans ses images est absent : %@.",
+      "many": "L’OCR n’a pu s’exécuter sur aucune des %lld de pages, donc le texte présent seulement dans leurs images est absent : %@.",
+      "other": "L’OCR n’a pu s’exécuter sur aucune des %lld pages, donc le texte présent seulement dans leurs images est absent : %@."
+     },
+     "why": "meaning: 'pas sur la totalité des pages' says some pages failed; the message is that every page failed"
+    },
+    {
+     "key": "Paste and Match Style",
+     "id": "keyBinding.localizedSystemCommand.paste",
+     "english": "Paste and Match Style",
+     "before": "Coller en adaptant le style",
+     "after": "Coller et adapter le style",
+     "why": "term: the name macOS's French Edit menu gives Paste and Match Style"
+    },
+    {
+     "key": "Remove them: an audiobook of tracks is arranged with tracks.",
+     "id": "bookManifestEdit.sectionsGiven.audiobook",
+     "english": "Remove them: an audiobook of tracks is arranged with tracks.",
+     "before": "Retirez-les : un livre audio en pistes est organisé avec des pistes.",
+     "after": "Retirez-les : un livre audio composé de pistes s’organise par pistes.",
+     "why": "natural: 'livre audio en pistes' and 'est organisé avec des pistes' copy the English"
+    },
+    {
+     "key": "Reset %@ to Default",
+     "id": "shortcutsSettings.resetToDefaultLabel",
+     "english": "Reset %@ to Default",
+     "before": "Rétablir %@ par défaut",
+     "after": "Rétablir les raccourcis par défaut de %@",
+     "why": "natural: an action's name between 'Rétablir' and 'par défaut' is hard to follow by ear; matches the hint 'Rétablit les raccourcis par défaut de cette action'"
+    },
+    {
+     "key": "Shortcuts reset to defaults.",
+     "id": "shortcutsSettings.resetDone",
+     "english": "Shortcuts reset to defaults.",
+     "before": "Raccourcis rétablis par défaut.",
+     "after": "Raccourcis par défaut rétablis.",
+     "why": "natural: 'rétablis par défaut' reads as 'restored by default'; the default shortcuts are what was restored"
+    },
+    {
+     "key": "Sound effects reset to defaults",
+     "id": "soundEffectsSettings.resetDone",
+     "english": "Sound effects reset to defaults",
+     "before": "Effets sonores réinitialisés par défaut",
+     "after": "Effets sonores réinitialisés",
+     "why": "natural: 'réinitialisés par défaut' reads as 'reset by default'; 'réinitialisés' already says back to the defaults"
+    },
+    {
+     "key": "Speak Import Progress",
+     "id": "shortcutAction.title.speakImportProgress",
+     "english": "Speak Import Progress",
+     "before": "Lire à voix haute la progression des imports",
+     "after": "Lire à voix haute la progression des importations",
+     "why": "term: the rest of the French interface calls an import 'importation'"
+    },
+    {
+     "key": "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.",
+     "id": "readingList.removeFinishedHint",
+     "english": "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.",
+     "before": "Retire chaque livre terminé de la liste quand sa fenêtre passe à autre chose ou se ferme. Les livres terminés avant l’activation restent.",
+     "after": "Retire chaque livre terminé de la liste quand sa fenêtre passe à un autre livre ou se ferme. Les livres terminés avant l’activation restent.",
+     "why": "natural: 'passer à autre chose' is the idiom for a person moving on; the window moves on to another book"
+    },
+    {
+     "key": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "id": "bookTextEdit.stoppedBookGone",
+     "english": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "before": "Texte non mis à jour : %@ a été retiré, ou son téléchargement supprimé, donc Modifier le texte s’est arrêté pour lui.",
+     "after": "Texte non mis à jour : %@ a été retiré, ou son téléchargement supprimé, donc la modification de son texte s’est arrêtée.",
+     "why": "grammar: the infinitive command name cannot be the subject of 's’est arrêté'"
+    },
+    {
+     "key": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "id": "brailleSettings.fileCodeCaption",
+     "english": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "before": "TextMouth lit les fichiers BRF et BRL que vous ajoutez à partir de maintenant avec ces caractères, et reconnaît tout seul les motifs braille Unicode. La fenêtre Exporter en démarre un BRF avec eux. Un livre garde ses caractères d’import, que la fenêtre Informations sur le livre peut modifier.",
+     "after": "TextMouth lit les fichiers BRF et BRL que vous ajoutez à partir de maintenant avec ces caractères, et reconnaît tout seul les motifs braille Unicode. La fenêtre Exporter les présélectionne pour un BRF. Un livre garde ses caractères d’importation, que la fenêtre Informations sur le livre peut modifier.",
+     "why": "grammar: 'en démarre un BRF' gave the verb two objects; 'importation' is the noun the rest of the interface uses"
+    },
+    {
+     "key": "The MP3 has chapters for the first %@ of its %lld headings; export as M4B for a chapter for each.",
+     "id": "speechExport.mp3ChaptersKept",
+     "english": {
+      "one": "The MP3 has chapters for the first %@ of its %lld heading; export as M4B for a chapter for each.",
+      "other": "The MP3 has chapters for the first %@ of its %lld headings; export as M4B for a chapter for each."
+     },
+     "before": {
+      "many": "Le MP3 a des chapitres pour les %@ premiers de ses %lld d’en-têtes ; exportez en M4B pour avoir un chapitre par en-tête.",
+      "one": "Le MP3 a des chapitres pour les %@ premiers de ses %lld en-têtes ; exportez en M4B pour avoir un chapitre par en-tête.",
+      "other": "Le MP3 a des chapitres pour les %@ premiers de ses %lld en-têtes ; exportez en M4B pour avoir un chapitre par en-tête."
+     },
+     "after": {
+      "one": "Le MP3 n’a de chapitres que pour %@ en-tête sur %lld ; exportez en M4B pour avoir un chapitre par en-tête.",
+      "many": "Le MP3 a des chapitres pour les %@ premiers de ses %lld d’en-têtes ; exportez en M4B pour avoir un chapitre par en-tête.",
+      "other": "Le MP3 a des chapitres pour les %@ premiers de ses %lld en-têtes ; exportez en M4B pour avoir un chapitre par en-tête."
+     },
+     "why": "grammar: the one form said 'ses 1 en-têtes'"
+    },
+    {
+     "key": "The other %lld chapters have no text.",
+     "id": "epubParserError.noReadableChapters.other",
+     "english": {
+      "one": "The other %lld chapter has no text.",
+      "other": "The other %lld chapters have no text."
+     },
+     "before": {
+      "many": "Les %lld d’autres chapitres n’ont aucun texte.",
+      "one": "Les %lld autres chapitres n’ont aucun texte.",
+      "other": "Les %lld autres chapitres n’ont aucun texte."
+     },
+     "after": {
+      "one": "%lld autre chapitre n’a aucun texte.",
+      "many": "Les %lld d’autres chapitres n’ont aucun texte.",
+      "other": "Les %lld autres chapitres n’ont aucun texte."
+     },
+     "why": "grammar: the one form was plural ('Les 1 autres chapitres n’ont')"
+    },
+    {
+     "key": "The voice changed its kind of audio partway through “%@”.",
+     "id": "speechRenderFailure.formatChanged",
+     "english": "The voice changed its kind of audio partway through “%@”.",
+     "before": "La voix a changé de type d’audio en cours de « %@ ».",
+     "after": "La voix a changé de type d’audio pendant la lecture de « %@ ».",
+     "why": "grammar: 'en cours de' needs a noun of action, not a title"
+    },
+    {
+     "key": "The voice stopped partway through “%@”, and TextMouth stopped waiting.",
+     "id": "speechRenderFailure.stalled",
+     "english": "The voice stopped partway through “%@”, and TextMouth stopped waiting.",
+     "before": "La voix s’est arrêtée en cours de « %@ », et TextMouth a cessé d’attendre.",
+     "after": "La voix s’est arrêtée pendant la lecture de « %@ », et TextMouth a cessé d’attendre.",
+     "why": "grammar: 'en cours de' needs a noun of action, not a title"
+    },
+    {
+     "key": "Toggle Bookmark",
+     "id": "shortcutAction.title.addBookmark",
+     "english": "Toggle Bookmark",
+     "before": "Basculer le signet",
+     "after": "Ajouter ou retirer un signet",
+     "why": "natural: 'Basculer le signet' copies 'toggle'; the command adds a bookmark or removes the one there"
+    },
+    {
+     "key": "When you save, TextMouth checks the manifest and rearranges the book, keeping your place in its track.",
+     "id": "bookManifestEdit.explanation.rearranges",
+     "english": "When you save, TextMouth checks the manifest and rearranges the book, keeping your place in its track.",
+     "before": "À l’enregistrement, TextMouth vérifie le manifeste et réorganise le livre, en gardant votre place dans sa piste.",
+     "after": "À l’enregistrement, TextMouth vérifie le manifeste et réorganise le livre, en conservant votre position dans sa piste.",
+     "why": "natural: 'garder votre place' is keeping a seat; a listener's place in a book is 'votre position'"
+    },
+    {
+     "key": "When you save, the book updates and keeps your place as near as it can.",
+     "id": "bookTextEdit.explanation.updates",
+     "english": "When you save, the book updates and keeps your place as near as it can.",
+     "before": "À l’enregistrement, le livre se met à jour et garde votre place au plus près.",
+     "after": "À l’enregistrement, le livre se met à jour et conserve votre position au plus près.",
+     "why": "natural: 'garder votre place' is keeping a seat; a listener's place in a book is 'votre position'"
+    },
+    {
+     "key": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "id": "bookExportDeepChapter.exportAllAsWrittenHint",
+     "english": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "before": "Écrit ce chapitre et tous les autres chapitres trop imbriqués de cet export en paragraphes simples de lignes, sans redemander.",
+     "after": "Écrit ce chapitre et tous les autres chapitres trop imbriqués de cette exportation en paragraphes simples de lignes, sans redemander.",
+     "why": "term: the rest of the French interface calls an export 'exportation'"
+    },
+    {
+     "key": "the book's own file changed too. Open the book again to read its text from that file.",
+     "id": "bookTextEdit.heldReason.sourceChanged",
+     "english": "the book's own file changed too. Open the book again to read its text from that file.",
+     "before": "le fichier propre du livre a aussi changé. Rouvrez le livre pour en relire le texte à partir de ce fichier.",
+     "after": "le propre fichier du livre a aussi changé. Rouvrez le livre pour en relire le texte à partir de ce fichier.",
+     "why": "meaning: 'propre' after the noun means clean; the book's own file is 'le propre fichier du livre'"
+    },
+    {
+     "key": "the book's record can't be changed now. TextMouth tries again when you next save or return.",
+     "id": "bookTextEdit.recordUnavailable",
+     "english": "the book's record can't be changed now. TextMouth tries again when you next save or return.",
+     "before": "l’enregistrement du livre ne peut pas être modifié pour l’instant. TextMouth réessaiera à votre prochain enregistrement ou retour.",
+     "after": "la fiche du livre ne peut pas être modifiée pour l’instant. TextMouth réessaiera à votre prochain enregistrement ou retour.",
+     "why": "meaning: 'enregistrement' is the app's word for a recording; the book's library record is its 'fiche'"
+    }
+   ]
+  }
+ ]
+}

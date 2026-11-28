@@ -591,6 +591,429 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         }
     }
 
+    // MARK: - The lead before the look-ahead renders (audit C11)
+
+    // The next chapter's speech is prepared as the current chapter starts,
+    // but its audio is asked for only once the listening time left in the
+    // current chapter falls within the lead (`LookAheadLead`). Each test
+    // loads the first chapter's speech as starting it does, and moves the
+    // cursor as spoken words and seeks move it.
+
+    /// Short of the lead the reader holds the next chapter's speech and has
+    /// asked for none of its audio.
+    func testOffsetsShortOfTheLeadAskForNoRender() throws {
+        try withReader(chapters: Self.longOpeningChapters) { reader, renders in
+            let edge = try startSpeakingLongChapterSilently(reader)
+
+            XCTAssertEqual(renders.requested.count, 0)
+            XCTAssertNil(reader.lookAhead)
+            XCTAssertNotNil(reader.lookAheadWait)
+            XCTAssertEqual(reader.chapterSpeechCache.lookAheadSpeech?.chapterIndex, 1)
+            for offset in [1, edge / 2, edge - 1] {
+                reader.currentCharacterOffset = offset
+                XCTAssertEqual(renders.requested.count, 0, "offset \(offset) of \(edge)")
+            }
+            XCTAssertNil(reader.lookAhead)
+        }
+    }
+
+    /// Speech crossing into the lead asks for the next chapter's render,
+    /// once, of exactly the speech prepared for it.
+    func testCrossingTheLeadAsksForOneRender() throws {
+        try withReader(chapters: Self.longOpeningChapters) { reader, renders in
+            let edge = try startSpeakingLongChapterSilently(reader)
+            reader.currentCharacterOffset = edge - 1
+            XCTAssertEqual(renders.requested.count, 0)
+
+            // Words go on being spoken through the lead to the chapter's end.
+            for offset in [edge, edge + 1, edge + 400, edge + 5_000] {
+                reader.currentCharacterOffset = offset
+            }
+
+            XCTAssertEqual(renders.requested.count, 1)
+            XCTAssertNil(reader.lookAheadWait)
+            XCTAssertEqual(reader.lookAhead?.chapterIndex, 1)
+            XCTAssertEqual(renders.requested.first?.request.text, reader.preparedSpeech(forChapterAt: 1)?.text)
+        }
+    }
+
+    /// A seek that lands within the lead asks for the render, once.
+    func testASeekIntoTheLeadAsksForOneRender() throws {
+        try withReader(chapters: Self.longOpeningChapters) { reader, renders in
+            let edge = try startSpeakingLongChapterSilently(reader)
+
+            reader.navigateTo(chapterIndex: 0, characterOffset: edge + 200)
+
+            XCTAssertEqual(reader.currentChapterIndex, 0)
+            XCTAssertEqual(renders.requested.count, 1)
+            XCTAssertEqual(reader.lookAhead?.chapterIndex, 1)
+        }
+    }
+
+    /// A seek back out of the lead keeps the render, under way or made: it
+    /// is not asked for again, and it still starts its chapter.
+    func testASeekBackOutOfTheLeadKeepsTheRender() throws {
+        try withReader(chapters: Self.longOpeningChapters) { reader, renders in
+            let edge = try startSpeakingLongChapterSilently(reader)
+            reader.navigateTo(chapterIndex: 0, characterOffset: edge + 200)
+            let running = try XCTUnwrap(renders.startNext())
+
+            reader.navigateTo(chapterIndex: 0, characterOffset: 10)
+            XCTAssertTrue(reader.lookAhead?.engine === running.engine, "the seek back abandoned the render under way")
+            renders.finishRunning()
+            reader.navigateTo(chapterIndex: 0, characterOffset: 40)
+
+            XCTAssertEqual(renders.requested.count, 1)
+            XCTAssertTrue(reader.lookAhead?.engine === running.engine)
+            XCTAssertTrue(running.engine.hasRenderedAudio)
+            let start = finishChapter(reader)
+            XCTAssertEqual(start.chapterIndex, 1)
+            XCTAssertEqual(start.adoptedSignature, running.request.signature)
+        }
+    }
+
+    /// A current chapter shorter than the lead renders the next at once, as
+    /// every chapter once did.
+    func testAChapterShorterThanTheLeadRendersTheNextAtOnce() throws {
+        try withReader { reader, renders in
+            let speech = try XCTUnwrap(reader.preparedSpeech(forChapterAt: 0))
+            reader.currentTransformation = speech.transformation
+            reader.currentOffsetMap = speech.offsetMap
+
+            startSpeakingSilently(reader)
+
+            XCTAssertEqual(renders.requested.count, 1)
+            XCTAssertNil(reader.lookAheadWait)
+            XCTAssertEqual(reader.lookAhead?.chapterIndex, 1)
+        }
+    }
+
+    /// Speed is applied as audio plays, so a faster speed asks for nothing
+    /// by itself: the next spoken word finds the lead reached sooner.
+    func testAFasterSpeedReachesTheLeadSooner() throws {
+        try withReader(chapters: Self.longOpeningChapters) { reader, renders in
+            let edge = try startSpeakingLongChapterSilently(reader)
+            let speech = try XCTUnwrap(reader.preparedSpeech(forChapterAt: 0))
+            // Far short of the lead at the speed the test began with, and
+            // within it at more than three times that speed.
+            let offset = speech.text.utf16.count - 2 * (speech.text.utf16.count - edge)
+            reader.currentCharacterOffset = offset
+            XCTAssertEqual(renders.requested.count, 0)
+
+            reader.speechService.wordsPerMinute *= 3.2
+            XCTAssertEqual(renders.requested.count, 0)
+            reader.currentCharacterOffset = offset + 1
+
+            XCTAssertEqual(renders.requested.count, 1)
+        }
+    }
+
+    /// A speed or pitch step in Settings reaches every playing reader
+    /// (`applyLocalSpeechOverrides()`); one whose render still waits for the
+    /// lead chooses nothing again, as one whose render is made does not.
+    func testASpeedStepWhileTheRenderWaitsChoosesNothingAgain() throws {
+        try withReader(chapters: Self.longOpeningChapters) { reader, renders in
+            _ = try startSpeakingLongChapterSilently(reader)
+            let wait = try XCTUnwrap(reader.lookAheadWait)
+            let choices = reader._lookAheadChoiceCountForTesting
+
+            reader.applyLocalSpeechOverrides()
+            reader.applyLocalSpeechOverrides()
+
+            XCTAssertEqual(reader._lookAheadChoiceCountForTesting, choices)
+            XCTAssertEqual(reader.lookAheadWait, wait)
+            XCTAssertEqual(renders.requested.count, 0)
+        }
+    }
+
+    /// A setting changed while the render waits asks for nothing either; the
+    /// render asked for at the lead is of the speech as it is then.
+    func testAChangeWhileTheRenderWaitsIsRenderedAtTheLead() throws {
+        try withReader(chapters: Self.longOpeningChapters) { reader, renders in
+            let edge = try startSpeakingLongChapterSilently(reader)
+
+            reader.settingsViewModel.punctuationPauseLevel = 3
+            drainMainQueue()
+            XCTAssertEqual(renders.requested.count, 0)
+            XCTAssertNotNil(reader.lookAheadWait)
+
+            reader.currentCharacterOffset = edge + 1
+
+            XCTAssertEqual(renders.requested.count, 1)
+            XCTAssertEqual(renders.requested.first?.request.signature, reader.currentRenderSignature(forChapterAt: 1))
+        }
+    }
+
+    /// A chapter left before its lead, as by a skip to the next chapter's
+    /// end, starts the next chapter from its text: nothing was rendered.
+    func testAChapterEndingBeforeTheLeadStartsTheNextFromItsText() throws {
+        try withReader(chapters: Self.longOpeningChapters) { reader, renders in
+            _ = try startSpeakingLongChapterSilently(reader)
+            let expected = try XCTUnwrap(reader.preparedSpeech(forChapterAt: 1))
+
+            let start = finishChapter(reader)
+
+            XCTAssertEqual(start.chapterIndex, 1)
+            XCTAssertTrue(start.isSpeaking)
+            XCTAssertNil(start.adoptedSignature)
+            XCTAssertEqual(start.spokenText, expected.text)
+        }
+    }
+
+    /// A phone that grows hot or short of memory after the wait began starts
+    /// no render at the lead; the render goes on waiting, and starts at the
+    /// first word after the phone has recovered.
+    func testARenderRefusedAtTheLeadWaitsUntilItIsAllowed() throws {
+        try withReader(chapters: Self.longOpeningChapters) { reader, renders in
+            let edge = try startSpeakingLongChapterSilently(reader)
+            var mayRender = false
+            reader.mayRenderAhead = { mayRender }
+
+            reader.currentCharacterOffset = edge + 1
+            reader.currentCharacterOffset = edge + 50
+            XCTAssertEqual(renders.requested.count, 0)
+            XCTAssertNil(reader.lookAhead)
+            XCTAssertEqual(reader.lookAheadWait?.wasHeldOff, true)
+            XCTAssertEqual(reader.chapterSpeechCache.lookAheadSpeech?.chapterIndex, 1)
+
+            mayRender = true
+            reader.currentCharacterOffset = edge + 60
+
+            XCTAssertEqual(renders.requested.count, 1)
+            XCTAssertEqual(reader.lookAhead?.chapterIndex, 1)
+        }
+    }
+
+    /// A phone hot as the chapter starts still chooses and prepares the
+    /// next chapter, so that the lead finds it waiting.
+    func testARefusalAsTheChapterStartsStillPreparesTheNextChapter() throws {
+        try withReader(chapters: Self.longOpeningChapters) { reader, renders in
+            reader.mayRenderAhead = { false }
+            let edge = try startSpeakingLongChapterSilently(reader)
+            XCTAssertNotNil(reader.lookAheadWait)
+            XCTAssertEqual(reader.chapterSpeechCache.lookAheadSpeech?.chapterIndex, 1)
+
+            reader.mayRenderAhead = { true }
+            reader.currentCharacterOffset = edge + 1
+
+            XCTAssertEqual(renders.requested.count, 1)
+        }
+    }
+
+    // MARK: - A long pause (audit C11)
+
+    // A pause that lasts past `LongPauseWatch.delay` lets go of the
+    // look-ahead's rendered audio and keeps its prepared speech; the resume
+    // asks for the render again when the cursor is within the lead. The
+    // tests elapse the watch by hand, and silence a resume before the main
+    // run loop turns.
+
+    /// A pause past the delay empties the look-ahead and keeps the speech
+    /// prepared for it; nothing more is asked for while the pause lasts.
+    func testAPausePastTheDelayLetsGoOfTheLookAheadAudioAndKeepsItsSpeech() throws {
+        try withReader { reader, renders in
+            startSpeakingSilently(reader)
+            renders.renderNext()
+            XCTAssertEqual(reader.lookAhead?.engine.hasRenderedAudio, true)
+
+            reader.pause()
+            XCTAssertTrue(reader.longPause.isWaiting)
+            reader.longPause._elapseNowForTesting()
+
+            XCTAssertNil(reader.lookAhead)
+            XCTAssertEqual(reader.chapterSpeechCache.lookAheadSpeech?.chapterIndex, 1)
+            XCTAssertNotNil(reader.lookAheadWait)
+            // Paused, the cursor may still move, as a skip moves it.
+            reader.currentCharacterOffset = 3
+            XCTAssertEqual(renders.requested.count, 1)
+            XCTAssertNil(reader.lookAhead)
+        }
+    }
+
+    /// A render still under way when the pause grows long is abandoned, and
+    /// installs nothing when it finishes.
+    func testALongPauseAbandonsARenderStillRunning() throws {
+        try withReader { reader, renders in
+            startSpeakingSilently(reader)
+            let running = try XCTUnwrap(renders.startNext())
+
+            reader.pause()
+            reader.longPause._elapseNowForTesting()
+            renders.finishRunning()
+
+            XCTAssertNil(reader.lookAhead)
+            XCTAssertFalse(running.engine.hasRenderedAudio)
+            XCTAssertEqual(reader.chapterSpeechCache.lookAheadSpeech?.chapterIndex, 1)
+        }
+    }
+
+    /// A resume after a long pause, with the cursor within the lead, asks
+    /// for the render again at once. The resume's utterance goes to the
+    /// recorder `withReader` gives every reader, not to the synthesizer.
+    func testAResumeWithinTheLeadAfterALongPauseAsksAgain() throws {
+        try withReader { reader, renders in
+            XCTAssertNotNil(
+                reader.speechService._directUtteranceRecorderForTesting,
+                "withReader left direct speech to the synthesizer"
+            )
+            var handedOver = 0
+            reader.speechService._directUtteranceRecorderForTesting = { _ in handedOver += 1 }
+            defer { XCTAssertGreaterThanOrEqual(handedOver, 1, "the resume handed the recorder no utterance") }
+            let speech = try XCTUnwrap(reader.preparedSpeech(forChapterAt: 0))
+            reader.currentTransformation = speech.transformation
+            reader.currentOffsetMap = speech.offsetMap
+            reader.speechService._setTextForTesting(speech.text)
+            startSpeakingSilently(reader)
+            renders.renderNext()
+            reader.pause()
+            reader.longPause._elapseNowForTesting()
+            XCTAssertEqual(renders.requested.count, 1)
+
+            reader.playOrResume()
+            let requested = renders.requested.count
+            let lookAheadChapter = reader.lookAhead?.chapterIndex
+            let pauseStillCounts = reader.longPause.hasElapsed || reader.longPause.isWaiting
+            // Silenced before the main run loop turns.
+            reader.stop()
+
+            XCTAssertEqual(requested, 2)
+            XCTAssertEqual(lookAheadChapter, 1)
+            XCTAssertFalse(pauseStillCounts)
+            XCTAssertEqual(renders.requested.last?.request.signature, renders.requested.first?.request.signature)
+        }
+    }
+
+    /// A resume after a long pause short of the lead asks for nothing: the
+    /// render waits for the lead, as it did before the pause.
+    func testAResumeShortOfTheLeadAfterALongPauseAsksForNothing() throws {
+        try withReader(chapters: Self.longOpeningChapters) { reader, renders in
+            let edge = try startSpeakingLongChapterSilently(reader)
+            let speech = try XCTUnwrap(reader.preparedSpeech(forChapterAt: 0))
+            reader.speechService._setTextForTesting(speech.text)
+            reader.pause()
+            reader.longPause._elapseNowForTesting()
+
+            reader.playOrResume()
+            let requestedAtResume = renders.requested.count
+            reader.currentCharacterOffset = edge + 1
+            let requestedAtTheLead = renders.requested.count
+            reader.stop()
+
+            XCTAssertEqual(requestedAtResume, 0)
+            XCTAssertEqual(requestedAtTheLead, 1)
+        }
+    }
+
+    /// A quick pause and resume changes nothing: the look-ahead keeps its
+    /// audio, nothing is asked for again, and the watch is over.
+    func testAQuickPauseAndResumeChangesNothing() throws {
+        try withReader { reader, renders in
+            let speech = try XCTUnwrap(reader.preparedSpeech(forChapterAt: 0))
+            reader.currentTransformation = speech.transformation
+            reader.currentOffsetMap = speech.offsetMap
+            reader.speechService._setTextForTesting(speech.text)
+            startSpeakingSilently(reader)
+            renders.renderNext()
+            let engine = try XCTUnwrap(reader.lookAhead?.engine)
+
+            reader.pause()
+            reader.playOrResume()
+            let keptEngine = reader.lookAhead?.engine
+            let isWatching = reader.longPause.isWaiting
+            reader.stop()
+            // The watch the resume ended has nothing left to elapse.
+            reader.longPause._elapseNowForTesting()
+
+            XCTAssertTrue(keptEngine === engine)
+            XCTAssertTrue(engine.hasRenderedAudio)
+            XCTAssertFalse(isWatching)
+            XCTAssertFalse(reader.longPause.hasElapsed)
+            XCTAssertEqual(renders.requested.count, 1)
+        }
+    }
+
+    /// Stopping ends the watch too, so a pause that was stopped never lets
+    /// go of anything later, and a second pause is watched afresh.
+    func testStoppingEndsTheWatchOnThePause() throws {
+        try withReader { reader, _ in
+            startSpeakingSilently(reader)
+            reader.pause()
+            XCTAssertTrue(reader.longPause.isWaiting)
+
+            reader.stop()
+
+            XCTAssertFalse(reader.longPause.isWaiting)
+            XCTAssertFalse(reader.longPause.hasElapsed)
+        }
+    }
+
+    /// Play/Pause pressed while Where Am I? speaks leaves the book the
+    /// announcement paused paused: that pause is watched like any other,
+    /// and lets go of the look-ahead's audio when it has grown long.
+    func testAPauseLeftByWhereAmIIsWatched() throws {
+        try withReader { reader, renders in
+            // The announcement goes to a recorder, never the synthesizer.
+            reader._whereAmIUtteranceRecorderForTesting = { _ in }
+            startSpeakingSilently(reader)
+            renders.renderNext()
+
+            reader.whereAmI()
+            XCTAssertTrue(reader.isWhereAmISpeaking)
+            XCTAssertTrue(reader.speechService.isPaused, "the announcement did not pause the book")
+            XCTAssertFalse(reader.longPause.isWaiting, "an announcement of a few seconds is not a pause to watch")
+            reader.togglePlayPause()
+
+            XCTAssertFalse(reader.isWhereAmISpeaking)
+            XCTAssertTrue(reader.speechService.isPaused)
+            XCTAssertTrue(reader.longPause.isWaiting)
+            reader.longPause._elapseNowForTesting()
+            XCTAssertNil(reader.lookAhead)
+            XCTAssertEqual(reader.chapterSpeechCache.lookAheadSpeech?.chapterIndex, 1)
+        }
+    }
+
+    /// Speech that pauses itself, after a voice that would not start, is in
+    /// a pause that is watched too.
+    func testAPauseSpeechMadeItselfIsWatched() throws {
+        try withReader { reader, _ in
+            startSpeakingSilently(reader)
+            reader.speechService.isPaused = true
+
+            reader.showPlaybackPausedAfterStartStalls()
+
+            XCTAssertTrue(reader.longPause.isWaiting)
+        }
+    }
+
+    /// Speech that stopped itself, refused, is not paused, and nothing is
+    /// watched.
+    func testSpeechThatStoppedItselfIsNotWatched() throws {
+        try withReader { reader, _ in
+            startSpeakingSilently(reader)
+            reader.speechService.isSpeaking = false
+
+            reader.showPlaybackPausedAfterStartStalls()
+
+            XCTAssertFalse(reader.longPause.isWaiting)
+        }
+    }
+
+    /// A pause repeated while paused keeps the first pause's time.
+    func testASecondPauseWhilePausedKeepsTheLongPause() throws {
+        try withReader { reader, renders in
+            startSpeakingSilently(reader)
+            renders.renderNext()
+            reader.pause()
+            reader.longPause._elapseNowForTesting()
+
+            reader.pause()
+
+            XCTAssertTrue(reader.longPause.hasElapsed)
+            XCTAssertNil(reader.lookAhead)
+            XCTAssertEqual(renders.requested.count, 1)
+        }
+    }
+
     // MARK: - The speech service's own rendered audio
 
     // While it speaks a text directly, the speech service renders the same
@@ -678,6 +1101,251 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
 
             XCTAssertTrue(continuedDirectly)
         }
+    }
+
+    // MARK: - A voice chosen while rendered audio is heard (B29)
+
+    // On the iPhone a Play starts on rendered audio, so a voice chosen in
+    // Settings reached an open reader only once the text had ended: the
+    // engine played the old voice's audio. Speech now leaves that audio for
+    // direct speech in the new voice, from the word the engine had reached.
+
+    /// Speaks `spokenText` and moves it onto silent rendered audio of the
+    /// current voice at `offset`, as a Play does on the iPhone, so the engine
+    /// holds the speech. The text's offsets are spread evenly over the
+    /// audio's five seconds, as a render's map spreads them, so the engine
+    /// reports `offset` until a few milliseconds of it have played. Returns
+    /// whether the engine took the speech.
+    private func moveOntoRenderedAudio(_ speech: SpeechService, at offset: Int = 6) -> Bool {
+        speech.speak(Self.spokenText)
+        let engine = speech.audioEngine
+        engine._installRenderedAudioForTesting(signature: Self.signature(of: speech), lasting: 5)
+        let speechFrames: AVAudioFrameCount = 5 * 22_050
+        engine._configureFrameMapForTesting(
+            [(charOffset: 0, frame: 0), (charOffset: Self.spokenText.utf16.count, frame: AVAudioFramePosition(speechFrames))],
+            totalFrames: speechFrames
+        )
+        speech.seek(toCharOffset: offset)
+        return !speech.usingDirectMode
+    }
+
+    /// Where "circled" begins in `spokenText`, and a place inside it.
+    private static let circledStart = 6
+    private static let insideCircled = 9
+    /// Where "harbour" begins in `spokenText`, and a place inside it.
+    private static let harbourStart = 18
+    private static let insideHarbour = 20
+
+    /// A voice chosen while rendered audio plays at a place inside a word
+    /// speaks that word whole in the new voice: direct speech starts at the
+    /// word's start, never at its second half ("cled").
+    func testChoosingAVoiceInsideAWordWhilePlayingSpeaksTheWordWhole() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech, at: Self.insideCircled)
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
+
+            let continuedDirectly = speech.usingDirectMode
+            let place = speech.currentCharOffset()
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(continuedDirectly)
+            XCTAssertEqual(place, Self.circledStart)
+        }
+    }
+
+    /// A voice chosen while a sleep fade holds the engine's mixer down waits
+    /// for the fade, which direct speech would not follow, and reaches
+    /// speech when the fade is cancelled.
+    func testAVoiceChosenDuringASleepFadeReachesSpeechWhenTheFadeIsCancelled() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech)
+            speech.setSleepTimerFadeVolume(0.5, duration: 30)
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
+            let waitedForTheFade = !speech.usingDirectMode
+
+            speech.cancelSleepTimerFade()
+            let continuedDirectly = speech.usingDirectMode
+            let oldAudioLeft = speech.audioEngine.hasRenderedAudio
+            let volume = speech.audioEngine.intendedVolume
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(waitedForTheFade)
+            XCTAssertTrue(continuedDirectly)
+            XCTAssertFalse(oldAudioLeft)
+            XCTAssertEqual(volume, 1)
+        }
+    }
+
+    /// A voice chosen while the engine stands stopped with speech still
+    /// playing, as on the iPhone between a change of hardware format and
+    /// the engine playing on, speaks on from the place last heard, the one
+    /// the position poll published, not from where the engine's last play
+    /// began.
+    func testChoosingAVoiceWhileTheEngineStandsStoppedSpeaksOnFromThePlaceHeard() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech, at: Self.insideCircled)
+            speech.publishRenderedPosition(Self.insideHarbour, generation: speech.positionGeneration)
+            speech.audioEngine.stop()
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
+
+            let continuedDirectly = speech.usingDirectMode
+            let place = speech.currentCharOffset()
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(continuedDirectly)
+            XCTAssertEqual(place, Self.harbourStart)
+        }
+    }
+
+    /// The engine's estimate of a place, taken to the start of the word it
+    /// stands for: inside a word, that word's start; on the space before a
+    /// word, as frames rounded down leave it, the word after; at the ends,
+    /// the ends.
+    func testAnEstimatedPlaceIsTakenToTheStartOfItsWord() {
+        let text = Self.spokenText
+        XCTAssertEqual(SpeechService.wordStart(around: Self.insideCircled, in: text), Self.circledStart)
+        XCTAssertEqual(SpeechService.wordStart(around: Self.circledStart, in: text), Self.circledStart)
+        XCTAssertEqual(SpeechService.wordStart(around: Self.circledStart - 1, in: text), Self.circledStart)
+        XCTAssertEqual(SpeechService.wordStart(around: 0, in: text), 0)
+        XCTAssertEqual(SpeechService.wordStart(around: -3, in: text), 0)
+        XCTAssertEqual(SpeechService.wordStart(around: text.utf16.count, in: text), text.utf16.count)
+        XCTAssertEqual(SpeechService.wordStart(around: 4, in: "wall   "), 7)
+        XCTAssertEqual(SpeechService.wordStart(around: 2, in: ""), 0)
+    }
+
+    /// The same while paused: Play speaks the word whole, from its start.
+    func testChoosingAVoiceInsideAWordWhilePausedResumesAtTheWordsStart() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech, at: Self.insideCircled)
+            speech.pause()
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
+
+            let place = speech.currentCharOffset()
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertEqual(place, Self.circledStart)
+        }
+    }
+
+    /// A voice chosen while rendered audio plays carries speech on directly,
+    /// in the new voice, with no rendered audio of the old one left.
+    func testChoosingAVoiceWhilePlayingRenderedAudioContinuesDirectly() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech)
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
+
+            let continuedDirectly = speech.usingDirectMode
+            let oldAudioLeft = speech.audioEngine.hasRenderedAudio
+            let stillSpeaking = speech.isSpeaking && !speech.isPaused
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(continuedDirectly)
+            XCTAssertFalse(oldAudioLeft)
+            XCTAssertTrue(stillSpeaking)
+        }
+    }
+
+    /// A voice chosen while rendered audio is paused keeps the pause and the
+    /// place, the word paused at ("circled", where the engine was moved to,
+    /// though its estimate may stand on the space before it), and Play then
+    /// speaks directly in the new voice instead of resuming the old voice's
+    /// audio.
+    func testChoosingAVoiceWhilePausedOnRenderedAudioResumesDirectly() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech)
+            speech.pause()
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+            speech.settleVoiceChange()
+
+            let stayedPaused = speech.isPaused
+            let placeAfter = speech.currentCharOffset()
+            let resumed = speech.resume()
+            let resumedDirectly = speech.usingDirectMode
+            let oldAudioLeft = speech.audioEngine.hasRenderedAudio
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(stayedPaused)
+            XCTAssertEqual(placeAfter, Self.circledStart)
+            XCTAssertTrue(resumed)
+            XCTAssertTrue(resumedDirectly)
+            XCTAssertFalse(oldAudioLeft)
+        }
+    }
+
+    /// The same voice assigned again, as the reader does each time any
+    /// setting changes, leaves rendered audio playing.
+    func testAssigningTheSameVoiceKeepsTheRenderedAudioPlaying() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech)
+            let sameVoice = try XCTUnwrap(speech.currentVoice.flatMap { AVSpeechSynthesisVoice(identifier: $0.identifier) })
+            speech.currentVoice = sameVoice
+            speech.settleVoiceChange()
+
+            let stillOnEngine = !speech.usingDirectMode && speech.audioEngine.hasRenderedAudio
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(stillOnEngine)
+        }
+    }
+
+    /// A Play in the same turn of the main queue as the choice, before the
+    /// choice is settled, speaks directly in the new voice instead of
+    /// resuming the old voice's paused audio.
+    func testPlayInTheTurnOfTheChoiceResumesDirectly() throws {
+        try withSpeechService { speech in
+            let onEngine = moveOntoRenderedAudio(speech)
+            speech.pause()
+            speech.currentVoice = try anotherVoice(than: speech.currentVoice)
+
+            let resumed = speech.resume()
+            let resumedDirectly = speech.usingDirectMode
+            let oldAudioLeft = speech.audioEngine.hasRenderedAudio
+            speech.stop()
+
+            XCTAssertTrue(onEngine)
+            XCTAssertTrue(resumed)
+            XCTAssertTrue(resumedDirectly)
+            XCTAssertFalse(oldAudioLeft)
+        }
+    }
+
+    /// A change in Settings, a speed step say, to a reader whose book has a
+    /// voice of its own: `reloadSettings()` gives speech the global voice,
+    /// and the reader gives it the book's again in the same turn
+    /// (`applyLocalSpeechOverrides()`). The audio rendered in the book's
+    /// voice plays on; it was once left for direct speech in the global
+    /// voice, which spoke the next thousand characters in it.
+    func testTheGlobalVoiceGivenAndTakenBackInOneTurnKeepsTheRenderedAudioPlaying() throws {
+        let preferences = makeSandboxedPreferences("pre-rendered-speech.book-voice")
+        let speech = SpeechService(userDefaults: preferences)
+        defer { speech.stop() }
+        let booksVoice = try XCTUnwrap(speech.currentVoice)
+        preferences.set(try anotherVoice(than: booksVoice).identifier, forKey: "selectedVoiceID")
+        let onEngine = moveOntoRenderedAudio(speech)
+
+        speech.reloadSettings()
+        let tookTheGlobalVoice = speech.currentVoice?.identifier != booksVoice.identifier
+        speech.currentVoice = booksVoice
+        speech.settleVoiceChange()
+
+        let stillOnEngine = !speech.usingDirectMode && speech.audioEngine.hasRenderedAudio
+        speech.stop()
+
+        XCTAssertTrue(onEngine)
+        XCTAssertTrue(tookTheGlobalVoice, "reloadSettings() gives speech the global voice first")
+        XCTAssertTrue(stillOnEngine)
     }
 
     // MARK: - Fixtures
@@ -873,6 +1541,36 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         harbourChapters[2],
     ]
 
+    /// `harbourChapters` behind an opening chapter long enough to play for
+    /// well over the look-ahead's lead at any speed the tests use.
+    private static let longOpeningChapters: [Chapter] = [
+        chapter(sections: [
+            ("Passage", String(repeating: "The ferry held its course across the grey water. ", count: 1_400)),
+        ]),
+        harbourChapters[1],
+        harbourChapters[2],
+    ]
+
+    /// Put `reader` in the state of speaking its first chapter with that
+    /// chapter's speech loaded, as starting it loads it, so the look-ahead's
+    /// lead is measured over it, and choose the look-ahead.
+    ///
+    /// - Returns: The first offset of the chapter that is within the lead
+    ///   for the next chapter at the reader's speed now.
+    private func startSpeakingLongChapterSilently(_ reader: ReaderViewModel) throws -> Int {
+        let speech = try XCTUnwrap(reader.preparedSpeech(forChapterAt: 0))
+        let next = try XCTUnwrap(reader.preparedSpeech(forChapterAt: 1))
+        reader.currentTransformation = speech.transformation
+        reader.currentOffsetMap = speech.offsetMap
+        startSpeakingSilently(reader)
+        let unitsPerSecond = reader.speechService.wordsPerMinute * LookAheadLead.assumedUnitsPerWord / 60
+        let leadUnits = Int(LookAheadLead.lead(forNextChapterOfLength: next.text.utf16.count) * unitsPerSecond)
+        let edge = speech.text.utf16.count - leadUnits
+        // The fixture is only of use while the lead begins well inside it.
+        XCTAssertGreaterThan(edge, speech.text.utf16.count / 2, "the opening chapter is too short for the lead")
+        return edge
+    }
+
     /// A chapter made of sections that each start with a level-one heading,
     /// with heading offsets measured from the assembled text.
     private static func chapter(sections: [(heading: String, body: String)]) -> Chapter {
@@ -916,7 +1614,7 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
             notificationCenter: NotificationCenter(),
             initializeServices: false,
             userDefaults: defaults,
-            configService: ConfigService(fileURL: configFile)
+            configService: makeConfigService(fileURL: configFile)
         )
 
         let content = DocumentContent(title: "Tide Tables", author: "Test Author", chapters: chapters)
@@ -945,6 +1643,10 @@ final class PreRenderedSpeechInvalidationTests: XCTestCase {
         )
         reader.content = content
         reader.isLoading = false
+        // Direct speech goes nowhere: a resume or a chapter's start hands
+        // its utterance to this recorder, never to the synthesizer, so no
+        // test depends on stopping speech before the run loop turns.
+        reader.speechService._directUtteranceRecorderForTesting = { _ in }
         defer {
             reader.close()
             try? FileManager.default.removeItem(at: configFile)

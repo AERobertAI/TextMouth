@@ -72,6 +72,30 @@ enum BookContentAnalysisService {
             return try analyzeAudio(book: book, url: url)
         }
 
+        // A book whose file has a password keeps no plain copy of its text
+        // on disk (FR41): no content.md, no index, no reading text. Locked,
+        // it is not read at all; unlocked for now, it is read straight from
+        // its file, whose plain form the parsers take from memory
+        // (`UnlockedSources`), and its index is never saved.
+        if book.isPasswordProtected {
+            guard UnlockedSources.isUnlocked(book.bookFileURL) else { throw BookLockedError() }
+            let content = try BookParser.parse(url: book.bookFileURL, format: book.format)
+            let index = content.contentIndex.replacingFormat(book.format)
+            return Result(
+                content: DocumentContent(
+                    title: content.title,
+                    author: content.author,
+                    chapters: content.chapters,
+                    contentIndex: index
+                ),
+                index: index,
+                audioFilePaths: nil,
+                audioSegments: nil,
+                usedPersistedIndex: true,
+                cacheFormatVersion: nil
+            )
+        }
+
         let hadExistingCache = MarkdownCacheService.cacheExists(for: book)
         if regenerateTextCache || !hadExistingCache {
             if let generated = MarkdownCacheService.generateCacheContent(for: book) {
@@ -549,7 +573,21 @@ enum BookContentAnalysisService {
     /// can be trusted, and what saving edited audio does once the book's file
     /// has changed (FR04). Waits for AVFoundation, so call it off the main
     /// thread and outside Swift concurrency.
-    static func analyzeAudio(book: Book, url: URL, prober: AudioMediaProber = .avFoundation) throws -> Result {
+    ///
+    /// A book of one file without chapters of its own takes the chapters of
+    /// a podcast episode kept beside its audio, when they fit it (FMT25,
+    /// `keptPodcastChapters(of:)`), unless `readingPodcastChapters` is false.
+    /// - Parameter readingPodcastChapters: False when the audio is no longer
+    ///   the audio the kept chapters were timed to, whatever the file beside
+    ///   it still holds: an edit has replaced it, and setting the chapters
+    ///   aside (`LibraryViewModel.setAsidePodcastChapters(of:in:)`) may have
+    ///   failed.
+    static func analyzeAudio(
+        book: Book,
+        url: URL,
+        prober: AudioMediaProber = .avFoundation,
+        readingPodcastChapters: Bool = true
+    ) throws -> Result {
         var isDirectory: ObjCBool = false
         let parsed: (
             content: DocumentContent,
@@ -564,10 +602,14 @@ enum BookContentAnalysisService {
             }
             parsed = (directoryResult.content, directoryResult.filePaths, directoryResult.segments)
         } else {
-            let content = try AsyncBridge.waitForResult(reading: url, timeLimit: AsyncBridge.audioAnalysisTimeLimit) {
-                try await AudioBookParser.parse(url: url, prober: prober)
+            let podcastChapters = readingPodcastChapters ? keptPodcastChapters(of: book) : nil
+            let file = try AsyncBridge.waitForResult(reading: url, timeLimit: AsyncBridge.audioAnalysisTimeLimit) {
+                try await AudioBookParser.parseFile(url: url, prober: prober, fallbackChapters: podcastChapters)
             }
-            parsed = (content, nil, nil)
+            if podcastChapters != nil {
+                reportPodcastChapters(of: book, unusedBy: file.chapterSource)
+            }
+            parsed = (file.content, nil, nil)
         }
 
         let index = BookContentIndex.build(
@@ -591,5 +633,88 @@ enum BookContentAnalysisService {
             usedPersistedIndex: false,
             cacheFormatVersion: nil
         )
+    }
+
+    // MARK: - A Podcast's Chapters (FMT25)
+
+    /// The chapters of a podcast episode kept beside `book`'s audio in its
+    /// package (`TextMouthPaths.podcastChaptersPath(in:)`), which become its
+    /// chapters when its file has none of its own; nil when there are none
+    /// to use. Only a book whose package is its own has them: during an
+    /// import, the package the import is staging (`Book.tmbDirectory`).
+    ///
+    /// The file is TextMouth's own, but its chapters came from outside, so
+    /// it is read without downloading anything, and only to one byte past
+    /// `TimedTextLimits.podcastChaptersBytes`: a larger file is refused
+    /// without being read whole. No file is nil, silently. A file only in
+    /// the cloud, one that cannot be read, one too large, or one that
+    /// `PodcastChapters.read` refuses is nil, with one
+    /// `PODCAST_CHAPTERS_UNUSED` line saying why.
+    private static func keptPodcastChapters(of book: Book) -> PodcastChapters? {
+        guard !book.tmbDirectoryName.isEmpty else { return nil }
+        let limit = TimedTextLimits.podcastChaptersBytes
+        let bytes: Data
+        do {
+            bytes = try DatalessFiles.withoutDownloading {
+                try leadingBytes(of: TextMouthPaths.podcastChaptersPath(in: book.tmbDirectory), count: limit + 1)
+            }
+        } catch where DatalessFiles.isDownloadRefusal(error) {
+            reportUnusedPodcastChapters(of: book, "the file is only in the cloud") // l10n: no (debug-log reason)
+            return nil
+        } catch where BookCloudStorageService.isMissingItem(error) {
+            return nil
+        } catch {
+            // Named by its domain and code: its own words can name the
+            // package's folder by its absolute path.
+            let failure = error as NSError
+            reportUnusedPodcastChapters(of: book, "the file could not be read: error \(failure.code) in \(failure.domain)") // l10n: no (debug-log reason)
+            return nil
+        }
+        guard bytes.count <= limit else {
+            reportUnusedPodcastChapters(of: book, "the file is larger than the \(limit / 1_048_576) MB TextMouth reads") // l10n: no (debug-log reason)
+            return nil
+        }
+        do {
+            return try PodcastChapters.read(bytes)
+        } catch {
+            // `PodcastChapters.read` throws only its own errors, each worded
+            // for the log without quoting the file.
+            let reason = (error as? PodcastChaptersError)?.description ?? "not a chapters file" // l10n: no (debug-log reason)
+            reportUnusedPodcastChapters(of: book, reason)
+            return nil
+        }
+    }
+
+    /// The first `count` bytes of the file at `url`, or all of it when it
+    /// is shorter; a file of more than `count` bytes is never read whole.
+    /// - Throws: the error opening or reading the file.
+    private static func leadingBytes(of url: URL, count: Int) throws -> Data {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        return try handle.read(upToCount: count) ?? Data()
+    }
+
+    /// Records why the podcast's chapters kept beside `book`'s audio are not
+    /// its chapters, when the analysis of its file, whose chapters came from
+    /// `source`, left them unused: the file has chapters of its own, which
+    /// always win, or none of the podcast's fits the file.
+    private static func reportPodcastChapters(of book: Book, unusedBy source: AudioBookParser.ChapterSource) {
+        switch source {
+        case .podcastChapters:
+            return
+        case .file:
+            reportUnusedPodcastChapters(of: book, "the audio has chapters of its own") // l10n: no (debug-log reason)
+        case .wholeFile:
+            reportUnusedPodcastChapters(of: book, "its last chapter begins past the end of the audio") // l10n: no (debug-log reason)
+        }
+    }
+
+    /// Record in the console and the debug log that the podcast's chapters
+    /// kept beside `book`'s audio are not its chapters, and why, as the
+    /// single line `PODCAST_CHAPTERS_UNUSED: <title>: <reason>`. The reason
+    /// never quotes the file, whose titles are the episode's text, and
+    /// never names a path.
+    private static func reportUnusedPodcastChapters(of book: Book, _ reason: String) {
+        logLine("PODCAST_CHAPTERS_UNUSED", about: book, reason)
     }
 }

@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 import Foundation
 
@@ -45,6 +49,19 @@ struct ContentAnalysisSummary: Sendable {
     /// (`BrailleFileCodeRecord.standing(row:recorded:)`). Nil when the
     /// record names none, or names another book.
     let brailleFileCode: String?
+    /// The braille table the book's package record keeps for its braille
+    /// text (`Book.brailleTable`, FMT21), by its stored value, with the
+    /// liblouis version of this Mac's tables it was read under
+    /// (`brailleTableVersion`), which a row that lags behind a re-read of
+    /// the book with another braille code takes back: the record's whenever
+    /// it names one, as the braille file code is. Nil when the record names
+    /// none, or names another book.
+    let brailleTable: String?
+    /// The version that goes with `brailleTable` (`Book.brailleTableVersion`).
+    let brailleTableVersion: String?
+    /// Who chose `brailleTable` (`Book.brailleTableOrigin`, brfguess), taken
+    /// with it.
+    let brailleTableOrigin: BrailleTableOrigin?
 
     /// The record's encoding and who decided it, as one.
     var textEncodingRecord: TextEncodingRecord {
@@ -64,6 +81,9 @@ struct ContentAnalysisSummary: Sendable {
         textEncoding = committed.textEncoding
         textEncodingSource = committed.textEncodingSource
         brailleFileCode = committed.brailleFileCode
+        brailleTable = committed.brailleTable
+        brailleTableVersion = committed.brailleTableVersion
+        brailleTableOrigin = committed.brailleTableOrigin
     }
 
     /// The analysis fields of `recovered`, the library row with the analysis
@@ -96,6 +116,10 @@ struct ContentAnalysisSummary: Sendable {
         textEncoding = takesEncoding ? record.textEncoding : nil
         textEncodingSource = takesEncoding ? record.textEncodingSource : nil
         brailleFileCode = isOwnRecord && recovered.format == .braille ? record.brailleFileCode : nil
+        let takesTable = isOwnRecord && recovered.format == .braille
+        brailleTable = takesTable ? record.brailleTable : nil
+        brailleTableVersion = takesTable ? record.brailleTableVersion : nil
+        brailleTableOrigin = takesTable ? record.brailleTableOrigin : nil
     }
 
     /// The moves that bring the places of `row`, the library row, to those
@@ -117,11 +141,11 @@ struct ContentAnalysisSummary: Sendable {
         let recorded = record.relocatablePlaces
         var moved = original
 
-        // The position: the record's, unless the row's is newer or the
-        // record has none.
+        // The position: the record's, unless the row's is newer, to the
+        // second (`ReadingPosition.isSavedLater(than:)`), or the record has
+        // none.
         if let recordedPosition = recorded.position {
-            let rowDate = original.position.map { storedSecond(of: $0.lastUpdated) }
-            if rowDate.map({ storedSecond(of: recordedPosition.lastUpdated) >= $0 }) ?? true {
+            if original.position.map({ !$0.isSavedLater(than: recordedPosition) }) ?? true {
                 moved.position = recordedPosition
             }
         }
@@ -144,12 +168,6 @@ struct ContentAnalysisSummary: Sendable {
 
         guard !Book.isAsStored(moved, original) else { return nil }
         return MovedPlaces(bookID: row.id, original: original, moved: moved, snapshot: nil)
-    }
-
-    /// `date` as the library's files store it: to the second (ISO 8601),
-    /// so two dates compare as the files would show them.
-    private static func storedSecond(of date: Date) -> TimeInterval {
-        date.timeIntervalSince1970.rounded(.down)
     }
 
     /// Gives `book`, the library row, the committed analysis fields and
@@ -179,6 +197,14 @@ struct ContentAnalysisSummary: Sendable {
         }
         book.textEncodingRecord = .standing(row: book.textEncodingRecord, recorded: textEncodingRecord)
         book.brailleFileCode = BrailleFileCodeRecord.standing(row: book.brailleFileCode, recorded: brailleFileCode)
+        // The braille table, with its version, is the record's whenever the
+        // record names one: only a re-read of the book with another braille
+        // code (or an import) decides it, and it writes the record first.
+        if let brailleTable {
+            book.brailleTable = brailleTable
+            book.brailleTableVersion = brailleTableVersion
+            book.brailleTableOrigin = brailleTableOrigin
+        }
     }
 }
 
@@ -225,11 +251,16 @@ final class ContentAnalysisSummaryBuffer {
         self.apply = apply
         // Delivered on the posting thread, the main thread, while AppKit
         // quits, so the flush is done before TextMouth exits.
+        // iOS ends an app without a guaranteed willTerminate notice, so
+        // phase 0 listens for none there (phase 1 flushes as the app goes
+        // to the background).
+        #if os(macOS)
         terminationSubscription = notificationCenter
             .publisher(for: NSApplication.willTerminateNotification)
             .sink { [weak self] _ in
                 MainActor.assumeIsolated { self?.flushForTermination() }
             }
+        #endif
     }
 
     /// How many summaries are waiting.

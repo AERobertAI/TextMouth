@@ -133,7 +133,7 @@ func report(_ label: String, old: [UInt64], new: [UInt64]) {
 
 /// The corpus the finder copied from the measured program (each reading's
 /// chapters joined by a form feed, paragraphs by a blank line).
-let textsDirectory = "/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/d79ccbfe-f907-4768-bef3-66390cef7d23/scratchpad/review/angleEff/texts"
+let textsDirectory = "<session folder>/scratchpad/review/angleEff/texts"
 
 /// The text of a reading in the corpus.
 func reading(_ name: String) -> String {

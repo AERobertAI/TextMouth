@@ -21,6 +21,19 @@ final class FeedItemIndexWordingTests: FeedItemIndexTestCase {
         XCTAssertEqual(CountWording.feeds(1), "1 feed")
     }
 
+    /// Refresh All Feeds ends its sentence with the new items counted in the
+    /// kind's own words: none, one, and several, for episodes, articles, and
+    /// a mixed feed.
+    func testRefreshAllCountsTheNewItemsInTheKindsWords() {
+        XCTAssertEqual(FeedWording.newItemsFound(0, .episode), "nothing new.")
+        XCTAssertEqual(FeedWording.newItemsFound(1, .episode), "1 new episode.")
+        XCTAssertEqual(FeedWording.newItemsFound(2, .episode), "2 new episodes.")
+        XCTAssertEqual(FeedWording.newItemsFound(1, .article), "1 new article.")
+        XCTAssertEqual(FeedWording.newItemsFound(12, .article), "12 new articles.")
+        XCTAssertEqual(FeedWording.newItemsFound(1, .item), "1 new item.")
+        XCTAssertEqual(FeedWording.newItemsFound(3, .item), "3 new items.")
+    }
+
     // MARK: - The Summary Bar
 
     /// The summary bar shows and speaks the same count: the books, and the

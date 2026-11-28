@@ -39,6 +39,8 @@ extension LibraryViewModel: FeedLibraryHost {
     func startFeeds() {
         feeds.start(library: self)
         moveFeedDownloadsOnceRecordsLoad()
+        // A subscription or a feed's own setting changing is a change the sync records (FR56).
+        followFeedsForSync()
     }
 
     // MARK: - FeedLibraryHost
@@ -98,6 +100,15 @@ extension LibraryViewModel: FeedLibraryHost {
         save()
     }
 
+    /// Shows the transcript fetched with an episode and just saved into its
+    /// package (FMT25), as a finished transcription shows its own
+    /// (`TranscriptionJobCenter`): the row says the book is transcribed, and
+    /// its open readers show `text`.
+    func feedTranscriptAttached(bookID: UUID, text: TranscriptText) {
+        TranscribedBooks.shared.record(bookID, isTranscribed: true)
+        bookUpdates.transcriptReplaced(bookID: bookID, with: text)
+    }
+
     /// Removes the files of the feed items `books` the library lists, in the
     /// order that never loses the listener's place (FR11, branch A2;
     /// FEED-ITEMS-ADDENDUM-2026-10-07.md, section 6):
@@ -154,10 +165,19 @@ extension LibraryViewModel: FeedLibraryHost {
     /// rows out of the books (to their feeds' shelves when their packages
     /// stay), and the indexes on disk, all on the main actor, so the library
     /// changes and is saved as one. Nothing is removed yet.
+    ///
+    /// `listenersFilesHeld` has, for the books whose packages were read off
+    /// the main thread already (`FeedItemPackage.listenersFilesHeld(in:)`),
+    /// whether each holds files of the listener's; a book not in it is read
+    /// here, as the listener's own one-book deletions do.
     /// - Returns: The removals to make, in the order asked.
     /// - Throws: `FeedItemPackageError.indexNotWritten` when the indexes
     ///   could not be written: the library is as it was.
-    func readyFeedFilesForRemoval(of books: [Book], keepingPackages: Bool) throws -> [FeedFileRemoval] {
+    func readyFeedFilesForRemoval(
+        of books: [Book],
+        keepingPackages: Bool,
+        listenersFilesHeld: [UUID: Bool] = [:]
+    ) throws -> [FeedFileRemoval] {
         var updated = library
         var removals: [FeedFileRemoval] = []
         for requested in books {
@@ -173,7 +193,11 @@ extension LibraryViewModel: FeedLibraryHost {
                 removals.append(FeedFileRemoval(row: row, keepsPackage: false, wasOnShelf: true))
                 continue
             }
-            let keeps = keepingPackages && FeedItemPackage.holdsListenerState(row, package: row.tmbDirectory)
+            let keeps = keepingPackages && FeedItemPackage.holdsListenerState(
+                row,
+                package: row.tmbDirectory,
+                holdsListenersFiles: listenersFilesHeld[row.id]
+            )
             if keeps {
                 // 1. The record takes the row's state before anything else changes.
                 LibraryPersistenceService.saveBookInfo(for: row)
@@ -264,7 +288,7 @@ extension LibraryViewModel: FeedLibraryHost {
     /// `feedBookUse(of:)` reads, and `feedBooksInUse` adds to.
     private var feedBookUses: [(use: FeedBookUse, bookIDs: Set<UUID>)] {
         [
-            (.openInReader, openBookIDs),
+            (.openInReader, openBookIDsNow),
             (.transcribing, TranscribedBooks.shared.transcribingBookID.map { [$0] } ?? []),
             (.exporting, BookExportModel.booksBeingExported),
         ]
@@ -274,6 +298,19 @@ extension LibraryViewModel: FeedLibraryHost {
     /// feeds' newest-N rule never removes (FR11).
     func feedBookIsOnReadingList(_ bookID: UUID) -> Bool {
         library.readingList.contains(bookID)
+    }
+
+    /// Takes the books `bookIDs`, feed items just marked played by hand,
+    /// off the reading list when it drops finished books
+    /// (`booksMarkedPlayedByHand(_:)`).
+    func feedBooksMarkedPlayed(_ bookIDs: [UUID]) {
+        booksMarkedPlayedByHand(bookIDs)
+    }
+
+    /// Lets the books `bookIDs`, feed items just marked unplayed by hand,
+    /// stay on the reading list (`booksMarkedUnplayedByHand(_:)`).
+    func feedBooksMarkedUnplayed(_ bookIDs: [UUID]) {
+        booksMarkedUnplayedByHand(bookIDs)
     }
 
     /// Publishes the books open in readers whenever they change.
@@ -392,14 +429,14 @@ enum FeedFolderNaming {
     /// which turns "/" into "-"), cut to `maximumLength` characters at a
     /// word where it can be, or "Feed" for a title no folder name can hold.
     static func baseName(for title: String) -> String {
-        guard let normalized = BookFolder.normalizedName(title) else { return "Feed" }
+        guard let normalized = BookFolder.normalizedName(title) else { return "Feed" } // l10n: no (a folder name made on disk, stored as made)
         guard normalized.count > maximumLength else { return normalized }
         let cut = String(normalized.prefix(maximumLength))
         // Cut at the last space, unless that leaves too little of the title.
         if let space = cut.lastIndex(of: " "), cut.distance(from: cut.startIndex, to: space) >= maximumLength / 2 {
             return BookFolder.normalizedName(String(cut[..<space])) ?? cut
         }
-        return BookFolder.normalizedName(cut) ?? "Feed"
+        return BookFolder.normalizedName(cut) ?? "Feed" // l10n: no (a folder name made on disk, stored as made)
     }
 
     /// The names tried in turn for a folder called `base`: `base` itself,
@@ -409,7 +446,13 @@ enum FeedFolderNaming {
     }
 
     /// Why no folder was made when the folder chosen to hold it is gone.
-    static let parentMissingMessage = "The folder chosen to hold the feed's folder is no longer in the library. Choose another one."
+    static var parentMissingMessage: String {
+        // Translators: Why Subscribe could not make the feed's folder: the folder chosen to hold it was removed from the library.
+        InterfaceText.line("feedFolderNaming.parentMissingMessage", "The folder chosen to hold the feed's folder is no longer in the library. Choose another one.")
+    }
     /// Why no folder was made when no name could be used.
-    static let notMadeMessage = "TextMouth couldn't make a folder for this feed."
+    static var notMadeMessage: String {
+        // Translators: Why Subscribe could not make the feed's folder, when no better reason is known.
+        InterfaceText.line("feedFolderNaming.notMadeMessage", "TextMouth couldn't make a folder for this feed.")
+    }
 }

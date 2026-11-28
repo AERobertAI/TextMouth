@@ -136,6 +136,19 @@ final class UbiquitousItemStatusProviderTests: XCTestCase {
         XCTAssertEqual(unnamed.location(of: folder), .otherVolume(name: "Archive Disk"))
     }
 
+    /// An iPhone's app container is on the data volume, which the startup volume's root does not name: the phone's own
+    /// library is local there, or every Set Up and Join would be refused (R6, FR43), while a Mac still calls the same
+    /// folder another volume.
+    func testAnIPhonesOwnContainerIsLocal() {
+        let provider = Self.provider(knowing: [
+            "/": Metadata(volumeURL: Self.startupVolume),
+            "/private/var/mobile/Containers/Data/Application/ABC/Library/Application Support/.TextMouth": Metadata(volumeURL: Self.archiveDisk, volumeName: "Data"),
+        ])
+        let container = URL(fileURLWithPath: "/private/var/mobile/Containers/Data/Application/ABC/Library/Application Support/.TextMouth")
+        XCTAssertEqual(provider.location(of: container, isPhone: true), .local)
+        XCTAssertEqual(provider.location(of: container, isPhone: false), .otherVolume(name: "Data"))
+    }
+
     /// A folder on the startup volume is local, also when its volume's URL
     /// is spelled with a trailing slash.
     func testAFolderOnTheStartupVolumeIsLocal() {
@@ -290,6 +303,49 @@ final class UbiquitousItemStatusProviderTests: XCTestCase {
         )
     }
 
+    /// An upload state the sync service never gave counts as not uploaded,
+    /// and says it was not reported, so Remove Download refuses the file
+    /// with the right words; a file only in the cloud needs no flag. The
+    /// copy here is current only when the service says so.
+    func testAnUnknownUploadStateCountsAsNotUploaded() {
+        let silent = UbiquitousItemStatusProvider.status(from: Metadata(isUbiquitousItem: true, downloadingStatus: .current))
+        XCTAssertFalse(silent.isUploaded)
+        XCTAssertFalse(silent.isUploadReported)
+        XCTAssertEqual(silent.cloudCopyDoubt, .uploadNotReported)
+
+        let uploading = UbiquitousItemStatusProvider.status(
+            from: Metadata(isUbiquitousItem: true, downloadingStatus: .current, isUploaded: true, isUploading: true)
+        )
+        XCTAssertFalse(uploading.isUploaded, "uploading is not uploaded")
+        XCTAssertTrue(uploading.isUploadReported)
+
+        let proven = UbiquitousItemStatusProvider.status(
+            from: Metadata(isUbiquitousItem: true, downloadingStatus: .current, isUploaded: true)
+        )
+        XCTAssertTrue(proven.isUploaded)
+        XCTAssertNil(proven.cloudCopyDoubt)
+
+        let stale = UbiquitousItemStatusProvider.status(
+            from: Metadata(isUbiquitousItem: true, downloadingStatus: .downloaded, isUploaded: true)
+        )
+        XCTAssertEqual(stale.cloudCopyDoubt, .notCurrent, "downloaded, but a newer version exists")
+        let unsaid = UbiquitousItemStatusProvider.status(from: Metadata(isUbiquitousItem: true, isUploaded: true))
+        XCTAssertEqual(unsaid.cloudCopyDoubt, .currentNotReported, "no downloading status at all: lasting")
+
+        let failed = UbiquitousItemStatusProvider.status(
+            from: Metadata(isUbiquitousItem: true, downloadingStatus: .current, isUploaded: true, uploadError: "Quota exceeded.")
+        )
+        XCTAssertEqual(failed.cloudCopyDoubt, .uploadFailed("Quota exceeded."))
+        let conflicting = UbiquitousItemStatusProvider.status(
+            from: Metadata(isUbiquitousItem: true, downloadingStatus: .current, isUploaded: true, hasUnresolvedConflicts: true)
+        )
+        XCTAssertEqual(conflicting.cloudCopyDoubt, .inConflict)
+
+        let inCloud = UbiquitousItemStatusProvider.status(from: Metadata(isUbiquitousItem: true, isDataless: true))
+        XCTAssertTrue(inCloud.isUploaded, "a file only in the cloud is there by being uploaded")
+        XCTAssertTrue(inCloud.isUploadReported)
+    }
+
     // MARK: - Sync Flags of an Item's Own
 
     /// An item carries sync flags of its own when it reports any one of the
@@ -354,7 +410,8 @@ final class UbiquitousItemStatusProviderTests: XCTestCase {
         XCTAssertEqual(
             fileStatus,
             FlaggedItemStatus(
-                status: CloudItemStatus(state: .downloaded, isUploaded: true, byteCount: 1_024, hasUnresolvedConflicts: false, downloadError: nil),
+                // A file in a package carries no flags: no upload state, and no word that its copy is current.
+                status: CloudItemStatus(state: .downloaded, isUploaded: false, byteCount: 1_024, hasUnresolvedConflicts: false, downloadError: nil, isUploadReported: false, isCurrent: false, isCurrentReported: false),
                 carriesSyncFlags: false
             )
         )

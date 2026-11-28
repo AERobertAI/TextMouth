@@ -8,7 +8,8 @@ import SwiftUI
 /// Default…, the editor in a sheet (`LibraryViewEditorSheet`). A row's
 /// VoiceOver actions and the list's context menu offer the same commands
 /// (`LibraryViewsSettingsCommand`), and every change goes through the views
-/// store, which config.json follows.
+/// store, which config.json follows. Under them, the Titles section's Leading
+/// articles pop-up (`LeadingArticlesSettingsSection`, November 13, 2026).
 ///
 /// Like the Text tab, it does not scroll as a whole: its list fills the room
 /// its other controls leave (`SettingsTab.scrollsAsAWhole`).
@@ -47,6 +48,12 @@ struct LibraryViewsSettingsView: View {
             Divider()
             controls
                 .padding()
+            Divider()
+            // What a title's leading article does in the Library's lists
+            // (November 13, 2026), kept short so the list keeps its room.
+            LeadingArticlesSettingsSection()
+                .padding(.horizontal)
+                .padding(.vertical, 10)
         }
         .onAppear {
             if selection == nil {
@@ -135,6 +142,13 @@ struct LibraryViewsSettingsView: View {
         .frame(maxHeight: .infinity)
     }
 
+    /// The kind and visibility a row shows beside a view's name: "built in,
+    /// always". Each part is the library wording's own word for it.
+    private static func kindAndVisibility(_ view: LibraryViewDefinition) -> String {
+        // Translators: The right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as "always".
+        InterfaceText.line("sentence.commaJoined", "\(view.isBuiltIn ? Wording.builtIn : Wording.custom), \(Wording.visibilityWord(view.visibility))")
+    }
+
     /// One view's row: its name, then its kind and visibility, read as one
     /// element, "Reading List, built in, always, 5 of 6", with the view's
     /// commands as its VoiceOver actions.
@@ -142,7 +156,7 @@ struct LibraryViewsSettingsView: View {
         HStack {
             Text(view.name)
             Spacer()
-            Text("\(view.isBuiltIn ? Wording.builtIn : Wording.custom), \(Wording.visibilityWord(view.visibility))")
+            Text(Self.kindAndVisibility(view))
                 .foregroundColor(.secondary)
         }
         .accessibilityElement(children: .ignore)

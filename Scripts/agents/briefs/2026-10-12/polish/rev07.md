@@ -53,7 +53,7 @@ Both functions are in `TextMouth/Models/Library.swift`.
   - the class that tests `marked(title:` (grep `TextMouthProductionTests` to find it).
 - Start each build in the background and check on it no more often than every 4 minutes.
 - `-jobs 4` is required (the orchestrator's #2107).
-- Scratch files go in `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/d79ccbfe-f907-4768-bef3-66390cef7d23/scratchpad/`, each named `polish-rev07-…`.
+- Scratch files go in `<session folder>/scratchpad/`, each named `polish-rev07-…`.
 
     BBS_AGENT=polish-rev07 .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath "${TMPDIR}TextMouth-DerivedData-polish-rev07" -only-testing:TextMouthProductionTests/LegacyLibraryModelTests -only-testing:TextMouthProductionTests/UnopenedCategoryTests -only-testing:TextMouthProductionTests/FolderSafetyTests -only-testing:TextMouthProductionTests/LibrarySortStateTests -only-testing:TextMouthProductionTests/FolderDuplicateRepairTests -only-testing:TextMouthProductionTests/LibraryInfoWordingTests -only-testing:TextMouthProductionTests/LibraryInfoSpeakerTests > <scratchpad>/polish-rev07-build-1.log 2>&1
 

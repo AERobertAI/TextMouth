@@ -29,7 +29,7 @@ struct AddToLibraryRunner {
     /// goes with Add Feed alone, which names its window as the old toolbar
     /// button did, so the sheet it opens is that window's; the other
     /// choices are posted exactly as the menus post them, with none.
-    func run(_ choice: AddToLibraryChoice, sourceWindow: NSWindow?) {
+    func run(_ choice: AddToLibraryChoice, sourceWindow: PlatformWindow?) {
         switch choice.run {
         case .notification(let name):
             var userInfo: [AnyHashable: Any]?
@@ -85,13 +85,13 @@ final class AddToLibraryHost: ObservableObject {
     /// The window the sheet is in and the library it shows, as the model's
     /// closures read them: nil until the window has told the host.
     private final class Context {
-        var window: NSWindow?
+        var window: PlatformWindow?
         var library: LibraryViewModel?
     }
     private let context: Context
 
     /// Tells the host the window it is in and the library it shows.
-    func attach(window: NSWindow?, library: LibraryViewModel) {
+    func attach(window: PlatformWindow?, library: LibraryViewModel) {
         context.window = window
         context.library = library
     }
@@ -121,7 +121,7 @@ struct LibraryAddToLibrarySupport: ViewModifier {
     /// The library the window shows.
     let library: LibraryViewModel
     /// The window the sheet is in, nil until it is found.
-    let hostWindow: NSWindow?
+    let hostWindow: PlatformWindow?
 
     func body(content: Content) -> some View {
         content

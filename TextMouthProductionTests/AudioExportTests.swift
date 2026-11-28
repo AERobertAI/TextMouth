@@ -158,8 +158,7 @@ final class AudioExportTests: XCTestCase {
             XCTAssertEqual(error as? AudioEditError, .mp3NeedsFFmpeg)
             XCTAssertEqual(
                 error.localizedDescription,
-                "MP3 can't be written: TextMouth's own encoder couldn't start, and ffmpeg isn't installed, "
-                    + "or is turned off in Storage settings."
+                "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings."
             )
         }
     }
@@ -194,18 +193,13 @@ final class AudioExportTests: XCTestCase {
 
     /// An MP3 book's edits are saved into its file as MP3 by the LAME built
     /// in, with no ffmpeg: the file keeps its name and its format, and lasts
-    /// as long as the edits.
+    /// exactly as long as the edits. (Decoded through the edits' composition,
+    /// this save was refused now and then as "the rendered file lasts
+    /// 1.957875 seconds, not 2.0": `AudioEditRenderer.readStretches`.)
     @MainActor
     func testAnMP3BookIsSavedAsMP3() async throws {
         let (model, book) = try makeLibrary(withBookNamed: "Canal Survey.mp3")
-        let tone = (0..<24_000).map { 0.3 * Float(sin(2 * Double.pi * 440 * Double($0) / Self.rate)) }
-        let encoder = try MP3Encoder(
-            writingTo: book.bookFileURL,
-            settings: MP3EncoderSettings(sampleRate: Int(Self.rate), channels: 1, kilobitsPerSecond: 32),
-            tag: MP3Tag(title: "Canal Survey")
-        )
-        try tone.withUnsafeBufferPointer { try encoder.encode(interleaved: $0) }
-        try encoder.finish()
+        try AudioTestFixtures.writeToneMP3(to: book.bookFileURL, sampleRate: Self.rate)
         model.audioFilterEngine = { .builtIn }
         let session = try await AudioEditSession.open(bookID: book.id, in: model)
         defer { session.close() }
@@ -215,11 +209,12 @@ final class AudioExportTests: XCTestCase {
         let outcome = try await session.save()
 
         XCTAssertEqual(outcome.audioFile, "Canal Survey.mp3", "the book's file kept its name")
-        let tracks = try await AVURLAsset(url: book.tmbDirectory.appendingPathComponent(outcome.audioFile))
-            .loadTracks(withMediaType: .audio)
+        let saved = book.tmbDirectory.appendingPathComponent(outcome.audioFile)
+        let tracks = try await AVURLAsset(url: saved).loadTracks(withMediaType: .audio)
         let format = try await tracks.first?.load(.formatDescriptions).first?.audioStreamBasicDescription
         XCTAssertEqual(format?.mFormatID, kAudioFormatMPEGLayer3)
         XCTAssertEqual(outcome.duration, edited, accuracy: AudioEditBookRender.lengthTolerance)
+        XCTAssertEqual(try AVAudioFile(forReading: saved).length, 16_000, "the saved MP3 does not hold every frame of the edits")
     }
 
     // MARK: - A Session's Export
@@ -241,8 +236,8 @@ final class AudioExportTests: XCTestCase {
 
         let samples = try AudioTestFixtures.floatSamples(of: exported)
         XCTAssertEqual(samples.count, 16_000)
-        XCTAssertEqual(samples[checked: 7_999].map(AudioTestFixtures.rampSample), .frame(.book, 7_999))
-        XCTAssertEqual(samples[checked: 8_000].map(AudioTestFixtures.rampSample), .frame(.book, 16_000))
+        XCTAssertEqual(samples[checked: 7_999].map(AudioTestFixtures.rampSample), .some(.frame(.book, 7_999)))
+        XCTAssertEqual(samples[checked: 8_000].map(AudioTestFixtures.rampSample), .some(.frame(.book, 16_000)))
         XCTAssertEqual(try Data(contentsOf: book.bookFileURL), before, "the book's file changed")
         XCTAssertTrue(session.hasUnsavedEdits)
 

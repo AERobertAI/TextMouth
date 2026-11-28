@@ -678,3 +678,32 @@ extension XCTestCase {
         }
     }
 }
+
+extension XCTestCase {
+    /// Runs `body` once for each of `roots`, in a new run folder of its own
+    /// that is deleted when the test ends, even after a failure. A failure
+    /// on one drive is reported under its name and does not stop the others.
+    func forEachCloudRoot(
+        _ roots: [CloudDriveTestRoot], label: String, _ body: (CloudDriveTestRoot, URL) async throws -> Void
+    ) async {
+        for root in roots {
+            do {
+                let run = try CloudDriveRunFolder.make(in: root, label: label)
+                addTeardownBlock {
+                    do {
+                        try CloudDriveRunFolder.remove(run)
+                    } catch {
+                        XCTFail("\(root.driveName): the run folder \(run.path) could not be deleted: \(error)")
+                    }
+                    XCTAssertFalse(
+                        FileManager.default.fileExists(atPath: run.path),
+                        "\(root.driveName): the run folder \(run.path) is still there"
+                    )
+                }
+                try await body(root, run)
+            } catch {
+                XCTFail("\(root.driveName): \(error.localizedDescription)")
+            }
+        }
+    }
+}

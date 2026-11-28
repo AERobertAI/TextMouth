@@ -20,7 +20,7 @@ The worktree guard refuses compound commands. So:
 ## Build and test
 Start every build in the background (the Bash tool's `run_in_background`), and check on it no more often than every 4 minutes with one short command. Run only the test classes your brief names. The command, with your slug and classes:
 
-    BBS_AGENT=t6e-<task> .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath /var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-t6e-<task> -only-testing:TextMouthProductionTests/<Class> -only-testing:TextMouthProductionTests/<Class2> > <your scratchpad>/t6e-<task>-build.log 2>&1
+    BBS_AGENT=t6e-<task> .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath $TMPDIR/TextMouth-DerivedData-t6e-<task> -only-testing:TextMouthProductionTests/<Class> -only-testing:TextMouthProductionTests/<Class2> > <your scratchpad>/t6e-<task>-build.log 2>&1
 
 Read a result with one command: `grep -E "Executed [0-9]+ tests|error:|failed \(" <log> | tail -20`.
 
@@ -38,7 +38,7 @@ A new Swift file (source or test) needs `/opt/homebrew/bin/xcodegen generate` ru
 1. `bbs post t6e-<task> --to t6e-lead --topic "done: t6e/<task>"`
 2. `bbs task move t6e-<task> <task number> review`
 3. Remove your build folder, exactly these two commands:
-   - `/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-t6e-<task>/Build/Products/Debug/TextMouth.app"`
-   - `rm -rf "/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-t6e-<task>"`
+   - `/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$TMPDIR/TextMouth-DerivedData-t6e-<task>/Build/Products/Debug/TextMouth.app"`
+   - `rm -rf "$TMPDIR/TextMouth-DerivedData-t6e-<task>"`
 4. `bbs release t6e-<task> --all` (this releases your file claims; it does not unregister you from the board, and you need not).
 5. Reply with a report of at most 15 lines: the branch; each commit's hash and subject; the tests you added and the exact `Executed …` line of your last run; what you could not verify; and the decisions you made that the brief left open.

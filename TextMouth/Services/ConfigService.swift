@@ -75,6 +75,16 @@ final class ConfigService: ObservableObject {
     /// on this Mac again; every save until then tries again.
     private var isFileInCloud = false
 
+    /// Whether config.json, in a cloud location, was not on this Mac at all
+    /// when the launch, or the data directory's return, would have written
+    /// it from this Mac's settings (risk 5 of the local-first research): it
+    /// may not have arrived yet, so it was left unwritten, the preferences
+    /// standing for it, as for a file only in the cloud. It is merged once a
+    /// save, or the library's fetch of its files, finds it; a save a changed
+    /// setting asks for writes it, missing or not, as substitutions.json is
+    /// written only once a rule changes.
+    private var awaitsFileOnItsWay = false
+
     // MARK: - Coalesced Saves
 
     /// How long a save asked for with `scheduleSave()` waits for the next
@@ -88,6 +98,9 @@ final class ConfigService: ObservableObject {
 
     /// The save waiting for `saveDelay` to pass, if any.
     private var scheduledSave: Task<Void, Never>?
+    /// Whether the waiting save may make a missing config.json: true when
+    /// any save merged into it may (`scheduleSave(creatingAwaitedFile:)`).
+    private var scheduledSaveMayCreateFile = true
 
     /// Hears when the data directory is available again.
     private var availabilitySubscription: AnyCancellable?
@@ -141,38 +154,29 @@ final class ConfigService: ObservableObject {
 
     // MARK: - Watcher State
 
-    /// Whether the watcher is on: from `startWatching()` until `shutdown()`.
-    private var isWatching = false
     /// How long a burst of file events must stay quiet before the file is
     /// read.
     private let coalescingDelay: Duration
-    /// The events received since the file was last checked, combined.
-    private var pendingEvents: DispatchSource.FileSystemEvent = []
-    /// The check that runs once the current burst of events settles.
-    private var pendingCheck: Task<Void, Never>?
 
-    /// The file the watcher listens to.
-    private struct WatchedFile {
-        /// Which file it is, whatever path later leads to it.
-        let identity: FileIdentity
-        /// Delivers its events; cancelling it closes its descriptor.
-        let source: DispatchSourceFileSystemObject
-    }
-
-    /// The file the watcher listens to, if any.
-    private var watchedFile: WatchedFile?
-    /// The search for a file that went missing, while it goes on.
-    private var rearmRetry: Task<Void, Never>?
-
-    /// The events that matter: a write in place, and the rename, deletion,
-    /// or revocation (its volume was unmounted) that ends the watched file's
-    /// time at the path.
-    private static let watchedEvents: DispatchSource.FileSystemEvent = [.write, .rename, .delete, .revoke]
-
-    /// The pauses before each look for a missing file: short at first, for an
-    /// editor that puts the new file in place a moment after removing the old
-    /// one, and longer at the end, for a slow volume. About 1.5 seconds in all.
-    private static let rearmRetryDelays: [Duration] = [50, 100, 200, 400, 800].map { .milliseconds($0) }
+    /// The watcher of config.json: the app's one file watcher
+    /// (`FileEventWatcher`), which follows the file when a save replaces it,
+    /// looks again for one that went missing, and hands the settled bursts of
+    /// events to `handleFileEvent(_:)`. Made at first use, since its calls
+    /// reach this service.
+    private lazy var watcher = FileEventWatcher(
+        file: { [weak self] in self?.fileURL },
+        // Nothing in a data directory found unavailable is watched (FR02);
+        // reconciling the file when the library is back rearms the watcher.
+        isAvailable: { [weak self] in self.map { !$0.isFileUnavailable } ?? false },
+        events: FileEventWatcher.wholeFileEvents,
+        quietPeriod: coalescingDelay,
+        calls: .init(openForEvents: fileOperations.openForEvents, close: fileOperations.close),
+        settled: { [weak self] events in self?.handleFileEvent(events) },
+        gaveUp: { [weak self] in
+            guard let self else { return }
+            self.log("\(self.fileURL.path) is missing; watching resumes when TextMouth next saves the settings")
+        }
+    )
 
     // MARK: - Watcher Decision
 
@@ -203,14 +207,9 @@ final class ConfigService: ObservableObject {
         lastHandledContents: Data?
     ) -> WatcherActions {
         WatcherActions(
-            rearm: replacesWatchedFile(event),
+            rearm: FileEventWatcher.replacesWatchedFile(event),
             reload: fileContents.map { $0 != lastHandledContents } ?? false
         )
-    }
-
-    /// Whether `event` means the watched file no longer sits at the path.
-    private nonisolated static func replacesWatchedFile(_ event: DispatchSource.FileSystemEvent) -> Bool {
-        !event.isDisjoint(with: [.rename, .delete, .revoke])
     }
 
     // MARK: - Settings
@@ -221,7 +220,10 @@ final class ConfigService: ObservableObject {
     ///
     /// Which preferences the file carries, and why the others stay out of
     /// it, is set out in `Portability`, below.
-    struct AppConfig: Codable, Equatable {
+    ///
+    /// The file's keys that this TextMouth does not know are kept with the
+    /// settings (`unknownKeys`, V04) and written back as they were.
+    struct AppConfig: Codable, Equatable, KeepsUnknownKeysBesideSynthesizedCoding {
         var selectedVoiceID: String = ""
         /// Words per minute (50–650). 0 means "not yet set by user".
         var wordsPerMinute: Double = SettingsPolicy.wordsPerMinute.configDefault
@@ -251,6 +253,9 @@ final class ConfigService: ObservableObject {
         var sleepTimerAutoClose: Bool = true
         /// End-of-book behavior (stop, loop, continueNext)
         var endOfBookBehavior: String = ""
+        /// Where the next book opens when listening goes on (this window, or
+        /// a new window); empty until chosen, as `endOfBookBehavior` is
+        var nextBookWindow: String = ""
         /// Punctuation pause level (0 = none, 1 = subtle, 2 = moderate, 3 = heavy)
         var punctuationPauseLevel: Double = SettingsPolicy.punctuationPauseLevel.configDefault
         /// UUID of the last book that was opened/played (for quick-resume)
@@ -427,12 +432,21 @@ final class ConfigService: ObservableObject {
         /// kept as it is and never offered, and a value out of range is
         /// repaired. Nil, or an empty array, leaves the views as they are.
         var libraryViews: [JSONValue]?
+        /// What a title's leading article does in the Library's lists
+        /// (`LeadingArticles`, November 13, 2026): "partOfTitle", as
+        /// written; "ignoredWhenTyping", passed over when typing a title's
+        /// first letters; or "ignoredWhenTypingAndSorting", passed over when
+        /// sorting too, the rows showing "Hobbit, The". Empty keeps the
+        /// current choice, as does a name that is none of these.
+        var leadingArticles: String = ""
         /// The braille table TextMouth reads and writes braille with
         /// (`BraillePreferences`), by its stored value: a bundled table's
         /// file name, such as "en-ueb-g2.ctb", or "mac:" and the file name of
         /// one of this Mac's VoiceOver tables, such as "mac:fr-bfu-g2.ctb".
-        /// Empty keeps the current choice, as does a bundled name the bundle
-        /// lacks. A Mac table's value is taken as it is, without reading this
+        /// Empty keeps the current choice, as does a bare name this platform
+        /// lacks (the file keeps such a name for the platform that has the
+        /// table: `SettingsViewModel` writes it back as it was until the
+        /// table is changed on this device). A Mac table's value is taken as it is, without reading this
         /// Mac's tables (`BrailleTableCatalog.storableValue(_:)`), and is
         /// checked before its first use, as one chosen in Settings is
         /// (`MacBrailleTableCheck`), or refused by name if this Mac lacks it.
@@ -444,6 +458,27 @@ final class ConfigService: ObservableObject {
         /// lacks, and "unicode", which an import recognizes by a file's bytes
         /// and never takes from the setting (`BrailleFileCode.importChoices`).
         var brailleFileCode: String = ""
+
+        /// The top-level keys of config.json that this TextMouth does not
+        /// know (V04, `UnknownKeys`): a later TextMouth's settings, or a
+        /// note someone kept in the file by hand. They are read with the
+        /// file (`ConfigService.decode(_:)`), kept through every change of a
+        /// setting, since a change is made to the configuration in use and
+        /// never by making a new one, and written back with the file
+        /// (`ConfigService.fileData(for:)`). They take part in `==`, so a
+        /// file that differs from the settings in use only in such a key is
+        /// still taken up, and the merge of an edit found on disk
+        /// (`ConfigService.merging(ours:theirs:base:)`), which compares the
+        /// configurations as the file holds them, takes the file's, since
+        /// nothing here ever changes one. The synthesized encoder passes
+        /// them over, and the decoder below does not read them.
+        var unknownKeys = UnknownKeys()
+
+        /// Whether `name` is a key of config.json that this version knows
+        /// (`KeepsUnknownKeysBesideSynthesizedCoding`).
+        static func isCodingKey(_ name: String) -> Bool {
+            CodingKeys(stringValue: name) != nil
+        }
 
         /// Decodes config.json one field at a time, because people edit it
         /// by hand. A missing field keeps its default (older files lack newer
@@ -477,6 +512,7 @@ final class ConfigService: ObservableObject {
             sleepFadeOutDuration = fields.number(.sleepFadeOutDuration, rule: SettingsPolicy.sleepFadeOutDuration)
             sleepTimerAutoClose = fields.value(.sleepTimerAutoClose, default: fallback.sleepTimerAutoClose)
             endOfBookBehavior = fields.rawChoice(.endOfBookBehavior, rule: SettingsPolicy.endOfBookBehavior)
+            nextBookWindow = fields.rawChoice(.nextBookWindow, rule: SettingsPolicy.nextBookWindow)
             punctuationPauseLevel = fields.number(.punctuationPauseLevel, rule: SettingsPolicy.punctuationPauseLevel)
             lastOpenedBookID = fields.value(.lastOpenedBookID, default: fallback.lastOpenedBookID)
             autoPlayOnNavigate = fields.value(.autoPlayOnNavigate, default: fallback.autoPlayOnNavigate)
@@ -578,10 +614,16 @@ final class ConfigService: ObservableObject {
             libraryViews = fields.optionalValue(.libraryViews) { (entries: [JSONValue]) in
                 entries.isEmpty ? nil : entries
             }
+            leadingArticles = fields.rawChoice(.leadingArticles, rule: SettingsPolicy.leadingArticles)
             // Without reading this Mac's tables (review R3): decoding runs on
-            // the main thread at every launch.
+            // the main thread at every launch. A bare table name this platform
+            // lacks, such as the iPhone's `en-nz-g2.ctb` on the Mac, is not
+            // this platform's to use and is not repaired: the value is kept as
+            // the file has it, so it survives a launch's save (the setting
+            // never takes it: `SettingsViewModel.adoptServicePreferences`). Any
+            // other value this platform cannot take is repaired to empty.
             brailleTable = fields.value(.brailleTable, default: fallback.brailleTable) {
-                BrailleTableCatalog.storableValue($0) ?? ""
+                BrailleTableCatalog.storableValue($0) ?? (BrailleTableSource.isBareTableName($0) ? $0 : "")
             }
             // An id this TextMouth lacks is repaired to empty, and logged, so
             // it leaves the current braille file characters alone.
@@ -627,7 +669,7 @@ final class ConfigService: ObservableObject {
                 mirrored += sameNames([
                     "skipForwardUnit", "skipBackwardUnit", "shiftSkipForwardUnit", "shiftSkipBackwardUnit",
                     "rewindOnResumeUnit", "rewindSmartMode", "rewindSmartThreshold", "punctuationPauseLevel",
-                    "autoPlayOnNavigate", "endOfBookBehavior", "sleepFadeOutDuration", "sleepTimerAutoClose",
+                    "autoPlayOnNavigate", "endOfBookBehavior", "nextBookWindow", "sleepFadeOutDuration", "sleepTimerAutoClose",
                     "playbackNavigationUnitControlMode", "showBookmarkInPlaybackControls",
                     "showSpeedInPlaybackControls", "showExportInReaderToolbar", "includeSpeedWithTimes",
                     "showsPageInReader", "saysPageInWhereAmI",
@@ -674,6 +716,9 @@ final class ConfigService: ObservableObject {
                 // Library (October 30, 2026): the Library window's views,
                 // which the views store keeps (`LibraryViewDefinitionStore`).
                 mirrored += sameNames([LibraryViewDefinitionList.fileKey])
+                // And what a title's leading article does in its lists, which
+                // the Library windows read (`LeadingArticles`, November 13, 2026).
+                mirrored += sameNames([SettingsPolicy.leadingArticles.key])
                 // Braille (FMT21): the table braille files are read and written with.
                 // And the braille file characters a BRF or BRL file is imported in (braillecodes).
                 mirrored += sameNames(["brailleTable", "brailleFileCode"])
@@ -737,6 +782,7 @@ final class ConfigService: ObservableObject {
                 + [LibrarySessionLease.macIDPreference.key, "sleepTimer.lastUsedDuration", "NSQuitAlwaysKeepsWindows"]
                 + [BookTextEditor.explainedPreference.key, BookManifestEditor.explainedPreference.key]
                 + [LibraryViewModel.finishedBooksAtEndKey]
+                + SyncPreferences.keys
 
             /// Pairs each key with the config.json field of the same name.
             private static func sameNames(_ keys: [String]) -> [(storeKey: String, field: String)] {
@@ -778,8 +824,7 @@ final class ConfigService: ObservableObject {
     /// Starts following config.json for edits made outside TextMouth. Launch
     /// calls this once it has reconciled the file with the preferences.
     func startWatching() {
-        isWatching = true
-        rearmWatcher()
+        watcher.start()
     }
 
     /// Stops following config.json: a save waiting for its delay is written
@@ -788,14 +833,8 @@ final class ConfigService: ObservableObject {
     /// later are ignored.
     func shutdown() {
         flushScheduledSave()
-        isWatching = false
-        pendingCheck?.cancel()
-        pendingCheck = nil
-        pendingEvents = []
-        rearmRetry?.cancel()
-        rearmRetry = nil
+        watcher.stop()
         availabilitySubscription = nil
-        disarm()
     }
 
     /// Follows config.json again once the data directory is back (FR02).
@@ -811,10 +850,12 @@ final class ConfigService: ObservableObject {
         guard !isFileUnavailable else { return }
         if skippedFileWhileUnavailable {
             skippedFileWhileUnavailable = false
-            saveToDisk()
+            // A reconciliation, not a changed setting: a file not here yet
+            // in a cloud location is waited for (risk 5).
+            saveToDisk(creatingAwaitedFile: false)
         }
-        if watchedFile == nil {
-            rearmWatcher()
+        if !watcher.isArmed {
+            watcher.rearm()
         }
     }
 
@@ -826,13 +867,23 @@ final class ConfigService: ObservableObject {
     /// every change at once; only the file waits. A save made meanwhile with
     /// `saveToDisk()` writes it at once instead, and `flushScheduledSave()`
     /// does when TextMouth quits or the data directory moves.
-    func scheduleSave() {
+    ///
+    /// - Parameter creatingAwaitedFile: Whether the save may make a missing
+    ///   config.json (`saveToDisk(creatingAwaitedFile:)`). A changed
+    ///   setting's save may; one that only notes a book was opened passes
+    ///   false, so that in a cloud location it never writes this Mac's
+    ///   settings into a file that has not arrived yet (risk 5). Saves
+    ///   merged into one write may if any of them may.
+    func scheduleSave(creatingAwaitedFile: Bool = true) {
+        // The saves waiting merge: one that may make the file lets the
+        // write make it. A save with none waiting starts afresh.
+        scheduledSaveMayCreateFile = (scheduledSave != nil && scheduledSaveMayCreateFile) || creatingAwaitedFile
         scheduledSave?.cancel()
         scheduledSave = Task { [weak self, saveDelay] in
             try? await Task.sleep(for: saveDelay)
             guard !Task.isCancelled, let self else { return }
             self.scheduledSave = nil
-            self.saveToDisk()
+            self.saveToDisk(creatingAwaitedFile: self.scheduledSaveMayCreateFile)
         }
     }
 
@@ -841,7 +892,20 @@ final class ConfigService: ObservableObject {
     /// latest settings. Does nothing when no save waits.
     func flushScheduledSave() {
         guard hasScheduledSave else { return }
-        saveToDisk()
+        saveToDisk(creatingAwaitedFile: scheduledSaveMayCreateFile)
+    }
+
+    /// For tests: drops a save that `scheduleSave()` left waiting, without
+    /// writing it. A test's teardown calls this before it deletes the folder
+    /// the file lives in: a save that stayed waiting would fire after the
+    /// folder was gone, fail, and have its failure announced into whichever
+    /// test runs next. The app never calls it: quitting and a data-directory
+    /// move write a waiting save (`flushScheduledSave()`), and a folder that
+    /// is missing in the app is a real failure the user must hear, so
+    /// nothing here hides one. Does nothing when no save waits.
+    func _dropScheduledSaveForTesting() {
+        scheduledSave?.cancel()
+        scheduledSave = nil
     }
 
     /// Whether a save asked for with `scheduleSave()` is waiting.
@@ -866,7 +930,15 @@ final class ConfigService: ObservableObject {
     /// replace what another Mac saved. The preferences hold every setting
     /// meanwhile, and a later save, once the file is on this Mac, merges it
     /// as an edit found on disk.
-    func saveToDisk() {
+    ///
+    /// - Parameter creatingAwaitedFile: Whether a missing file may be made
+    ///   now, as a changed setting's save makes it. The launch's save and
+    ///   the data directory's return pass false: they only reconcile the
+    ///   file with the preferences, so in a cloud location, where a missing
+    ///   config.json may not have arrived yet (`SavedFile.mayStillArrive(_:)`,
+    ///   risk 5), they leave it unwritten rather than put this Mac's
+    ///   settings in its place (`awaitsFileOnItsWay`).
+    func saveToDisk(creatingAwaitedFile: Bool = true) {
         scheduledSave?.cancel()
         scheduledSave = nil
         // Nothing is written where the library isn't (FR02). The preferences
@@ -892,12 +964,23 @@ final class ConfigService: ObservableObject {
             }
             noteFileInCloud()
             return
+        case .missing where !creatingAwaitedFile && SavedFile.mayStillArrive(fileURL):
+            // Not here, in a cloud location: perhaps not arrived yet (risk
+            // 5). The settings in use stand for what the file holds, as for
+            // one only in the cloud, so the save that merges it keeps the
+            // changes made meanwhile.
+            if lastSyncedConfig == nil {
+                lastSyncedConfig = config
+            }
+            noteFileAwaited()
+            return
         case .contents(let contents):
             onDisk = contents
-        case .none:
+        case .missing, .none:
             onDisk = nil
         }
         isFileInCloud = false
+        awaitsFileOnItsWay = false
         if let onDisk, onDisk != lastHandledContents {
             mergeUnhandledEdit(onDisk)
         }
@@ -919,11 +1002,14 @@ final class ConfigService: ObservableObject {
             log("could not save \(fileURL.path): \(error)")
             // The settings in use are not on disk: the user is told, not only
             // the log (TODO S09). A retry saves the settings as they are then,
-            // the same ones unless a later change has saved them itself.
+            // the same ones unless a later change has saved them itself; it
+            // writes on the main thread, so it waits while an operation holds
+            // the storage work, such as a move copying this file.
             PersistenceFailureCenter.shared.recordFailure(
                 .configuration,
                 path: fileURL.path,
-                error: error
+                error: error,
+                waitsForStorageWork: true
             ) { [weak self] _ in
                 self?.saveToDisk()
             }
@@ -932,7 +1018,7 @@ final class ConfigService: ObservableObject {
         recordAgreement(data)
         // The atomic write replaced the watched file. Follow the new one now
         // rather than when its event arrives, leaving no moment unwatched.
-        rearmWatcher()
+        watcher.rearm()
     }
 
     /// Records that config.json holds `data`, the bytes of `config`: the
@@ -948,7 +1034,9 @@ final class ConfigService: ObservableObject {
     private enum FileRead {
         /// The file's bytes.
         case contents(Data)
-        /// No file, or one that cannot be read.
+        /// No file at all.
+        case missing
+        /// A file that cannot be read.
         case none
         /// A file only in the cloud (FR02), which was not read: reading it
         /// would have downloaded it first.
@@ -962,6 +1050,8 @@ final class ConfigService: ObservableObject {
             return .contents(try fileOperations.read(fileURL))
         } catch where DatalessFiles.isDownloadRefusal(error) {
             return .inCloud
+        } catch CocoaError.fileReadNoSuchFile {
+            return .missing
         } catch {
             return .none
         }
@@ -972,6 +1062,32 @@ final class ConfigService: ObservableObject {
     private func readFileContents() -> Data? {
         guard case .contents(let contents) = readFile() else { return nil }
         return contents
+    }
+
+    /// Takes up config.json once it is on this Mac, after it was found only in
+    /// the cloud (`noteFileInCloud()`): the file is merged with the settings
+    /// in use as the first save that finds it would, so a setting changed
+    /// here meanwhile keeps its new value and every other one takes the
+    /// file's, without a restart. Does nothing unless the file was waiting
+    /// in the cloud, or, in a cloud location, had not arrived at all
+    /// (`awaitsFileOnItsWay`, risk 5); while it still is, nothing is read or
+    /// written.
+    func fileMayHaveArrived() {
+        guard isFileInCloud || awaitsFileOnItsWay else { return }
+        saveToDisk(creatingAwaitedFile: false)
+    }
+
+    /// Notes that config.json, in a cloud location, is not on this Mac and
+    /// was left unwritten in case it has not arrived yet (risk 5), which the
+    /// debug log says once.
+    private func noteFileAwaited() {
+        guard !awaitsFileOnItsWay else { return }
+        awaitsFileOnItsWay = true
+        log(
+            "\(fileURL.lastPathComponent) isn't on this Mac, and the library is in the cloud, so it may not "
+                + "have arrived yet; it is not written from this Mac's settings until a setting changes, and is "
+                + "merged once it is here"
+        )
     }
 
     /// Notes that config.json is only in the cloud, so it is neither read
@@ -986,11 +1102,14 @@ final class ConfigService: ObservableObject {
     }
 
     /// The exact bytes `saveToDisk()` writes for `config`: sorted, indented
-    /// JSON that stays readable for people who edit the file by hand.
+    /// JSON that stays readable for people who edit the file by hand. The
+    /// keys `config` holds that this TextMouth does not know are written
+    /// among its own, sorted with them (V04); a configuration without any
+    /// is written exactly as before.
     nonisolated static func fileData(for config: AppConfig) throws -> Data {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return try encoder.encode(config)
+        return try encoder.encode(WithUnknownKeys(config))
     }
 
     /// Reads config.json into `config` before returning.
@@ -1027,8 +1146,14 @@ final class ConfigService: ObservableObject {
             loadedFile = .decoded
         } catch where DatalessFiles.isDownloadRefusal(error) {
             // Not loaded: the preferences stand until the file is on this
-            // Mac, and the saves until then leave it as it is.
+            // Mac, and the saves until then leave it as it is. The settings
+            // in use now stand for what the file last held, so a setting
+            // changed from here on, the first one included, is kept when
+            // the file arrives and is merged.
             loadedFile = .missing
+            if lastSyncedConfig == nil {
+                lastSyncedConfig = config
+            }
             noteFileInCloud()
         } catch {
             loadedFile = .unreadable
@@ -1037,9 +1162,11 @@ final class ConfigService: ObservableObject {
     }
 
     /// Decodes config.json's bytes. The decoder is lenient: a single bad
-    /// value is repaired and logged rather than failing the whole file.
+    /// value is repaired and logged rather than failing the whole file. The
+    /// keys this TextMouth does not know are kept in the result
+    /// (`AppConfig.unknownKeys`, V04).
     nonisolated static func decode(_ contents: Data) throws -> AppConfig {
-        try JSONDecoder().decode(AppConfig.self, from: contents)
+        try JSONDecoder().decode(WithUnknownKeys<AppConfig>.self, from: contents).value
     }
 
     // MARK: - External Edits
@@ -1210,135 +1337,11 @@ final class ConfigService: ObservableObject {
         // A file replaced again after the read above is checked once more
         // when the watcher attaches to it, so the order here loses nothing.
         if actions.rearm {
-            rearmWatcher()
+            watcher.rearm()
         }
         if actions.reload, let contents {
             applyExternalEdit(contents)
         }
-    }
-
-    /// Collects an event from the watched file's source, on the main actor.
-    /// A replacement is followed at once, so no edit to the new file goes
-    /// unreported while the burst settles; the batch goes to
-    /// `handleFileEvent(_:)` once no further event has arrived for
-    /// `coalescingDelay`.
-    private func receiveFileEvent(_ event: DispatchSource.FileSystemEvent) {
-        guard isWatching else { return }
-        if Self.replacesWatchedFile(event) {
-            rearmWatcher()
-        }
-        pendingEvents.formUnion(event)
-        scheduleCheck()
-    }
-
-    /// Checks the file once `coalescingDelay` passes without a new event,
-    /// handling every event collected until then as one batch: an editor's
-    /// save arrives as several events, and a file written in place may be
-    /// incomplete until they end.
-    private func scheduleCheck() {
-        pendingCheck?.cancel()
-        pendingCheck = Task { [weak self, coalescingDelay] in
-            try? await Task.sleep(for: coalescingDelay)
-            guard !Task.isCancelled, let self else { return }
-            let events = self.pendingEvents
-            self.pendingEvents = []
-            self.pendingCheck = nil
-            self.handleFileEvent(events)
-        }
-    }
-
-    /// Moves the watcher to the file now at `fileURL`.
-    ///
-    /// When no file is there, an editor may be partway through a save that
-    /// removes or renames the old file before putting the new one in place,
-    /// so the watcher looks again a few times before giving up until the
-    /// next save.
-    private func rearmWatcher() {
-        guard isWatching else { return }
-        // Nothing in a data directory found unavailable is watched (FR02);
-        // reconciling the file when the library is back rearms the watcher.
-        guard !isFileUnavailable else {
-            disarm()
-            return
-        }
-        if armWatcher() {
-            rearmRetry?.cancel()
-            rearmRetry = nil
-            return
-        }
-        // The watched file is gone or renamed away: stop listening to it.
-        disarm()
-        guard rearmRetry == nil else { return }
-        rearmRetry = Task { [weak self] in
-            await self?.lookForMissingFile()
-        }
-    }
-
-    /// Looks for the file after each of `rearmRetryDelays`, watching it as
-    /// soon as it is back. Giving up is logged.
-    private func lookForMissingFile() async {
-        for delay in Self.rearmRetryDelays {
-            try? await Task.sleep(for: delay)
-            guard !Task.isCancelled, isWatching else { return }
-            if armWatcher() {
-                rearmRetry = nil
-                return
-            }
-        }
-        rearmRetry = nil
-        log("\(fileURL.path) is missing; watching resumes when TextMouth next saves the settings")
-    }
-
-    /// Attaches the watcher to the file now at `fileURL`, unless it already
-    /// listens to that very file, and returns whether a file is watched.
-    ///
-    /// A newly attached file is checked once events settle: an edit saved
-    /// before the watcher attached reports no event of its own, so the check
-    /// is what keeps the moment between two watched files covered.
-    @discardableResult
-    private func armWatcher() -> Bool {
-        guard !isFileUnavailable else { return false }
-        // Identify the file before opening it. A replacement in between makes
-        // the next rearm see a different file and open it again: one open too
-        // many at worst, never an edit missed.
-        guard let identity = FileIdentity(of: fileURL) else { return false }
-        if watchedFile?.identity == identity { return true }
-        let descriptor = fileOperations.openForEvents(fileURL.path)
-        guard descriptor >= 0 else { return false }
-        disarm()
-
-        // The source delivers on the main queue, where all of the watcher's
-        // state lives: the handler only passes the event mask on, so nothing
-        // is read from another thread.
-        let source = DispatchSource.makeFileSystemObjectSource(
-            fileDescriptor: descriptor,
-            eventMask: Self.watchedEvents,
-            queue: .main
-        )
-        source.setEventHandler { [weak self] in
-            MainActor.assumeIsolated {
-                self?.receiveFileEvent(source.data)
-            }
-        }
-        // Dispatch runs this once the source has stopped using the
-        // descriptor, the only safe moment to close it.
-        let close = fileOperations.close
-        source.setCancelHandler {
-            MainActor.assumeIsolated {
-                close(descriptor)
-            }
-        }
-        source.resume()
-        watchedFile = WatchedFile(identity: identity, source: source)
-        scheduleCheck()
-        return true
-    }
-
-    /// Stops listening to the watched file. Cancelling its source closes the
-    /// descriptor, and releases the handlers that hold the source.
-    private func disarm() {
-        watchedFile?.source.cancel()
-        watchedFile = nil
     }
 
     // MARK: - Diagnostics
@@ -1371,9 +1374,28 @@ final class ConfigService: ObservableObject {
 
 /// How to handle original files after import
 enum ImportDeleteBehavior: String, Codable, CaseIterable {
-    case keepOriginal = "Keep Original"
-    case deleteAfterImport = "Delete After Import"
-    case askEachTime = "Ask Each Time"
+    // The raw values are what config.json stores, so they never change with
+    // the interface language; `title` is what the pop-up shows and says.
+    case keepOriginal = "Keep Original" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case deleteAfterImport = "Delete After Import" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case askEachTime = "Ask Each Time" // l10n: no (stored id: config.json keeps it; `title` is shown)
 
+    /// The stored value, in English, for the debug log.
     var description: String { rawValue }
+
+    /// The choice's name in the After Importing a Book pop-up, in the
+    /// interface language.
+    var title: String {
+        switch self {
+        case .keepOriginal:
+            // Translators: A choice of the After Importing a Book pop-up in the Storage settings: the original file stays where it was.
+            return InterfaceText.line("importDeleteBehavior.title.keepOriginal", "Keep Original")
+        case .deleteAfterImport:
+            // Translators: A choice of the After Importing a Book pop-up in the Storage settings: the original file is deleted once the book is imported.
+            return InterfaceText.line("importDeleteBehavior.title.deleteAfterImport", "Delete After Import")
+        case .askEachTime:
+            // Translators: A choice of the After Importing a Book pop-up in the Storage settings: TextMouth asks what to do with the original file after each import.
+            return InterfaceText.line("importDeleteBehavior.title.askEachTime", "Ask Each Time")
+        }
+    }
 }

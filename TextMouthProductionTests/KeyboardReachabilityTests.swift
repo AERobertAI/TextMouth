@@ -47,6 +47,9 @@ final class KeyboardReachabilityTests: XCTestCase {
         "FeedWording.exportCommand": "A Library menu command that exports the feeds as a list; it has no shortcut action and is reached from the menu bar.",
         "LibraryCloudWording.keepName": "A Library menu command that keeps the selected books on this Mac; it has no shortcut action and is reached from the menu bar.",
         "LibraryCloudWording.stopKeepingName": "A Library menu command that stops keeping the selected books on this Mac; it has no shortcut action and is reached from the menu bar.",
+        "SyncWording.keepTitle": "A Library menu command, in the menu only while sync is on, that keeps the selected books on every device that syncs; it has no shortcut action and is reached from the menu bar.",
+        "SyncWording.stopKeepingTitle": "A Library menu command, in the menu only while sync is on, that stops keeping the selected books on all devices; it has no shortcut action and is reached from the menu bar.",
+        "LibraryCloudWording.removeDownloadTitle(count: 1, forSelection: false)": "A Library menu command, in the menu only while sync is on, that removes the selected books' downloads from this device while they stay in iCloud Drive; it has no shortcut action and is reached from the menu bar.",
         "LibraryRemoveCommandWording.menuBarTitle(preferences: removal.preferences, selection: removalSelection)":
             "A Library menu command whose title follows the selection and the removal preferences; its shortcut is Remove from Library's, which acts on the same selection.",
         "BookExportWording.commandTitle": "A File menu command that exports a book; it has no shortcut action and is reached from the menu bar.",
@@ -56,6 +59,7 @@ final class KeyboardReachabilityTests: XCTestCase {
         "BookManifestEditWording.editWithTitle": "A Book menu command that edits the book's manifest with another app; it has no shortcut action and is reached from the menu bar.",
         "TranscriptionWording.transcribeCommandTitle(hasTranscript: canDeleteBookTranscript == true)":
             "A Book menu command that transcribes a book's audio, or retranscribes it once it has a transcript; it has no shortcut action and is reached from the menu bar.",
+        "TranscriptionWording.attachCommandTitle": "A Book menu command that attaches a transcript file to an audiobook; it has no shortcut action and is reached from the menu bar.",
         "TranscriptCleanupWording.commandTitle": "A Book menu command that cleans up a transcript; it has no shortcut action and is reached from the menu bar.",
         "TranscriptionWording.deleteCommandTitle": "A Book menu command that deletes a book's transcript; it has no shortcut action and is reached from the menu bar.",
         "AudioEditorWording.editAudioCommand": "A Book menu command that opens the audio editor; it has no shortcut action and is reached from the menu bar.",
@@ -133,11 +137,22 @@ final class KeyboardReachabilityTests: XCTestCase {
         return name
     }
 
+    /// The menu's `MenuWording` titles that name a shortcut action with an
+    /// ellipsis its title lacks: the menu writes "Move to Folder..." where the
+    /// action is named "Move to Folder" (`withoutEllipsis(_:)`).
+    static let menuWordingActions: [String: ShortcutAction] = [
+        "MenuWording.moveToFolder": .moveToFolder,
+    ]
+
     /// What `argument` is: `ShortcutAction.<case>.title` or `.rawValue`, or a
     /// string literal equal to some action's raw value or title (an ellipsis at the
-    /// end counting for nothing, as `withoutEllipsis(_:)` says), or
+    /// end counting for nothing, as `withoutEllipsis(_:)` says), or a
+    /// `MenuWording` title that names an action (`menuWordingActions`), or
     /// else `.other`.
     static func source(ofMenuButton argument: String) -> MenuButtonSource {
+        if let action = menuWordingActions[argument] {
+            return .action(action)
+        }
         // ShortcutAction.<case>.title and ShortcutAction.<case>.rawValue.
         for ending in [".title", ".rawValue"] where argument.hasPrefix("ShortcutAction.") && argument.hasSuffix(ending) {
             let caseName = String(argument.dropFirst("ShortcutAction.".count).dropLast(ending.count))

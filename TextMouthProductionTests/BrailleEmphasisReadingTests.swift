@@ -2,7 +2,7 @@ import XCTest
 @testable import TextMouth
 
 /// The braille helper's reading passes (October 24, 2026,
-/// `TextMouthBraille/main.c`): emphasis signs read before liblouis reads the
+/// `TextMouthBraille/TextMouthBrailleLibrary.c`): emphasis signs read before liblouis reads the
 /// braille back.
 ///
 /// **EBAE.** liblouis 3.39.0 reads EBAE's emphasis sign ⠨ before a word as a
@@ -70,6 +70,8 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         }
     }
 
+    // Mac only: the helper run by a stand-in tool on a table file the catalog lacks; the iPhone compiles only the catalog's tables.
+    #if os(macOS)
     /// What `body` returns with the bundled helper reading braille back by
     /// liblouis alone, without the reading passes, when `liblouisAlone`
     /// (its test-only `back-liblouis`), and loading the table file `file`,
@@ -79,13 +81,29 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         let helper = BrailleTranslator.Tool.helper
         var tool = helper
         tool.command = { mode, table, input, output in
-            guard var command = helper.command(liblouisAlone && mode == "back" ? "back-liblouis" : mode, table, input, output) else {
+            guard var command = try helper.command(liblouisAlone && mode == "back" ? "back-liblouis" : mode, table, input, output) else {
                 return nil
             }
             if let file { command.arguments = command.arguments.map { $0 == table ? file : $0 } }
             return command
         }
         return try BrailleTranslator.$tool.withValue(tool, operation: body)
+    }
+    #endif
+
+    /// What `body` returns with braille read back by liblouis alone, without
+    /// the reading passes, when `liblouisAlone`: on the Mac by the helper's
+    /// test-only `back-liblouis` (`withHelper`, which also loads `file`, when
+    /// given, in place of the table named); on the iPhone by its library's
+    /// (`BrailleTranslator.readsByLiblouisAlone`), which compiles only the
+    /// catalog's tables, so no `file` is given there.
+    private func readingByLiblouis<T>(alone liblouisAlone: Bool, file: String? = nil, _ body: () throws -> T) throws -> T {
+        #if os(iOS)
+        XCTAssertNil(file, "the iPhone loads no table file in place of the table named")
+        return try BrailleTranslator.$readsByLiblouisAlone.withValue(liblouisAlone, operation: body)
+        #else
+        return try withHelper(liblouisAlone: liblouisAlone, file: file, body)
+        #endif
     }
 
     /// Asserts that each of `samples`, braille ASCII and the print it holds,
@@ -237,17 +255,21 @@ final class BrailleEmphasisReadingTests: XCTestCase {
     /// signs in each EBAE table (`BANASentenceGenerator`) read back with
     /// exactly the words liblouis reads alone from the same braille, case
     /// included, as main (e110d985) read them (the helper's test-only
-    /// `back-liblouis`), and at least two in three keep emphasis. Before the
-    /// safety net, the verifier's 24,000 such sentences read other words in
-    /// 52 (October 24, 2026). The third table is en-us-g2.ctb, which
-    /// en_US.tbl includes and TextMouth does not offer, read through the
-    /// bundled helper by its file name.
+    /// `back-liblouis`, the iPhone library's own), and at least two in three
+    /// keep emphasis. Before the safety net, the verifier's 24,000 such
+    /// sentences read other words in 52 (October 24, 2026). On the Mac a third
+    /// table is read too: en-us-g2.ctb, which en_US.tbl includes and
+    /// TextMouth does not offer, through the bundled helper by its file name.
     func testBANAEmphasisReadsLiblouissOwnWords() throws {
-        let tables: [(name: String, file: String?)] = [(ebaeUncontracted, nil), (ebaeContracted, nil), (ebaeContracted, "en-us-g2.ctb")]
+        var tables: [(name: String, file: String?)] = [(ebaeUncontracted, nil), (ebaeContracted, nil)]
+        // Mac only: en-us-g2.ctb by its file name through the helper (withHelper); the iPhone compiles only the catalog's tables.
+        #if os(macOS)
+        tables.append((ebaeContracted, "en-us-g2.ctb"))
+        #endif
         for table in tables {
             let label = table.file ?? table.name
             let pieces = BANASentenceGenerator.pieces
-            let braille = try withHelper(liblouisAlone: false, file: table.file) {
+            let braille = try readingByLiblouis(alone: false, file: table.file) {
                 try BrailleTranslator.translate(pieces, table: table.name, direction: .printToBraille, workingIn: work)
             }
             var generator = BANASentenceGenerator(
@@ -255,13 +277,26 @@ final class BrailleEmphasisReadingTests: XCTestCase {
                 contracted: table.name == ebaeContracted
             )
             let sentences = (0..<3_000).map { _ in EmphasizedText(generator.sentence()) }
-            let read = try withHelper(liblouisAlone: false, file: table.file) {
+            let read = try readingByLiblouis(alone: false, file: table.file) {
                 try BrailleTranslator.translate(sentences, table: table.name, direction: .brailleToPrint, workingIn: work)
             }
-            let alone = try withHelper(liblouisAlone: true, file: table.file) {
+            let alone = try readingByLiblouis(alone: true, file: table.file) {
                 try BrailleTranslator.translate(sentences, table: table.name, direction: .brailleToPrint, workingIn: work)
             }
-            let changed = zip(read, alone).filter { $0.text != $1.text }
+            // liblouis alone reads an emphasized word that begins with m as
+            // "µ" and the rest (the sentences hold no print "µ"); the pass
+            // reads the sign, except after a number, where a unit is likelier
+            // (November 13, 2026, `is_sign_before_m_word`). So "µ" is "m" in
+            // both readings.
+            let micro = { (text: String) in text.replacingOccurrences(of: "\u{B5}", with: "m") }
+            // liblouis alone also reads "ing" and a hyphen before another hyphen
+            // as "±" and a hyphen ("someth±-aunt"), which the helper's own fix
+            // reads as "ing" and a dash, spaced ("something -- aunt")
+            // (November 13, 2026); so "±-" is "ing -- " in the alone reading.
+            let plusMinus = { (text: String) in
+                text.replacingOccurrences(of: "\u{B1}-", with: "ing -- ").replacingOccurrences(of: "\u{B1}", with: "ing-")
+            }
+            let changed = zip(read, alone).filter { micro($0.text) != micro(plusMinus($1.text)) }
             XCTAssertEqual(read.count, sentences.count, label)
             XCTAssertEqual(alone.count, sentences.count, label)
             XCTAssertEqual(changed.count, 0, "\(label): \(changed.prefix(5).map { "\($0.1.text) → \($0.0.text)" })")
@@ -287,7 +322,9 @@ final class BrailleEmphasisReadingTests: XCTestCase {
     /// and "(=)" as "(*knowledge*)".
     func testTheReviewsSymbolSentencesReadBackAsTheirPrint() throws {
         let sentences = ["5 \u{B5}g", "x >= y", "x == y", "(=)", ">quoted", "a->b", "km/\u{B5}s", "\u{B5}", "[=]", "a -- =b",
-                         "go to =x", "into >y", "by \u{B5}"]
+                         "go to =x", "into >y", "by \u{B5}",
+                         // Micro before a unit, as liblouis writes it (⠨⠍⠰⠍, ⠨⠍⠰⠛, ⠨⠍⠰⠠⠇, ⠨⠍⠍⠕⠇).
+                         "(\u{B5}m)", "\u{B5}g/mL", "a few \u{B5}m", "\u{B5}L", "5 \u{B5}mol"]
         for table in [ebaeUncontracted, ebaeContracted] {
             let braille = try BrailleTranslator.translate(sentences, table: table, direction: .printToBraille, workingIn: work)
             XCTAssertEqual(try BrailleTranslator.translate(braille, table: table, direction: .brailleToPrint, workingIn: work), sentences, table)
@@ -343,6 +380,8 @@ final class BrailleEmphasisReadingTests: XCTestCase {
         try assertReads([("..one two three ._+a.b.com_: now", #"*one two three a\.b\.com* now"#)], ebaeUncontracted)
     }
 
+    // Mac only: this Mac's own tables, which the iPhone does not have.
+    #if os(macOS)
     /// The EBAE pass runs only where EBAE's signs mean emphasis. This Mac's
     /// Bharati tables also write italic as ⠨ before a word, but read ⠨ as
     /// the letter "kh", which the pass dropped from every word it began
@@ -365,6 +404,7 @@ final class BrailleEmphasisReadingTests: XCTestCase {
             XCTAssertEqual(print, [sample.readBack], sample.table)
         }
     }
+    #endif
 
     // MARK: - UEB
 
@@ -431,6 +471,16 @@ private struct SymbolSentenceGenerator {
         random = SeededRandom(seed: seed)
     }
 
+    /// `symbol` glued to `word`; a micro sign stands before no word of
+    /// letters ("µzoo"), where braille cannot tell it from an emphasized word
+    /// beginning with m, which the pass reads as emphasis, and before a unit
+    /// ("µL") liblouis's own reading of the words after it in the same record
+    /// is not exact (it read "good" after a dash as "gd"), so the micro signs
+    /// before units are in `testTheReviewsSymbolSentencesReadBackAsTheirPrint`.
+    private func attached(_ symbol: String, _ word: String) -> String {
+        symbol == "\u{B5}" ? ">" + word : symbol + word
+    }
+
     /// One token; a number is a word in a sentence with dashes.
     private mutating func token(dashes: Bool) -> String {
         let kind = random.pick(10)
@@ -445,16 +495,16 @@ private struct SymbolSentenceGenerator {
         case 4:
             return word + "-" + random.element(of: Self.words)
         case 5:
-            return symbol + word
+            return attached(symbol, word)
         case 6:
             let k = random.pick(Self.openers.count)
             return Self.openers[k] + symbol + Self.closers[k]
         case 7:
-            return random.element(of: Self.joined) + " " + symbol + word
+            return random.element(of: Self.joined) + " " + attached(symbol, word)
         case 8:
             return "." + random.element(of: Self.wordsFromAToJ)
         default:
-            return word + "/" + symbol + random.element(of: Self.words)
+            return word + "/" + attached(symbol, random.element(of: Self.words))
         }
     }
 

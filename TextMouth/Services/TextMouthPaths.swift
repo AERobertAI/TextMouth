@@ -13,7 +13,20 @@ enum TextMouthPaths {
 
     /// The default data directory inside `home`.
     static func defaultRoot(in home: URL) -> URL {
+        #if os(iOS)
+        // On iOS, `home` is the app's container, whose top level is not a
+        // place to write: Apple documents Documents, Library, and tmp. The
+        // library goes in Library/Application Support, backed up and hidden
+        // from the Files app, so library.json and the book packages cannot be
+        // touched by a stray flick there. The folder keeps its name with the
+        // dot: `legacyApplicationSupportDirectory(in:)` names
+        // Library/Application Support/TextMouth, without it, and the legacy
+        // migration would read a library there as an old one.
+        home.appendingPathComponent("Library/Application Support", isDirectory: true)
+            .appendingPathComponent(dataDirectoryName, isDirectory: true)
+        #else
         home.appendingPathComponent(dataDirectoryName, isDirectory: true)
+        #endif
     }
 
     /// The default location: .TextMouth in this process's home directory,
@@ -41,7 +54,9 @@ enum TextMouthPaths {
         guard let customPath = customRootPath(for: runtime) else {
             return defaultRoot(in: runtime.homeDirectory)
         }
-        let named = URL(fileURLWithPath: customPath)
+        // Named as a folder, so no lstat(2) decides it: a folder above the library
+        // may be dataless, and a stat on the main thread would download it.
+        let named = URL(fileURLWithPath: customPath, isDirectory: true)
         let check = DataDirectoryCheck.of(root: named, preferences: runtime.preferences, runtime: runtime)
         guard let relocated = check.relocatedLibrary()?.folder else { return named }
         let line = recordRelocation(from: named, to: relocated, in: runtime.preferences)
@@ -61,8 +76,8 @@ enum TextMouthPaths {
     static func recordRelocation(from oldRoot: URL, to newRoot: URL, in preferences: UserDefaults) -> String {
         DataDirectoryPreferences.customPath.write(newRoot.path, to: preferences)
         DataDirectoryPreferences.bookmark.write(DataDirectoryPreferences.makeBookmark(of: newRoot), to: preferences)
-        return "DATA_DIRECTORY_FOUND: \(DataDirectoryPaths.shortName(of: oldRoot)) was missing; its bookmark "
-            + "found the library at \(DataDirectoryPaths.shortName(of: newRoot)), which is the data directory now"
+        return "DATA_DIRECTORY_FOUND: \(DataDirectoryPaths.shortName(of: oldRoot)) was missing; its bookmark " // l10n: no (debug log text)
+            + "found the library at \(DataDirectoryPaths.shortName(of: newRoot)), which is the data directory now" // l10n: no (debug log text)
     }
 
     /// The active data directory of this process: the root of the current
@@ -127,14 +142,25 @@ enum TextMouthPaths {
     // MARK: - Subdirectories
 
     /// The name of the folder of books inside the data directory.
-    static let libraryFolderName = "Library"
+    static let libraryFolderName = "Library" // l10n: no (a folder's name on disk)
 
     static var libraryDir: URL {
         root.appendingPathComponent(libraryFolderName, isDirectory: true)
     }
 
+    /// The name of the folder inside the data directory that holds this
+    /// device's own sync files (FR43): its device file, clock, registers,
+    /// baseline, and outbox, in a folder per store.
+    static let syncFolderName = "Sync" // l10n: no (a folder's name on disk)
+
+    /// The folder of this device's own sync files, in the data directory;
+    /// nothing is made there until a sync folder is chosen (rule R1).
+    static var syncDir: URL {
+        root.appendingPathComponent(syncFolderName, isDirectory: true)
+    }
+
     /// The name of the folder of logs inside the data directory.
-    static let logsFolderName = "Logs"
+    static let logsFolderName = "Logs" // l10n: no (a folder's name on disk)
 
     /// The folder the diagnostic logs are written to now (`logDestination`):
     /// the data directory's Logs folder, or this Mac's
@@ -146,6 +172,15 @@ enum TextMouthPaths {
     static var configFile: URL {
         root.appendingPathComponent("config.json")
     }
+
+    /// The person's own interface lines (FR39), beside config.json: written only by Edit Interface Text… on the Mac
+    /// (and by the person), never by a launch, a sync, or a move of the data directory.
+    static var interfaceTextFile: URL {
+        root.appendingPathComponent(interfaceTextFileName)
+    }
+
+    /// The file of own interface lines' name in the data directory.
+    static let interfaceTextFileName = "interface_text.json" // l10n: no (a file's name on disk)
 
     static var libraryIndexFile: URL {
         root.appendingPathComponent("library.json")
@@ -350,6 +385,34 @@ enum TextMouthPaths {
     static func isTranscriptFile(_ name: String) -> Bool {
         name == transcriptFileName || name == transcriptBeforeCleanupFileName
             || name.hasPrefix(transcriptFileName + LibraryIndexQuarantine.nameMarker)
+    }
+
+    /// Name of a podcast episode's chapters, kept beside its audio in its
+    /// package by its download (FMT25), in the normalized form
+    /// `PodcastChapters.normalizedJSON()` writes, and read when the audio is
+    /// analyzed (`BookContentAnalysisService.analyzeAudio`). TextMouth's own
+    /// file, never part of the book (`FileImportService.isPackageContentName`).
+    static let podcastChaptersFileName = "podcastChapters.json"
+
+    /// Path to a podcast episode's chapters inside a .tmb package
+    static func podcastChaptersPath(in tmbDir: URL) -> URL {
+        tmbDir.appendingPathComponent(podcastChaptersFileName)
+    }
+
+    /// Name of the podcast chapters set aside while edits of the episode's
+    /// audio are saved in its file, whose times the chapters no longer fit.
+    /// Undoing every edit and saving brings the original audio back, and
+    /// the chapters come back with it (`LibraryViewModel.restorePodcastChapters`).
+    /// Hidden, so it is never taken for the book's own content
+    /// (`FileImportService.isPackageContentName`), and removed with the
+    /// audio that made it, as the chapters are
+    /// (`FeedItemPackage.removeWhatTheFileMade`).
+    static let podcastChaptersSetAsideFileName = ".podcastChapters.unedited.json"
+
+    /// Path to the podcast chapters set aside inside a .tmb package
+    /// (`podcastChaptersSetAsideFileName`).
+    static func podcastChaptersSetAsidePath(in tmbDir: URL) -> URL {
+        tmbDir.appendingPathComponent(podcastChaptersSetAsideFileName)
     }
 
     /// The name of the folder inside a .tmb package holding the speech
@@ -649,7 +712,7 @@ enum TextMouthPaths {
         let result = str.unicodeScalars.filter { allowed.contains($0) }.map { Character($0) }
         var s = String(result)
         s = s.trimmingCharacters(in: .whitespaces)
-        if s.isEmpty { s = "Unknown" }
+        if s.isEmpty { s = "Unknown" } // l10n: no (a file name written on disk)
         s = s.replacingOccurrences(of: " ", with: "_")
         if s.count > 60 { s = String(s.prefix(60)) }
         return s

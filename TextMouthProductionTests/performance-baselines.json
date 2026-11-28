@@ -66,6 +66,11 @@
       "unit" : "microseconds",
       "value" : 145.621
     },
+    "markdown.read" : {
+      "summary" : "Reading a 1 MB Markdown document of prose, lists, quotes, tables, code, and page markers into its reading text, headings, and pages.",
+      "unit" : "milliseconds",
+      "value" : 53.405
+    },
     "open.audiobook" : {
       "summary" : "Opening a 3-file audiobook in a reader until it has loaded.",
       "unit" : "milliseconds",

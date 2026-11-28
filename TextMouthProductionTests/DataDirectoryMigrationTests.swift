@@ -250,6 +250,46 @@ final class DataDirectoryMigrationTests: XCTestCase {
         XCTAssertEqual(try snapshot(of: source), sourceBefore, "the data directory changed")
     }
 
+    /// A book whose file is stored outside the data directory is not in the
+    /// copy, and the refusal says where it is and what to do, not that the
+    /// copy lacks its content: it names the book and its path, nothing is
+    /// published or left staged, and the data directory and the book's file
+    /// are left as they were.
+    func testABookStoredOutsideTheDataDirectoryIsRefusedForWhereItIs() throws {
+        let (source, destination) = try makeMoveLocations()
+        var library = try makeLibrary(at: source)
+        var book = try XCTUnwrap(library.books.first, "the library has no book")
+        book.title = "Stored Apart"
+        // The book's file exists, in a folder beside the data directory.
+        let apart = source.deletingLastPathComponent().appendingPathComponent("Apart", isDirectory: true)
+        try FileManager.default.createDirectory(at: apart, withIntermediateDirectories: true)
+        let outsideFile = apart.appendingPathComponent("stored-apart.txt")
+        try Data("apart".utf8).write(to: outsideFile)
+        book.filePath = outsideFile.path
+        library.books = [book]
+        let sourceBefore = try snapshot(of: source)
+
+        XCTAssertThrowsError(
+            try DataDirectoryMigrator.prepareMigration(from: source, to: destination, library: library)
+        ) { error in
+            guard case DataDirectoryMigrationError.bookOutsideDataDirectory(let title, let path) = error else {
+                return XCTFail("Expected the outside-the-data-directory refusal, received \(error)")
+            }
+            XCTAssertEqual(title, "Stored Apart")
+            XCTAssertEqual(path, outsideFile.path)
+            let description = error.localizedDescription
+            XCTAssertTrue(description.contains("Stored Apart"), "the book is not named: \(description)")
+            XCTAssertTrue(description.contains(outsideFile.path), "its path is not given: \(description)")
+            XCTAssertTrue(description.contains("outside the data directory"), "where it is is not said: \(description)")
+            XCTAssertTrue(description.contains("Replace Existing"), "the way out is not said: \(description)")
+            XCTAssertFalse(description.contains("missing"), "it was reported as missing from the copy: \(description)")
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path), "the copy was published")
+        XCTAssertEqual(stagingLeft(in: destination.deletingLastPathComponent()), [], "the copy was left staged")
+        XCTAssertEqual(try snapshot(of: source), sourceBefore, "the data directory changed")
+        XCTAssertEqual(try Data(contentsOf: outsideFile), Data("apart".utf8), "the book's file changed")
+    }
+
     /// A staged index that does not read back as the library it was written
     /// from fails its check, and the copy is never published: the refusal
     /// says so, the copy is deleted, and the data directory is left as it

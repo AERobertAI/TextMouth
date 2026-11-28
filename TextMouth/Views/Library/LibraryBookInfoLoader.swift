@@ -15,7 +15,10 @@ enum LibraryBookInfo {
     case simple
 
     /// What the sheet says while some details wait for a download.
-    static let cloudOnlyNote = "Some details appear once the book is downloaded."
+    static var cloudOnlyNote: String {
+        // Translators: Note in Book Information when the book's file is only in the cloud, so the sheet shows the details the library keeps and the others wait for a download.
+        InterfaceText.line("libraryBookInfo.cloudOnlyNote", "Some details appear once the book is downloaded.")
+    }
 
     /// Whether the book's file was only in the cloud, so the sheet shows the
     /// details the library keeps and says `cloudOnlyNote`.
@@ -31,8 +34,12 @@ enum LibraryBookInfo {
     /// it first, while the interface waited. Nil when the save can go ahead.
     static func writeRefusal(isCloudOnly: Bool, writesToFile: Bool) -> String? {
         guard isCloudOnly, writesToFile else { return nil }
-        return "The book's EPUB file is only in the cloud, so it can't be written until the book is downloaded. "
-            + "Turn off writing to the file, or download the book first."
+        return SentenceWording.joined([
+            // Translators: First sentence of the message when Save in Book Information is refused because the book's EPUB file is only in the cloud, and writing to the file is on. EPUB is a format name.
+            InterfaceText.line("libraryBookInfo.writeRefusal.downloaded", "The book's EPUB file is only in the cloud, so it can't be written until the book is downloaded."),
+            // Translators: Second sentence of the message when Save in Book Information is refused because the book's EPUB file is only in the cloud: what to do.
+            InterfaceText.line("libraryBookInfo.writeRefusal.download", "Turn off writing to the file, or download the book first."),
+        ])
     }
 }
 
@@ -49,6 +56,13 @@ struct LibraryBookInfoReader: Sendable {
     var readEPUBMetadata: @Sendable (URL) throws -> EPUBMetadata
     /// Reads the metadata of the audio file at a URL.
     var readAudioMetadata: @Sendable (URL) async -> AudioMetadata
+    /// How long reading an audio file's tags may take before Book Info
+    /// stops waiting and shows the metadata the library keeps. Tests pass a
+    /// short one.
+    var audioTagsTimeLimit: Duration = AsyncBridge.audioTagsTimeLimit
+    /// The audio files whose tag read passed its limit, which are not read
+    /// again until TextMouth is closed and opened again. Tests pass their own.
+    var abandonedReads: AsyncBridge.AbandonedReads = .session
 
     /// The reads the app uses. An EPUB is read with dataless files left in
     /// the cloud, so one evicted after the check fails at once instead of
@@ -87,9 +101,24 @@ struct LibraryBookInfoReader: Sendable {
             if isCloudOnly {
                 return .audio(book.storedAudioMetadata, isCloudOnly: true)
             }
-            let tags = await Task.detached(priority: .userInitiated) { await reader.readAudioMetadata(file) }.value
+            // A tag read that never returns (a file that hangs AVFoundation)
+            // would leave the sheet on its loading state for good: after the
+            // limit, or for a file an earlier read gave up on, the sheet
+            // shows the metadata the library keeps. That is not the
+            // cloud-only case, so the sheet says nothing of a download.
+            let tags = await Task.detached(priority: .userInitiated) {
+                try? AsyncBridge.waitForResult(
+                    reading: file,
+                    timeLimit: reader.audioTagsTimeLimit,
+                    abandoned: reader.abandonedReads
+                ) { await reader.readAudioMetadata(file) }
+            }.value
+            guard let tags else {
+                return .audio(book.storedAudioMetadata, isCloudOnly: false)
+            }
             return .audio(book.mergingEditableAudioMetadata(tags), isCloudOnly: false)
-        case .txt, .markdown, .html, .webarchive, .ssml, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .daisy, .pdf:
+        case .txt, .markdown, .html, .webarchive, .ssml, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .daisy, .pdf, .mobi, .kfx,
+             .picture, .comic:
             return .simple
         }
     }

@@ -3,7 +3,7 @@ import CryptoKit
 import UniformTypeIdentifiers
 import ZIPFoundation
 
-enum FileImportError: LocalizedError {
+enum FileImportError: LocalizedError, LogDescribing {
     case unsupportedFormat(String)
     case hashingFailed
     case importFailed(String)
@@ -35,31 +35,91 @@ enum FileImportError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unsupportedFormat(let ext): return "Unsupported file format: .\(ext)"
-        case .hashingFailed: return "Failed to compute file hash."
-        case .importFailed(let msg): return "Import failed: \(msg)"
-        case .recordNotReadBack: return "The bookInfo.json file did not read back as it was written."
+        case .unsupportedFormat(let ext):
+            // A transcript is not a book, but it has a way in: say it. A
+            // format that is refused on purpose says how to convert it
+            // (FMT02, `RefusedFormatAdvice`).
+            let hint: String
+            if TimedTextFormat.cueFileFormat(forExtension: ext) != nil {
+                // Translators: Advice after the refusal of a transcript file chosen as a book. %@ is the file's extension without its dot. "Attach Transcript…" is a command of the Book menu: keep its name the same as that command's and the menu's.
+                hint = InterfaceText.line("fileImportError.unsupportedFormat.transcript", "A .\(ext) file is a transcript, not a book. To use it, import its audio, open the book, and choose Attach Transcript… from the Book menu.")
+            } else if let advice = RefusedFormatAdvice.advice(forExtension: ext) {
+                hint = advice
+            } else {
+                // No advice: the refusal stands alone, with no full stop.
+                // Translators: Why a file was refused at import: TextMouth does not read its format. %@ is the file's extension without its dot. No advice follows.
+                return InterfaceText.line("fileImportError.unsupportedFormat.alone", "Unsupported file format: .\(ext)")
+            }
+            // Translators: Why a file was refused at import: TextMouth does not read its format. %@ is the file's extension without its dot. Advice on what to do follows.
+            let refusal = InterfaceText.line("fileImportError.unsupportedFormat.beforeAdvice", "Unsupported file format: .\(ext).")
+            return SentenceWording.joined([refusal, hint])
+        case .hashingFailed:
+            // Translators: Why an import failed: the file's checksum could not be computed.
+            return InterfaceText.line("fileImportError.hashingFailed", "Failed to compute file hash.")
+        case .importFailed(let msg):
+            // Translators: Why an import failed. %@ is the reason, a sentence.
+            return InterfaceText.line("fileImportError.importFailed", "Import failed: \(msg)")
+        case .recordNotReadBack:
+            // Translators: Why an import failed: the book's record file, bookInfo.json, was written but did not read back as written.
+            return InterfaceText.line("fileImportError.recordNotReadBack", "The bookInfo.json file did not read back as it was written.")
         case .unplayableAudio(let failure): return failure.message
-        case .unreadableArchive: return "The archive is damaged, incomplete, or not a ZIP archive."
-        case .archiveLinksOutside: return "The archive holds a link to a file outside it, which is never extracted."
-        case .archivePathOutside: return "The archive holds a file whose path leads outside it, which is never extracted."
-        case .noTextToRead: return "This file has no text to read."
+        case .unreadableArchive:
+            // Translators: Why an archive was refused at import: it could not be read as a ZIP archive.
+            return InterfaceText.line("fileImportError.unreadableArchive", "The archive is damaged, incomplete, or not a ZIP archive.")
+        case .archiveLinksOutside:
+            // Translators: Why an archive was refused at import: it holds a symbolic link to a file outside it.
+            return InterfaceText.line("fileImportError.archiveLinksOutside", "The archive holds a link to a file outside it, which is never extracted.")
+        case .archivePathOutside:
+            // Translators: Why an archive was refused at import: it holds a file whose path climbs out of the folder it is extracted into.
+            return InterfaceText.line("fileImportError.archivePathOutside", "The archive holds a file whose path leads outside it, which is never extracted.")
+        case .noTextToRead:
+            // Translators: Why a text, Markdown, or HTML file was refused at import: it is empty or holds only white space or markup.
+            return InterfaceText.line("fileImportError.noTextToRead", "This file has no text to read.")
         case .unsupportedXML:
-            return "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the kinds of XML file TextMouth reads."
+            // Translators: Why an XML file was refused at import: its root element is not one of the three kinds TextMouth reads. DTBook, Word 2003 XML, and PEF are format names.
+            return InterfaceText.line("fileImportError.unsupportedXML", "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.")
+        }
+    }
+
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34).
+    var logDescription: String {
+        switch self {
+        case .unsupportedFormat(let ext): return "Unsupported file format: .\(ext)" // l10n: no (debug log)
+        case .hashingFailed: return "Failed to compute file hash." // l10n: no (debug log)
+        case .importFailed(let msg): return "Import failed: \(msg)" // l10n: no (debug log)
+        case .recordNotReadBack: return "The bookInfo.json file did not read back as it was written." // l10n: no (debug log)
+        case .unplayableAudio(let failure): return failure.logMessage
+        case .unreadableArchive: return "The archive is damaged, incomplete, or not a ZIP archive." // l10n: no (debug log)
+        case .archiveLinksOutside: return "The archive holds a link to a file outside it, which is never extracted." // l10n: no (debug log)
+        case .archivePathOutside: return "The archive holds a file whose path leads outside it, which is never extracted." // l10n: no (debug log)
+        case .noTextToRead: return "This file has no text to read." // l10n: no (debug log)
+        case .unsupportedXML: return "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file." // l10n: no (debug log)
         }
     }
 }
 
-enum TMBPackageImportError: LocalizedError {
+enum TMBPackageImportError: LocalizedError, LogDescribing {
     case invalidPackage(String)
     case destinationExists(String)
 
     var errorDescription: String? {
         switch self {
         case .invalidPackage(let reason):
-            return "Invalid TextMouth package: \(reason)"
+            // The reason is an internal phrase in English.
+            // Translators: Why a TextMouth package (.tmb) was refused at import. %@ is the reason, a phrase in English.
+            return InterfaceText.line("tmbPackageImportError.invalidPackage", "Invalid TextMouth package: \(reason)")
         case .destinationExists(let name):
-            return "A managed package named \(name) already exists."
+            // Translators: Why a TextMouth package could not be imported: the library already holds a package of that name. %@ is the package's name.
+            return InterfaceText.line("tmbPackageImportError.destinationExists", "A managed package named \(name) already exists.")
+        }
+    }
+
+    /// The error in English for the debug log (FR34).
+    var logDescription: String {
+        switch self {
+        case .invalidPackage(let reason): return "Invalid TextMouth package: \(reason)" // l10n: no (debug log)
+        case .destinationExists(let name): return "A managed package named \(name) already exists." // l10n: no (debug log)
         }
     }
 }
@@ -132,13 +192,11 @@ struct ImportedBook {
         if tookOnlyPartOfOriginal, let leftovers = archiveLeftovers {
             return DAISYArchiveWording.originalKept(bookTitle: book.title, leftovers: leftovers)
         }
-        let reason: String
         if isFromFolder, book.format == .rtfd {
-            reason = "it is a folder, and an import never deletes a folder"
-        } else {
-            return nil
+            // Translators: Notice after a book was imported from a folder, such as an RTFD: the original was kept because an import never deletes a folder.
+            return InterfaceText.line("importedBook.originalKeptNotice", "The original file was kept: it is a folder, and an import never deletes a folder.")
         }
-        return "The original file was kept: \(reason)."
+        return nil
     }
 
     /// The warning an import that left chapters or pages out presents once:
@@ -146,7 +204,7 @@ struct ImportedBook {
     /// import.
     var warning: String? {
         guard keepsOriginal else { return nil }
-        return "\(report.message) The original file was kept."
+        return SentenceWording.joined([report.message, ZipImportResult.originalKeptSentence])
     }
 
     /// All the import tells the listener once the book is in the library:
@@ -180,13 +238,21 @@ struct DAISYArchiveLeftovers: Equatable {
 
 /// The files a SMIL document's text elements name, which tell whether a
 /// DAISY book has text of its own beyond its navigation.
-private final class SMILTextSources: NSObject, XMLParserDelegate {
+final class SMILTextSources: NSObject, XMLParserDelegate {
     /// The `src` of each text element read, fragments included.
     private var sources: [String] = []
 
     /// The `src` of each text element in `data`, in order, up to the point
     /// a damaged document stops the read; the sources found stand.
+    ///
+    /// A file the XML guard refuses (a tag with too many attributes, entities
+    /// of its own, an encoding it cannot see through; `XMLInputGuard`) is
+    /// never given to the XML parser, but it still names its text: the
+    /// sources are found by `sourcesWithoutParsing(_:)`. Reading none would
+    /// say a book has no text of its own, and the archive that holds the
+    /// only copy of that text would be offered for deletion.
     static func scan(_ data: Data) -> [String] {
+        guard XMLInputGuard.problem(with: data) == nil else { return sourcesWithoutParsing(data) }
         let scanner = SMILTextSources()
         let parser = XMLParser(data: data)
         parser.shouldResolveExternalEntities = false
@@ -202,6 +268,29 @@ private final class SMILTextSources: NSObject, XMLParserDelegate {
         // Prefixed names ("smil:text") count; only the local name matters.
         guard elementName.split(separator: ":").last == "text", let source = attributeDict["src"] else { return }
         sources.append(source)
+    }
+
+    /// A text element's start tag, its prefix allowed (`smil:text`), up to
+    /// its `src` attribute in either kind of quotation mark. The white space
+    /// after the name is looked at but not consumed (`(?=\s)`), so a `src`
+    /// that comes first is found by the white space before it. The tag's other
+    /// attributes are passed over by `[^<>]*?`, which never crosses the start
+    /// or the end of another tag, so a file made of unclosed tags is read in
+    /// one pass, not once for each. Group 1 and 2 are the source.
+    private static let sourcePattern =
+        #"<(?:[^\s<>:/]+:)?text(?=\s)[^<>]*?\ssrc\s*=\s*(?:"([^"]*)"|'([^']*)')"#
+
+    /// The `src` of each text element in `data`, found as text and not as
+    /// XML, for a file the guard keeps from the XML parser: no entity is
+    /// expanded and no document type read, so the file costs no more than a
+    /// pass over its bytes. ISO Latin 1 gives every byte a character, so
+    /// markup in any ASCII-compatible encoding reads as it is written.
+    private static func sourcesWithoutParsing(_ data: Data) -> [String] {
+        guard let markup = String(data: data, encoding: .isoLatin1),
+              let expression = try? NSRegularExpression(pattern: sourcePattern) else { return [] }
+        return expression.matches(in: markup, range: NSRange(markup.startIndex..., in: markup)).compactMap { match in
+            [1, 2].lazy.compactMap { Range(match.range(at: $0), in: markup) }.first.map { String(markup[$0]) }
+        }
     }
 }
 
@@ -221,13 +310,27 @@ struct ImportedFileMetadata {
     /// with the author role (`EPUBParser.authorName(in:)`); rows never
     /// stamped were read by what came before.
     static let readerVersion = "1.0.0"
+    /// The version of the braille books' reader. 1.1.0: a BRF's title and
+    /// author are read from its braille title page (`BrailleTitlePage`), so
+    /// each braille book is read again once at launch, and no other format's
+    /// book is (`readerVersion(for:)`).
+    static let brailleReaderVersion = "1.1.0"
+
+    /// The version of the reader of `format`'s metadata: what a row of that
+    /// format is stamped with, and what the launch refresh compares its stamp
+    /// with, so a better reader of one format reads only that format's books
+    /// again.
+    static func readerVersion(for format: BookFormat) -> String {
+        format == .braille ? brailleReaderVersion : readerVersion
+    }
 
     /// Whether this reader opens a file of `format` at all: a plain text,
-    /// Markdown, or HTML file keeps no title or author it reads.
+    /// Markdown, or HTML file keeps no title or author it reads, and neither
+    /// does a picture, which is listed by its file's name.
     static func readsFile(of format: BookFormat) -> Bool {
         switch format {
-        case .epub, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .pdf, .daisy, .audio: return true
-        case .txt, .markdown, .html, .webarchive, .ssml: return false
+        case .epub, .docx, .rtf, .rtfd, .doc, .odt, .wordml, .braille, .pdf, .daisy, .audio, .mobi, .kfx, .comic: return true
+        case .txt, .markdown, .html, .webarchive, .ssml, .picture: return false
         }
     }
 
@@ -247,11 +350,20 @@ struct ImportedFileMetadata {
     /// sets `readingTextutilNames` false, since the conversion that reads
     /// its text names them too (`MarkdownCacheService.GeneratedCache`), and
     /// the launch refresh leaves it true.
+    ///
+    /// A BRF names its title and author on its title page, in braille, which
+    /// is read with a table: `brailleReading` gives the table and the braille
+    /// file characters a book already recorded (the launch refresh), and an
+    /// import, which has none yet, passes what it decided
+    /// (`FileImportService.brailleReading(ofImported:)`, the setting's table
+    /// or a guessed one, and the file's own characters), and nil takes the
+    /// same decision here.
     static func read(
         from url: URL,
         format: BookFormat,
         fallbackTitle: String? = nil,
-        readingTextutilNames: Bool = true
+        readingTextutilNames: Bool = true,
+        brailleReading: (table: String, fileCode: String?)? = nil
     ) -> ImportedFileMetadata {
         var metadata = ImportedFileMetadata(title: fallbackTitle ?? url.deletingPathExtension().lastPathComponent)
         /// Adopts the title and author a format's metadata names, keeping
@@ -280,18 +392,63 @@ struct ImportedFileMetadata {
             if readingTextutilNames, let named = try? TextutilDocumentReader.readMetadata(from: url, bookFormat: format) {
                 adopt(title: named.title, author: named.author)
             }
+        case .braille where BardBraillePackage.isPackage(at: url):
+            // An NLS BARD braille book names its title, author, publisher,
+            // date, language, and identifier in its package (FMT56), which a
+            // BRF's title page is no match for.
+            if let named = BardBraillePackage.readMetadata(from: url) {
+                adopt(title: named.title, author: named.author)
+                metadata.epub = named.epub
+            }
         case .braille:
             // A PEF names its title and author in its head (FMT20); a BRF
-            // or a BRL names nothing, so it keeps its file's name and the
-            // unknown author.
-            if BrailleBookReader.kind(of: url) == .pef {
+            // names them on its title page, in braille (`BrailleTitlePage`);
+            // a BRL has no layout, so it keeps its file's name and the
+            // unknown author, as does a BRF whose title page names none.
+            switch BrailleBookReader.kind(of: url) {
+            case .pef:
                 let named = BrailleFileReader.pefMetadata(of: url)
                 adopt(title: named.title ?? "", author: named.author ?? "")
+            case .brf:
+                // The reading a caller gave, else the import's own decision,
+                // made only when none was given (it reads the whole file).
+                let reading = brailleReading ?? {
+                    let decided = FileImportService.brailleReading(ofImported: url)
+                    return (table: decided.table, fileCode: decided.fileCode)
+                }()
+                let table = reading.table
+                let fileCode = reading.fileCode
+                let named = BrailleTitlePage.names(ofFileAt: url, table: table, fileCode: fileCode)
+                adopt(title: named.title ?? "", author: named.author ?? "")
+            case .brl:
+                break
             }
         case .pdf:
             // Title and author from the document's attributes.
             if let attributes = PDFTextParser.readMetadata(from: url) {
                 adopt(title: attributes.title, author: attributes.author)
+            }
+        case .mobi:
+            // Title and author from the book's EXTH records, or its header
+            // (FMT42). Reading metadata never fails an import, so a book
+            // that is protected or cannot be read keeps the defaults and the
+            // import's own reading of the text fails with its sentence.
+            if let named = try? MOBIParser.readMetadata(url: url) {
+                adopt(title: named.title, author: named.author)
+            }
+        case .kfx:
+            // Title and author from the book's metadata fragment (FMT52).
+            // Reading metadata never fails an import, so a book that is
+            // protected or cannot be read keeps the defaults and the
+            // import's own reading of the text fails with its sentence.
+            if let named = try? KFXParser.readMetadata(url: url) {
+                adopt(title: named.title, author: named.author)
+            }
+        case .comic:
+            // Title and writer from the archive's ComicInfo.xml (FMT34), when
+            // it names them; an archive without one keeps its file's name.
+            if let named = PageImageArchive.metadata(ofArchiveAt: url) {
+                adopt(title: named.title ?? "", author: named.author ?? "")
             }
         case .daisy:
             // Title and author from the OPF or ncc.html.
@@ -304,7 +461,7 @@ struct ImportedFileMetadata {
             if !tags.album.isEmpty { metadata.audioAlbum = tags.album }
             if !tags.genre.isEmpty { metadata.audioGenre = tags.genre }
             if !tags.year.isEmpty { metadata.audioYear = tags.year }
-        case .txt, .markdown, .html, .webarchive, .ssml:
+        case .txt, .markdown, .html, .webarchive, .ssml, .picture:
             break
         }
         return metadata
@@ -313,9 +470,20 @@ struct ImportedFileMetadata {
     /// The common metadata tags of the audio file at `url`, read through
     /// AVFoundation's asynchronous loading while this thread waits, as an
     /// import runs off the main thread. Reading tags never throws, so the
-    /// empty tags are only the type checker's fallback.
+    /// empty tags are only the type checker's fallback. A file of one of
+    /// TextMouth's own readers' formats is read by their tag reader, as
+    /// AVFoundation reads none of its tags and the import names the book
+    /// before the file is converted. A file only FFmpeg reads is asked of
+    /// TextMouth's FFmpeg helper with the tool this thread sees (FMT31,
+    /// FMT50), read here, since the wait's task does not inherit it.
     private static func audioTags(of url: URL) -> AudioMetadata {
-        (try? AsyncBridge.waitForResult(reading: url, timeLimit: AsyncBridge.audioTagsTimeLimit) { await AudioPlaybackService.extractFullMetadata(from: url) }) ?? AudioMetadata()
+        if let own = OwnAudioConverter.tags(of: url) {
+            return AudioMetadata(title: own.title, artist: own.artist, album: own.album, genre: own.genre, year: own.date)
+        }
+        let ffmpeg = FFmpegAudioConverter.tool
+        return (try? AsyncBridge.waitForResult(reading: url, timeLimit: AsyncBridge.audioTagsTimeLimit) {
+            await AudioPlaybackService.extractFullMetadata(from: url, ffmpeg: ffmpeg)
+        }) ?? AudioMetadata()
     }
 }
 
@@ -358,7 +526,7 @@ struct NonBookFiles: Equatable, Sendable {
     var kinds: [(fileExtension: String, count: Int)] {
         countsByExtension
             .map { (fileExtension: $0.key, count: $0.value) }
-            .sorted { $0.count != $1.count ? $0.count > $1.count : $0.fileExtension < $1.fileExtension }
+            .sortedStably { $0.count != $1.count ? $0.count > $1.count : $0.fileExtension < $1.fileExtension }
     }
 
     /// Counts the file at `url` by its extension.
@@ -430,39 +598,53 @@ struct ZipImportResult {
     /// to its end.
     var failureSummary: String? {
         var sections: [String] = []
+        // Each section is a heading that counts its entries, then one line
+        // for each of them.
         if !failures.isEmpty {
-            sections.append("\(failures.count) file\(failures.count == 1 ? "" : "s") failed:\n\(Self.lines(failures))")
+            // Translators: Heading in the alert about a ZIP batch: how many files failed to import. One line for each file follows. %lld is the number of files.
+            let heading = InterfaceText.line("zipImportResult.failureSummary.failed", "\(number: failures.count) files failed:")
+            sections.append(heading + "\n" + Self.lines(failures))
         }
         let missingChapters = incompleteBooks.filter { $0.missing == .chapters }
         if !missingChapters.isEmpty {
-            let books = CountWording.phrase(missingChapters.count, singular: "book is", plural: "books are")
-            sections.append("\(books) missing chapters:\n\(Self.lines(missingChapters))")
+            // Translators: Heading in the alert about a ZIP batch: how many books were imported without some of their chapters. One line for each book follows. %lld is the number of books.
+            let heading = InterfaceText.line("zipImportResult.failureSummary.chapters", "\(number: missingChapters.count) books are missing chapters:")
+            sections.append(heading + "\n" + Self.lines(missingChapters))
         }
         let missingPages = incompleteBooks.filter { $0.missing == .pages }
         if !missingPages.isEmpty {
-            let books = CountWording.phrase(missingPages.count, singular: "book has", plural: "books have")
-            sections.append("\(books) pages that could not be read:\n\(Self.lines(missingPages))")
+            // Translators: Heading in the alert about a ZIP batch: how many books have pages that text recognition could not read. One line for each book follows. %lld is the number of books.
+            let heading = InterfaceText.line("zipImportResult.failureSummary.pages", "\(number: missingPages.count) books have pages that could not be read:")
+            sections.append(heading + "\n" + Self.lines(missingPages))
         }
         guard !sections.isEmpty || cancellation != nil else { return nil }
 
-        let imported = "Imported \(books.count) book\(books.count == 1 ? "" : "s")"
         var sentences: [String] = []
         if let cancellation {
             sentences.append(cancellation.sentence)
         }
         if !sections.isEmpty {
-            sentences.append("\(imported), but \(sections.joined(separator: "\n"))")
+            // Translators: Sentence of the alert about a ZIP batch that left something out. %1$lld is the number of books imported and %2$@ the sections that say what failed or is missing, each a heading and a line for each entry.
+            sentences.append(InterfaceText.line("zipImportResult.failureSummary.importedCount", "Imported \(number: books.count) books, but \(sections.joined(separator: "\n"))"))
         } else if cancellation != .whileExtracting {
             // A cancellation alone: say what came of the books before it.
-            sentences.append("\(imported).")
+            // Translators: Sentence of the alert about a ZIP batch that was cancelled after it imported some books. %lld is the number of books imported.
+            sentences.append(InterfaceText.line("zipImportResult.failureSummary.imported", "Imported \(number: books.count) books."))
         }
-        let kept = incompleteBooks.isEmpty && cancellation == nil ? "" : "\nThe original file was kept."
-        return sentences.joined(separator: " ") + kept
+        let text = SentenceWording.joined(sentences)
+        // The original's notice is a paragraph of its own.
+        return incompleteBooks.isEmpty && cancellation == nil ? text : text + "\n" + Self.originalKeptSentence
+    }
+
+    /// The sentence that says an import kept the original file.
+    static var originalKeptSentence: String {
+        // Translators: Sentence of an import's notice or alert: the original file was kept because something was left out of the book or the batch.
+        InterfaceText.line("zipImportResult.originalKeptSentence", "The original file was kept.")
     }
 
     /// One "file: message" line per entry.
     private static func lines(_ entries: [ZipImportFailure]) -> String {
-        entries.map { "\($0.fileName): \($0.message)" }.joined(separator: "\n")
+        entries.map { SentenceWording.labelled($0.fileName, $0.message) }.joined(separator: "\n")
     }
 
     /// The tag that starts the debug-log line recording how a ZIP batch
@@ -525,9 +707,11 @@ enum ZipImportCancellation: Equatable, Sendable {
     var sentence: String {
         switch self {
         case .whileExtracting:
-            return "Import cancelled while extracting the archive, before any book was imported."
+            // Translators: Sentence of the alert about a ZIP batch the reader cancelled while its archive was still being extracted.
+            return InterfaceText.line("zipImportCancellation.sentence.whileExtracting", "Import cancelled while extracting the archive, before any book was imported.")
         case let .afterBooks(completed, total):
-            return "Import cancelled after \(completed) of \(total) book\(total == 1 ? "" : "s")."
+            // Translators: Sentence of the alert about a ZIP batch the reader cancelled partway. %@ is how many of how many books were done, such as "3 of 10 books".
+            return InterfaceText.line("zipImportCancellation.sentence.afterBooks", "Import cancelled after \(ImportProgressWording.part(completed, of: CountWording.books(total))).")
         }
     }
 
@@ -535,9 +719,9 @@ enum ZipImportCancellation: Equatable, Sendable {
     var logDetail: String {
         switch self {
         case .whileExtracting:
-            return "while extracting the archive"
+            return "while extracting the archive" // l10n: no (debug log)
         case let .afterBooks(completed, total):
-            return "after \(completed) of \(total) books"
+            return "after \(completed) of \(total) books" // l10n: no (debug log)
         }
     }
 }
@@ -638,8 +822,8 @@ struct NestedArchiveUnpacking {
 
     /// Why an archive lying deeper than `maximumDepth` levels is not searched.
     static func tooDeep(_ maximumDepth: Int) -> String {
-        "Not extracted: TextMouth extracts archives within an archive only "
-            + "\(maximumDepth) level\(maximumDepth == 1 ? "" : "s") deep."
+        // Translators: Why an archive found inside an archive was not extracted: it lies deeper than TextMouth searches. %lld is the number of levels TextMouth goes into.
+        InterfaceText.line("nestedArchiveUnpacking.tooDeep", "Not extracted: TextMouth extracts archives within an archive only \(number: maximumDepth) levels deep.")
     }
 }
 
@@ -738,6 +922,8 @@ enum FileImportService {
         if try contentChecksum(of: contentURL, format: format) == recorded {
             return true
         }
+        // A BARD braille book's ZIP is known by the checksum of its package (FMT56).
+        if BardBraillePackage.contentHash(ofZipAt: contentURL) == recorded { return true }
         guard let package = try? daisyPackage(of: contentURL, format: format) else { return false }
         return (try? package.contentHash()) == recorded
     }
@@ -936,9 +1122,19 @@ enum FileImportService {
         toFolder folderPath: String = "",
         observer: ImportStepObserver? = nil
     ) throws -> ImportedBook {
+        // A symbolic link to a folder is the folder it leads to, from here on:
+        // every walk of the folder below (its tracks, a DAISY book beneath it,
+        // the files it holds) would otherwise start at the link, which the
+        // file manager's enumerator does not enter.
+        let sourceURL = resolvingLinkedFolder(sourceURL)
         // A playlist imports as one audiobook of the files it lists (FMT10).
         if isPlaylistFile(sourceURL) {
             return try importPlaylistWithReport(from: sourceURL, toFolder: folderPath, observer: observer)
+        }
+        // A cue sheet imports as one audiobook of the files it names, with a
+        // heading per track (FMT24).
+        if isCueSheetFile(sourceURL) {
+            return try importCueSheetWithReport(from: sourceURL, toFolder: folderPath, observer: observer)
         }
         // A folder of audio tracks that is no DAISY book imports as one
         // audiobook, as a ZIP of the same tracks does (FR17, Part B).
@@ -953,6 +1149,10 @@ enum FileImportService {
             try run.begin(.readingSource)
             let package = try daisyPackage(of: sourceURL, format: format)
             let hash = try checksum ?? importHash(of: sourceURL, package: package)
+            // A braille book's table and braille file characters, decided
+            // once, here, so the title page below is read with the table the
+            // book will be read with, a guessed one included (brfguess).
+            let brailleReading = format == .braille ? Self.brailleReading(ofImported: sourceURL) : nil
             // A textutil format is listed by its file's name until its text
             // is read: that one conversion names its title and author
             // (`publishReadableBook`), so none is run here.
@@ -960,10 +1160,12 @@ enum FileImportService {
                 from: package?.entryURL ?? sourceURL,
                 format: format,
                 fallbackTitle: package?.untitledName,
-                readingTextutilNames: false
+                readingTextutilNames: false,
+                brailleReading: brailleReading.map { (table: $0.table, fileCode: $0.fileCode) }
             )
             let bookID = UUID()
             let dateAdded = Date()
+            try refuseProtectedKindleBook(at: sourceURL, format: format)
 
             try run.begin(.preparingPackage)
             let staging = try ImportStaging.makeEmpty(publishingTo: try destinationPackageURL(
@@ -980,10 +1182,10 @@ enum FileImportService {
 
             // A braille book's table, read from the setting once, so the
             // version recorded with it is that table's (review R2).
-            let brailleTable = format == .braille ? BraillePreferences.importTable() : nil
-            // And its braille file characters, decided once: those its bytes
-            // name for certain, else the setting's (braillecodes).
-            let brailleFileCode = format == .braille ? Self.brailleFileCode(ofImported: stagedFile) : nil
+            // (`brailleReading`, decided above from the source file, whose
+            // bytes the staged copy holds.)
+            let brailleTable = brailleReading?.table
+            let brailleFileCode = brailleReading?.fileCode
             let staged = Book(
                 id: bookID,
                 title: metadata.title,
@@ -1004,7 +1206,7 @@ enum FileImportService {
                 epubLanguage: metadata.epub?.language,
                 epubIdentifier: metadata.epub?.identifier,
                 epubVersion: metadata.epub?.epubVersion,
-                metadataReaderVersion: ImportedFileMetadata.readerVersion,
+                metadataReaderVersion: ImportedFileMetadata.readerVersion(for: format),
                 // The book's record of hand edits begins here, empty (#1291):
                 // its title and author are what the metadata reader stamped
                 // above read in this very file, so a launch refresh by a
@@ -1024,16 +1226,25 @@ enum FileImportService {
                 // American Braille ASCII's included; a PEF keeps none.
                 brailleTable: brailleTable,
                 brailleTableVersion: brailleTable.flatMap(BrailleTableCatalog.versionToRecord(forTable:)),
-                brailleFileCode: brailleFileCode
+                brailleFileCode: brailleFileCode,
+                brailleTableOrigin: brailleReading?.origin
             )
+            // A book whose file has a password is added locked: nothing of it
+            // is read, so no copy of its text or headings is written
+            // (FR41). The person is asked for the password afterwards, and
+            // may leave it locked (Import Locked).
+            if ProtectionDetector.scheme(ofFileAt: stagedFile, format: format) != nil {
+                return try publishLockedBook(staged, from: staging, run: &run)
+            }
             // The one import that guesses (FMT16): a file the user chose, whose
             // bytes may name no encoding, is read in the encoding the guesser
             // finds, and the book records it. Every other way a book comes to
             // the library (a package, a feed, a recording, text typed in) reads
             // as it always did, and so does every later reading of this book.
+            // An audio file's transcript beside it is attached (FMT23).
             var imported = try publishReadableBook(
                 staged, from: staging, run: &run, refusingBlankText: true, adoptingDocumentNames: true,
-                guessingEncoding: true
+                guessingEncoding: true, pairingTranscripts: format.isAudio ? .besideFile(sourceURL) : nil
             )
             // A DAISY package is copied file by file from its folder; an RTFD
             // is a folder, whole, which no import deletes.
@@ -1057,7 +1268,32 @@ enum FileImportService {
     /// the book is read.
     static func brailleFileCode(ofImported url: URL) -> String? {
         guard BrailleBookReader.kind(of: url) != .pef else { return nil }
+        // An NLS BARD braille book's volumes are BRF files in North American
+        // Braille ASCII, whatever the Braille setting's code is (FMT56).
+        if BardBraillePackage.isPackage(at: url) { return BrailleFileCode.northAmerican.id }
         return BrailleFileReader.certainCode(ofFileAt: url)?.id ?? BraillePreferences.importFileCode()
+    }
+
+    /// How the import of the braille book whose file is at `url` reads it,
+    /// decided once: its braille file characters
+    /// (`brailleFileCode(ofImported:)`) and its table, the Braille
+    /// setting's, or, when the setting is a contracted Unified English
+    /// table, the guess is on, and the book is clearly English Braille,
+    /// American Edition, the bundled contracted table of that code, with
+    /// `origin` saying it was guessed (`BrailleTableGuess`, brfguess).
+    static func brailleReading(ofImported url: URL) -> (table: String, fileCode: String?, origin: BrailleTableOrigin?) {
+        let fileCode = brailleFileCode(ofImported: url)
+        // An NLS BARD braille book's package names its table (FMT56): the
+        // choice stands for good, so it is not a guess. A package that names
+        // none TextMouth has is read as a plain BRF is, below.
+        if let packageTable = BardBraillePackage.importTable(forFileAt: url) {
+            return (packageTable, fileCode, nil)
+        }
+        let chosen = BrailleTableGuess.table(
+            forImportedFileAt: url, fileCode: fileCode,
+            settingTable: BraillePreferences.importTable(), guessing: BraillePreferences.importGuessesTable()
+        )
+        return (chosen.table, fileCode, chosen.origin)
     }
 
     // MARK: - Loose DAISY Packages
@@ -1076,7 +1312,10 @@ enum FileImportService {
     /// The checksum a book imported from `source` is known by, when
     /// `package` is the DAISY package `source` is, or nil when it is none.
     private static func importHash(of source: URL, package: DAISYPackageInventory?) throws -> String {
-        try package?.contentHash() ?? contentChecksum(of: source, format: BookFormat.detect(from: source))
+        // A ZIP of a BARD braille book is known by the checksum its folder
+        // has, so the two are found duplicates of each other (FMT56).
+        try package?.contentHash() ?? BardBraillePackage.contentHash(ofZipAt: source)
+            ?? contentChecksum(of: source, format: BookFormat.detect(from: source))
     }
 
     /// The checksum of a book's own file, `url`, a book of `format`: the MD5
@@ -1099,9 +1338,19 @@ enum FileImportService {
         url.pathExtension.lowercased() == "rtfd" && isFolder(url)
     }
 
+    /// `url` as the folder it leads to when it is a symbolic link to a folder,
+    /// so that a link is imported as choosing the folder itself is. Any other
+    /// item, a link to a file included, is returned as it is. The one place a
+    /// top-level link is resolved for an import.
+    static func resolvingLinkedFolder(_ url: URL) -> URL {
+        let resolved = AudioBookParser.resolvingALinkedFolder(url)
+        return resolved != url && isFolder(resolved) ? resolved : url
+    }
+
     /// Whether the item at `url` is a folder (a package such as an .rtfd
-    /// included).
-    private static func isFolder(_ url: URL) -> Bool {
+    /// included). Internal so the cue sheet import tells a sheet's file from
+    /// a folder named like one (`isCueSheetFile(_:)`).
+    static func isFolder(_ url: URL) -> Bool {
         (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true
     }
 
@@ -1133,7 +1382,10 @@ enum FileImportService {
     /// source, a DAISY ZIP included, and for any source in another format,
     /// such as an unpacked EPUB that also has a package file.
     private static func daisyPackage(of source: URL, format: BookFormat?) throws -> DAISYPackageInventory? {
-        guard format == .daisy else { return nil }
+        // An NLS BARD braille book (FMT56) is a braille book kept as loose
+        // files the same way: its package file and its volumes. `ofSource`
+        // answers nil for any other braille source, a plain BRF included.
+        guard format == .daisy || format == .braille else { return nil }
         return try DAISYPackageInventory.ofSource(source)
     }
 
@@ -1154,6 +1406,20 @@ enum FileImportService {
         guard name.caseInsensitiveCompare(cacheName) == .orderedSame else { return name }
         let cacheBaseName = (cacheName as NSString).deletingPathExtension
         return "\(cacheBaseName) (book).\(source.pathExtension)"
+    }
+
+    /// Refuses a Kindle KFX book that is protected by what sits beside it: a
+    /// voucher, or a protected file in its `.sdr` folder. Only the book's file
+    /// is copied into the library, and the text is read from that copy, where
+    /// nothing stands beside it, so the refusal is made here, on the source
+    /// (an `.azw` that holds KFX is one, as Kindle's apps name KFX books).
+    /// - Throws: `MOBIError.copyProtected`.
+    private static func refuseProtectedKindleBook(at source: URL, format: BookFormat) throws {
+        var holdsKFX = format == .kfx
+        if format == .mobi, let kind = try? KFXSignature.kind(ofFileAt: source) {
+            holdsKFX = kind == .container || kind == .protected
+        }
+        if holdsKFX, KFXParser.isProtected(near: source) { throw MOBIError.copyProtected }
     }
 
     /// Copies what an import of `source`, a book of `format`, reads into the
@@ -1177,6 +1443,12 @@ enum FileImportService {
             let isText = format != .audio
             try FileManager.default.copyItem(at: isText ? source.resolvingSymlinksInPath() : source, to: stagedFile)
             if isText { try removeSymbolicLinks(in: stagedFile) }
+            // An audio file's companion (a WavPack correction file beside
+            // it) is staged beside it, for the conversion to find.
+            if !isText, let companion = OwnAudioConverter.companion(of: source) {
+                try FileManager.default.copyItem(
+                    at: companion, to: directory.appendingPathComponent(companion.lastPathComponent))
+            }
             return stagedFile
         }
         logShortfalls(of: package)
@@ -1240,7 +1512,10 @@ enum FileImportService {
     private static func unsupportedSourceError(for source: URL) -> Error {
         let ext = source.pathExtension.lowercased()
         var isDirectory: ObjCBool = false
-        if ext != "tmb",
+        // A package folder of a refused format (an old Pages document is
+        // one) is that document, not a folder of files: it is told as the
+        // single file is, with its advice (FMT02).
+        if ext != "tmb", RefusedFormatAdvice.advice(forExtension: ext) == nil,
            FileManager.default.fileExists(atPath: source.path, isDirectory: &isDirectory),
            isDirectory.boolValue {
             return FolderWithoutBookError(folderName: source.lastPathComponent, files: filesHeld(by: source))
@@ -1259,10 +1534,11 @@ enum FileImportService {
 
     /// The visible files anywhere in `folder`, counted by kind: hidden
     /// files, Finder's __MACOSX folder, and symbolic links are passed over,
-    /// as the tracks' discovery passes over them.
+    /// as the tracks' discovery passes over them. A link is no regular
+    /// file, so it is never counted.
     private static func filesHeld(by folder: URL) -> NonBookFiles {
         var files = NonBookFiles()
-        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isSymbolicLinkKey]
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isDirectoryKey]
         guard let enumerator = FileManager.default.enumerator(
             at: folder,
             includingPropertiesForKeys: Array(keys),
@@ -1270,10 +1546,7 @@ enum FileImportService {
         ) else { return files }
         for case let item as URL in enumerator {
             let values = try? item.resourceValues(forKeys: keys)
-            if item.lastPathComponent == "__MACOSX" || values?.isSymbolicLink == true {
-                enumerator.skipDescendants()
-                continue
-            }
+            if enumerator.skipFinderMetadataFolder(item, isDirectory: values?.isDirectory) { continue }
             if values?.isRegularFile == true {
                 files.add(item)
             }
@@ -1289,7 +1562,8 @@ enum FileImportService {
     /// package is never one. Neither is a folder with a DAISY book in a
     /// folder beneath it: such a folder is not itself a book, and its
     /// tracks belong to the books beneath it.
-    static func isFolderOfTracks(_ source: URL) -> Bool {
+    static func isFolderOfTracks(_ linkOrFolder: URL) -> Bool {
+        let source = resolvingLinkedFolder(linkOrFolder)
         guard source.pathExtension.lowercased() != "tmb", BookFormat.detect(from: source) == nil else { return false }
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: source.path, isDirectory: &isDirectory), isDirectory.boolValue else {
@@ -1304,9 +1578,10 @@ enum FileImportService {
     /// its top level (`DAISYParser.isDAISYDirectory(url:)`). `folder`'s own
     /// top level is not checked: `BookFormat.detect` has done that. Finder's
     /// __MACOSX folder, hidden items, and symbolic links are passed over, as
-    /// `filesHeld(by:)` and the tracks' discovery pass over them.
+    /// `filesHeld(by:)` and the tracks' discovery pass over them. A link is
+    /// no folder to the enumerator, so it is never entered.
     private static func holdsDAISYBookBeneath(_ folder: URL) -> Bool {
-        let keys: Set<URLResourceKey> = [.isDirectoryKey, .isSymbolicLinkKey]
+        let keys: Set<URLResourceKey> = [.isDirectoryKey]
         guard let enumerator = FileManager.default.enumerator(
             at: folder,
             includingPropertiesForKeys: Array(keys),
@@ -1314,10 +1589,7 @@ enum FileImportService {
         ) else { return false }
         for case let item as URL in enumerator {
             let values = try? item.resourceValues(forKeys: keys)
-            if item.lastPathComponent == "__MACOSX" || values?.isSymbolicLink == true {
-                enumerator.skipDescendants()
-                continue
-            }
+            if enumerator.skipFinderMetadataFolder(item, isDirectory: values?.isDirectory) { continue }
             if values?.isDirectory == true, DAISYParser.isDAISYDirectory(url: item) {
                 return true
             }
@@ -1347,6 +1619,12 @@ enum FileImportService {
             var paths = try AudioBookParser.trackPaths(in: folder, scan: .importing)
             if let location = AudioManifestLocation.find(in: folder) {
                 paths.append(location.prefix + AudioManifest.fileName)
+            } else {
+                // Without a manifest, the folder's cue sheets and Audacity
+                // label files travel with its tracks, to arrange them (FMT24,
+                // FMT06, `arrangeByCueSheets`), and count in its checksum as
+                // a manifest does.
+                paths += CueSheetArrangement.chapterLists(in: folder).map { AudioBookParser.relativeName(of: $0, in: folder) }
             }
             let hash = try folderHash(of: paths, in: folder)
             let bookID = UUID()
@@ -1364,11 +1642,7 @@ enum FileImportService {
 
             try run.begin(.copying, in: staging.directory)
             let audioDirectory = try makeAudioDirectory(in: staging)
-            for path in paths {
-                let destination = audioDirectory.appendingPathComponent(path)
-                try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
-                try FileManager.default.copyItem(at: folder.appendingPathComponent(path), to: destination)
-            }
+            try copyTracks(paths.map { (path: $0, source: folder.appendingPathComponent($0)) }, into: audioDirectory)
             var imported = try publishTracks(
                 titled: folder.lastPathComponent,
                 in: audioDirectory,
@@ -1378,12 +1652,64 @@ enum FileImportService {
                 folderPath: folderPath,
                 dateAdded: dateAdded,
                 source: folder,
+                pairingIn: folder,
                 run: &run
             )
             // The folder holds files that were not copied (a cover, lyrics,
             // a Bonus folder), so it is never deleted or offered for deletion.
             imported.isFromFolder = true
             return imported
+        }
+    }
+
+    /// Copies each of `tracks`, the file at its `source`, to its `path`
+    /// relative to `audioDirectory` in the book's package, laid out as in
+    /// the folder or playlist they come from. The disk is asked first
+    /// (`requireRoom(forCopying:onVolumeOf:)`), so a folder or playlist too
+    /// big for the disk is refused before a byte is written, as an archive
+    /// is (`ArchiveBudget.admit`), and not after minutes of copying.
+    /// Internal so a test can show the disk is asked before the first copy.
+    /// - Throws: `CocoaError.fileWriteOutOfSpace` when the disk lacks room,
+    ///   which an import's failure words as a full disk
+    ///   (`ImportFailure.outOfSpaceDescription`); a copy's own error.
+    static func copyTracks(_ tracks: [(path: String, source: URL)], into audioDirectory: URL) throws {
+        // A track's companion (a WavPack correction file beside it,
+        // `OwnAudioConverter.companion(of:)`) is copied beside it, so the
+        // conversion finds it.
+        let companions = tracks.compactMap { track -> (path: String, source: URL)? in
+            guard let companion = OwnAudioConverter.companion(of: track.source) else { return nil }
+            let folder = (track.path as NSString).deletingLastPathComponent
+            return ((folder as NSString).appendingPathComponent(companion.lastPathComponent), companion)
+        }
+        let tracks = tracks + companions
+        try requireRoom(forCopying: tracks.map(\.source), onVolumeOf: audioDirectory)
+        for track in tracks {
+            let destination = audioDirectory.appendingPathComponent(track.path)
+            try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.copyItem(at: track.source, to: destination)
+        }
+    }
+
+    /// Throws `CocoaError.fileWriteOutOfSpace` unless the disk holding
+    /// `destination` keeps the reserve (`ArchiveLimits.freeSpaceReserve`)
+    /// free once `sources` are copied onto it. The limits are the current
+    /// ones, the archives' own, so one rule serves every import; a disk whose
+    /// free space the system cannot tell is not checked, and a file whose
+    /// size cannot be read counts as empty, so the copy itself still fails
+    /// for a real shortage. A file the copy will clone (`copyIsClone`: from
+    /// the same APFS volume) costs almost no space, so it counts as empty
+    /// too: a big folder on the disk the library is on is not refused for
+    /// room its copy will not take.
+    private static func requireRoom(forCopying sources: [URL], onVolumeOf destination: URL) throws {
+        let limits = ArchiveLimits.current
+        guard let available = limits.freeSpace(destination) else { return }
+        var needed: Int64 = 0
+        for source in sources where !limits.copyIsClone(source, destination) {
+            let size = (try? source.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+            needed = ArchiveInspection.saturatingSum(needed, Int64(size))
+        }
+        guard available - limits.freeSpaceReserve >= needed else {
+            throw CocoaError(.fileWriteOutOfSpace)
         }
     }
 
@@ -1445,11 +1771,7 @@ enum FileImportService {
 
             try run.begin(.copying, in: staging.directory)
             let audioDirectory = try makeAudioDirectory(in: staging)
-            for track in tracks {
-                let destination = audioDirectory.appendingPathComponent(track.path)
-                try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
-                try FileManager.default.copyItem(at: track.url, to: destination)
-            }
+            try copyTracks(tracks.map { (path: $0.path, source: $0.url) }, into: audioDirectory)
             // The manifest gives the playlist's order and titles; the check
             // and the format conversion that follow treat it as any other.
             var manifest = AudioManifest()
@@ -1467,13 +1789,20 @@ enum FileImportService {
                 folderPath: folderPath,
                 dateAdded: dateAdded,
                 source: playlist,
+                pairingIn: folder,
                 run: &run
             )
             // The tracks and the playlist belong to the listener's music
             // folders, so none is deleted or offered for deletion, whatever
             // "After Importing a Book" says.
             imported.isFromFolder = true
-            imported.notice = PlaylistImportWording.notice(playlistName: playlist.lastPathComponent, skipped: skipped)
+            // The transcripts not attached (FMT23), then the entries skipped,
+            // as one message; nil when neither has anything to tell.
+            let notices = [
+                imported.notice,
+                PlaylistImportWording.notice(playlistName: playlist.lastPathComponent, skipped: skipped),
+            ].compactMap { $0 }
+            imported.notice = notices.isEmpty ? nil : notices.joined(separator: " ")
             return imported
         }
     }
@@ -1502,9 +1831,11 @@ enum FileImportService {
     /// The checksum a folder of tracks is known by: the MD5 of each file's
     /// path in the folder, `paths`, sorted, with the MD5 of its bytes, so a
     /// folder holding the same files under the same names has the same one.
-    private static func folderHash(of paths: [String], in folder: URL) throws -> String {
+    /// Internal so a cue sheet's import knows its book the same way
+    /// (`importCueSheetWithReport`).
+    static func folderHash(of paths: [String], in folder: URL) throws -> String {
         var listing = ""
-        for path in paths.sorted() {
+        for path in paths.sortedStably() {
             listing += "\(path)\n\(try md5Hash(of: folder.appendingPathComponent(path)))\n"
         }
         return FingerprintHasher.md5.digestOfData(Data(listing.utf8))
@@ -1605,20 +1936,27 @@ enum FileImportService {
     /// of a file lists it by its file name until its text is read.
     /// `guessingEncoding` is passed on to
     /// `readableContent(of:run:refusingBlankText:adoptingDocumentNames:guessingEncoding:)`
-    /// and set by that import alone (FMT16).
+    /// and set by that import alone (FMT16). With `pairingTranscripts`, which
+    /// the imports of a file, a folder of tracks, a playlist, and an audio
+    /// ZIP give, an audiobook's transcript files found beside its audio are
+    /// attached once its content reads (`TranscriptPairing.attach`, FMT23),
+    /// and the book returned carries the notice of those that were not,
+    /// after the notice of the tracks a book of several left out because
+    /// only ffmpeg reads them and they can't be converted here.
     static func publishReadableBook(
         _ staged: Book,
         from staging: ImportStaging,
         run: inout ImportRun,
         feedLink: FeedBookLink? = nil,
-        replacing replaced: BookState? = nil,
+        replacing replaced: BookInfo? = nil,
         refusingBlankText: Bool = false,
         adoptingDocumentNames: Bool = false,
         guessingEncoding: Bool = false,
+        pairingTranscripts pairing: TranscriptPairing? = nil,
         publish: (ImportStaging) throws -> Void = { try $0.publish() }
     ) throws -> ImportedBook {
         var staged = staged
-        try convertImportedAudio(
+        let leftOutNotice = try convertImportedAudio(
             of: &staged,
             in: staging,
             keepingOriginals: keepsOriginalsOfConvertedAudio(feedLink: feedLink),
@@ -1628,6 +1966,9 @@ enum FileImportService {
             of: &staged, run: &run, refusingBlankText: refusingBlankText, adoptingDocumentNames: adoptingDocumentNames,
             guessingEncoding: guessingEncoding
         )
+        // A transcript beside the audio goes into the staged package before
+        // its record is written; attaching one never fails the import.
+        let transcriptNotice = pairing.flatMap { TranscriptPairing.attach($0, to: staged, index: content.index) }
         let book = staging.published(staged)
 
         try run.begin(.savingRecord, in: staging.directory)
@@ -1635,7 +1976,10 @@ enum FileImportService {
 
         try run.begin(.publishing, in: staging.directory)
         try publish(staging)
-        return ImportedBook(book: book, report: content.report)
+        // The tracks left out of a book of several (review9 finding 2), then
+        // the transcripts not attached, as one message.
+        let notices = [leftOutNotice, transcriptNotice].compactMap { $0 }
+        return ImportedBook(book: book, report: content.report, notice: notices.isEmpty ? nil : notices.joined(separator: " "))
     }
 
     /// What reading a book's content as the reader will produced: the index
@@ -1649,15 +1993,16 @@ enum FileImportService {
 
     /// The formats whose import is refused when the file holds no text
     /// (`FileImportError.noTextToRead`): the plain ones, and the five that
-    /// textutil reads, and braille books (FMT20), whose reading already
-    /// refuses a file with no blocks, and this refuses a book whose blocks
-    /// translate to nothing but white space. A rich text, Word, or
+    /// textutil reads, Word documents (`.docx`, which also covers templates
+    /// and macro-enabled documents), and braille books (FMT20), whose reading
+    /// already refuses a file with no blocks, and this refuses a book whose
+    /// blocks translate to nothing but white space. A rich text, Word, or
     /// OpenDocument file whose text is only white space (a few empty
     /// paragraphs) converts without error, so without this it would be added
-    /// as a silent book. EPUB, DOCX, DAISY, and PDF have their own refusals
-    /// or none.
+    /// as a silent book. EPUB, DAISY, and PDF have their own refusals or
+    /// none.
     private static let formatsRefusedWhenBlank: Set<BookFormat> = [
-        .txt, .markdown, .html, .webarchive, .ssml, .rtf, .rtfd, .doc, .odt, .wordml, .braille,
+        .txt, .markdown, .html, .webarchive, .ssml, .rtf, .rtfd, .doc, .docx, .odt, .wordml, .braille,
     ]
 
     /// Whether an import of `book` is refused when the book holds no text:
@@ -1735,14 +2080,25 @@ enum FileImportService {
         }
 
         try run.begin(.readingText, in: book.tmbDirectory)
+        // A book read page by page (pictures of pages, FMT34) says how many
+        // of its pages are read, which the overlay counts as it counts the
+        // tracks it converts; every other format reads without a word.
+        let observer = run.observer
+        let package = book.tmbDirectory
         let generated: MarkdownCacheService.GeneratedCache
         do {
-            guard let written = try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
-                for: &book, adoptingDocumentNames: adoptingDocumentNames, decidingEncoding: guessingEncoding
-            ) else {
+            let reading = try ImportPageProgress.reporting(to: { done, total in
+                try observer?(.readingPages(done: done, of: total), package)
+            }) {
+                try MarkdownCacheService.generateReportedCacheAnalyzeAndStamp(
+                    for: &book, adoptingDocumentNames: adoptingDocumentNames, decidingEncoding: guessingEncoding
+                )
+            }
+            guard let written = reading else {
                 // Only a book without a package gets no cache, and every
                 // import gives its book one before reading it.
-                throw FileImportError.importFailed("The book has no package to hold its text.")
+                // Translators: Why an import failed: the book has no package folder to hold its text. Follows "Import failed: ".
+                throw FileImportError.importFailed(InterfaceText.line("fileImportService.bookNoPackage", "The book has no package to hold its text."))
             }
             generated = written
         } catch is EditedTextKept {
@@ -1773,8 +2129,11 @@ enum FileImportService {
     /// understands. A single file that cannot be analyzed is described as
     /// playback describes it ("is damaged, unreadable, or not an audio
     /// file"), because AVFoundation's own words ("Operation Stopped") do not
-    /// say what is wrong. A folder's errors already name its problem.
+    /// say what is wrong. A folder's errors already name its problem, and so
+    /// does the refusal of a valid file whose samples no decoder reads (B15),
+    /// which is no damage and is told as it is.
     private static func describedAudioFailure(_ error: any Error, of book: Book) -> any Error {
+        if (error as? AudioParseError)?.refusesAValidFile == true { return error }
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: book.filePath, isDirectory: &isDirectory),
               !isDirectory.boolValue else { return error }
@@ -1797,21 +2156,25 @@ enum FileImportService {
     /// until the episode opens and its text is laid over its index again
     /// (`TranscriptTextLoader`), which the record then notes; a transcript
     /// of other audio is found stale then, and stays unnoted. `replacing` is
-    /// the state of the record such a download replaces (FR11, branch A2):
-    /// the new record's revision rises above its own.
+    /// the record such a download replaces (FR11, branch A2): the new
+    /// record's revision rises above its own, and the new record keeps the
+    /// keys of it that this TextMouth does not know, at its top level, in
+    /// its metadata, and in its state (V04, `BookInfo.keepUnknownKeys(of:)`):
+    /// it is the same book's record, written anew for a new file.
     static func writeVerifiedRecord(
         of book: Book,
         contentIndex: BookContentIndex,
         into package: URL,
         feedLink: FeedBookLink? = nil,
-        replacing replaced: BookState? = nil
+        replacing replaced: BookInfo? = nil
     ) throws {
         var info = book.makeBookInfo()
         info.contentIndex = contentIndex
         info.metadata.feedLink = feedLink
         info.state.transcript = contentIndex.transcript?.transcript
         if let replaced {
-            info.state.revision = BookState.revision(after: replaced.revision ?? 0)
+            info.state.revision = BookState.revision(after: replaced.state.revision ?? 0)
+            info.keepUnknownKeys(of: replaced)
         }
         try info.save(to: package)
 
@@ -1995,10 +2358,7 @@ enum FileImportService {
         var found = ImportCandidates()
         for case let url as URL in entries {
             if (try? url.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true {
-                guard url.lastPathComponent != "__MACOSX" else {
-                    entries.skipDescendants()
-                    continue
-                }
+                if entries.skipFinderMetadataFolder(url, isDirectory: true) { continue }
                 // An RTFD is a folder that stands for one document, and a
                 // TextMouth package a folder holding one book with its
                 // record: each is the book, never what is inside it (an
@@ -2019,14 +2379,16 @@ enum FileImportService {
                 } else {
                     found += try nested.candidates(inArchive: url)
                 }
-            } else if BookFormat.detect(from: url) != nil {
+            } else if BookFormat.detectBookAmongOtherFiles(from: url) != nil {
+                // A picture among an archive's files is a cover or artwork,
+                // passed over with the files that are no book (FMT34).
                 found.books.append(url)
             } else {
                 found.nonBookFiles.add(url)
             }
         }
-        found.books.sort { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
-        found.failures.sort { $0.fileName.localizedStandardCompare($1.fileName) == .orderedAscending }
+        found.books.sortStably { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+        found.failures.sortStably { $0.fileName.localizedStandardCompare($1.fileName) == .orderedAscending }
         return found
     }
 
@@ -2070,6 +2432,7 @@ enum FileImportService {
               values.isRegularFile == true,
               let size = values.fileSize, size > 0,
               book.pathExtension.lowercased() != "zip",
+              !BardBraillePackage.isPackageName(book.lastPathComponent),
               let format = BookFormat.detect(from: book), format != .audio, format != .daisy else { return nil }
         return Int64(size)
     }
@@ -2205,8 +2568,10 @@ enum FileImportService {
                 seenBookIDs.insert(imported.book.id)
                 books.append(imported.book)
                 if !imported.report.isComplete {
-                    // A PDF whose pictures OCR could not read is missing
-                    // pages; any other incomplete book is missing chapters.
+                    // A PDF whose pictures OCR could not read, or a book of
+                    // pictures with a page that could not be read (FMT34),
+                    // is missing pages; any other incomplete book is missing
+                    // chapters.
                     incompleteBooks.append(
                         ZipImportFailure(
                             fileName: fileURL.lastPathComponent,
@@ -2302,7 +2667,8 @@ enum FileImportService {
         let name = book.tmbDirectoryName
         guard namesManagedPackage(book) else {
             throw FileImportError.importFailed(
-                "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it."
+                // Translators: Why a book's files were not deleted: it has no package inside the library. Follows "Import failed: ". "Remove it from the library only" is a choice of the removal commands.
+                InterfaceText.line("fileImportService.bookNoValid", "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it.")
             )
         }
         let libraryRoot = libraryDirectory.standardizedFileURL.resolvingSymlinksInPath()
@@ -2312,14 +2678,16 @@ enum FileImportService {
         // Deleting a package alias must not delete the other book it points
         // to, even when both happen to live inside the managed library.
         guard !isSymbolicLink(requestedPackage) else {
-            throw FileImportError.importFailed("A symbolic link cannot be deleted as a managed book package.")
+            // Translators: Why a book's files were not deleted: its package is a symbolic link, and deleting it could delete another book. Follows "Import failed: ".
+            throw FileImportError.importFailed(InterfaceText.line("fileImportService.symbolicLinkCannot", "A symbolic link cannot be deleted as a managed book package."))
         }
         let package = requestedPackage.resolvingSymlinksInPath()
         guard package.path.hasPrefix(libraryRoot.path + "/"),
               !book.filePath.isEmpty,
               URL(fileURLWithPath: book.filePath).standardizedFileURL.resolvingSymlinksInPath()
                 .path.hasPrefix(package.path + "/") else {
-            throw FileImportError.importFailed("The book's package and content paths do not match a managed library location.")
+            // Translators: Why a book's files were not deleted: its paths do not lie inside the library. Follows "Import failed: ".
+            throw FileImportError.importFailed(InterfaceText.line("fileImportService.bookPackageContent", "The book's package and content paths do not match a managed library location."))
         }
         return package
     }
@@ -2394,7 +2762,7 @@ enum FileImportService {
         var isDirectory: ObjCBool = false
         if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
            isDirectory.boolValue {
-            return "is a folder, which an import never deletes"
+            return "is a folder, which an import never deletes" // l10n: no (debug log)
         }
         let item = url.resolvingSymlinksInPath()
         // The names of the folders that hold the item, its own name left
@@ -2402,10 +2770,10 @@ enum FileImportService {
         // Finder know it.
         let folderNames = item.pathComponents.dropLast()
         if folderNames.contains(where: { isBookPackage(URL(fileURLWithPath: $0, isDirectory: true)) }) {
-            return "is inside a book package, whose files an import never deletes"
+            return "is inside a book package, whose files an import never deletes" // l10n: no (debug log)
         }
         if lies(item, inside: dataDirectory.resolvingSymlinksInPath()) {
-            return "is inside the data directory, whose files an import never deletes"
+            return "is inside the data directory, whose files an import never deletes" // l10n: no (debug log)
         }
         return nil
     }
@@ -2471,23 +2839,8 @@ enum FileImportService {
     ///   RTFD is one), which is never opened; the error opening the file;
     ///   or the first error `readChunk` throws.
     static func md5Hash(of url: URL, readingChunksWith readChunk: (FileHandle) throws -> Data?) throws -> String {
-        // A folder (an RTFD is one) is refused with its own error before it
-        // is opened.
-        guard !isFolder(url) else { throw ContentFingerprintError.notARegularFile }
-        let handle = try FileHandle(forReadingFrom: url)
-        // A file only read from loses nothing if closing it fails, and the
-        // legacy `closeFile()` would raise an exception there too.
-        defer { try? handle.close() }
-
-        var hasher = Insecure.MD5()
-        // Each read runs in its own autorelease pool, so what it autoreleases
-        // is freed before the next read and a large file never fills memory.
-        while let chunk = try autoreleasepool(invoking: { try readChunk(handle) }), !chunk.isEmpty {
-            hasher.update(data: chunk)
-        }
-
-        let digest = hasher.finalize()
-        return digest.map { String(format: "%02hhx", $0) }.joined()
+        // The streaming loop is shared with the sync folder's SHA-256 (`FileDigest`).
+        try FileDigest.hex(of: url, using: Insecure.MD5.self, readingChunksWith: readChunk)
     }
 
     /// Import a DAISY audio ZIP as a multi-chapter audio book.
@@ -2608,7 +2961,7 @@ enum FileImportService {
             !path.split(separator: "/").contains { $0.hasPrefix(".") || $0 == "__MACOSX" }
         }
         let folders = DAISYParser.packageFolders(inArchivePaths: paths)
-        let bookFolder = folders.contains("") ? "" : (folders.sorted().first ?? "")
+        let bookFolder = folders.contains("") ? "" : (folders.sortedStably().first ?? "")
         /// Whether `path` lies in `folder`, "" being the whole archive.
         func lies(_ path: String, in folder: String) -> Bool {
             folder.isEmpty || path.hasPrefix(folder + "/")
@@ -2622,7 +2975,8 @@ enum FileImportService {
         var otherBooks = bookFolder.isEmpty ? 0 : otherFolders.count
         if !bookFolder.isEmpty {
             for path in paths where !lies(path, in: bookFolder) && !otherFolders.contains(where: { lies(path, in: $0) }) {
-                if let format = BookFormat.detect(from: URL(fileURLWithPath: path)), !format.isAudio {
+                // A picture beside the book is no other book (FMT34).
+                if let format = BookFormat.detectBookAmongOtherFiles(from: URL(fileURLWithPath: path)), !format.isAudio {
                     otherBooks += 1
                 }
             }
@@ -2723,6 +3077,7 @@ enum FileImportService {
                 progress: extraction
             )
 
+            // A transcript file in the archive lies beside its track.
             return try publishTracks(
                 titled: zipName,
                 in: audioDirectory,
@@ -2732,6 +3087,7 @@ enum FileImportService {
                 folderPath: folderPath,
                 dateAdded: dateAdded,
                 source: zipURL,
+                pairingIn: audioDirectory,
                 run: &run
             )
         }
@@ -2747,7 +3103,18 @@ enum FileImportService {
     /// reader's discovery rules (wrapper folders count; Finder metadata
     /// named like audio does not), so a folder with no playable track fails
     /// there, and the book is published once it reads as the reader will.
-    private static func publishTracks(
+    /// A WebVTT or SubRip file named as a track is, found in
+    /// `transcriptFolder`, the folder the tracks' paths lead from (the
+    /// archive's extraction, the folder chosen, or the playlist's own
+    /// folder), becomes the book's transcript (`TranscriptPairing.inFolder`,
+    /// FMT23). Without a manifest, the cue sheets among the tracks arrange
+    /// them, through a manifest written here (`arrangeByCueSheets(in:)`,
+    /// FMT24), and the book returned carries the notice of what they left
+    /// out; should the book's reading find one of their sections past its
+    /// file's end after all, the tracks import without them
+    /// (`publishingWithoutSheetsOnMisfit`). Internal so a cue sheet's import
+    /// ends as every other does (`importCueSheetWithReport`).
+    static func publishTracks(
         titled title: String,
         in audioDirectory: URL,
         of staging: ImportStaging,
@@ -2756,33 +3123,39 @@ enum FileImportService {
         folderPath: String,
         dateAdded: Date,
         source: URL,
+        pairingIn transcriptFolder: URL,
         run: inout ImportRun
     ) throws -> ImportedBook {
-        var title = title
-        var author = Book.unknownAuthor
-        if let location = AudioManifestLocation.find(in: audioDirectory) {
-            try run.begin(.readingManifest, in: staging.directory)
-            let manifest = try AudioManifestCheck.checkedManifest(at: location, audioFolder: audioDirectory, scan: .importing)
-            // A blank title or author falls back as a missing one does.
-            if let manifestTitle = manifest.bookTitle { title = manifestTitle }
-            if let manifestAuthor = manifest.bookAuthor { author = manifestAuthor }
+        let sheets = try arrangeByCueSheets(in: audioDirectory)
+        return try publishingWithoutSheetsOnMisfit(sheets) { sheetNotice in
+            var title = title
+            var author = Book.unknownAuthor
+            if let location = AudioManifestLocation.find(in: audioDirectory) {
+                try run.begin(.readingManifest, in: staging.directory)
+                let manifest = try AudioManifestCheck.checkedManifest(at: location, audioFolder: audioDirectory, scan: .importing)
+                // A blank title or author falls back as a missing one does.
+                if let manifestTitle = manifest.bookTitle { title = manifestTitle }
+                if let manifestAuthor = manifest.bookAuthor { author = manifestAuthor }
+            }
+            let staged = stagedAudioBook(
+                id: bookID,
+                title: title,
+                author: author,
+                audioDirectory: audioDirectory,
+                md5Hash: hash,
+                folderPath: folderPath,
+                dateAdded: dateAdded,
+                staging: staging,
+                source: source
+            )
+            var imported = try publishReadableBook(staged, from: staging, run: &run, pairingTranscripts: .inFolder(transcriptFolder))
+            imported.notice = joinedNotices(imported.notice, sheetNotice)
+            return imported
         }
-        let staged = stagedAudioBook(
-            id: bookID,
-            title: title,
-            author: author,
-            audioDirectory: audioDirectory,
-            md5Hash: hash,
-            folderPath: folderPath,
-            dateAdded: dateAdded,
-            staging: staging,
-            source: source
-        )
-        return try publishReadableBook(staged, from: staging, run: &run)
     }
 
     /// Creates the folder an audio archive's tracks go in, inside `staging`.
-    private static func makeAudioDirectory(in staging: ImportStaging) throws -> URL {
+    static func makeAudioDirectory(in staging: ImportStaging) throws -> URL {
         let audioDirectory = staging.directory.appendingPathComponent("audio", isDirectory: true)
         try FileManager.default.createDirectory(at: audioDirectory, withIntermediateDirectories: false)
         return audioDirectory
@@ -2848,6 +3221,11 @@ enum FileImportService {
         // always offers .ssml.
         types.append(.webArchive)
         types.append(UTType(importedAs: "org.w3.ssml", conformingTo: .xml))
+        // Kindle books (FMT42, FMT48): .mobi, .prc, .azw, and .azw3, for which macOS
+        // declares no type; the app imports one in Info.plist.
+        types.append(UTType(importedAs: "com.textmouth.mobi", conformingTo: .data))
+        // Kindle KFX books (FMT52): .kfx, .kfx-zip, .azw8, and .kpf, the same.
+        types.append(UTType(importedAs: "com.textmouth.kfx", conformingTo: .data))
         // Braille files (FMT20): BRF and BRL, which macOS declares no type
         // for, and PEF, which macOS takes for a Pentax raw photo by its
         // extension; the import tells them apart by their contents.
@@ -2877,6 +3255,11 @@ enum FileImportService {
         types.append(.xml)
         // PDF documents
         types.append(.pdf)
+        // Pictures of pages, read by text recognition (FMT34), and comic book
+        // archives: .cbz, for which macOS declares no type; the app imports
+        // one in Info.plist.
+        types.append(contentsOf: [.png, .jpeg, .heic, .heif, .tiff])
+        types.append(UTType(importedAs: "com.textmouth.cbz", conformingTo: .data))
         // DAISY books (OPF files and .daisy extension)
         // Use custom UTIs matching Info.plist imported type declarations
         if let opf = UTType("com.textmouth.opf-package") {
@@ -2885,6 +3268,14 @@ enum FileImportService {
         if let daisy = UTType("com.textmouth.daisy-book") {
             types.append(daisy)
         }
+        // NLS BARD braille books (FMT56): a .bopf package file, which macOS
+        // declares no type for; the app imports one in Info.plist. The
+        // iPhone's picker copies only the file picked, so a .bopf chosen alone
+        // would arrive without its volumes: it offers the ZIP a BARD download
+        // is, and a folder is chosen with Import Folder.
+        #if os(macOS)
+        types.append(UTType(importedAs: "com.textmouth.bopf-package", conformingTo: .xml))
+        #endif
         types.append(.zip)
         types.append(contentsOf: [UTType("public.text")].compactMap { $0 })
         if let tmb = UTType("com.textmouth.book-package") {
@@ -2904,7 +3295,15 @@ enum FileImportService {
         ].compactMap { $0 })
         // The formats macOS decodes that the import converts (FMT09), by
         // their extensions' system types where they have one.
-        types.append(contentsOf: ImportAudioConverter.coreAudioExtensions.sorted().compactMap {
+        types.append(contentsOf: ImportAudioConverter.importOnlyExtensions.sortedStably().compactMap {
+            UTType(filenameExtension: $0)
+        })
+        // The formats the installed ffmpeg converts (FMT31, FMT32), audio and
+        // video alike, by their extensions' types: the system's, TextMouth's
+        // own declarations, or a type made for the extension (.spx is the
+        // System Profiler's, so its files are offered too, and refused when
+        // they hold no Ogg).
+        types.append(contentsOf: FFmpegAudioConverter.extensions.sortedStably().compactMap {
             UTType(filenameExtension: $0)
         })
         // Video, imported as an audiobook whose sound alone plays (FR03).
@@ -2918,6 +3317,13 @@ enum FileImportService {
         if let playlist = UTType("public.m3u-playlist") {
             types.append(playlist)
         }
+        // PLS and XSPF playlists, read the same way (FMT12).
+        types.append(contentsOf: ["pls", "xspf"].compactMap { UTType(filenameExtension: $0) })
+        // Cue sheets, imported as an audiobook of the files they name with
+        // a heading per track (FMT24). macOS declares no type for .cue; the
+        // app imports one in Info.plist, and `importedAs` returns it whether
+        // or not the system has registered it yet.
+        types.append(UTType(importedAs: "com.textmouth.cue-sheet", conformingTo: .plainText))
         return types
     }
 
@@ -3386,7 +3792,7 @@ enum FileImportService {
         }
 
         // Remove empty directories (deepest first so parents become empty too)
-        let sorted = candidatesForRemoval.sorted {
+        let sorted = candidatesForRemoval.sortedStably {
             $0.pathComponents.count > $1.pathComponents.count
         }
         for url in sorted {
@@ -3685,10 +4091,17 @@ enum FileImportService {
             ? recordedName
             : tmbContents.first(where: isPackageContentName)
 
-        guard let fileName = bookFileName else { return nil }
+        // A package that holds a sync pointer and no book file is a book
+        // another device has, not fetched yet (FR43): it is kept as a
+        // placeholder, its file named as its record names it.
+        let isPlaceholder = bookFileName == nil
+            && isPackageContentName(recordedName)
+            && StoreFetch.pointer(in: url) != nil
+        guard let fileName = bookFileName ?? (isPlaceholder ? recordedName : nil) else { return nil }
         let bookFile = url.appendingPathComponent(fileName)
         switch access.presence(of: bookFile) {
         case .absent:
+            if isPlaceholder { break }
             return nil
         case .inCloud:
             throw MaintenanceFileAccess.refusal(of: bookFile)
@@ -3749,7 +4162,7 @@ enum FileImportService {
         }
 
         // Parents first, so every row's parent already exists when it is added.
-        let parentsFirst = paths.sorted { lhs, rhs in
+        let parentsFirst = paths.sortedStably { lhs, rhs in
             let lhsDepth = lhs.components(separatedBy: "/").count
             let rhsDepth = rhs.components(separatedBy: "/").count
             return lhsDepth == rhsDepth ? lhs < rhs : lhsDepth < rhsDepth
@@ -3794,5 +4207,33 @@ enum FileImportService {
             }
             return paths
         }
+    }
+}
+
+// MARK: - Walking Folders
+
+extension FileManager.DirectoryEnumerator {
+    /// Finder's metadata folder, which it adds to the archives it makes.
+    static let finderMetadataFolderName = "__MACOSX"
+
+    /// Skips the contents of `item`, the item this enumerator returned last,
+    /// when it is Finder's metadata folder, and says whether it did.
+    ///
+    /// Only a folder is skipped. `skipDescendants()` is for the folder just
+    /// returned, but on a file or a symbolic link it skips the contents of
+    /// the next folder listed beside it (found on this Mac with a link
+    /// listed before "Disc 2": the folder was listed, its tracks never
+    /// were), so a walk that calls it for anything else loses the books or
+    /// tracks beneath that folder.
+    ///
+    /// - Parameters:
+    ///   - item: The item just returned.
+    ///   - isDirectory: Whether it is a folder, as its resource values say;
+    ///     nil (not known) counts as not a folder.
+    @discardableResult
+    func skipFinderMetadataFolder(_ item: URL, isDirectory: Bool?) -> Bool {
+        guard isDirectory == true, item.lastPathComponent == Self.finderMetadataFolderName else { return false }
+        skipDescendants()
+        return true
     }
 }

@@ -183,7 +183,11 @@ struct AudioRenderSettings: Equatable, Sendable {
                 bitRate: Int(target.rounded()), bitsPerSample: 16, isFloat: false
             )
         case .alacM4A:
-            let depth = !isFloat && [16, 20, 24, 32].contains(bits) ? bits : (isFloat ? 24 : 16)
+            // The depth of the source, written as Apple Lossless writes it
+            // (20 bits as 24, which its writer makes a file the media check
+            // can decode); floats and depths it can't hold become 24 and 16.
+            let source = storedIntegerDepth(of: stored).map(OwnAudioConverter.writtenBitDepth(forAppleLossless:))
+            let depth = source.flatMap { [16, 24, 32].contains($0) ? $0 : nil } ?? (isFloat ? 24 : 16)
             return AudioRenderSettings(
                 format: format, sampleRate: base.sampleRate, channels: base.channelCount,
                 bitRate: nil, bitsPerSample: depth, isFloat: false
@@ -196,17 +200,71 @@ struct AudioRenderSettings: Equatable, Sendable {
             // AVAssetWriter writes WAVE and AIFF files of integers only (it
             // refuses floats there). Floats become 32-bit integers, which keep
             // them far more finely than any recording needs (steps of about
-            // -186 dB); compressed audio becomes 16-bit, as on a CD.
-            let keeps = isPCM && !isFloat && [8, 16, 24, 32].contains(bits)
-            return pcm(format, base, bits: keeps ? bits : (isFloat ? 32 : 16), isFloat: false)
+            // -186 dB); lossy audio becomes 16-bit, as on a CD. Integers keep
+            // their depth, a lossless file's too (Apple Lossless and FLAC
+            // books, whose depth is in their format flags): a depth
+            // AVFoundation refuses between two it takes goes up to the next,
+            // and a deeper one (64 bits) is a 32-bit integer.
+            let source = storedIntegerDepth(of: stored)
+            return pcm(format, base, bits: source.map { min($0, 32) } ?? (isPCM ? 32 : 16), isFloat: false)
         }
     }
 
-    /// PCM settings for `format` at `base`'s rate and channels.
-    private static func pcm(_ format: AudioRenderFormat, _ base: AudioEditBase, bits: Int, isFloat: Bool) -> AudioRenderSettings {
-        AudioRenderSettings(
+    /// The bits of each sample of the integer audio `stored` describes, as the
+    /// file holds it: a linear PCM file's, or a lossless file's (Apple Lossless
+    /// or FLAC), which reports 0 bits a channel for its compressed samples and
+    /// gives the depth of its source in its format flags instead (1 for 16
+    /// bits, 2 for 20, 3 for 24, 4 for 32, the values of
+    /// `kAppleLosslessFormatFlag_…`). Nil for floats and lossy audio.
+    static func storedIntegerDepth(of stored: AudioStreamBasicDescription) -> Int? {
+        let reported = Int(stored.mBitsPerChannel)
+        switch stored.mFormatID {
+        case kAudioFormatLinearPCM:
+            return stored.mFormatFlags & kAudioFormatFlagIsFloat == 0 && reported > 0 ? reported : nil
+        case kAudioFormatAppleLossless, kAudioFormatFLAC:
+            if reported > 0 { return reported }
+            switch stored.mFormatFlags {
+            case 1: return 16
+            case 2: return 20
+            case 3: return 24
+            case 4: return 32
+            default: return nil
+            }
+        default:
+            return nil
+        }
+    }
+
+    /// The depths of integer samples AVFoundation's readers and writers take
+    /// (the message of the exception it raises for any other:
+    /// "Bit depth can only be one of: 24, 16, 8, 32").
+    static let acceptedIntegerDepths = [8, 16, 24, 32]
+
+    /// The sample layout a render stores `bits`-bit samples in (floating
+    /// point or not), as far as AVFoundation takes it: integers of 8, 16, 24,
+    /// and 32 bits and 32-bit floats as they are; an integer depth between
+    /// those (12 or 20 bits) at the next one up, which holds every sample
+    /// exactly; and everything else, which the readers refuse by raising an
+    /// Objective-C exception (a 64-bit float, a 64-bit integer, a depth
+    /// not known), as 32-bit floats, which keep a deeper sample to 24 bits
+    /// of precision, finer than any recording's noise.
+    static func readableDepth(bits: Int, isFloat: Bool) -> (bits: Int, isFloat: Bool) {
+        if !isFloat, bits > 0, let accepted = acceptedIntegerDepths.first(where: { $0 >= bits }) {
+            return (accepted, false)
+        }
+        return (32, true)
+    }
+
+    /// PCM settings for `format` at `base`'s rate and channels, in the
+    /// layout of `bits` and `isFloat` where AVFoundation takes it
+    /// (`readableDepth(bits:isFloat:)`). Every PCM setting a render makes is
+    /// made here (the format's own in `make`, and a filter's floats in
+    /// `floatCAF`), so no reader or writer is given a depth it refuses.
+    static func pcm(_ format: AudioRenderFormat, _ base: AudioEditBase, bits: Int, isFloat: Bool) -> AudioRenderSettings {
+        let depth = readableDepth(bits: bits, isFloat: isFloat)
+        return AudioRenderSettings(
             format: format, sampleRate: base.sampleRate, channels: base.channelCount,
-            bitRate: nil, bitsPerSample: bits, isFloat: isFloat
+            bitRate: nil, bitsPerSample: depth.bits, isFloat: depth.isFloat
         )
     }
 
@@ -354,7 +412,7 @@ enum AudioChapterTrack {
             ],
             kCMTextFormatDescriptionExtension_HorizontalJustification as String: 0,
             kCMTextFormatDescriptionExtension_VerticalJustification as String: 0,
-            kCMTextFormatDescriptionExtension_FontTable as String: ["1": "Helvetica"],
+            kCMTextFormatDescriptionExtension_FontTable as String: ["1": "Helvetica"], // l10n: no (a font name)
         ]
         var format: CMFormatDescription?
         let status = CMFormatDescriptionCreate(
@@ -422,10 +480,11 @@ enum AudioChapterTrack {
 
 // MARK: - The Renderer
 
-/// Writes an edit timeline's audio to a file (FR04): the composition read
-/// with AVAssetReader and written with AVAssetWriter in one pass, buffer by
-/// buffer, so memory stays small whatever the length, never on the main
-/// thread.
+/// Writes an edit timeline's audio to a file (FR04): its stretches read with
+/// AVAssetReader, one after another (`readStretches`), and written with
+/// AVAssetWriter in one pass, buffer by buffer, so memory stays small
+/// whatever the length, never on the main thread. Samples copied as they
+/// are stored are read through the timeline's composition instead.
 ///
 /// AAC is always encoded again, since AVFoundation refuses to copy edited
 /// AAC as it is stored (the research prototype); only a file whose sound no
@@ -435,7 +494,9 @@ enum AudioChapterTrack {
 /// should the writer refuse, it is decoded and written again instead. An
 /// MPEG-4 file gets the timeline's chapter markers, laid out ahead of the
 /// audio: interleaved with it, the writer refuses a title until the audio
-/// reaches it and stalls a long file (the research prototype).
+/// reaches it and stalls a long file (the research prototype). A WAVE,
+/// AIFF, or CAF file gets them as its marker list once its audio is
+/// written (FMT11).
 enum AudioEditRenderer {
     /// What a render wrote.
     struct Outcome: Equatable, Sendable {
@@ -443,6 +504,10 @@ enum AudioEditRenderer {
         let frames: Int64
         /// Whether its samples were copied as they were stored.
         let copiedSamples: Bool
+        /// Whether a WAVE, AIFF, or CAF file was written without the chapter
+        /// markers the timeline has, their marker list refused (FMT11): the
+        /// save or export that asked says so, rather than "saved" alone.
+        var chapterMarkersLeftOut = false
     }
 
     /// Renders `timeline`, whose stretches come from `sources`, into a new
@@ -453,10 +518,12 @@ enum AudioEditRenderer {
     /// format's own. A file already at `destination` is replaced. MP3 is
     /// written with the LAME built into TextMouth, or, should that be
     /// unavailable, with `ffmpeg` (`renderMP3(_:sources:to:metadata:route:progress:)`).
-    /// - Throws: the composition's errors, `AudioEditError.renderFailed`,
-    ///   `.mp3NeedsFFmpeg` for MP3 with neither encoder, or
-    ///   `CancellationError` when the task is cancelled; nothing is left at
-    ///   `destination` after a failure.
+    /// - Throws: the sources' errors (`AudioEditStretchSound.pieces(of:sources:)`),
+    ///   `AudioEditError.renderFailed`, `.mp3NeedsFFmpeg` for MP3 with
+    ///   neither encoder, or `CancellationError` when the task is
+    ///   cancelled. A file already at `destination` stays as it was until
+    ///   every source has been opened; a failure after that leaves nothing
+    ///   there.
     static func render(
         _ timeline: AudioEditTimeline,
         sources: AudioEditComposition.Sources,
@@ -477,17 +544,39 @@ enum AudioEditRenderer {
                 progress: progress
             )
         }
-        let made = try await AudioEditComposition.make(timeline, sources: sources)
         let standard = AudioRenderSettings.make(format, for: sources.base)
         let settings = requested ?? standard
         let chapters = format.isMPEG4 ? chapterList(of: timeline, leadingTitle: metadata.title) : []
+        // A WAVE, AIFF, or CAF file keeps its chapters as markers, written
+        // once its audio is (FMT11). A render to settings of a caller's own (a
+        // filter's stretch, MP3's intermediate file) is no file anyone keeps,
+        // and gets none.
+        let markers = format.isPCM && requested == nil ? chapterList(of: timeline, leadingTitle: metadata.title) : []
         let tags = format.isMPEG4 ? await metadataItems(from: sources.base.url, overriding: metadata) : []
+        // Every source is opened, and every stretch checked against it,
+        // before the file a render replaces is removed, so a render that
+        // can't read its sources leaves that file as it was. Samples copied
+        // as stored are read through the timeline's composition, whole
+        // packets, never decoded.
+        let pieces = try await AudioEditStretchSound.pieces(of: timeline, sources: sources)
+        // Samples are copied only under the format's own settings, never under
+        // those a caller asked for (a filter's input, a copy's stretch, MP3's
+        // intermediate file): since depths AVFoundation refuses are stored
+        // as 32-bit floats, a caller's 32-bit floats can equal the standard
+        // settings of a 64-bit float book, whose samples would be copied
+        // at twice the size they ask for.
+        let copied = requested == nil && canCopySamples(of: timeline, base: sources.base, into: format)
+        let composition: AudioEditComposition? = try copied ? AudioEditComposition.make(pieces, sampleRate: timeline.sampleRate) : nil
         try? FileManager.default.removeItem(at: destination)
 
-        if settings == standard, canCopySamples(of: timeline, base: sources.base, into: format) {
+        if let made = composition {
             do {
-                try await write(made, to: destination, settings: settings, copyingSamples: true, chapters: chapters, tags: tags, progress: progress)
-                return Outcome(frames: made.frames, copiedSamples: true)
+                let (reader, output, storedFormat) = try await copyReader(of: made)
+                try await write(.stored(storedFormat), to: destination, settings: settings, chapters: chapters, tags: tags) { consume in
+                    try await drain(output, of: reader, made: made, progress: progress, consume: consume)
+                }
+                let keptMarkers = writeMarkers(markers, to: destination)
+                return Outcome(frames: made.frames, copiedSamples: true, chapterMarkersLeftOut: !keptMarkers)
             } catch is CancellationError {
                 throw CancellationError()
             } catch {
@@ -496,8 +585,36 @@ enum AudioEditRenderer {
                 try? FileManager.default.removeItem(at: destination)
             }
         }
-        try await write(made, to: destination, settings: settings, copyingSamples: false, chapters: chapters, tags: tags, progress: progress)
-        return Outcome(frames: made.frames, copiedSamples: false)
+        try await write(.decoded, to: destination, settings: settings, chapters: chapters, tags: tags) { consume in
+            try await readStretches(pieces, timelineRate: timeline.sampleRate, settings: settings, progress: progress, consume: consume)
+        }
+        let keptMarkers = writeMarkers(markers, to: destination)
+        return Outcome(frames: timeline.length, copiedSamples: false, chapterMarkersLeftOut: !keptMarkers)
+    }
+
+    /// The tag of the debug-log line saying a render's chapter markers could
+    /// not be written (FMT11).
+    static let markersNotWrittenLogTag = "AUDIO_MARKERS_NOT_WRITTEN"
+
+    /// Writes `markers`, a render's chapters, into the WAVE, AIFF, or CAF
+    /// file just written at `destination` as its marker list (FMT11,
+    /// `AudioMarkerList`): each at its start, named by its title, the same
+    /// list an MPEG-4 file's chapter track holds, the sound before the first
+    /// marker included, so the chapters read back exactly
+    /// (`FileChapterReaders`). Nothing for no markers. A failure leaves the
+    /// file whole without markers, and is recorded as one line,
+    /// `AUDIO_MARKERS_NOT_WRITTEN: <file>: <reason>`, which names no folder.
+    /// - Returns: whether the file holds every marker given: false only when
+    ///   there were markers and they could not be written.
+    private static func writeMarkers(_ markers: [AudioRenderChapter], to destination: URL) -> Bool {
+        guard !markers.isEmpty else { return true }
+        do {
+            try AudioMarkerList.write(markers.map { (title: $0.title, start: $0.start) }, to: destination)
+            return true
+        } catch {
+            DiagnosticLog.event(.storage, "\(markersNotWrittenLogTag): \(destination.lastPathComponent): \(error)")
+            return false
+        }
     }
 
     /// Renders `timeline` as MP3 at `destination` through an installed
@@ -600,7 +717,7 @@ enum AudioEditRenderer {
     }
 
     /// A common metadata item: `identifier` holding `value`.
-    private static func tag(_ identifier: AVMetadataIdentifier?, _ value: NSCopying & NSObjectProtocol) -> AVMetadataItem {
+    static func tag(_ identifier: AVMetadataIdentifier?, _ value: NSCopying & NSObjectProtocol) -> AVMetadataItem {
         let item = AVMutableMetadataItem()
         item.identifier = identifier
         item.value = value
@@ -608,32 +725,41 @@ enum AudioEditRenderer {
         return item
     }
 
-    /// The pass itself: reads `made` and appends its sound to a writer of
-    /// `settings`, after the chapter titles, as the type describes.
+    /// What a pass hands its writer: samples copied as they are stored, in
+    /// the format given, when the composition names one; or decoded linear
+    /// PCM, which the writer encodes in the render's own format.
+    private enum Samples {
+        case stored(CMFormatDescription?)
+        case decoded
+    }
+
+    /// The pass itself, as the type describes: a writer of `settings` at
+    /// `destination`, given the chapter titles first and then, buffer by
+    /// buffer, the audio `feed` hands it, of the kind `samples` names.
+    /// Nothing is left at `destination` when it throws.
     private static func write(
-        _ made: AudioEditComposition,
+        _ samples: Samples,
         to destination: URL,
         settings: AudioRenderSettings,
-        copyingSamples: Bool,
         chapters: [AudioRenderChapter],
         tags: [AVMetadataItem],
-        progress: (@Sendable (Double) -> Void)?
+        feed: (_ consume: (CMSampleBuffer) async throws -> Void) async throws -> Void
     ) async throws {
-        let (reader, output, hint) = try await makeReader(of: made, settings: settings, copyingSamples: copyingSamples)
-
         let writer: AVAssetWriter
         do {
             writer = try AVAssetWriter(outputURL: destination, fileType: settings.format.fileType)
         } catch {
             throw failure(error)
         }
-        let input = AVAssetWriterInput(
-            mediaType: .audio,
-            outputSettings: copyingSamples ? nil : settings.outputSettings,
-            sourceFormatHint: hint
-        )
+        let input: AVAssetWriterInput
+        switch samples {
+        case .stored(let format):
+            input = try makingWithoutRaising { AVAssetWriterInput(mediaType: .audio, outputSettings: nil, sourceFormatHint: format) }
+        case .decoded:
+            input = try makingWithoutRaising { AVAssetWriterInput(mediaType: .audio, outputSettings: settings.outputSettings) }
+        }
         input.expectsMediaDataInRealTime = false
-        guard writer.canAdd(input) else { throw AudioEditError.renderFailed("the writer refused the audio") }
+        guard writer.canAdd(input) else { throw AudioEditError.renderFailed("the writer refused the audio") } // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
         writer.add(input)
 
         var chapterInput: AVAssetWriterInput?
@@ -643,7 +769,7 @@ enum AudioEditRenderer {
             let titles = AVAssetWriterInput(mediaType: .text, outputSettings: nil, sourceFormatHint: format)
             titles.marksOutputTrackAsEnabled = false
             titles.mediaDataLocation = .beforeMainMediaDataNotInterleaved
-            guard writer.canAdd(titles) else { throw AudioEditError.renderFailed("the writer refused the chapter list") }
+            guard writer.canAdd(titles) else { throw AudioEditError.renderFailed("the writer refused the chapter list") } // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
             writer.add(titles)
             input.addTrackAssociation(withTrackOf: titles, type: AVAssetTrack.AssociationType.chapterList.rawValue)
             chapterInput = titles
@@ -653,11 +779,7 @@ enum AudioEditRenderer {
             writer.metadata = tags
         }
 
-        guard reader.startReading() else { throw failure(reader.error) }
-        guard writer.startWriting() else {
-            reader.cancelReading()
-            throw failure(writer.error)
-        }
+        guard writer.startWriting() else { throw failure(writer.error) }
         writer.startSession(atSourceTime: .zero)
 
         do {
@@ -667,11 +789,8 @@ enum AudioEditRenderer {
                 }
                 chapterInput.markAsFinished()
             }
-            try await drain(output, of: reader, made: made, settings: settings, cuttingAtTheEnd: !copyingSamples, progress: progress) {
-                try await append($0, to: input, of: writer)
-            }
+            try await feed { try await append($0, to: input, of: writer) }
         } catch {
-            reader.cancelReading()
             writer.cancelWriting()
             try? FileManager.default.removeItem(at: destination)
             throw error
@@ -684,96 +803,363 @@ enum AudioEditRenderer {
         }
     }
 
-    /// A reader of `made`'s audio, not yet started: decoded to the linear
-    /// PCM `settings.readerSettings` describes, or, when `copyingSamples`,
-    /// as it is stored, with the description of its samples for a writer to
-    /// copy them by.
+    /// A reader of `made`'s samples as they are stored, not yet started,
+    /// with the description of them a writer copies them by, when the
+    /// composition gives one.
     /// - Throws: `AudioEditError.renderFailed` when AVFoundation refuses the
     ///   reader.
-    static func makeReader(
-        of made: AudioEditComposition,
-        settings: AudioRenderSettings,
-        copyingSamples: Bool
-    ) async throws -> (reader: AVAssetReader, output: AVAssetReaderOutput, hint: CMFormatDescription?) {
+    private static func copyReader(
+        of made: AudioEditComposition
+    ) async throws -> (reader: AVAssetReader, output: AVAssetReaderOutput, storedFormat: CMFormatDescription?) {
         let tracks = try await made.composition.loadTracks(withMediaType: .audio)
-        guard let track = tracks.first else { throw AudioEditError.renderFailed("the composition has no audio") }
+        guard let track = tracks.first else { throw AudioEditError.renderFailed("the composition has no audio") } // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
         let reader: AVAssetReader
         do {
             reader = try AVAssetReader(asset: made.composition)
         } catch {
             throw failure(error)
         }
-        let output: AVAssetReaderOutput
-        var hint: CMFormatDescription?
-        if copyingSamples {
-            output = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
-            hint = try await track.load(.formatDescriptions).first
-        } else {
-            output = AVAssetReaderAudioMixOutput(audioTracks: tracks, audioSettings: settings.readerSettings)
-        }
+        let output = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
         output.alwaysCopiesSampleData = false
-        guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") }
+        guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") } // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
         reader.add(output)
-        return (reader, output, hint)
+        return (reader, output, try await track.load(.formatDescriptions).first)
     }
 
-    /// Reads `output`, of the started `reader` of `made`, to its end and
-    /// hands each buffer to `consume`, telling `progress` how far it is.
-    ///
-    /// With `cuttingAtTheEnd`, decoded audio is handed over up to the end of
-    /// the edits and no further: a compressed take that ends them, as a
-    /// punch-in at the very end leaves, is decoded to the end of its last
-    /// packet, padding included. Samples copied as stored are whole packets,
-    /// never cut, and hold no padding of that kind.
+    /// Starts `reader`, of `made`'s samples as they are stored, reads its
+    /// `output` to the end, and hands each buffer to `consume`, telling
+    /// `progress` how far it is. Samples copied as stored are whole packets,
+    /// never cut, and hold no padding a decoder would leave.
     /// - Throws: `CancellationError`, what `consume` throws, or
-    ///   `AudioEditError.renderFailed` when the reader fails.
-    static func drain(
+    ///   `AudioEditError.renderFailed` when the reader fails; the reader is
+    ///   cancelled then.
+    private static func drain(
         _ output: AVAssetReaderOutput,
         of reader: AVAssetReader,
         made: AudioEditComposition,
-        settings: AudioRenderSettings,
-        cuttingAtTheEnd: Bool,
         progress: (@Sendable (Double) -> Void)?,
         consume: (CMSampleBuffer) async throws -> Void
     ) async throws {
-        let total = Double(made.frames) * settings.sampleRate / made.sampleRate
-        let limit = cuttingAtTheEnd ? Int(total.rounded()) : nil
+        guard reader.startReading() else { throw failure(reader.error) }
+        let total = Double(made.frames)
         var written = 0
-        while let buffer = output.copyNextSampleBuffer() {
-            try Task.checkCancellation()
-            // The rest is still read, so the reader ends as completed.
-            guard let sample = try trimmed(buffer, toAtMost: limit.map { $0 - written }) else { continue }
-            try await consume(sample)
-            written += CMSampleBufferGetNumSamples(sample)
-            progress?(total > 0 ? min(1, Double(written) / total) : 1)
+        do {
+            while let buffer = output.copyNextSampleBuffer() {
+                try Task.checkCancellation()
+                try await consume(buffer)
+                written += CMSampleBufferGetNumSamples(buffer)
+                progress?(total > 0 ? min(1, Double(written) / total) : 1)
+            }
+        } catch {
+            reader.cancelReading()
+            throw error
         }
         guard reader.status == .completed else { throw failure(reader.error) }
     }
 
-    /// `buffer`, decoded audio, cut to at most `frames` frames: all of it
-    /// when that many fit, or when `frames` is nil; nil when none may be
-    /// written. A cut buffer loses the trim its end had, which the cut has
-    /// made, so a writer that applies trims never cuts it again.
+    /// The frames of `buffer`, decoded audio, from frame `offset` on, at
+    /// most `count` of them: `buffer` itself when that is all of it; nil
+    /// when none are left to keep. A cut buffer loses the trims its ends
+    /// had, which the cut has made, so a writer that applies trims never
+    /// cuts it again.
     /// - Throws: `AudioEditError.renderFailed` when the frames can't be
     ///   copied.
-    private static func trimmed(_ buffer: CMSampleBuffer, toAtMost frames: Int?) throws -> CMSampleBuffer? {
-        guard let frames else { return buffer }
-        guard frames > 0 else { return nil }
-        guard CMSampleBufferGetNumSamples(buffer) > frames else { return buffer }
-        var kept: CMSampleBuffer?
+    private static func slice(of buffer: CMSampleBuffer, from offset: Int, atMost count: Int) throws -> CMSampleBuffer? {
+        let frames = CMSampleBufferGetNumSamples(buffer)
+        let kept = min(frames - offset, count)
+        guard kept > 0 else { return nil }
+        guard kept < frames else { return buffer }
+        var cut: CMSampleBuffer?
         let status = CMSampleBufferCopySampleBufferForRange(
             allocator: kCFAllocatorDefault,
             sampleBuffer: buffer,
-            sampleRange: CFRange(location: 0, length: frames),
-            sampleBufferOut: &kept
+            sampleRange: CFRange(location: offset, length: kept),
+            sampleBufferOut: &cut
         )
-        guard status == noErr, let kept else { throw AudioEditError.renderFailed("\(NSOSStatusErrorDomain) \(status)") }
-        CMRemoveAttachment(kept, key: kCMSampleBufferAttachmentKey_TrimDurationAtEnd)
-        return kept
+        guard status == noErr, let cut else { throw AudioEditError.renderFailed("\(NSOSStatusErrorDomain) \(status)") }
+        CMRemoveAttachment(cut, key: kCMSampleBufferAttachmentKey_TrimDurationAtStart)
+        CMRemoveAttachment(cut, key: kCMSampleBufferAttachmentKey_TrimDurationAtEnd)
+        return cut
     }
 
-    /// Appends `sample` to `input` once it is ready for more.
-    private static func append(_ sample: CMSampleBuffer, to input: AVAssetWriterInput, of writer: AVAssetWriter) async throws {
+    /// How long before a piece its read starts, in seconds: sound decoded
+    /// and dropped, so the decoder has settled by the piece's first frame.
+    /// An MP3 frame decodes right only after the frames before it: read
+    /// from its own start, a piece in the middle of an MP3 began with 20 to
+    /// 85 ms of zeros or wrong sound at 22.05 and 44.1 kHz (the review of
+    /// November 15, 2026). Read from half a second before, every cut of
+    /// MP3s from 8 kHz at 8 kbit/s to 48 kHz at 320 kbit/s decoded as its
+    /// file does whole.
+    static let readRunUp: TimeInterval = 0.5
+
+    /// How long past a piece its read runs, in seconds: sound decoded and
+    /// cut off, so the piece's last frames are whole. A decoder hands over a
+    /// frame's sound only once it has read on, and a resampler likewise:
+    /// read to its own end, a piece ending in the middle of an MP3 could
+    /// end in some 196 frames of zeros (22.05 kHz at 32 kbit/s), and one of
+    /// a file at another rate than the render's came up 8 to 31 frames
+    /// short.
+    static let readRunPast: TimeInterval = 0.25
+
+    /// Reads the sound of `pieces`, every piece of the stretches of a
+    /// timeline at `timelineRate`, their files opened and their ranges
+    /// checked (`AudioEditStretchSound.pieces(of:sources:)`), piece by
+    /// piece: each from its own file, by an asset reader of its own over
+    /// that piece and a little either side of it (`readRunUp`,
+    /// `readRunPast`), decoded to `settings.readerSettings`, cut to the
+    /// piece's own frames, and handed to `consume` buffer by buffer, timed
+    /// at its place in the edits; telling `progress` how far it is. Memory
+    /// stays flat however many pieces there are (`read`'s autorelease
+    /// pools, and a pause after each piece).
+    ///
+    /// Every render that decodes reads so, not through the timeline's
+    /// composition (`AudioEditComposition`): AVFoundation decodes an MP3
+    /// wrongly through one. In a harness of an MP3 book's save, a cut of its
+    /// second second, every read through the composition silenced some
+    /// 100 ms around the cut (796 frames at 8 kHz), and 192 reads in 1,200
+    /// shifted the sound after the cut 337 frames early, most of them ending
+    /// that much short of the edits, which the save then refused
+    /// (`AudioEditBookRender`; the full suites of November 13 to 15, 2026).
+    /// Read piece by piece, each from its run-up to its run-past, every cut
+    /// of MP3s at seven encodings, AAC, AIFF, FLAC, and Apple Lossless
+    /// decoded as its file does whole; read over just its range, as at
+    /// first, a piece of an MP3 at 22.05 or 44.1 kHz began wrong.
+    /// - Throws: `CancellationError`, what `consume` throws, or
+    ///   `AudioEditError.renderFailed` when a reader fails or a piece
+    ///   decodes short by more than `fillableShortfall`.
+    static func readStretches(
+        _ pieces: [AudioEditStretchSound.Piece],
+        timelineRate: Double,
+        settings: AudioRenderSettings,
+        progress: (@Sendable (Double) -> Void)?,
+        consume: (CMSampleBuffer) async throws -> Void
+    ) async throws {
+        // Frames at the render's rate for each frame of the edits.
+        let ratio = settings.sampleRate / timelineRate
+        let total = Int((Double(pieces.reduce(0) { $0 + $1.length }) * ratio).rounded())
+        var position: Int64 = 0
+        var written = 0
+        // The format the readers decode to, as the last buffer read was:
+        // silence making up a piece is made in it.
+        var format: CMFormatDescription?
+        for piece in pieces {
+            position += piece.length
+            // Each piece ends where the edits so far end at the render's
+            // rate, so rounding never adds up from piece to piece.
+            let end = Int((Double(position) * ratio).rounded())
+            try await read(
+                piece,
+                settings: settings,
+                handingOver: end - written,
+                from: written,
+                of: total,
+                format: &format,
+                progress: progress,
+                consume: consume
+            )
+            written = end
+            // A pause after each piece lets go of whatever else was
+            // autoreleased while it was read (`read`'s pools).
+            await Task.yield()
+        }
+    }
+
+    /// The most a piece may decode short of its length, in seconds, made up
+    /// with silence at its end: as much as a save lets its file differ from
+    /// the edits (`AudioEditBookRender.lengthTolerance`). A resampler keeps
+    /// back the last 8 to 31 frames of a file read to its very end, as a
+    /// take recorded at another rate than the book's is when used to its
+    /// last frame; a piece short by more is refused, its sound not all
+    /// there.
+    static let fillableShortfall = AudioEditBookRender.lengthTolerance
+
+    /// Reads `piece` with an asset reader of its own, decoded to
+    /// `settings.readerSettings`, from `readRunUp` before it to
+    /// `readRunPast` past it, as far as its file goes either way, and hands
+    /// `consume` exactly `frames` frames of the piece's own, buffer by
+    /// buffer, each timed as following the `start` frames handed over
+    /// before it, telling `progress` how far the render's `total` frames it
+    /// has come. Frames the read comes up short of, at most
+    /// `fillableShortfall`, are made up with silence in `format`, the
+    /// format the readers decode to, which each buffer read updates.
+    /// - Throws: `CancellationError`, what `consume` throws, or
+    ///   `AudioEditError.renderFailed` when AVFoundation refuses or fails the
+    ///   read, or it comes up shorter; the reader is cancelled then.
+    private static func read(
+        _ piece: AudioEditStretchSound.Piece,
+        settings: AudioRenderSettings,
+        handingOver frames: Int,
+        from start: Int,
+        of total: Int,
+        format: inout CMFormatDescription?,
+        progress: (@Sendable (Double) -> Void)?,
+        consume: (CMSampleBuffer) async throws -> Void
+    ) async throws {
+        let scale = CMTimeScale(settings.sampleRate.rounded())
+        // The run-up in whole frames at the render's rate, so that the
+        // piece's first frame is the first one kept: half a second, or as
+        // much as the file has before the piece.
+        let runUp = min(
+            Int64((readRunUp * settings.sampleRate).rounded()),
+            CMTimeConvertScale(piece.range.start, timescale: scale, method: .roundTowardNegativeInfinity).value
+        )
+        let readStart = CMTimeSubtract(piece.range.start, CMTime(value: runUp, timescale: scale))
+        let runPastEnd = CMTimeAdd(piece.range.end, CMTime(seconds: readRunPast, preferredTimescale: scale))
+        // A piece ends at most a frame past its file's end
+        // (`AudioEditStretchSound.pieces(of:sources:)`), so the read ends
+        // after it starts; the bound only keeps the range well formed.
+        let readEnd = CMTimeMaximum(CMTimeMinimum(runPastEnd, piece.sourceEnd), piece.range.start)
+        // The reader is made, and each buffer copied, in an autorelease pool
+        // of its own, so what AVFoundation autoreleases for them goes with
+        // them rather than when the render's task next pauses, which an MP3
+        // render with TextMouth's own LAME never does: some 250 KB stayed
+        // for each piece, 150 MB for 600 in mp3render's probe.
+        let (reader, output) = try autoreleasepool {
+            try startedReader(of: piece, over: CMTimeRange(start: readStart, end: readEnd), settings: settings)
+        }
+        // The run-up's frames dropped so far, and the piece's handed over.
+        var dropped = 0
+        var handed = 0
+        do {
+            while let buffer = autoreleasepool(invoking: { output.copyNextSampleBuffer() }) {
+                try Task.checkCancellation()
+                // The run-up is dropped and the run-past cut off; the
+                // run-past is still read to its end, so the reader ends as
+                // completed.
+                let drop = min(Int(runUp) - dropped, CMSampleBufferGetNumSamples(buffer))
+                dropped += drop
+                format = CMSampleBufferGetFormatDescription(buffer) ?? format
+                let placed = try autoreleasepool {
+                    try slice(of: buffer, from: drop, atMost: frames - handed).map {
+                        try timed($0, at: start + handed, rate: settings.sampleRate)
+                    }
+                }
+                guard let sample = placed else { continue }
+                try await consume(sample)
+                handed += CMSampleBufferGetNumSamples(sample)
+                progress?(total > 0 ? min(1, Double(start + handed) / Double(total)) : 1)
+            }
+        } catch {
+            reader.cancelReading()
+            throw error
+        }
+        guard reader.status == .completed else { throw failure(reader.error) }
+        let missing = frames - handed
+        guard missing > 0 else { return }
+        guard Double(missing) <= settings.sampleRate * fillableShortfall else {
+            throw AudioEditError.renderFailed("a stretch of the edits decoded to \(handed) of \(frames) frames") // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
+        }
+        // Should no buffer have been read yet, the format is the one the
+        // settings describe, which differs from the readers' only in making
+        // 8-bit integers unsigned (`silence` fills those with their middle).
+        guard let silentFormat = format ?? AVAudioFormat(settings: settings.readerSettings)?.formatDescription else {
+            throw AudioEditError.renderFailed("the decoded audio has no format") // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
+        }
+        try await consume(try silence(missing, in: silentFormat, at: start + handed, rate: settings.sampleRate))
+        progress?(total > 0 ? min(1, Double(start + frames) / Double(total)) : 1)
+    }
+
+    /// A started reader of `range` of `piece`'s file, in that file's own
+    /// time, and its output, decoded to `settings.readerSettings`.
+    /// - Throws: `AudioEditError.renderFailed` when AVFoundation refuses the
+    ///   reader or fails to start it.
+    private static func startedReader(
+        of piece: AudioEditStretchSound.Piece,
+        over range: CMTimeRange,
+        settings: AudioRenderSettings
+    ) throws -> (reader: AVAssetReader, output: AVAssetReaderAudioMixOutput) {
+        let reader: AVAssetReader
+        do {
+            reader = try AVAssetReader(asset: piece.asset)
+        } catch {
+            throw failure(error)
+        }
+        reader.timeRange = range
+        let output = try makingWithoutRaising {
+            AVAssetReaderAudioMixOutput(audioTracks: [piece.track], audioSettings: settings.readerSettings)
+        }
+        output.alwaysCopiesSampleData = false
+        guard reader.canAdd(output) else { throw AudioEditError.renderFailed("the reader refused the audio") } // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
+        reader.add(output)
+        guard reader.startReading() else { throw failure(reader.error) }
+        return (reader, output)
+    }
+
+    /// `frames` frames of silence in `format`, decoded audio as a reader
+    /// hands it over, timed to start `frame` frames into the render at
+    /// `rate`.
+    /// - Throws: `AudioEditError.renderFailed` when the buffer can't be made.
+    private static func silence(_ frames: Int, in format: CMFormatDescription, at frame: Int, rate: Double) throws -> CMSampleBuffer {
+        guard let stream = CMAudioFormatDescriptionGetStreamBasicDescription(format)?.pointee, stream.mBytesPerFrame > 0 else {
+            throw AudioEditError.renderFailed("the decoded audio has no frame size") // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
+        }
+        let length = frames * Int(stream.mBytesPerFrame)
+        var block: CMBlockBuffer?
+        var status = CMBlockBufferCreateWithMemoryBlock(
+            allocator: kCFAllocatorDefault,
+            memoryBlock: nil,
+            blockLength: length,
+            blockAllocator: kCFAllocatorDefault,
+            customBlockSource: nil,
+            offsetToData: 0,
+            dataLength: length,
+            flags: kCMBlockBufferAssureMemoryNowFlag,
+            blockBufferOut: &block
+        )
+        guard status == noErr, let block else { throw AudioEditError.renderFailed("\(NSOSStatusErrorDomain) \(status)") }
+        // Silence is zero in floats and in signed integers; an 8-bit integer
+        // without a sign holds it at its middle, 128.
+        let isUnsignedByte = stream.mBitsPerChannel == 8
+            && stream.mFormatFlags & (kAudioFormatFlagIsFloat | kAudioFormatFlagIsSignedInteger) == 0
+        status = CMBlockBufferFillDataBytes(
+            with: CChar(bitPattern: isUnsignedByte ? 0x80 : 0),
+            blockBuffer: block,
+            offsetIntoDestination: 0,
+            dataLength: length
+        )
+        guard status == noErr else { throw AudioEditError.renderFailed("\(NSOSStatusErrorDomain) \(status)") }
+        var sample: CMSampleBuffer?
+        status = CMAudioSampleBufferCreateReadyWithPacketDescriptions(
+            allocator: kCFAllocatorDefault,
+            dataBuffer: block,
+            formatDescription: format,
+            sampleCount: frames,
+            presentationTimeStamp: CMTime(value: CMTimeValue(frame), timescale: CMTimeScale(rate.rounded())),
+            packetDescriptions: nil,
+            sampleBufferOut: &sample
+        )
+        guard status == noErr, let sample else { throw AudioEditError.renderFailed("\(NSOSStatusErrorDomain) \(status)") }
+        return sample
+    }
+
+    /// `sample`, decoded audio, timed to start `frame` frames into the
+    /// render at `rate`, each of its frames lasting one frame there: so the
+    /// pieces a writer is given follow one another, whatever their files'
+    /// own times.
+    /// - Throws: `AudioEditError.renderFailed` when the buffer can't be
+    ///   copied.
+    private static func timed(_ sample: CMSampleBuffer, at frame: Int, rate: Double) throws -> CMSampleBuffer {
+        let scale = CMTimeScale(rate.rounded())
+        var timing = CMSampleTimingInfo(
+            duration: CMTime(value: 1, timescale: scale),
+            presentationTimeStamp: CMTime(value: CMTimeValue(frame), timescale: scale),
+            decodeTimeStamp: .invalid
+        )
+        var placed: CMSampleBuffer?
+        let status = CMSampleBufferCreateCopyWithNewTiming(
+            allocator: kCFAllocatorDefault,
+            sampleBuffer: sample,
+            sampleTimingEntryCount: 1,
+            sampleTimingArray: &timing,
+            sampleBufferOut: &placed
+        )
+        guard status == noErr, let placed else { throw AudioEditError.renderFailed("\(NSOSStatusErrorDomain) \(status)") }
+        return placed
+    }
+
+    /// Appends `sample` to `input` once it is ready for more. Internal so the
+    /// import's chapter track writer appends the same way (`ChapterTrackWriter`).
+    static func append(_ sample: CMSampleBuffer, to input: AVAssetWriterInput, of writer: AVAssetWriter) async throws {
         while !input.isReadyForMoreMediaData {
             try Task.checkCancellation()
             guard writer.status == .writing else { throw failure(writer.error) }
@@ -782,10 +1168,23 @@ enum AudioEditRenderer {
         guard input.append(sample) else { throw failure(writer.error) }
     }
 
+    /// Makes what `make` creates through an AVFoundation initializer, which
+    /// raises an Objective-C exception, ending the app, for settings it
+    /// refuses (a sample depth it doesn't take). The render fails instead, as
+    /// any other refusal of the writer does.
+    /// - Throws: `AudioEditError.renderFailed`, naming the exception.
+    static func makingWithoutRaising<Value>(_ make: () -> Value) throws -> Value {
+        do {
+            return try ObjCException.making(make)
+        } catch let raised as ObjCException.Raised {
+            throw AudioEditError.renderFailed(raised.summary)
+        }
+    }
+
     /// `error`, from AVFoundation, as a render failure naming its domain and
     /// code only: its description can name files by their full paths.
     static func failure(_ error: Error?) -> AudioEditError {
-        guard let error else { return .renderFailed("no error was given") }
+        guard let error else { return .renderFailed("no error was given") } // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
         let failure = error as NSError
         return .renderFailed("\(failure.domain) \(failure.code)")
     }

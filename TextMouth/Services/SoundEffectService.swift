@@ -1,17 +1,47 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import AVFoundation
 import os
 
 /// Events that can have associated sound effects
 enum SoundEvent: String, CaseIterable, Codable, Identifiable {
-    case play = "Play"
-    case pause = "Pause"
-    case skipForward = "Skip Forward"
-    case skipBackward = "Skip Backward"
-    case whereAmIStart = "Where Am I (Start)"
-    case whereAmIEnd = "Where Am I (End)"
+    case play = "Play" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case pause = "Pause" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case skipForward = "Skip Forward" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case skipBackward = "Skip Backward" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case whereAmIStart = "Where Am I (Start)" // l10n: no (stored id: config.json keeps it; `title` is shown)
+    case whereAmIEnd = "Where Am I (End)" // l10n: no (stored id: config.json keeps it; `title` is shown)
 
     var id: String { rawValue }
+
+    /// The event's name as the Sounds settings show and speak it. The raw
+    /// value is what config.json stores and the debug log writes, and is
+    /// never shown.
+    var title: String {
+        switch self {
+        case .play:
+            // Translators: Name of the playback event whose sound is chosen in Settings, Sound Effects: playing starts.
+            return InterfaceText.line("common.play", "Play")
+        case .pause:
+            // Translators: Name of the playback event whose sound is chosen in Settings, Sound Effects: playing pauses.
+            return InterfaceText.line("common.pauseEvent", "Pause")
+        case .skipForward:
+            // Translators: Name of the playback event whose sound is chosen in Settings, Sound Effects: skipping forward.
+            return InterfaceText.line("common.skipForward", "Skip Forward")
+        case .skipBackward:
+            // Translators: Name of the playback event whose sound is chosen in Settings, Sound Effects: skipping backward.
+            return InterfaceText.line("common.skipBackward", "Skip Backward")
+        case .whereAmIStart:
+            // Translators: Name of the event whose sound is chosen in Settings, Sound Effects: the Where Am I announcement starts. Where Am I is the name of a command.
+            return InterfaceText.line("soundEvent.title.whereAmIStart", "Where Am I (Start)")
+        case .whereAmIEnd:
+            // Translators: Name of the event whose sound is chosen in Settings, Sound Effects: the Where Am I announcement ends. Where Am I is the name of a command.
+            return InterfaceText.line("soundEvent.title.whereAmIEnd", "Where Am I (End)")
+        }
+    }
 }
 
 // MARK: - Playing a Sound, Off the Main Thread
@@ -243,34 +273,46 @@ class SoundEffectService: ObservableObject {
         }
     }
 
+    /// The stored name of the choice of no sound, which config.json keeps as
+    /// it is. An event's sound is a system sound's name or this.
+    static let noSound = "None" // l10n: no (stored id: config.json keeps it; `title(ofSound:)` is shown)
+
+    /// The name of a sound as the Sounds settings show and speak it: a system
+    /// sound's own name, or "None" in the interface language for no sound.
+    static func title(ofSound name: String) -> String {
+        guard name == noSound else { return name }
+        // Translators: Choice in a Sound Effects pop-up button of Settings: no sound plays for the event.
+        return InterfaceText.line("common.none", "None")
+    }
+
     static var defaultAssignments: [SoundEvent: String] {
         [
-            .play: "Pop",
-            .pause: "Tink",
-            .skipForward: "Tink",
-            .skipBackward: "Tink",
-            .whereAmIStart: "Glass",
-            .whereAmIEnd: "Submarine"
+            .play: "Pop", // l10n: no (stored id: the name of a system sound, as config.json keeps it)
+            .pause: "Tink", // l10n: no (stored id: the name of a system sound, as config.json keeps it)
+            .skipForward: "Tink", // l10n: no (stored id: the name of a system sound, as config.json keeps it)
+            .skipBackward: "Tink", // l10n: no (stored id: the name of a system sound, as config.json keeps it)
+            .whereAmIStart: "Glass", // l10n: no (stored id: the name of a system sound, as config.json keeps it)
+            .whereAmIEnd: "Submarine" // l10n: no (stored id: the name of a system sound, as config.json keeps it)
         ]
     }
 
     /// `assignments` with every event named. An event they leave out plays
     /// no sound, so it is named None, as the Sounds settings show it.
     static func assignmentsNamingEveryEvent(_ assignments: [SoundEvent: String]) -> [SoundEvent: String] {
-        Dictionary(uniqueKeysWithValues: SoundEvent.allCases.map { ($0, assignments[$0] ?? "None") })
+        Dictionary(uniqueKeysWithValues: SoundEvent.allCases.map { ($0, assignments[$0] ?? noSound) })
     }
 
     /// Play the sound effect for a given event, as the settings say: none
     /// while sounds are off or the event's sound is None.
     func play(for event: SoundEvent) {
         guard soundsEnabled else { return }
-        guard let soundName = assignments[event], soundName != "None" else { return }
-        hand(soundName, for: "the \(event.rawValue) sound")
+        guard let soundName = assignments[event], soundName != Self.noSound else { return }
+        hand(soundName, for: "the \(event.rawValue) sound") // l10n: no (written to the debug log)
     }
 
     /// Preview a sound by name, whether or not sounds are on.
     func previewSound(_ name: String) {
-        hand(name, for: "the preview of \(name)")
+        hand(name, for: "the preview of \(name)") // l10n: no (written to the debug log)
     }
 
     /// The file of the sound named `name`: a system sound, the only kind
@@ -317,13 +359,13 @@ class SoundEffectService: ObservableObject {
 
     /// All available system sound names
     static func availableSounds() -> [String] {
-        var sounds = ["None"]
+        var sounds = [noSound]
         let fm = FileManager.default
         if let files = try? fm.contentsOfDirectory(atPath: systemSoundsPath) {
             let names = files
                 .filter { $0.hasSuffix(".aiff") }
                 .map { $0.replacingOccurrences(of: ".aiff", with: "") }
-                .sorted()
+                .sortedStably()
             sounds.append(contentsOf: names)
         }
         return sounds

@@ -20,7 +20,7 @@ extension EndBehaviorMatrixTests {
     /// once, for the first cell's book, and every other cell's book (a row
     /// of its own in a world of its own) gets a copy of it.
     func testChapteredAudioEndBehaviorMatrix() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         // A loop starts the first chapter again, which must outlast the moments
         // the test spends after the end, or the cursor moves on.
         let firstChapterSeconds: TimeInterval = 5

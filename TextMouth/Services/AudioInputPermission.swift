@@ -42,11 +42,11 @@ enum AudioInputPermissionError: LocalizedError, Equatable, Sendable {
     var errorDescription: String? {
         switch self {
         case .denied:
-            return "TextMouth isn't allowed to use the microphone. To record, turn on TextMouth in "
-                + "System Settings, Privacy & Security, Microphone."
+            // Translators: Error in the Record window when macOS has denied TextMouth the microphone. Names the places in System Settings, as macOS words them, where the user can allow it.
+            return InterfaceText.line("audioInputPermissionError.denied", "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone.")
         case .restricted:
-            return "This Mac doesn't allow TextMouth to use the microphone: a device management profile "
-                + "or Screen Time restricts it."
+            // Translators: Error in the Record window when something other than the user, a device management profile or Screen Time, keeps TextMouth from using the microphone.
+            return InterfaceText.line("audioInputPermissionError.restricted", "This Mac doesn't allow TextMouth to use the microphone: a device management profile or Screen Time restricts it.")
         }
     }
 

@@ -40,11 +40,17 @@ import Foundation
 /// braille file characters, though, not in the Braille setting's its import
 /// read it in, so a choice the user made in Book Information survives the
 /// replacement (`brailleFileCodeToReadAgain(replacing:with:)`, braillecodes).
+/// So is a text copy in the encoding the user chose for the old copy there,
+/// when the choice is about the new file too (`textEncodingToReadAgain(replacing:with:)`,
+/// encodingchoice): the same bytes, or other bytes that name no encoding of
+/// their own and are valid in the choice. Other bytes the choice cannot read
+/// keep their import's reading, and the replacement goes ahead.
 ///
 /// The work is in three parts, so that the old copy's package goes only
 /// once the new copy is committed:
 /// 1. `prepare(replacing:with:access:now:)` first reads a braille copy
-///    again in the old copy's braille file characters, when it must be;
+///    again in the old copy's braille file characters, or a text copy in the
+///    old copy's chosen encoding, when it must be;
 ///    then reads what is carried over, refusing before anything more is
 ///    written when part of it is only in the cloud, and putting back what
 ///    was read again; then writes it into the new copy's package and moves
@@ -61,8 +67,16 @@ import Foundation
 ///    package that cannot be removed stays, its record naming a listed
 ///    book, which no launch adopts (`FileImportService.adoptOrphanedTMBPackages`).
 enum DuplicateReplacement {
-    /// What a refusal asks the user to do once its cause is gone.
-    static let retry = "choose Replace Existing again"
+    /// The name of the button that answers a duplicate question by replacing
+    /// the library's copy, as the question's sheet shows it. The sentences
+    /// below name it by this, so they agree with the button. It stays English
+    /// until the import area converts `ImportDecisionSheet`, whose literal it
+    /// copies.
+    static let replaceExistingName = "Replace Existing" // l10n: no (the button's English name in ImportDecisionSheet until the import area converts)
+
+    /// What a refusal asks the user to do once its cause is gone, as
+    /// `FeedBookUse`'s English sentences end with it.
+    static let retry = "choose \(replaceExistingName) again" // l10n: no (inside FeedBookUse's English sentences until the feeds area converts)
 
     // MARK: Refusals
 
@@ -92,32 +106,34 @@ enum DuplicateReplacement {
         /// removes. It carries the re-read's own sentence
         /// (`LibraryViewModel.readingAgainRefusal(of:)`), said as it is.
         case readingAgain(String)
-        /// The new copy, a BRF or BRL braille book of the same file, could
-        /// not be read in the braille file characters the copy in the
-        /// library is read in (braillecodes): taken as its import read it,
-        /// it would undo a choice made in Book Information. It carries the
-        /// reading's own sentence (`readCopyAgain(_:in:access:)`), said as it
-        /// is.
-        case brailleCopyNotRead(String)
+        /// The new copy could not be read in the braille file characters
+        /// (braillecodes) or the text encoding (encodingchoice) the copy in
+        /// the library is read in, which the listener chose in Book
+        /// Information, though its bytes are the old copy's: taken as its
+        /// import read it, it would undo that choice. It carries the reading's own sentence
+        /// (`readCopyAgain(_:as:access:)`), said as it is.
+        case copyNotReadAgain(String)
 
         /// The refusal as the question's sheet shows it and VoiceOver
         /// speaks it.
         var sentence: String {
             switch self {
-            case .readingAgain(let sentence), .brailleCopyNotRead(let sentence):
+            case .readingAgain(let sentence), .copyNotReadAgain(let sentence):
                 return sentence
             case .inUse(let use, let title):
-                return use.refusal(of: "“\(title)”", doing: "replacing it", retry: DuplicateReplacement.retry)
+                return use.refusal(of: "“\(title)”", doing: "replacing it", retry: DuplicateReplacement.retry) // l10n: no (inside FeedBookUse's English sentences until the feeds area converts)
             case .audioBeingEdited(let title):
-                return "The audio of “\(title)” is being edited. Close the audio editor, or wait until it has saved, "
-                    + "then \(DuplicateReplacement.retry)."
+                // Translators: Why Replace Existing waits: the library's copy has its audio open in the audio editor. %1$@ is the book's title. %2$@ is the name of the Replace Existing button, which the sentence asks the user to choose again.
+                return InterfaceText.line("refusal.sentence.audioBeingEdited", "The audio of “\(title)” is being edited. Close the audio editor or wait for it to save, then choose \(DuplicateReplacement.replaceExistingName) again.")
             case .filesInCloud(let title):
-                return "Some of the files of “\(title)” are only in the cloud, and replacing it now would leave them behind. "
-                    + "Download the book, then \(DuplicateReplacement.retry)."
+                // Translators: Why Replace Existing waits: some files of the library's copy are only in the cloud. %1$@ is the book's title. %2$@ is the name of the Replace Existing button, which the sentence asks the user to choose again.
+                return InterfaceText.line("refusal.sentence.filesInCloud", "Some files of “\(title)” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose \(DuplicateReplacement.replaceExistingName) again.")
             case .storageBusy(.movingBooksBetweenFolders):
-                return "TextMouth is moving books between folders. Wait until that finishes, then \(DuplicateReplacement.retry)."
+                // Translators: Why Replace Existing waits: TextMouth is moving books between folders. %@ is the name of the Replace Existing button, which the sentence asks the user to choose again.
+                return InterfaceText.line("refusal.sentence.storageBusy.between", "TextMouth is moving books between folders. Wait until that finishes, then choose \(DuplicateReplacement.replaceExistingName) again.")
             case .storageBusy(.rebuildingDirectory):
-                return "TextMouth is rebuilding its data directory. Wait until that finishes, then \(DuplicateReplacement.retry)."
+                // Translators: Why Replace Existing waits: TextMouth is rebuilding its data directory, the folder that holds the library. %@ is the name of the Replace Existing button, which the sentence asks the user to choose again.
+                return InterfaceText.line("refusal.sentence.storageBusy.rebuilding", "TextMouth is rebuilding its data directory. Wait until that finishes, then choose \(DuplicateReplacement.replaceExistingName) again.")
             case .storageBusy(.movingDataDirectory):
                 return DataDirectoryMoveWording.importAnswerRefusal
             case .storageBusy(let reason):
@@ -136,8 +152,8 @@ enum DuplicateReplacement {
     /// copy's: nothing was replaced, and the question stays.
     struct TextNotKept: LocalizedError, Equatable {
         var errorDescription: String? {
-            "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, "
-                + "so it left both copies as they are."
+            // Translators: Error shown when Replace Existing could not keep the edited text of the library's copy beside the new copy's text. Nothing was replaced.
+            InterfaceText.line("textNotKept.errorDescription", "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are.")
         }
     }
 
@@ -146,7 +162,8 @@ enum DuplicateReplacement {
     /// now. Nothing was replaced, and the question stays.
     struct IndexNotSaved: LocalizedError, Equatable {
         var errorDescription: String? {
-            "TextMouth couldn't save the library's index, so it left both copies as they are."
+            // Translators: Error shown when Replace Existing could not save the library's index, which must name the new copy before the old one goes. Nothing was replaced.
+            InterfaceText.line("indexNotSaved.errorDescription", "TextMouth couldn't save the library's index, so it left both copies as they are.")
         }
     }
 
@@ -194,7 +211,11 @@ enum DuplicateReplacement {
     /// (`BookTextEditWording.earlierTextKept(_:)`, which a re-read in another
     /// encoding says too), so the user knows where the earlier text is.
     static func keptTextAnnouncement(title: String, copy: URL) -> String {
-        "Replaced “\(title)”. \(BookTextEditWording.earlierTextKept(copy))"
+        SentenceWording.joined([
+            // Translators: First sentence of the announcement after Replace Existing put the new copy in place of a book and kept the old copy's text beside the new text. %@ is the book's title. A sentence about where the earlier text is kept follows.
+            InterfaceText.line("duplicateReplacement.keptTextAnnouncement", "Replaced “\(title)”."),
+            BookTextEditWording.earlierTextKept(copy),
+        ])
     }
 
     /// What the library's alert says when the package of the copy titled
@@ -202,9 +223,12 @@ enum DuplicateReplacement {
     /// place, which stands: moved to the Trash, or deleted, as
     /// `movesToTrash` says, and the old files stay in their folder.
     static func oldCopyLeftMessage(title: String, movesToTrash: Bool, reason: String) -> String {
-        let removal = movesToTrash ? "moved to the Trash" : "deleted"
-        return "The new copy took the place of “\(title)”, but the old copy's files could not be \(removal), "
-            + "so they stay in its folder: \(reason)"
+        if movesToTrash {
+            // Translators: Alert after Replace Existing when the old copy's files could not be moved to the Trash. %1$@ is the book's title. %2$@ is why they could not be moved.
+            return InterfaceText.line("duplicateReplacement.oldCopyLeftMessage.moved", "The new copy replaced “\(title)”, but the old copy's files could not be moved to the Trash and stay in its folder: \(reason)")
+        }
+        // Translators: Alert after Replace Existing when the old copy's files could not be deleted. %1$@ is the book's title. %2$@ is why they could not be deleted.
+        return InterfaceText.line("duplicateReplacement.oldCopyLeftMessage.deleted", "The new copy replaced “\(title)”, but the old copy's files could not be deleted and stay in its folder: \(reason)")
     }
 
     // MARK: The Row
@@ -228,6 +252,13 @@ enum DuplicateReplacement {
         carried.dateAdded = existing.dateAdded
         carried.lastOpened = existing.lastOpened
         carried.keepHandEditedMetadata(of: existing)
+        // The keys of the old row that this TextMouth does not know (V04):
+        // the row stays the same book's, under the same ID, so what a later
+        // TextMouth keeps in it stays too. (The new copy's row, just
+        // imported here, holds none.) The old package's record goes with
+        // its package, and the keys only that record held go with it.
+        carried.unknownKeys = existing.unknownKeys
+        carried.brailleTableOrigin = brailleTableOrigin(replacing: existing, with: copy)
         // A text book's places and speed mean nothing to an audiobook, and
         // an audiobook's mean nothing to a text book.
         guard areSameKind(existing, copy) else { return carried }
@@ -239,6 +270,23 @@ enum DuplicateReplacement {
         carried.setSkippedHeadings(places.skippedHeadings)
         carried.waitingSkippedHeadings = SkippedHeading.stored(places.waitingSkippedHeadings)
         return carried
+    }
+
+    /// Who chose the braille table of the book that replaces `existing` with
+    /// `copy`, as `copy` ends up read (after any re-read in the old copy's
+    /// table, `readingToCarry(replacing:with:)`) (brfguess). When both are
+    /// braille books of the same bytes (the same content hash) and the table
+    /// the copy ends with is the old copy's, the table is the old copy's
+    /// choice or guess, so the origin is too, nil included: a guess the
+    /// listener kept (Keep This Code) or replaced by choosing, or one made
+    /// while the guess was on, must not come back or go missing because the
+    /// import of the copy guessed again or a re-read recorded no origin.
+    /// Otherwise the copy keeps what its own reading gave it: a different file
+    /// keeps its own guess.
+    static func brailleTableOrigin(replacing existing: Book, with copy: Book) -> BrailleTableOrigin? {
+        guard existing.offersBrailleTableChoice, copy.offersBrailleTableChoice,
+              !copy.md5Hash.isEmpty, existing.md5Hash == copy.md5Hash else { return copy.brailleTableOrigin }
+        return standingTable(of: existing) == standingTable(of: copy) ? existing.brailleTableOrigin : copy.brailleTableOrigin
     }
 
     /// Whether `first` and `second` are both audiobooks or both text books,
@@ -428,13 +476,24 @@ enum DuplicateReplacement {
     // MARK: Preparing the New Copy's Package
 
     /// The new copy's package, made ready to take the old copy's place, and
-    /// what the library needs to finish the replacement or undo it.
-    struct Preparation {
+    /// what the library needs to finish the replacement or undo it. Made off
+    /// the main actor and handed back to it
+    /// (`LibraryViewModel.answerImportDecisionOffMain(_:with:prepare:)`).
+    struct Preparation: Sendable {
         /// The library row the new copy becomes (`carriedBook`), at its
         /// package's new place.
         let book: Book
         /// Whether the old copy's transcript went into the new package.
         let keptTranscript: Bool
+        /// Whether the new package holds a transcript, the old copy's or the
+        /// one the new copy brought from a file beside its audio (FMT23): what
+        /// the library row and the offer to transcribe follow.
+        let hasTranscript: Bool
+        /// The transcript the new copy brought from a file beside its audio
+        /// that the old copy's took the place of (`TranscriptOutcome`), so the
+        /// listener can be told it was not used; nil when it brought none, or
+        /// it stayed.
+        let broughtTranscriptNotUsed: BroughtTranscript?
         /// The copy of the old copy's text kept now beside the new text, when
         /// one was made.
         let keptText: URL?
@@ -478,6 +537,9 @@ enum DuplicateReplacement {
         /// The transcript kept before its cleanup, as the new package takes
         /// it, with the transcript.
         var transcriptBeforeCleanup: Data?
+        /// The transcript the new copy brought from a file beside its audio,
+        /// when the old copy's is carried over it.
+        var broughtTranscriptNotUsed: BroughtTranscript?
         /// The old copy's places as the new copy keeps them.
         var places = PlaceRelocator.Places()
     }
@@ -493,9 +555,13 @@ enum DuplicateReplacement {
     /// user made in Book Information, such as Eurobraille for a book first
     /// read as North American Braille ASCII, would otherwise be undone with
     /// no error, the book read with wrong digits, punctuation, and
-    /// contractions. It is read as Book Information reads a book again
-    /// (`readCopyAgain(_:in:access:)`): its text written anew, and its
-    /// package record taking the code, with the new text's analysis, so its
+    /// contractions. A text copy is read again in the encoding the user
+    /// chose for `existing` when the choice is about its file too
+    /// (`textEncodingToReadAgain(replacing:with:)`, encodingchoice), as a
+    /// Cyrillic file chosen as Windows-1251 would otherwise be read as the
+    /// import guessed. Either is read as Book Information reads a book again
+    /// (`readCopyAgain(_:as:access:)`): its text written anew, and its
+    /// package record taking the choice, with the new text's analysis, so its
     /// row and record agree, and the places below move onto that text. A
     /// copy that cannot be read so is refused, never taken as its import
     /// read it.
@@ -511,8 +577,8 @@ enum DuplicateReplacement {
     ///
     /// - Throws: the deletion's own error for a row naming no package the
     ///   library manages (`FileImportService.managedPackageURLForDeletion`);
-    ///   `Refusal.brailleCopyNotRead` when a braille copy could not be read
-    ///   in `existing`'s braille file characters; `Refusal.filesInCloud` when
+    ///   `Refusal.copyNotReadAgain` when a copy could not be read in
+    ///   `existing`'s braille file characters or chosen encoding; `Refusal.filesInCloud` when
     ///   something carried over is only in the cloud, before anything is
     ///   carried in; `TextNotKept` when the old text could not be kept beside
     ///   the new one; or the file system's error. The new package is then as
@@ -529,10 +595,11 @@ enum DuplicateReplacement {
         // to carry over, and its package could not be deleted after.
         _ = try FileImportService.managedPackageURLForDeletion(existing)
         let publishedAt = copy.tmbDirectory
-        // The copy in the old copy's braille file characters, before its text
-        // is read for the places; from here on, the copy is this one.
-        let readAgain = try brailleFileCodeToReadAgain(replacing: existing, with: copy).map {
-            try readCopyAgain(copy, in: $0, access: access)
+        // The copy in the old copy's braille file characters or text
+        // encoding, before its text is read for the places; from here on,
+        // the copy is this one.
+        let readAgain = try readingToCarry(replacing: existing, with: copy).map {
+            try readCopyAgain(copy, as: $0, access: access)
         }
         let newCopy = readAgain?.copy ?? copy
         // Whatever fails from here puts the copy's files back as its import
@@ -574,6 +641,11 @@ enum DuplicateReplacement {
         return Preparation(
             book: book,
             keptTranscript: carried.transcript != nil,
+            // The package as it is now: the transcript carried over, or the
+            // one the new copy brought (S1).
+            hasTranscript: carried.transcript != nil
+                || FileManager.default.fileExists(atPath: TextMouthPaths.transcriptPath(in: movedTo).path),
+            broughtTranscriptNotUsed: carried.broughtTranscriptNotUsed,
             keptText: keptText,
             publishedAt: publishedAt,
             movedTo: movedTo,
@@ -598,7 +670,7 @@ enum DuplicateReplacement {
         var carried = Carried()
 
         // The copies Edit Text kept, which may be the only copy of an edit.
-        carried.keptCopyNames = names.filter(TextMouthPaths.isKeptTextCopy).sorted()
+        carried.keptCopyNames = names.filter(TextMouthPaths.isKeptTextCopy).sortedStably()
         for name in carried.keptCopyNames {
             try old.requireOnThisMac(old.package.appendingPathComponent(name))
         }
@@ -617,6 +689,9 @@ enum DuplicateReplacement {
             let transcript = try readTranscript(in: old, names: names, for: copy)
             carried.transcript = transcript.carried
             carried.transcriptBeforeCleanup = transcript.beforeCleanup
+            if transcript.carried != nil {
+                carried.broughtTranscriptNotUsed = broughtTranscript(of: copy)
+            }
             // An audiobook's text is its transcript's. Kept beside the new
             // copy: a save its transcript's layer does not account for, and,
             // when the transcript stays behind, the text of a transcript the
@@ -722,6 +797,65 @@ enum DuplicateReplacement {
         }
     }
 
+    // MARK: Two Transcripts (FMT23, B1)
+
+    /// What Replace Existing does with the transcripts of two audiobooks when
+    /// the new copy brought one from a file beside its audio (FMT23), as the
+    /// duplicate question tells it before it is answered.
+    enum TranscriptOutcome: Equatable, Sendable {
+        /// Nothing to choose: the new copy brought no transcript, the old copy
+        /// has none, or either is not an audiobook. The old copy's
+        /// transcript, if any, is kept when the audio is the same, as ever.
+        case asBefore
+        /// The old copy's transcript is kept when the audio is the same, and
+        /// the transcript the new copy brought is not used: recognition made
+        /// it, the listener edited or cleaned it up, or this TextMouth cannot
+        /// tell, as for one of a later layout or only in the cloud.
+        case keepsExisting
+        /// The transcript the new copy brought takes the place of the old
+        /// copy's, which came from outside and which the listener never
+        /// touched.
+        case broughtReplacesExisting
+    }
+
+    /// What Replace Existing does with the transcripts of `existing`, the
+    /// library's copy, and `copy`, the new one (`TranscriptOutcome`): a look
+    /// at the new package, and a read of the old transcript's provenance
+    /// without its sentences, downloading nothing (`TranscriptStore.provenance`).
+    static func transcriptOutcome(replacing existing: Book, with copy: Book) -> TranscriptOutcome {
+        guard existing.format.isAudio, copy.format.isAudio,
+              TranscriptStore.hasTranscript(of: copy), TranscriptStore.hasTranscript(of: existing) else { return .asBefore }
+        guard let provenance = TranscriptStore.provenance(in: existing.tmbDirectory), provenance.isOfThisLayout,
+              givesWayToABroughtTranscript(source: provenance.source, isTouched: provenance.isTouched) else {
+            return .keepsExisting
+        }
+        return .broughtReplacesExisting
+    }
+
+    /// Whether an old copy's transcript, from `source` (nil for one
+    /// recognition made) and touched by the listener or not, gives way to a
+    /// transcript the new copy brought: only one from outside the listener
+    /// never edited nor cleaned up (B1). The question and the replacement
+    /// both ask this, so they never disagree.
+    private static func givesWayToABroughtTranscript(source: TranscriptSource?, isTouched: Bool) -> Bool {
+        source != nil && !isTouched
+    }
+
+    /// A transcript the new copy brought from a file beside its audio.
+    struct BroughtTranscript: Equatable, Sendable {
+        /// The file's name, when the transcript came from one file; nil when
+        /// several tracks each brought one.
+        let fileName: String?
+    }
+
+    /// The transcript `copy`'s package holds from a file found beside its
+    /// audio at import (FMT23), or nil when it holds none.
+    private static func broughtTranscript(of copy: Book) -> BroughtTranscript? {
+        guard copy.format.isAudio, let provenance = TranscriptStore.provenance(in: copy.tmbDirectory),
+              provenance.source?.knownOrigin == .imported else { return nil }
+        return BroughtTranscript(fileName: provenance.source?.fileName)
+    }
+
     /// What the old copy's transcript comes to in a replacement: the bytes
     /// the new package takes, when the new copy's audio is the audio
     /// transcribed, with the transcript kept before its cleanup; and whether
@@ -759,6 +893,17 @@ enum DuplicateReplacement {
             return TranscriptCarried()
         }
         var result = TranscriptCarried(wasEdited: transcript.editedAt != nil)
+        // A transcript from outside the listener never touched gives way to
+        // the one the new copy brought from a file beside its audio (FMT23);
+        // one recognition made, or the listener edited or cleaned up, is
+        // carried over it, as the question said (`TranscriptOutcome`, B1).
+        if copy.format.isAudio, TranscriptStore.hasTranscript(of: copy),
+           givesWayToABroughtTranscript(
+               source: transcript.source,
+               isTouched: transcript.editedAt != nil || transcript.cleanedUp != nil
+           ) {
+            return result
+        }
         guard copy.format.isAudio,
               let index = (try? BookInfo.load(from: copy.tmbDirectory))?.contentIndex,
               let fitted = fitted(
@@ -969,7 +1114,47 @@ enum DuplicateReplacement {
         }
     }
 
-    // MARK: A Braille Copy Read Again (braillecodes)
+    // MARK: A Copy Read Again in the Old Copy's Reading (braillecodes, encodingchoice)
+
+    /// How the new copy is read again before it takes the place of the old
+    /// one: the choice the listener made for the old copy in Book Information
+    /// that the import of the new copy could not know.
+    private enum CopyReading: Equatable {
+        /// In the braille file characters with this id, a BRF or BRL book's
+        /// (braillecodes); an id this TextMouth does not know is refused by
+        /// name when the copy is read.
+        case brailleFileCode(id: String)
+        /// With the braille table of this stored value, a braille book's
+        /// braille code (FMT21); a table this Mac does not offer is refused
+        /// by name when the copy is read.
+        case brailleTable(id: String)
+        /// Both of the above, in one re-read, a BRF or BRL book whose
+        /// listener chose its braille file characters and its braille code.
+        case brailleFileCodeAndTable(fileCodeID: String, tableID: String)
+        /// In the text encoding of this option, a plain-text, Markdown, or
+        /// HTML book's (encodingchoice).
+        case textEncoding(TextEncodingOption)
+    }
+
+    /// How the new copy `copy` is read again before it takes the place of
+    /// `existing`, or nil when it keeps the reading its import gave it: the
+    /// braille file characters of a braille copy
+    /// (`brailleFileCodeToReadAgain(replacing:with:)`), its braille code
+    /// (`brailleTableToReadAgain(replacing:with:)`), the two in one re-read
+    /// when both apply, or the text encoding of a text copy
+    /// (`textEncodingToReadAgain(replacing:with:)`). A book is of one kind
+    /// or the other, so the braille readings and the text encoding never
+    /// both apply.
+    private static func readingToCarry(replacing existing: Book, with copy: Book) -> CopyReading? {
+        let fileCode = brailleFileCodeToReadAgain(replacing: existing, with: copy)
+        let table = brailleTableToReadAgain(replacing: existing, with: copy)
+        switch (fileCode, table) {
+        case let (fileCode?, table?): return .brailleFileCodeAndTable(fileCodeID: fileCode, tableID: table)
+        case let (fileCode?, nil): return .brailleFileCode(id: fileCode)
+        case let (nil, table?): return .brailleTable(id: table)
+        case (nil, nil): return textEncodingToReadAgain(replacing: existing, with: copy).map(CopyReading.textEncoding)
+        }
+    }
 
     /// The braille file characters, by their id, that the new copy `copy`
     /// is read in again before it takes the place of `existing` (braillecodes
@@ -1003,6 +1188,97 @@ enum DuplicateReplacement {
         return standing
     }
 
+    /// The stored value of the braille table that the new copy `copy` is
+    /// read with again before it takes the place of `existing`, or nil when
+    /// it keeps the reading its import gave it. The import translated it with
+    /// the Braille setting's table, while the listener may have chosen
+    /// another for the library's copy with Book Information's Braille Code
+    /// pop-up (FMT21), which a replacement must not undo. It is read again
+    /// when both are braille books (`Book.offersBrailleTableChoice`), their
+    /// files are the same bytes (the same content hash), so the old copy's
+    /// table is known to be the new copy's file's, and the table that stands
+    /// for the old copy is not the new copy's, each as its stored value
+    /// names it (nil is the default table). The old copy's is the row's, as
+    /// every reading of a book takes it.
+    static func brailleTableToReadAgain(replacing existing: Book, with copy: Book) -> String? {
+        guard existing.offersBrailleTableChoice, copy.offersBrailleTableChoice,
+              !copy.md5Hash.isEmpty, existing.md5Hash == copy.md5Hash else { return nil }
+        let standing = standingTable(of: existing)
+        return standing == standingTable(of: copy) ? nil : standing
+    }
+
+    /// The stored value of the table a braille book is read with: the row's,
+    /// or the default table's when the row holds none.
+    private static func standingTable(of book: Book) -> String {
+        book.brailleTable ?? BrailleTableCatalog.defaultTableID
+    }
+
+    /// The text encoding that the new copy `copy` is read in again before it
+    /// takes the place of `existing`, or nil when it keeps the reading its
+    /// import gave it. The import read it as it reads any new file, while the
+    /// listener may have chosen an encoding for the library's copy in Book
+    /// Information because that reading was wrong, which a replacement must
+    /// not undo. It is read again when all of these hold, the new copy's
+    /// bytes looked at last:
+    /// - both are books of one text format that offers the choice
+    ///   (`Book.offersTextEncodingChoice`);
+    /// - the old copy's encoding was chosen by the listener
+    ///   (`TextEncodingRecord.isChosen`), as it stands between its row and
+    ///   its record (`Book.recordedTextEncodingRecord()`). A guess or
+    ///   Automatic is what the import of the new copy does by itself, so
+    ///   there is nothing to carry;
+    /// - the choice is about this file: the two files are the same bytes
+    ///   (the same content hash), or the new file's bytes can be read in the
+    ///   choice and name no encoding of their own
+    ///   (`bytesMayBeReadInChoice(_:of:)`): no byte-order mark, no valid
+    ///   UTF-8, no declaration, and not a structure the decoder recognises
+    ///   (well-formed ISO-2022-JP), their import only guessed or fell back,
+    ///   and every byte is valid in the encoding chosen. A new file that
+    ///   names its encoding, or that the choice cannot read, is not the file
+    ///   the choice was made about, and keeps the reading its import gave it
+    ///   (Replace Existing goes ahead with it).
+    /// The option is the old copy's choice as Book Information offers it
+    /// (`TextEncodingChoices.option(forIdentifier:)`); an identifier no
+    /// option names, as a later TextMouth may have recorded, is carried as
+    /// it is, for the reading to refuse by name.
+    static func textEncodingToReadAgain(replacing existing: Book, with copy: Book) -> TextEncodingOption? {
+        guard existing.format == copy.format,
+              existing.offersTextEncodingChoice, copy.offersTextEncodingChoice else { return nil }
+        let standing = existing.recordedTextEncodingRecord()
+        guard standing.isChosen, let identifier = standing.identifier else { return nil }
+        let isSameFile = !copy.md5Hash.isEmpty && existing.md5Hash == copy.md5Hash
+        guard isSameFile || bytesMayBeReadInChoice(identifier, of: copy) else { return nil }
+        return TextEncodingChoices.option(forIdentifier: identifier) ?? .encoding(identifier)
+    }
+
+    /// Whether the listener's choice of the encoding `identifier`, made for
+    /// another file, is also the right reading of the text book `book`'s
+    /// bytes (a different file from the one chosen about). Both must hold:
+    /// - the bytes name no encoding of their own. They are read as an import
+    ///   reads them, guessing, without logging; the reading must rest on the
+    ///   guesser's judgment (`DecodedText.Basis.guess`) or on the
+    ///   Windows-1252 fallback, never on a byte-order mark, unmarked Unicode,
+    ///   valid UTF-8, or a declaration. A guess the decoder makes by the
+    ///   bytes' structure (well-formed ISO-2022-JP, whose escape sequences
+    ///   are ASCII and so valid in many of the encodings a listener may have
+    ///   chosen) is a recognition, not a guess, and is kept
+    ///   (`TextEncodingGuesser.guessSevenBit(_:)`);
+    /// - every byte is valid in `identifier`, read strictly as the re-read
+    ///   will read it (`EncodingPolicy.chosen(_:)`). A copy the choice cannot
+    ///   read would be refused, and so could never replace the book.
+    /// False for a file that cannot be read, or whose declaration its bytes
+    /// contradict.
+    private static func bytesMayBeReadInChoice(_ identifier: String, of book: Book) -> Bool {
+        guard let bytes = try? Data(contentsOf: book.bookFileURL) else { return false }
+        let fileName = book.bookFileURL.lastPathComponent
+        // Recognised by structure: the import read it by what the bytes are.
+        guard TextEncodingGuesser.guessSevenBit(bytes) == nil,
+              let decoded = try? TextFileDecoder.decode(bytes, fileName: fileName, format: book.format, policy: .guess),
+              decoded.basis == .guess || decoded.basis == .fallback else { return false }
+        // Valid in the choice: the re-read refuses bytes that are not.
+        return (try? TextFileDecoder.decode(bytes, fileName: fileName, format: book.format, policy: .chosen(identifier))) != nil
+    }
+
     /// The id of the braille file characters the stored braille file code
     /// `stored` names (`BrailleFileCode.code(forStored:)`): a known code's
     /// own id, North American Braille ASCII's for none (nil or empty), and an
@@ -1011,32 +1287,42 @@ enum DuplicateReplacement {
         BrailleFileCode.code(forStored: stored)?.id ?? stored
     }
 
-    /// Reads the new copy `copy` again in the braille file characters `id`
-    /// names, the old copy's (`brailleFileCodeToReadAgain(replacing:with:)`),
-    /// as Book Information reads a book again with other braille file
-    /// characters (`LibraryViewModel.rereadText(of:as:access:isOpenInReader:)`):
-    /// its file checked to read in them before anything is written, its
-    /// content.md written anew in them, and the code recorded as decided,
-    /// with the new text's analysis, in its package record, which still
-    /// names the copy's own ID. The replacement's later write of that record
-    /// keeps the code, a record's code standing over a row's
-    /// (`BrailleFileCodeRecord.standing(row:recorded:)`), and the row
-    /// returned holds it too, so the two agree. Nothing is downloaded
-    /// (`access`), no reader has the copy open, and the debug log says it as
-    /// a re-read's (BRAILLE_FILE_CODE_CHANGED).
+    /// Reads the new copy `copy` again as `reading` says, the old copy's
+    /// (`readingToCarry(replacing:with:)`), as Book Information reads a book
+    /// again with other braille file characters or another encoding
+    /// (`LibraryViewModel.rereadText(of:as:access:isOpenInReader:)`): its
+    /// file checked to read so before anything is written, its content.md
+    /// written anew, and the choice recorded as decided, with the new text's
+    /// analysis, in its package record, which still names the copy's own ID.
+    /// The replacement's later write of that record keeps the choice, a
+    /// record's decision standing over a row's
+    /// (`BrailleFileCodeRecord.standing(row:recorded:)`,
+    /// `TextEncodingRecord.standing(row:recorded:)`), and the row returned
+    /// holds it too, so the two agree. Nothing is downloaded (`access`), no
+    /// reader has the copy open, and the debug log says it as a re-read's
+    /// (BRAILLE_FILE_CODE_CHANGED, TEXT_ENCODING_CHANGED).
     /// - Returns: The copy as its package now records it, with its files as
     ///   its import wrote them, to put back.
-    /// - Throws: `Refusal.brailleCopyNotRead`, with the reading's own
-    ///   sentence, when the copy could not be read in them; nothing changed
-    ///   then. An id this TextMouth does not know is refused by name before
-    ///   anything is read, as every reading of a book refuses it
+    /// - Throws: `Refusal.copyNotReadAgain`, with the reading's own
+    ///   sentence, when the copy could not be read so (bytes not valid in
+    ///   the encoding chosen, for one); nothing changed then. An id of braille
+    ///   file characters this TextMouth does not know is refused by name
+    ///   before anything is read, as every reading of a book refuses it
     ///   (`BrailleFileError.unknownFileCode`), in the words the re-read gives
     ///   a reading that failed.
-    private static func readCopyAgain(_ copy: Book, in id: String, access: MaintenanceFileAccess) throws -> CopyReadAgain {
-        guard let code = BrailleFileCode.code(withID: id) else {
-            throw Refusal.brailleCopyNotRead(TextEncodingWording.failedRefusal(
-                bookTitle: copy.title, reason: BrailleFileError.unknownFileCode(id).localizedDescription
-            ))
+    private static func readCopyAgain(_ copy: Book, as reading: CopyReading, access: MaintenanceFileAccess) throws -> CopyReadAgain {
+        let choice: TextRereadChoice
+        switch reading {
+        case .brailleFileCode(let id):
+            choice = .brailleFileCode(try fileCode(withID: id, for: copy))
+        case .brailleTable(let id):
+            choice = .brailleTable(table(withID: id))
+        case .brailleFileCodeAndTable(let fileCodeID, let tableID):
+            choice = .brailleFileCodeAndTable(
+                try fileCode(withID: fileCodeID, for: copy), table(withID: tableID)
+            )
+        case .textEncoding(let option):
+            choice = .textEncoding(option)
         }
         // The files the re-read writes, as the import wrote them.
         let filesBefore = [
@@ -1045,29 +1331,54 @@ enum DuplicateReplacement {
             TextMouthPaths.bookInfoPath(in: copy.tmbDirectory),
         ].map { PackageFileBeforeInstall($0) }
         let reread = LibraryViewModel.rereadText(
-            of: copy, as: .brailleFileCode(code), access: access, isOpenInReader: { _ in false }
+            of: copy, as: choice, access: access, isOpenInReader: { _ in false }
         )
         switch reread {
         case .refused(let sentence):
-            throw Refusal.brailleCopyNotRead(sentence)
+            throw Refusal.copyNotReadAgain(sentence)
         case let .readAgain(update, _, keptCopy):
-            DiagnosticLog.event(
-                .storage, LibraryViewModel.brailleFileCodeLogLine(title: copy.title, code: code, keptCopy: keptCopy)
-            )
+            for line in LibraryViewModel.rereadLogLines(title: copy.title, choice: choice, update: update, keptCopy: keptCopy) {
+                DiagnosticLog.event(.storage, line)
+            }
             // The row takes what the record now holds, as a library row takes
-            // a re-read's commit: the new text's analysis, and the code.
+            // a re-read's commit: the new text's analysis, and the choice.
             var readCopy = copy
             update.summary?.apply(to: &readCopy)
             return CopyReadAgain(copy: readCopy, filesBefore: filesBefore)
         }
     }
 
-    /// A braille copy read again in the old copy's braille file characters
-    /// (`readCopyAgain(_:in:access:)`), and its files as its import wrote
+    /// The braille file characters with the id `id`, for the re-read of
+    /// `copy`.
+    /// - Throws: `Refusal.copyNotReadAgain`, in the words a re-read gives a
+    ///   reading that failed, for an id this TextMouth does not know
+    ///   (`BrailleFileError.unknownFileCode`), before anything is read.
+    private static func fileCode(withID id: String, for copy: Book) throws -> BrailleFileCode {
+        guard let code = BrailleFileCode.code(withID: id) else {
+            throw Refusal.copyNotReadAgain(TextEncodingWording.failedRefusal(
+                bookTitle: copy.title, reason: BrailleFileError.unknownFileCode(id).localizedDescription
+            ))
+        }
+        return code
+    }
+
+    /// The braille table with the stored value `id`, for the re-read of a
+    /// copy: the table this Mac offers, or, for one it does not (one a macOS
+    /// update removed), a table of that value alone, which the reading fails
+    /// to translate with, before anything is written, and the re-read then
+    /// refuses in its own words, by name. The reading needs only the value.
+    private static func table(withID id: String) -> BrailleTable {
+        BrailleTableCatalog.table(withID: id) ?? BrailleTable(
+            id: id, displayName: id, indexName: nil, language: "", system: "", contraction: .unstated, grade: nil
+        )
+    }
+
+    /// A copy read again in the old copy's reading
+    /// (`readCopyAgain(_:as:access:)`), and its files as its import wrote
     /// them, which a replacement that does not go ahead puts back.
     fileprivate struct CopyReadAgain {
-        /// The new copy as its package now records it: read in the old
-        /// copy's braille file characters, with the new text's analysis.
+        /// The new copy as its package now records it: read as the old copy
+        /// is, with the new text's analysis.
         let copy: Book
         /// content.md, contentIndex.json, and bookInfo.json as the import
         /// wrote them, before the copy was read again.
@@ -1086,7 +1397,7 @@ enum DuplicateReplacement {
             PackageFileBeforeInstall.putBack(
                 filesBefore.map { (file: $0, written: FileStamp(of: $0.url)) },
                 of: copy,
-                after: "the replacement",
+                after: "the replacement", // l10n: no (log-only: the debug log's wording)
                 logTag: DuplicateReplacement.undoneLogTag
             )
         }

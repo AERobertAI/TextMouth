@@ -79,7 +79,7 @@ enum FeedEpisodeImporter {
             CharacterSet.alphanumerics.contains($0) || $0 == " " || $0 == "-" || $0 == "_"
         }
         let stem = String(String.UnicodeScalarView(kept)).trimmingCharacters(in: .whitespaces).prefix(80)
-        return (stem.isEmpty ? "Episode" : String(stem)) + "." + fileExtension
+        return (stem.isEmpty ? "Episode" : String(stem)) + "." + fileExtension // l10n: no (a file name made when a title has no letters)
     }
 
     // MARK: Importing
@@ -88,7 +88,10 @@ enum FeedEpisodeImporter {
     /// package as `fileName`, as an audiobook of `feed` in the feed's own
     /// folder (FR11), added at `dateAdded`; or, with `kept`, the item's row
     /// kept after an earlier download's file went, as that same book in its
-    /// kept package (`restoreBook`, FR11 branch A2).
+    /// kept package (`restoreBook`, FR11 branch A2). `chapters`, a podcast's
+    /// own chapters fetched with the episode (FMT25), are kept in its package
+    /// before it is read, so the book takes them as its headings when its
+    /// audio has none of its own (`BookContentAnalysisService.analyzeAudio`).
     /// - Throws: an `ImportFailure` naming the file and the step that
     ///   failed; whatever was staged is removed, and `file` is left where it
     ///   was when the move had not happened.
@@ -98,9 +101,18 @@ enum FeedEpisodeImporter {
         item: FeedItem,
         of feed: Feed,
         dateAdded: Date,
-        restoring kept: Book? = nil
+        restoring kept: Book? = nil,
+        chapters: PodcastChapters? = nil
     ) throws -> ImportedBook {
-        try importBook(named: fileName, format: .audio, item: item, of: feed, dateAdded: dateAdded, restoring: kept) { staged in
+        try importBook(
+            named: fileName,
+            format: .audio,
+            item: item,
+            of: feed,
+            dateAdded: dateAdded,
+            restoring: kept,
+            chapters: chapters
+        ) { staged in
             try FileManager.default.moveItem(at: file, to: staged)
         }
     }
@@ -155,20 +167,41 @@ enum FeedEpisodeImporter {
     }
 
     /// Puts a download's file into `staging` as `fileName` with
-    /// `placeFile`, then reads its checksum: the copying and reading steps
-    /// of every download's import, new or restoring a kept item.
+    /// `placeFile`, then reads its checksum, and keeps beside it `chapters`,
+    /// the podcast's own chapters of `item`, when it has any: the copying and
+    /// reading steps of every download's import, new or restoring a kept
+    /// item.
     /// - Returns: The staged file and its MD5 checksum.
     private static func stageFile(
         named fileName: String,
         in staging: ImportStaging,
         run: inout ImportRun,
+        chapters: PodcastChapters?,
+        of item: FeedItem,
         placeFile: (URL) throws -> Void
     ) throws -> (url: URL, md5Hash: String) {
         try run.begin(.copying, in: staging.directory)
         let stagedFile = staging.directory.appendingPathComponent(fileName)
         try placeFile(stagedFile)
+        keep(chapters, of: item, in: staging)
         try run.begin(.readingSource, in: staging.directory)
         return (stagedFile, try FileImportService.md5Hash(of: stagedFile))
+    }
+
+    /// Writes `chapters`, the podcast's own chapters of `item`, into the
+    /// package `staging` holds (`TextMouthPaths.podcastChaptersPath(in:)`).
+    /// They never stop the episode's own import: one that cannot be written
+    /// is left out, with one FEED_CHAPTERS_NOT_KEPT line in the debug log,
+    /// naming the error by its code and domain, since its own words can name
+    /// the package by its absolute path.
+    private static func keep(_ chapters: PodcastChapters?, of item: FeedItem, in staging: ImportStaging) {
+        guard let chapters else { return }
+        do {
+            try chapters.normalizedJSON().write(to: TextMouthPaths.podcastChaptersPath(in: staging.directory), options: .atomic)
+        } catch {
+            let failure = error as NSError
+            DiagnosticLog.event(.feeds, "FEED_CHAPTERS_NOT_KEPT: \(item.title): error \(failure.code) in \(failure.domain)")
+        }
     }
 
     /// Whether a download of an item whose row `kept` was kept after an
@@ -184,7 +217,8 @@ enum FeedEpisodeImporter {
     /// put in by `placeFile`, then read, recorded with its feed item, and
     /// published in the feed's own folder. With `kept`, a row whose package
     /// was kept after an earlier download's file went, the same book is
-    /// restored there instead (`restoreBook`).
+    /// restored there instead (`restoreBook`). `chapters` are a podcast's own
+    /// chapters of `item`, kept in the package beside its file (`stageFile`).
     private static func importBook(
         named fileName: String,
         format: BookFormat,
@@ -192,10 +226,11 @@ enum FeedEpisodeImporter {
         of feed: Feed,
         dateAdded: Date,
         restoring kept: Book?,
+        chapters: PodcastChapters? = nil,
         placeFile: (URL) throws -> Void
     ) throws -> ImportedBook {
         if let kept, restoresKeptPackage(kept) {
-            return try restoreBook(kept, named: fileName, format: format, item: item, of: feed, placeFile: placeFile)
+            return try restoreBook(kept, named: fileName, format: format, item: item, of: feed, chapters: chapters, placeFile: placeFile)
         }
         return try ImportRun.perform(importing: fileName) { run in
             let bookID = UUID()
@@ -212,7 +247,7 @@ enum FeedEpisodeImporter {
             ))
             defer { staging.discard() }
 
-            let file = try stageFile(named: fileName, in: staging, run: &run, placeFile: placeFile)
+            let file = try stageFile(named: fileName, in: staging, run: &run, chapters: chapters, of: item, placeFile: placeFile)
             // A feed item's row names its feed and item and no library folder
             // (FR11); while staged, its package is the staged one.
             let staged = Book(
@@ -226,7 +261,7 @@ enum FeedEpisodeImporter {
                 dateAdded: dateAdded,
                 tmbDirectoryName: staging.name,
                 audioAlbum: format.isAudio ? feed.title : nil,
-                audioGenre: format.isAudio ? "Podcast" : nil,
+                audioGenre: format.isAudio ? "Podcast" : nil, // l10n: no (the stored genre tag of a podcast book, stored text stays as saved)
                 audioYear: format.isAudio ? item.published.map { String(Calendar(identifier: .gregorian).component(.year, from: $0)) } : nil,
                 feedLink: link
             )
@@ -262,12 +297,15 @@ enum FeedEpisodeImporter {
     /// audiobook's content.md, which the new package does not carry, is kept
     /// as an `.edited-` copy when it holds a save its record's transcript
     /// layer does not account for (`FeedItemPackage.unrecordedTranscriptText(of:)`).
+    /// Chapters kept with the earlier file went with it; `chapters` are those
+    /// fetched with the new one (`stageFile`).
     private static func restoreBook(
         _ kept: Book,
         named fileName: String,
         format: BookFormat,
         item: FeedItem,
         of feed: Feed,
+        chapters: PodcastChapters?,
         placeFile: (URL) throws -> Void
     ) throws -> ImportedBook {
         try ImportRun.perform(importing: fileName) { run in
@@ -290,9 +328,11 @@ enum FeedEpisodeImporter {
             let earlierText = format.isAudio
                 ? try FeedItemPackage.unrecordedTranscriptText(of: keptPackage)
                 : try FeedItemPackage.keptText(of: keptPackage)
-            let keptState = (try? StoredBookRecord.read(from: keptPackage))?.info.state
+            // The kept record whole: its revision, and the keys of it that
+            // this TextMouth does not know, go on into the new record (V04).
+            let keptRecord = (try? StoredBookRecord.read(from: keptPackage))?.info
 
-            let file = try stageFile(named: fileName, in: staging, run: &run, placeFile: placeFile)
+            let file = try stageFile(named: fileName, in: staging, run: &run, chapters: chapters, of: item, placeFile: placeFile)
             var staged = kept
             staged.format = format
             staged.filePath = file.url.path
@@ -308,7 +348,7 @@ enum FeedEpisodeImporter {
                 from: staging,
                 run: &run,
                 feedLink: link,
-                replacing: keptState,
+                replacing: keptRecord,
                 publish: { built in
                     keptCopy = try FeedItemPackage.keepEarlierText(earlierText, in: built.directory)
                     try FeedItemPackage.putInPlace(built, of: keptPackage)
@@ -322,8 +362,8 @@ enum FeedEpisodeImporter {
                 // An audiobook's copy is a save no session took; an article's is
                 // an earlier text unlike the one the new file gives.
                 let what = format.isAudio
-                    ? "its text, which holds a save its transcript's record does not account for,"
-                    : "its earlier text, unlike the new download's,"
+                    ? "its text, which holds a save its transcript's record does not account for," // l10n: no (debug log text, which stays English)
+                    : "its earlier text, unlike the new download's," // l10n: no (debug log text, which stays English)
                 DiagnosticLog.event(
                     .feeds,
                     "FEED_ARTICLE_TEXT_KEPT: \(restored.book.title): \(what) kept as \(keptCopy.lastPathComponent)"
@@ -348,12 +388,12 @@ enum FeedEpisodeImporter {
             byline.append(published.formatted(date: .long, time: .omitted))
         }
         var parts = [
-            "<!DOCTYPE html>",
+            "<!DOCTYPE html>", // l10n: no (HTML markup of the saved article, not interface text)
             "<html>",
             "<head>",
-            "<meta charset=\"utf-8\">",
+            "<meta charset=\"utf-8\">", // l10n: no (HTML markup of the saved article, not interface text)
             "<title>\(escaped(item.title))</title>",
-            "<meta name=\"author\" content=\"\(escaped(bookAuthor(for: item, of: feed)))\">",
+            "<meta name=\"author\" content=\"\(escaped(bookAuthor(for: item, of: feed)))\">", // l10n: no (HTML markup of the saved article, not interface text)
             "</head>",
             "<body>",
             "<h1>\(escaped(item.title))</h1>",
@@ -361,7 +401,9 @@ enum FeedEpisodeImporter {
             body,
         ]
         if let link = item.link {
-            parts.append("<p>Read on the web: <a href=\"\(escaped(link.absoluteString))\">\(escaped(FeedHost.of(link)))</a></p>")
+            // Translators: The line that starts the link to an article's web page, at the end of the article's text as TextMouth saves it as a book. The article's address follows as a link.
+            let readOnTheWeb = InterfaceText.line("feedEpisodeImporter.articleHTML", "Read on the web:")
+            parts.append("<p>\(escaped(readOnTheWeb)) <a href=\"\(escaped(link.absoluteString))\">\(escaped(FeedHost.of(link)))</a></p>")
         }
         parts += ["</body>", "</html>", ""]
         return parts.joined(separator: "\n")
@@ -395,7 +437,7 @@ enum FeedEpisodeImporter {
     /// element, else its `main` element, else its body, as HTML; nil when
     /// the page can't be read.
     static func readablePart(ofPage html: String) -> String? {
-        guard let document = try? SwiftSoup.parse(html) else { return nil }
+        guard let document = try? MarkupGuard.parse(html) else { return nil }
         for tag in ["article", "main"] {
             if let element = FeedHTMLWalk.first(tag, in: document), let inner = try? element.html() {
                 return inner

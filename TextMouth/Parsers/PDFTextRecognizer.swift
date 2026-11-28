@@ -1,7 +1,6 @@
 import CoreGraphics
 import Foundation
 import PDFKit
-import Vision
 
 // MARK: - Recognized Lines
 
@@ -45,67 +44,20 @@ protocol PDFPageTextRecognizer: Sendable {
     func recognizeLines(in region: CGRect, of page: PDFPage) throws -> [PDFRecognizedLine]
 }
 
-/// Recognizes text with the Vision framework's accurate text recognizer,
-/// on an upright picture of the region drawn at a resolution suited to OCR.
+/// Recognizes text with the Vision framework's accurate text recognizer
+/// (`VisionTextRecognition`, which pictures of pages are read with too), on
+/// an upright picture of the region drawn at a resolution suited to OCR,
+/// and places each line found back on the page.
 struct VisionPDFTextRecognizer: PDFPageTextRecognizer {
-    /// Vision error codes that mean recognition cannot run in this process
-    /// at all (its model or request is missing or unsupported here), as
-    /// opposed to failing on one picture.
-    static let unavailableCodes: Set<VNErrorCode> = [
-        .notImplemented, .invalidModel, .unsupportedRevision, .unsupportedRequest,
-        .unsupportedComputeStage, .unsupportedComputeDevice
-    ]
-
     func recognizeLines(in region: CGRect, of page: PDFPage) throws -> [PDFRecognizedLine] {
         guard let cgPage = page.pageRef, let rendering = PDFRegionRendering(page: cgPage, region: region) else {
-            throw PDFTextRecognitionError.failed("the page could not be drawn for text recognition")
+            throw PDFTextRecognitionError.failed("the page could not be drawn for text recognition") // l10n: no (a parser's damage reason)
         }
-
-        // Without a completion handler, perform(_:) runs the request
-        // synchronously and leaves the observations on the request.
-        let request = VNRecognizeTextRequest()
-        request.recognitionLevel = .accurate
-        request.usesLanguageCorrection = true
-        do {
-            try VNImageRequestHandler(cgImage: rendering.image, options: [:]).perform([request])
-        } catch {
-            throw Self.recognitionError(for: error)
+        // The lines come in reading order; each box is mapped from the
+        // picture's fractions back to the page's default user space.
+        return try VisionTextRecognition.lines(in: rendering.image).map { line in
+            PDFRecognizedLine(text: line.text, bounds: rendering.pageRect(forNormalizedRect: line.normalizedBounds))
         }
-
-        return Self.readingOrder(request.results ?? []).compactMap { observation in
-            guard let candidate = observation.topCandidates(1).first else { return nil }
-            return PDFRecognizedLine(
-                text: candidate.string,
-                bounds: rendering.pageRect(forNormalizedRect: observation.boundingBox)
-            )
-        }
-    }
-
-    /// Vision's observations top to bottom, then left to right where two
-    /// lines sit at almost the same height. Vision's boxes are normalized
-    /// with the origin at the bottom left, so a higher `midY` is higher on
-    /// the page. This is the order the parser has always read OCR text in.
-    private static func readingOrder(_ observations: [VNRecognizedTextObservation]) -> [VNRecognizedTextObservation] {
-        observations.sorted { first, second in
-            if abs(first.boundingBox.midY - second.boundingBox.midY) > 0.01 {
-                return first.boundingBox.midY > second.boundingBox.midY
-            }
-            return first.boundingBox.midX < second.boundingBox.midX
-        }
-    }
-
-    /// The recognition error for an error Vision threw: unavailable when
-    /// Vision says it cannot run this request here, failed otherwise.
-    /// Vision reports its errors as `NSError`s in `VNErrorDomain` whose
-    /// codes are `VNErrorCode` values.
-    static func recognitionError(for error: Error) -> PDFTextRecognitionError {
-        let description = "text recognition failed: \(error.localizedDescription)"
-        let nsError = error as NSError
-        if nsError.domain == VNErrorDomain, let code = VNErrorCode(rawValue: nsError.code),
-           unavailableCodes.contains(code) {
-            return .unavailable(description)
-        }
-        return .failed(description)
     }
 }
 

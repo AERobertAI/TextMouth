@@ -2,7 +2,7 @@ import Foundation
 import ZIPFoundation
 import SwiftSoup
 
-enum EPUBParserError: LocalizedError {
+enum EPUBParserError: LocalizedError, LogDescribing {
     case invalidArchive
     case fileNotFound(String)
     case missingContainer
@@ -16,6 +16,11 @@ enum EPUBParserError: LocalizedError {
     /// the file's path inside the package; `reason` completes the sentence
     /// "The file is damaged or incomplete: …".
     case damagedFile(file: String, reason: String)
+    /// A file in the package that TextMouth will not read although it is not
+    /// damaged: it defines entities of its own, or is written in an encoding
+    /// the guard cannot see through (`XMLInputGuard`). `file` is the file's
+    /// path inside the package.
+    case unsafeFile(file: String, problem: XMLInputGuard.Problem)
     /// No chapter in the reading order holds text that could be read.
     /// `report` names each chapter that could not be read and why; when it
     /// names none, every chapter was blank or the spine held no documents.
@@ -23,25 +28,74 @@ enum EPUBParserError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidArchive: return "The EPUB file could not be opened as a ZIP archive."
-        case .fileNotFound(let path): return "The EPUB file was not found at: \(path)"
-        case .missingContainer: return "The EPUB is missing META-INF/container.xml."
-        case .missingOPF: return "The EPUB is missing its package document (OPF file)."
-        case .invalidOPF: return "The EPUB package document could not be parsed."
-        case .missingSpine: return "The EPUB has no reading order (spine)."
-        case .writeFailed(let msg): return "Failed to write EPUB metadata: \(msg)"
+        case .invalidArchive:
+            // Translators: Why an EPUB book could not be imported: it could not be opened as a ZIP archive.
+            return InterfaceText.line("epubParserError.invalidArchive", "The EPUB file could not be opened as a ZIP archive.")
+        case .fileNotFound(let path):
+            // Translators: Why an EPUB book could not be imported: there is no file at its path. %@ is the path.
+            return InterfaceText.line("epubParserError.fileNotFound", "The EPUB file was not found at: \(path)")
+        case .missingContainer:
+            // Translators: Why an EPUB book could not be imported: it lacks the file that names its package document. META-INF/container.xml is a file's path and stays as it is.
+            return InterfaceText.line("epubParserError.missingContainer", "The EPUB is missing META-INF/container.xml.")
+        case .missingOPF:
+            // Translators: Why an EPUB book could not be imported: the package document (an OPF file) that its container names is not in it.
+            return InterfaceText.line("epubParserError.missingOPF", "The EPUB is missing its package document (OPF file).")
+        case .invalidOPF:
+            // Translators: Why an EPUB book could not be imported: its package document (an OPF file) could not be read.
+            return InterfaceText.line("epubParserError.invalidOPF", "The EPUB package document could not be parsed.")
+        case .missingSpine:
+            // Translators: Why an EPUB book could not be imported: its package document lists no reading order, which EPUB calls the spine.
+            return InterfaceText.line("epubParserError.missingSpine", "The EPUB has no reading order (spine).")
+        case .writeFailed(let msg):
+            // Translators: Why a book's details could not be saved into its EPUB file. %@ is the reason, a phrase in English.
+            return InterfaceText.line("epubParserError.writeFailed", "Failed to write EPUB metadata: \(msg)")
+        case .unsafeFile(let file, let problem):
+            return XMLInputGuard.refusalSentence(for: problem, file: file, in: .epubBook)
         case .damagedFile(let file, let reason):
-            return PackageDamage.message(
-                file: file, reason: reason, container: EPUBParser.bookNameInMessages, original: "the book"
-            )
+            return PackageDamage.message(file: file, reason: reason, container: .epubBook)
         case .noReadableChapters(let report):
             // Blank pages alone are not damage, so there is nothing to replace.
-            guard !report.isComplete else { return "This EPUB book has no text to read." }
+            guard !report.isComplete else {
+                // Translators: Why an EPUB book could not be imported: every chapter in it is blank.
+                return InterfaceText.line("epubParserError.noReadableChapters.read", "This EPUB book has no text to read.")
+            }
+            var sentences = [report.message]
             let blank = report.blankChapterCount
-            let others = blank == 0 ? ""
-                : blank == 1 ? " The other chapter has no text."
-                : " The other \(blank) chapters have no text."
-            return "\(report.message)\(others) Get a fresh copy of the book, then import it again."
+            if blank == 1 {
+                // Translators: Sentence in the warning after an EPUB book was imported with chapters left out: exactly one other chapter is blank.
+                sentences.append(InterfaceText.line("epubParserError.noReadableChapters.chapter", "The other chapter has no text."))
+            } else if blank > 1 {
+                // Translators: Sentence in the warning after an EPUB book was imported with chapters left out: several other chapters are blank. %lld is how many, two or more.
+                sentences.append(InterfaceText.line("epubParserError.noReadableChapters.other", "The other \(number: blank) chapters have no text."))
+            }
+            // Translators: Last sentence of why an EPUB book could not be imported because of damage: what to do.
+            sentences.append(InterfaceText.line("epubParserError.noReadableChapters.import", "Get a fresh copy of the book, then import it again."))
+            return SentenceWording.joined(sentences)
+        }
+    }
+
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34).
+    var logDescription: String {
+        switch self {
+        case .invalidArchive: return "The EPUB file could not be opened as a ZIP archive." // l10n: no (debug log)
+        case .fileNotFound(let path): return "The EPUB file was not found at: \(path)" // l10n: no (debug log)
+        case .missingContainer: return "The EPUB is missing META-INF/container.xml." // l10n: no (debug log)
+        case .missingOPF: return "The EPUB is missing its package document (OPF file)." // l10n: no (debug log)
+        case .invalidOPF: return "The EPUB package document could not be parsed." // l10n: no (debug log)
+        case .missingSpine: return "The EPUB has no reading order (spine)." // l10n: no (debug log)
+        case .writeFailed(let msg): return "Failed to write EPUB metadata: \(msg)" // l10n: no (debug log)
+        case .unsafeFile(let file, let problem):
+            return XMLInputGuard.logRefusalSentence(for: problem, file: file, in: .epubBook) ?? ""
+        case .damagedFile(let file, let reason):
+            return PackageDamage.logMessage(file: file, reason: reason, container: .epubBook)
+        case .noReadableChapters(let report):
+            guard !report.isComplete else { return "This EPUB book has no text to read." } // l10n: no (debug log)
+            let blank = report.blankChapterCount
+            let others = blank == 0 ? "" // l10n: no (debug log)
+                : blank == 1 ? " The other chapter has no text." // l10n: no (debug log)
+                : " The other \(blank) chapters have no text." // l10n: no (debug log)
+            return "\(report.logMessage)\(others) Get a fresh copy of the book, then import it again." // l10n: no (debug log)
         }
     }
 }
@@ -50,7 +104,11 @@ enum EPUBParser {
 
     /// How sentences about a damaged or incomplete EPUB name the book, as in
     /// "The file “OEBPS/ch07.xhtml” in this EPUB book is damaged …".
-    static let bookNameInMessages = "this EPUB book"
+    static let bookNameInMessages = "this EPUB book" // l10n: no (a parser's damage reason: inside ExtractionReport's English chapter problems)
+
+    /// Where every EPUB keeps its container file, which names the package
+    /// document.
+    static let containerPath = "META-INF/container.xml"
 
     /// An EPUB read in reading order: its package metadata, the chapters that
     /// could be read, and a report of the chapters that could not.
@@ -86,12 +144,12 @@ enum EPUBParser {
         let archive = IndexedArchive(try openArchive(at: url))
 
         // Step 1: Read container.xml to find OPF path
-        let containerXML = try extractString(archive: archive, path: "META-INF/container.xml")
+        let containerXML = try extractString(archive: archive, path: containerPath)
         let opfPath = try parseContainerForOPFPath(containerXML)
 
         // Step 2: Read and parse OPF
         let opfXML = try extractString(archive: archive, path: opfPath)
-        let opfData = try parseOPF(opfXML)
+        let opfData = try parseOPF(opfXML, file: opfPath)
 
         // Step 3: Read the chapters in spine order, recording any left out.
         let prepared = try preparedChapters(
@@ -108,13 +166,17 @@ enum EPUBParser {
     /// Open the EPUB at `url` for reading.
     /// - Throws: `EPUBParserError.fileNotFound` when no file is there, checked
     ///   first so a missing file is not reported as `.invalidArchive`, which
-    ///   is thrown when the file cannot be opened as a ZIP archive.
+    ///   is thrown when the file cannot be opened as a ZIP archive, and
+    ///   `EncryptedArchiveError` when an entry is protected by a password.
     private static func openArchive(at url: URL) throws -> Archive {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw EPUBParserError.fileNotFound(url.path)
         }
+        // A password-protected archive is refused in words that say so, since
+        // ZIPFoundation would list it empty or short (B27).
+        try UnlockedSources.refuseIfLocked(at: url)
         do {
-            return try Archive(url: url, accessMode: .read)
+            return try UnlockedSources.openArchive(at: url)
         } catch {
             throw EPUBParserError.invalidArchive
         }
@@ -124,34 +186,40 @@ enum EPUBParser {
 
     static func readMetadata(url: URL) throws -> EPUBMetadata {
         let archive = try openArchive(at: url)
-        let containerXML = try extractString(archive: archive, path: "META-INF/container.xml")
+        let containerXML = try extractString(archive: archive, path: containerPath)
         let opfPath = try parseContainerForOPFPath(containerXML)
         let opfXML = try extractString(archive: archive, path: opfPath)
-        return try parseMetadata(opfXML)
+        return try parseMetadata(opfXML, file: opfPath)
     }
 
-    private static func parseMetadata(_ xml: String) throws -> EPUBMetadata {
-        try readingXML(xml) { doc in
-            let title = (try? doc.nodes(forXPath: "//*[local-name()='title']"))?.first?.stringValue ?? ""
-            let author = authorName(in: doc) ?? ""
-            let publisher = (try? doc.nodes(forXPath: "//*[local-name()='publisher']"))?.first?.stringValue ?? ""
-            let date = (try? doc.nodes(forXPath: "//*[local-name()='date']"))?.first?.stringValue ?? ""
-            let language = (try? doc.nodes(forXPath: "//*[local-name()='language']"))?.first?.stringValue ?? ""
+    static func parseMetadata(_ xml: String, file: String) throws -> EPUBMetadata {
+        try readingXML(xml, file: file) { doc in
+            // One walk of the document finds every element asked for below.
+            let index = XMLElementIndex(doc)
+            func firstText(of name: String) -> String { index.elements(named: name).first?.stringValue ?? "" }
+            let title = firstText(of: "title")
+            let author = authorName(in: doc, index: index) ?? ""
+            let publisher = firstText(of: "publisher")
+            let date = firstText(of: "date")
+            var language = firstText(of: "language")
+            // "und" is the tag for a language that is undetermined, which is how a
+            // book says it names none (TextMouth's own EPUB export does, for a
+            // book whose language it does not know): there is no language to show.
+            if language.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "und" {
+                language = ""
+            }
 
             // Extract identifier (often ISBN)
-            let identifiers = (try? doc.nodes(forXPath: "//*[local-name()='identifier']")) ?? []
             var isbn = ""
             var mainIdentifier = ""
-            for node in identifiers {
-                let val = node.stringValue ?? ""
+            for elem in index.elements(named: "identifier") {
+                let val = elem.stringValue ?? ""
                 mainIdentifier = val
                 // Check for ISBN pattern or opf:scheme="ISBN"
-                if let elem = node as? XMLElement {
-                    let scheme = elem.attribute(forName: "scheme")?.stringValue ?? ""
-                    let opfScheme = elem.attribute(forName: "opf:scheme")?.stringValue ?? ""
-                    if scheme.uppercased().contains("ISBN") || opfScheme.uppercased().contains("ISBN") {
-                        isbn = val
-                    }
+                let scheme = elem.attribute(forName: "scheme")?.stringValue ?? ""
+                let opfScheme = elem.attribute(forName: "opf:scheme")?.stringValue ?? ""
+                if scheme.uppercased().contains("ISBN") || opfScheme.uppercased().contains("ISBN") {
+                    isbn = val
                 }
                 // Heuristic: if it looks like an ISBN
                 let stripped = val.replacingOccurrences(of: "-", with: "")
@@ -161,8 +229,7 @@ enum EPUBParser {
             }
 
             // EPUB version from package element
-            let packageNodes = try doc.nodes(forXPath: "//*[local-name()='package']")
-            let version = (packageNodes.first as? XMLElement)?.attribute(forName: "version")?.stringValue ?? ""
+            let version = index.elements(named: "package").first?.attribute(forName: "version")?.stringValue ?? ""
 
             return EPUBMetadata(
                 title: title,
@@ -191,19 +258,23 @@ enum EPUBParser {
         to url: URL,
         replacingWith replacement: ((URL, URL) throws -> Void)? = nil
     ) throws -> String {
-        let archive: Archive
-        do {
-            archive = try Archive(url: url, accessMode: .read)
-        } catch {
-            throw EPUBParserError.invalidArchive
+        // A protected book's file is never rewritten: its archive keeps only the
+        // entries before the first encrypted one when an entry is removed,
+        // so the copy would lose the rest of the book (FR41). One unlocked for
+        // now is protected whatever a look at its file says meanwhile.
+        if ProtectionDetector.isProtected(fileAt: url, format: .epub) {
+            throw PasswordProtectedDocument()
         }
+        // A file that is not there is said to be missing, not to be a damaged
+        // archive, as reading the metadata says it.
+        let archive = try openArchive(at: url)
 
-        let containerXML = try extractString(archive: archive, path: "META-INF/container.xml")
+        let containerXML = try extractString(archive: archive, path: containerPath)
         let opfPath = try parseContainerForOPFPath(containerXML)
         let opfXML = try extractString(archive: archive, path: opfPath)
 
         // Parse and modify the OPF XML
-        let updatedXML = try updateOPFMetadata(opfXML: opfXML, metadata: metadata)
+        let updatedXML = try updateOPFMetadata(opfXML: opfXML, file: opfPath, metadata: metadata)
 
         // We need to create a new archive with the updated OPF
         let tempURL = url.deletingLastPathComponent().appendingPathComponent(UUID().uuidString + ".epub")
@@ -217,18 +288,23 @@ enum EPUBParser {
         do {
             writeArchive = try Archive(url: tempURL, accessMode: .update)
         } catch {
-            throw EPUBParserError.writeFailed("Could not open archive for writing")
+            throw EPUBParserError.writeFailed("Could not open archive for writing") // l10n: no (a parser's damage reason)
         }
 
-        // Remove old OPF and add updated one
-        guard let oldEntry = writeArchive[opfPath] else {
-            throw EPUBParserError.writeFailed("Could not find OPF entry")
+        // Remove old OPF and add updated one. Reading finds the package
+        // document without regard to case (ST09), so the write does too: a
+        // book whose container.xml spells the path in another case than its
+        // ZIP does is saved, and the new entry takes the spelling the ZIP
+        // already used, so nothing else in the book is renamed.
+        guard let oldEntry = writeArchive.file(at: opfPath) else {
+            throw EPUBParserError.writeFailed("Could not find OPF entry") // l10n: no (a parser's damage reason)
         }
+        let storedOPFPath = oldEntry.path
         try writeArchive.remove(oldEntry)
 
         let updatedData = updatedXML.data(using: .utf8) ?? Data()
         try writeArchive.addEntry(
-            with: opfPath,
+            with: storedOPFPath,
             type: .file,
             uncompressedSize: Int64(updatedData.count),
             provider: { position, size in
@@ -242,9 +318,9 @@ enum EPUBParser {
         // This catches a corrupt update while the source EPUB is still intact.
         guard let preparedArchive = Archive.openedForReading(at: tempURL),
               let preparedOPF = try? extractString(archive: preparedArchive, path: opfPath) else {
-            throw EPUBParserError.writeFailed("Updated archive failed validation")
+            throw EPUBParserError.writeFailed("Updated archive failed validation") // l10n: no (a parser's damage reason)
         }
-        _ = try parseOPF(preparedOPF)
+        _ = try parseOPF(preparedOPF, file: opfPath)
 
         // Hash the prepared archive while a failure still leaves the original
         // untouched; the replacement below installs these exact bytes.
@@ -260,8 +336,9 @@ enum EPUBParser {
         return newHash
     }
 
-    private static func updateOPFMetadata(opfXML: String, metadata: EPUBMetadata) throws -> String {
-        try readingXML(opfXML) { doc in
+    private static func updateOPFMetadata(opfXML: String, file: String, metadata: EPUBMetadata) throws -> String {
+#if os(macOS)
+        try readingXML(opfXML, file: file) { doc in
             // Update title
             if let titleNode = (try? doc.nodes(forXPath: "//*[local-name()='title']"))?.first {
                 titleNode.stringValue = metadata.title
@@ -300,6 +377,13 @@ enum EPUBParser {
 
             return doc.xmlString(options: [.nodePrettyPrint])
         }
+#else
+        // Phase 0 of the iOS port: the portable XML tree (PortableXML.swift) only reads. It
+        // cannot change a package document and write it back as Foundation's tree does, and
+        // nothing less faithful should rewrite a book's own file, so iOS does not save a
+        // book's details into its EPUB yet.
+        throw IOSUnavailable.feature("Saving a book's details into its EPUB file") // l10n: no (inside IOSUnavailable's English sentence until that area converts)
+#endif
     }
 
     // MARK: - The Author a Package Names
@@ -321,16 +405,24 @@ enum EPUBParser {
     /// read by `name(of:)`, so an element holding only the placeholder
     /// "Unknown", which calibre writes for a book with no author, names no
     /// one, and the next place is read.
-    static func authorName(in doc: XMLDocument) -> String? {
-        let roles = refinedRoles(in: doc)
-        if let creator = creatorElement(in: doc, refinedRoles: roles) {
+    ///
+    /// `index` is the walk of `doc`'s elements (`XMLElementIndex`) when the
+    /// caller made one for its own use; it is made here when not given, from
+    /// `doc` as it stands.
+    static func authorName(in doc: XMLDocument, index: XMLElementIndex? = nil) -> String? {
+        let index = index ?? XMLElementIndex(doc)
+        let roles = refinedRoles(in: index)
+        if let creator = creatorElement(in: doc, refinedRoles: roles, index: index) {
             return name(of: creator)
         }
-        let termMetas = elements(in: doc, matching: "//*[local-name()='meta'][@property='dcterms:creator']")
+        // `//*[local-name()='meta'][@property='dcterms:creator']`
+        let termMetas = index.elements(named: "meta").filter {
+            $0.attribute(forName: "property")?.stringValue == "dcterms:creator"
+        }
         if let named = termMetas.lazy.compactMap(name(of:)).first {
             return named
         }
-        let contributors = elements(in: doc, matching: "//*[local-name()='contributor']")
+        let contributors = index.elements(named: "contributor")
         return contributors.first { name(of: $0) != nil && hasAuthorRole($0, refinedRoles: roles) }.flatMap(name(of:))
     }
 
@@ -340,9 +432,12 @@ enum EPUBParser {
     /// names the author. An edit of the author is written into this element
     /// (`updateOPFMetadata`). `refinedRoles` are the roles `doc`'s meta
     /// elements give (`refinedRoles(in:)`), read here when not given.
-    static func creatorElement(in doc: XMLDocument, refinedRoles: [String: String]? = nil) -> XMLElement? {
-        let roles = refinedRoles ?? self.refinedRoles(in: doc)
-        let named = elements(in: doc, matching: creatorPath).filter { name(of: $0) != nil }
+    static func creatorElement(
+        in doc: XMLDocument, refinedRoles: [String: String]? = nil, index: XMLElementIndex? = nil
+    ) -> XMLElement? {
+        let index = index ?? XMLElementIndex(doc)
+        let roles = refinedRoles ?? self.refinedRoles(in: index)
+        let named = index.elements(named: "creator").filter { name(of: $0) != nil }
         return named.first { hasAuthorRole($0, refinedRoles: roles) } ?? named.first
     }
 
@@ -371,9 +466,13 @@ enum EPUBParser {
     /// property="role" scheme="marc:relators">aut</meta>` gives the element
     /// with the ID `aut` the role `aut`. The first role given to an element
     /// counts.
-    private static func refinedRoles(in doc: XMLDocument) -> [String: String] {
+    private static func refinedRoles(in index: XMLElementIndex) -> [String: String] {
         var roles: [String: String] = [:]
-        for meta in elements(in: doc, matching: "//*[local-name()='meta'][@refines][@property='role']") {
+        // `//*[local-name()='meta'][@refines][@property='role']`
+        let roleMetas = index.elements(named: "meta").filter {
+            $0.attribute(forName: "refines") != nil && $0.attribute(forName: "property")?.stringValue == "role"
+        }
+        for meta in roleMetas {
             guard let refines = meta.attribute(forName: "refines")?.stringValue, let role = meta.stringValue else {
                 continue
             }
@@ -414,9 +513,26 @@ enum EPUBParser {
     /// apart (`takeApart(_:)`), so `body` finishes all its work with the
     /// document, a write of it back into the book included, and returns
     /// none of its nodes.
-    /// - Throws: XMLDocument's error when `xml` is not well-formed, or what
-    ///   `body` throws.
-    static func readingXML<Result>(_ xml: String, _ body: (XMLDocument) throws -> Result) throws -> Result {
+    /// - Parameters:
+    ///   - xml: The file's text.
+    ///   - file: The file's path inside the book, which a refusal names.
+    /// - Throws: `EPUBParserError.damagedFile` for a tag with more attributes
+    ///   than `XMLInputGuard` allows, XMLDocument's error when `xml` is not
+    ///   well-formed, or what `body` throws.
+    static func readingXML<Result>(
+        _ xml: String, file: String, _ body: (XMLDocument) throws -> Result
+    ) throws -> Result {
+        // A tag the XML parser would take too long over is refused as damage
+        // before the parser reads it, and entities of its own or an encoding
+        // the guard cannot read in the sentence for those (`XMLInputGuard`).
+        // The text is decoded already, so its declared encoding is only read
+        // for its name.
+        if let problem = XMLInputGuard.problem(with: Data(xml.utf8), isDecodedText: true) {
+            if problem == .tooManyAttributes {
+                throw EPUBParserError.damagedFile(file: file, reason: XMLInputGuard.tooManyAttributesProblem)
+            }
+            throw EPUBParserError.unsafeFile(file: file, problem: problem)
+        }
         let document = try XMLDocument(xmlString: xml, options: [.nodeLoadExternalEntitiesNever])
         defer { takeApart(document) }
         return try body(document)
@@ -448,10 +564,8 @@ enum EPUBParser {
     // MARK: - Container Parsing (shared with MarkdownCacheService)
 
     static func parseContainerForOPFPath(_ xml: String) throws -> String {
-        try readingXML(xml) { doc in
-            let rootfiles = try doc.nodes(forXPath: "//*[local-name()='rootfile']")
-            guard let rootfile = rootfiles.first,
-                  let element = rootfile as? XMLElement,
+        try readingXML(xml, file: containerPath) { doc in
+            guard let element = XMLElementIndex(doc).elements(named: "rootfile").first,
                   let fullPath = element.attribute(forName: "full-path")?.stringValue else {
                 throw EPUBParserError.missingOPF
             }
@@ -476,20 +590,22 @@ enum EPUBParser {
         var properties: String = ""
     }
 
-    static func parseOPF(_ xml: String) throws -> OPFData {
-        try readingXML(xml) { doc in
-            // Metadata
-            let titles = try doc.nodes(forXPath: "//*[local-name()='title']")
-            let title = titles.first?.stringValue ?? "Untitled"
+    /// - Parameter file: The package document's path inside the book, which a
+    ///   refusal of it names.
+    static func parseOPF(_ xml: String, file: String = "package document") throws -> OPFData { // l10n: no (a stand-in file name inside a parser's damage reason)
+        try readingXML(xml, file: file) { doc in
+            // One walk of the document finds every element asked for below.
+            let index = XMLElementIndex(doc)
 
-            let author = authorName(in: doc) ?? Book.unknownAuthor
+            // Metadata
+            let title = index.elements(named: "title").first?.stringValue ?? "Untitled" // l10n: no (stored id: the placeholder title a book is saved with, question 9)
+
+            let author = authorName(in: doc, index: index) ?? Book.unknownAuthor
 
             // Manifest
-            let manifestNodes = try doc.nodes(forXPath: "//*[local-name()='item']")
             var manifest: [String: ManifestItem] = [:]
-            for node in manifestNodes {
-                guard let element = node as? XMLElement,
-                      let id = element.attribute(forName: "id")?.stringValue,
+            for element in index.elements(named: "item") {
+                guard let id = element.attribute(forName: "id")?.stringValue,
                       let href = element.attribute(forName: "href")?.stringValue,
                       let mediaType = element.attribute(forName: "media-type")?.stringValue else {
                     continue
@@ -501,9 +617,8 @@ enum EPUBParser {
             }
 
             // Spine
-            let spineNodes = try doc.nodes(forXPath: "//*[local-name()='itemref']")
-            let spineItemRefs = spineNodes.compactMap { node -> String? in
-                (node as? XMLElement)?.attribute(forName: "idref")?.stringValue
+            let spineItemRefs = index.elements(named: "itemref").compactMap { element -> String? in
+                element.attribute(forName: "idref")?.stringValue
             }
 
             guard !spineItemRefs.isEmpty else {
@@ -512,11 +627,10 @@ enum EPUBParser {
 
             // Preserve the declared NCX and legacy visible-TOC references rather
             // than choosing navigation files by dictionary iteration order.
-            let spine = (try doc.nodes(forXPath: "//*[local-name()='spine']")).first as? XMLElement
-            let guideReferences = try doc.nodes(forXPath: "//*[local-name()='guide']/*[local-name()='reference']")
-            let guideTOCHrefs = guideReferences.compactMap { node -> String? in
-                guard let element = node as? XMLElement,
-                      element.attribute(forName: "type")?.stringValue == "toc" else { return nil }
+            let spine = index.elements(named: "spine").first
+            let guideReferences = index.elements(named: "reference", insideParentNamed: "guide")
+            let guideTOCHrefs = guideReferences.compactMap { element -> String? in
+                guard element.attribute(forName: "type")?.stringValue == "toc" else { return nil }
                 return element.attribute(forName: "href")?.stringValue
             }
             return OPFData(
@@ -559,7 +673,7 @@ enum EPUBParser {
     /// the archive has no member there.
     private static func extractString(entry: Entry?, at path: String, in archive: Archive) throws -> String {
         guard let entry else {
-            if path == "META-INF/container.xml" {
+            if path == containerPath {
                 throw EPUBParserError.missingContainer
             }
             throw EPUBParserError.invalidOPF
@@ -592,12 +706,12 @@ enum EPUBParser {
         } catch let overflow as ArchiveEntryOverflow {
             throw EPUBParserError.damagedFile(file: entry.path, reason: overflow.reason)
         } catch {
-            let reason = entry.isCompressed ? "its compressed data could not be decoded" : "its data could not be read"
+            let reason = ArchiveEntryReader.unreadableReason(of: entry, error: error, tag: "EPUB_ZIP_ERROR")
             throw EPUBParserError.damagedFile(file: entry.path, reason: reason)
         }
         guard entry.checksum == 0 || checksum == entry.checksum else {
             throw EPUBParserError.damagedFile(
-                file: entry.path, reason: "its contents do not match the checksum stored with them"
+                file: entry.path, reason: "its contents do not match the checksum stored with them" // l10n: no (a parser's damage reason)
             )
         }
 

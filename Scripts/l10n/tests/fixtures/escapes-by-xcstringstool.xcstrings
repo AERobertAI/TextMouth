@@ -1,0 +1,99 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ %lld %1$@" : {
+      "comment" : "comment for %@ %lld %1$@   / \t \"q\""
+    },
+    "10" : {
+      "comment" : "comment for 10   / \t \"q\""
+    },
+    "9" : {
+      "comment" : "comment for 9   / \t \"q\""
+    },
+    "<a>&b'" : {
+      "comment" : "comment for <a>&b'   / \t \"q\""
+    },
+    "Ab" : {
+      "comment" : "comment for Ab   / \t \"q\""
+    },
+    "B" : {
+      "comment" : "comment for B   / \t \"q\""
+    },
+    "Z" : {
+      "comment" : "comment for Z   / \t \"q\""
+    },
+    "a" : {
+      "comment" : "comment for a   / \t \"q\""
+    },
+    "aB" : {
+      "comment" : "comment for aB   / \t \"q\""
+    },
+    "ab" : {
+      "comment" : "comment for ab   / \t \"q\""
+    },
+    "back\\slash" : {
+      "comment" : "comment for back\\slash   / \t \"q\""
+    },
+    "bell\u0007" : {
+      "comment" : "comment for bell\u0007   / \t \"q\""
+    },
+    "bmpff～" : {
+      "comment" : "comment for bmpff～   / \t \"q\""
+    },
+    "bs\b" : {
+      "comment" : "comment for bs\b   / \t \"q\""
+    },
+    "café" : {
+      "comment" : "comment for café   / \t \"q\""
+    },
+    "cr\rhere" : {
+      "comment" : "comment for cr\rhere   / \t \"q\""
+    },
+    "ctl\u0001x" : {
+      "comment" : "comment for ctl\u0001x   / \t \"q\""
+    },
+    "delx" : {
+      "comment" : "comment for delx   / \t \"q\""
+    },
+    "emoji😀" : {
+      "comment" : "comment for emoji😀   / \t \"q\""
+    },
+    "esc\u001b" : {
+      "comment" : "comment for esc\u001b   / \t \"q\""
+    },
+    "esc\u001f" : {
+      "comment" : "comment for esc\u001f   / \t \"q\""
+    },
+    "ff\f" : {
+      "comment" : "comment for ff\f   / \t \"q\""
+    },
+    "ls x" : {
+      "comment" : "comment for ls x   / \t \"q\""
+    },
+    "nl\nx" : {
+      "comment" : "comment for nl\nx   / \t \"q\""
+    },
+    "quote\"x" : {
+      "comment" : "comment for quote\"x   / \t \"q\""
+    },
+    "slash/x" : {
+      "comment" : "comment for slash/x   / \t \"q\""
+    },
+    "tab\there" : {
+      "comment" : "comment for tab\there   / \t \"q\""
+    },
+    "unié 中文" : {
+      "comment" : "comment for unié 中文   / \t \"q\""
+    },
+    "x～" : {
+      "comment" : "comment for x～   / \t \"q\""
+    },
+    "x😀" : {
+      "comment" : "comment for x😀   / \t \"q\""
+    },
+    "zz" : {
+      "comment" : "comment for zz   / \t \"q\""
+    }
+  },
+  "version" : "1.0"
+}

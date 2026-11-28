@@ -113,12 +113,17 @@ final class IntegrationWorld {
     ///     does.
     ///   - cloud: The cloud services the reader gets its book ready with,
     ///     whose storage a test can observe; nil uses the app's.
+    ///   - sleepTimer: The sleep timer of the reader's window, which a test
+    ///     gives the readers it puts in one window, as a window gives each
+    ///     book it shows (`ReaderWindowContent`); nil gives the reader the
+    ///     default (`ReaderViewModel.init(sleepTimer:)`).
     func openReader(
         for book: Book,
         renderScheduler: (any SpeechRenderScheduling)? = nil,
         nowPlaying: NowPlayingService? = nil,
         loadQueue: DispatchQueue? = nil,
-        cloud: ReaderCloudServices? = nil
+        cloud: ReaderCloudServices? = nil,
+        sleepTimer: SleepTimerService? = nil
     ) -> ReaderViewModel {
         let reader = ReaderViewModel(
             book: book,
@@ -130,7 +135,8 @@ final class IntegrationWorld {
             renderScheduler: renderScheduler,
             cloud: cloud,
             nowPlaying: nowPlaying,
-            loadQueue: loadQueue
+            loadQueue: loadQueue,
+            sleepTimer: sleepTimer
         )
         readers.append(reader)
         return reader
@@ -317,6 +323,11 @@ extension XCTestCase {
             statistics.endSession()
             statistics.stats = savedStatistics
             statistics.save()
+            // The save is queued on the statistics' own queue, and its file
+            // is in the data root, which outlives the test: wait for it
+            // anyway, so the write is made inside the test that asked for
+            // it and never lands during the next one.
+            ReadingStatsService.waitForQueuedSaves()
         }
 
         let notifications = NotificationCenter()
@@ -325,7 +336,7 @@ extension XCTestCase {
             notificationCenter: notifications,
             initializeServices: false,
             userDefaults: makeSandboxedPreferences(label),
-            configService: ConfigService(fileURL: configFile)
+            configService: makeConfigService(fileURL: configFile)
         )
         let world = IntegrationWorld(folder: folder, settings: settings, notifications: notifications)
         addTeardownBlock { world.closeReaders() }
@@ -407,28 +418,23 @@ extension XCTestCase {
         )
     }
 
-    /// Stops the app's one shared sleep timer now, and when the test ends
-    /// stops it again and puts back the duration it last used and the
-    /// preference that duration is kept in, so no timer a test sets
-    /// outlives the test. Call it before making the world whose readers set
-    /// a timer, so the readers are closed first.
+    /// Stops every sleep timer of the app's registry now, and again when the
+    /// test ends, held ones included, and then puts back the duration last
+    /// used, the one preference every window's timer shares, so no timer a
+    /// test sets outlives the test. Each reader window has a timer of its own
+    /// (November 13, 2026), and so has each reader a test makes. Call it
+    /// before making the world whose readers set a timer, so the readers are
+    /// closed first.
     @MainActor
-    func preserveSharedSleepTimer() {
-        let timer = SleepTimerService.shared
-        // Registered first, so it runs last: after the reset below, which
-        // removes the preference.
+    func preserveSleepTimers() {
+        // Registered first, so it runs last: the duration last used, which
+        // every window's timer saves as it starts, is put back as it was.
         preservePreferences(["sleepTimer.lastUsedDuration"])
-        let savedDuration = timer.lastUsedDuration
-        timer.stop(reason: "integration test started")
-        addTeardownBlock {
-            timer._resetForTesting()
-            // Starting and stopping a timer is the one way to set the
-            // remembered duration; the stop clears everything else.
-            if let savedDuration {
-                timer.start(duration: savedDuration, ownerID: UUID(), onExpire: {})
-                timer.stop(reason: "integration test ended")
-            }
-        }
+        // None runs on from an earlier test, nor from this one into the next,
+        // held ones included, which the registry would keep running.
+        let registry = SleepTimerRegistry.shared
+        registry._stopEveryTimerForTesting()
+        addTeardownBlock { registry._stopEveryTimerForTesting() }
     }
 }
 
@@ -619,6 +625,11 @@ final class ObservedBookStorage: BookCloudStorage, @unchecked Sendable {
             return .waitingForSync
         }
         return storage.state(of: package)
+    }
+
+    /// `storage`'s size.
+    func bytesToDownload(of package: BookPackage) -> Int64? {
+        storage.bytesToDownload(of: package)
     }
 
     /// `storage`'s download.

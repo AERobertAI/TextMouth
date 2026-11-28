@@ -121,6 +121,8 @@ final class ReadOnceTests: XCTestCase {
         try withA10HostedControls(sheet) { controls in
             let stepper = try XCTUnwrap(controls.first { $0.role == .incrementor }, "\(controls.map(\.label))")
             XCTAssertEqual(stepper.label, SleepTimerView.adjustMinutesLabel)
+            // No title beside the label: a title that repeats it makes VoiceOver say "Adjust minutes, Adjust minutes".
+            XCTAssertEqual(stepper.title, "")
             XCTAssertEqual(stepper.valueDescription, "30 minutes")
         }
     }
@@ -189,14 +191,18 @@ final class ResultHintTests: XCTestCase {
         XCTAssertEqual(skipped.toggleSkip, "Include Section")
     }
 
-    /// The custom timer's field names the stepper beside it, and its step,
-    /// which is the stepper's own.
-    func testTheCustomTimerFieldNamesItsStepper() {
+    /// The custom timer's field says the minutes it takes, its own limits, and, on the Mac, what Return does there
+    /// (a side effect: it plays the book). It names no other control (FR35's cut named the stepper beside it, which
+    /// a hint does not: a hint names a control only when that control is how the hint's action is done), and the
+    /// stepper's step is 5.
+    func testTheCustomTimerFieldSaysItsLimits() {
         XCTAssertEqual(SleepTimerView.customMinutesStep, 5)
-        XCTAssertEqual(
-            SleepTimerView.customMinutesHint,
-            "Type the minutes, or change them 5 at a time with Adjust minutes. Return sets the timer and starts playing."
-        )
+        XCTAssertEqual(SleepTimerView.customMinutesRange, 1...480)
+        XCTAssertEqual(SleepTimerView.customMinutesHint, "Takes 1 to 480 minutes. Return sets the timer and plays the book.")
+        XCTAssertEqual(SleepTimerView.customMinutesRangeHint, "Takes 1 to 480 minutes.")
+        XCTAssertEqual(SleepTimerView.clampedCustomMinutes(0), 1)
+        XCTAssertEqual(SleepTimerView.clampedCustomMinutes(481), 480)
+        XCTAssertEqual(SleepTimerView.clampedCustomMinutes(25), 25)
     }
 
     /// The empty bookmark list names the key in force for adding one, in
@@ -218,7 +224,7 @@ final class ResultHintTests: XCTestCase {
     func testTheRestartGesturesNoteNamesTheShortcutsTabAndTheKeyInWords() {
         XCTAssertEqual(
             MiscellaneousSettingsView.restartShortcutNote,
-            "The keyboard shortcut for the same action is Restart Sleep Timer in the Shortcuts tab; its default is Shift + Command + R."
+            "Set its shortcut with Restart Sleep Timer in the Shortcuts tab; the default is Shift + Command + R."
         )
     }
 
@@ -293,8 +299,8 @@ final class CountedWordTests: XCTestCase {
         XCTAssertEqual(SleepTimerDuration.minutes(1).displayName, "1 minute")
         XCTAssertEqual(SleepTimerDuration.minutes(45).displayName, "45 minutes")
         XCTAssertEqual(SleepTimerView.announcement(forSetting: .minutes(1)), "Timer set for 1 minute.")
-        XCTAssertEqual(SleepTimerView.setTimerLabel(minutes: 1), "Set timer for 1 minute and start playing")
-        XCTAssertEqual(SleepTimerView.setTimerLabel(minutes: 60), "Set timer for 60 minutes and start playing")
+        XCTAssertEqual(SleepTimerView.setTimerLabel(minutes: 1), "Set timer for 1 minute")
+        XCTAssertEqual(SleepTimerView.setTimerLabel(minutes: 60), "Set timer for 60 minutes")
         XCTAssertEqual(PlaybackSettingsView.fadeOutText(0), "Off")
         XCTAssertEqual(PlaybackSettingsView.fadeOutText(1), "1 second")
         XCTAssertEqual(PlaybackSettingsView.fadeOutText(3), "3 seconds")
@@ -469,7 +475,7 @@ final class TextRulesResetTests: XCTestCase {
     /// Reset to Defaults says it asks, and the alert counts the rules it
     /// replaces and the defaults that replace them.
     func testResettingTheTextRulesAsksFirstAndCountsThem() {
-        XCTAssertEqual(SubstitutionsSettingsView.resetHint, "Asks first, then replaces every rule with TextMouth's default rules.")
+        XCTAssertEqual(SubstitutionsSettingsView.resetHint, "Asks first, then replaces every rule with the defaults.")
         XCTAssertEqual(SubstitutionsSettingsView.resetConfirmationTitle, "Reset Text Rules to Defaults?")
         XCTAssertEqual(
             SubstitutionsSettingsView.resetConfirmationMessage(ruleCount: 15, defaultCount: 16),
@@ -524,7 +530,7 @@ final class UnitWordTests: XCTestCase {
         )
         try withA10HostedControls(sheet) { controls in
             let fields = controls.filter { $0.role == .textField }
-            XCTAssertEqual(fields.map(\.label), ["Custom timer minutes"])
+            XCTAssertEqual(fields.map(\.label), ["Custom minutes"])
         }
     }
 }

@@ -32,13 +32,13 @@ final class LibraryViewsSettingsTests: XCTestCase {
         XCTAssertEqual(W.sectionHeader, "Views")
         XCTAssertEqual(
             W.orderCaption,
-            "The Library window's View pop-up offers these views, in this order. A new Library window opens at the first one it offers."
+            "The View pop-up of a Library window offers these views in this order. A new window opens at the first one offered."
         )
         XCTAssertEqual(
             W.visibilityCaption,
             "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List "
-                + "while it holds a book, an episode, or an article, and Feeds while there is a feed. Hidden leaves it out. "
-                + "A window showing a view keeps it until you choose another."
+                + "while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. "
+                + "A window keeps its view until you choose another."
         )
         XCTAssertEqual(W.listLabel, "Views")
         XCTAssertEqual(
@@ -64,12 +64,12 @@ final class LibraryViewsSettingsTests: XCTestCase {
         XCTAssertEqual(W.foldersVisibilityHint, "Folders is always shown: every folder and feed opens there.")
         XCTAssertEqual(W.moveUpLabel(name: "Feeds"), "Move Feeds Up")
         XCTAssertEqual(W.moveDownLabel(name: "Feeds"), "Move Feeds Down")
-        XCTAssertEqual(W.moveUpHint, "Moves the view one place up the list")
-        XCTAssertEqual(W.moveDownHint, "Moves the view one place down the list")
+        XCTAssertEqual(W.moveUpHint, "Moves it one place up")
+        XCTAssertEqual(W.moveDownHint, "Moves it one place down")
         XCTAssertEqual(W.firstInListHint, "The view is first in the list.")
         XCTAssertEqual(W.lastInListHint, "The view is last in the list.")
         XCTAssertEqual(W.placeAnnouncement(name: "Reading List", number: 4, count: 6), "Reading List, 4 of 6")
-        XCTAssertEqual(W.duplicateHint, "Makes a view of your own with this view's conditions and sort.")
+        XCTAssertEqual(W.duplicateHint, "Makes your own view with these conditions and sort.")
         XCTAssertEqual(W.duplicateUnavailableHint, "Folders and the Reading List have no conditions to copy.")
         XCTAssertEqual(W.duplicated(name: "Unopened Copy", number: 4, count: 7), "Made Unopened Copy, 4 of 7.")
         XCTAssertEqual(W.deleteHint, "Deletes the view. What it lists stays in the library.")

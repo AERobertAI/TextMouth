@@ -117,7 +117,7 @@ Suggested order: B and C first, since a skipped heading's start is carried like 
 
 ## The accuracy harness: once before, once after
 The rules were ported from a measured program and checked against its exact truth. Keep what it measured.
-- **The harness.** It is in `~/programming/ai/claude/investigate/text-anchors-2026-10-10/placediff-harness/` (`placediff-build.sh`, `placediff-run.sh`). Its stored results are `placediff-real.txt` (every real version step placed exactly: "near 0 wrong 0") and `placediff-synth.txt` (the synthetic cases).
+- **The harness.** It is in `~/…/investigate/text-anchors-2026-10-10/placediff-harness/` (`placediff-build.sh`, `placediff-run.sh`). Its stored results are `placediff-real.txt` (every real version step placed exactly: "near 0 wrong 0") and `placediff-synth.txt` (the synthetic cases).
 - **Use a copy.** Copy the folder to the sibling `…/text-anchors-2026-10-10/rev15-harness/`; the run script finds the readings and the truth by relative paths. Work only in the copy, and adapt its `main.swift` and `PlaceStubs.swift` there when the relocator's initializers or the place types change. Pass `PLACE_STUBS=<copy>/PlaceStubs.swift` to `build-probe.sh` then too.
 - **Build and run.**
   - Build: `MODELS=<worktree>/TextMouth/Models OUT=<copy>/harness zsh <copy>/placediff-build.sh`

@@ -191,7 +191,7 @@ final class CloudStorageContractTests: XCTestCase {
         let drive = CloudProvider.googleDrive
 
         XCTAssertEqual(
-            BookCloudError.offline.explanation(in: drive),
+            BookCloudError.offline.explanation(in: drive, isPhone: false),
             "This Mac is offline, so the book can't be downloaded from Google Drive. "
                 + "Connect to the internet and try again."
         )
@@ -209,6 +209,50 @@ final class CloudStorageContractTests: XCTestCase {
                 + "so its download can't be removed. Try again in a moment."
         )
         XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.uploadNotReported).explanation(in: drive),
+            "Google Drive hasn't said that every file of this book is uploaded, so its download can't be removed: "
+                + "the only copy might be on this Mac. Try again in a moment."
+        )
+        XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.uploadFailed("The disk is full.")).explanation(in: drive),
+            "Google Drive couldn't upload this book: The disk is full. Its download can't be removed until it has uploaded."
+        )
+        XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.inConflict).explanation(in: drive),
+            "Google Drive holds two versions of a file of this book, so its download can't be removed. "
+                + "Settle the conflict in Google Drive first."
+        )
+        XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.notCurrent).explanation(in: nil),
+            "The cloud service hasn't said that the copy of this book on this Mac is the latest, "
+                + "so its download can't be removed. Try again in a moment."
+        )
+        // Each drive's own command, and where the book is; nothing is ever deleted.
+        let lasting = "doesn't say whether the copy of this book on this Mac is the latest, so its download can't "
+            + "be removed, and waiting won't change that. To free the space anyway, choose Show in Finder, then "
+        let keeps = ". That keeps the book's copy in the cloud."
+        XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.currentNotReported).explanation(in: drive),
+            "Google Drive " + lasting + "use Google Drive's Offline Access menu" + keeps
+        )
+        XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.currentNotReported).explanation(in: .dropbox),
+            "Dropbox " + lasting + "choose Make online-only" + keeps
+        )
+        XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.currentNotReported).explanation(in: .iCloudDrive),
+            "iCloud Drive " + lasting + "choose Remove Download" + keeps
+        )
+        XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.currentNotReported).explanation(in: .other("OneDrive")),
+            "OneDrive " + lasting + "use the drive's own command to keep the book only online" + keeps
+        )
+        XCTAssertEqual(
+            BookCloudError.cloudCopyNotProven(.currentNotReported).explanation(in: nil),
+            "The cloud service " + lasting + "use the drive's own command to keep the book only online" + keeps
+        )
+        XCTAssertFalse(BookCloudError.cloudCopyNotProven(.currentNotReported).explanation(in: drive).lowercased().contains("delete"))
+        XCTAssertEqual(
             BookCloudError.bookIsOpen.explanation(in: drive),
             "The book is open, so its download can't be removed. Close it first."
         )
@@ -217,7 +261,7 @@ final class CloudStorageContractTests: XCTestCase {
             "Google Drive couldn't remove the book's download: The file is locked."
         )
         XCTAssertEqual(
-            BookCloudError.packageMissing.explanation(in: drive),
+            BookCloudError.packageMissing.explanation(in: drive, isPhone: false),
             "The book's files aren't on this Mac yet. Google Drive may still be syncing them."
         )
     }
@@ -225,7 +269,7 @@ final class CloudStorageContractTests: XCTestCase {
     /// Another drive is named by its folder's name.
     func testAnExplanationNamesAnotherDriveByItsFolder() {
         XCTAssertEqual(
-            BookCloudError.offline.explanation(in: .other("OneDrive")),
+            BookCloudError.offline.explanation(in: .other("OneDrive"), isPhone: false),
             "This Mac is offline, so the book can't be downloaded from OneDrive. Connect to the internet and try again."
         )
     }
@@ -235,7 +279,7 @@ final class CloudStorageContractTests: XCTestCase {
     /// display shows the difference.
     func testEveryExplanationWithoutAProviderSaysTheCloudService() {
         XCTAssertEqual(
-            BookCloudError.offline.explanation(in: nil),
+            BookCloudError.offline.explanation(in: nil, isPhone: false),
             "This Mac is offline, so the book can't be downloaded from the cloud service. "
                 + "Connect to the internet and try again."
         )
@@ -261,7 +305,7 @@ final class CloudStorageContractTests: XCTestCase {
             "The cloud service couldn't remove the book's download: Access denied."
         )
         XCTAssertEqual(
-            BookCloudError.packageMissing.explanation(in: nil),
+            BookCloudError.packageMissing.explanation(in: nil, isPhone: false),
             "The book's files aren't on this Mac yet. The cloud service may still be syncing them."
         )
     }

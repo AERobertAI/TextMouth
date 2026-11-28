@@ -33,8 +33,16 @@ enum RemoteMediaCommandPolicy {
     }
 
     static func isBluetoothTransport(_ transportType: UInt32) -> Bool {
+        #if os(macOS)
         transportType == kAudioDeviceTransportTypeBluetooth
             || transportType == kAudioDeviceTransportTypeBluetoothLE
+        #else
+        // iOS has no Core Audio transport types, and needs none: the audio
+        // session reports a lost output as a route change, which
+        // `PhoneAudioSession` hands to `perform(_:)`. Nothing counts as
+        // Bluetooth here.
+        false
+        #endif
     }
 }
 
@@ -43,6 +51,13 @@ enum RemoteMediaCommandPolicy {
 enum RemoteCommandDispatchResult: Equatable {
     case success
     case commandFailed
+    #if os(iOS)
+    /// No reader is open and no book can be opened for the command: on the
+    /// iPhone, MediaPlayer hears there is nothing to act on
+    /// (`MPRemoteCommandHandlerStatusNoActionableNowPlayingItem`,
+    /// `MPRemoteCommand.h:24-28`).
+    case noActionableNowPlayingItem
+    #endif
 }
 
 /// A command accepted from MediaPlayer for deferred delivery to the active
@@ -69,6 +84,13 @@ struct NowPlayingItem: Equatable, Sendable {
     let author: String
     /// Whether the book plays; false while it is paused.
     let isPlaying: Bool
+    #if os(iOS)
+    /// What the iPhone's lock screen shows beside the title and author: the
+    /// speed, and an audiobook chapter's clock (`PhoneNowPlayingInfo`). Set as
+    /// the item is shown (`showSystemNowPlaying(_:of:)`); the Mac's item has no
+    /// such field, so `NowPlayingOwnershipTests` compares it as before.
+    var phoneDetails = PhoneNowPlayingDetails.none
+    #endif
 }
 
 /// What VoiceOver hears as Release Media Controls is chosen in a book's
@@ -77,7 +99,10 @@ enum MediaControlsWording {
     /// Said as the window's book, which held TextMouth's media controls,
     /// hands them back to the system, and so the AirPods and the media keys
     /// to other apps.
-    static let released = "Media controls released"
+    static var released: String {
+        // Translators: Announcement after Release Media Controls handed the media keys and AirPods back to the system.
+        InterfaceText.line("mediaControls.released", "Media controls released")
+    }
 
     /// Said when Release Media Controls is chosen, by a key mapped to it, in
     /// a window whose book does not hold the media controls: one that never
@@ -85,7 +110,10 @@ enum MediaControlsWording {
     /// book has replaced in Now Playing. Nothing is released and nothing
     /// changes; the sentence begins as `released` does, so the two are told
     /// apart from their first words, on a braille display too.
-    static let notHeld = "Media controls not released: this book does not hold them."
+    static var notHeld: String {
+        // Translators: Announcement when Release Media Controls is chosen in a window whose book does not hold the media controls, so nothing changed. It begins like the announcement Media controls released, so the two are told apart from their first words.
+        InterfaceText.line("mediaControls.notHeld", "Media controls not released: this book does not hold them.")
+    }
 }
 
 /// Reader-scoped facade over the one process-wide Now Playing coordinator.
@@ -149,7 +177,32 @@ final class NowPlayingSession {
 
     func releaseMediaControls() {
         coordinator.clearNowPlaying(ownerID: ownerID)
+        #if os(iOS)
+        // Released, the controls go to other apps, and so does the audio: the
+        // session is let go with word to others that they may resume.
+        coordinator.deactivatePhoneSessionIfIdle()
+        #endif
     }
+
+    #if os(iOS)
+    /// Hands the coordinator what the iPhone's audio session asks of this
+    /// reader (`PhoneAudioSession.attach(_:)`).
+    func installPhoneHandlers(_ handlers: NowPlayingService.PhoneHandlers) {
+        coordinator.installPhoneHandlers(handlers, ownerID: ownerID)
+    }
+
+    /// This reader's navigation unit may have changed: the lock screen's skip
+    /// commands are set again from it (`PhoneRemoteCommandPolicy`).
+    func phoneRemoteCommandsMayHaveChanged() {
+        coordinator.phoneRemoteCommandsMayHaveChanged(ownerID: ownerID)
+    }
+
+    /// Lets the iPhone's audio session go when no book plays, as a book that
+    /// ends with nothing to follow does; the item shown stays.
+    func deactivatePhoneSessionIfIdle() {
+        coordinator.deactivatePhoneSessionIfIdle()
+    }
+    #endif
 
     /// The reader that owns TextMouth's media controls right now: the
     /// coordinator's active owner (`NowPlayingService.activeOwnerID`), the
@@ -353,6 +406,20 @@ final class NowPlayingService {
     }
 
     private var remoteCommandRegistrations: [RemoteCommandRegistration] = []
+
+    #if os(iOS)
+    /// What the iPhone's audio session asks of each reader, by owner
+    /// (`installPhoneHandlers(_:ownerID:)`).
+    private var phoneHandlersByOwner: [UUID: PhoneHandlers] = [:]
+    /// The media commands last set on the system's command center, so that
+    /// the same set is not written again.
+    private var appliedPhoneRemoteCommands: PhoneRemoteCommandPolicy?
+    /// What a Play does with no reader open: opens the book last open and plays
+    /// it (`PhoneSession.togglePlayPauseFromAnywhere()`), set at launch by
+    /// `PhoneAudioSession.install(session:)`. Nil answers
+    /// `.noActionableNowPlayingItem`.
+    var noOwnerPlayHandler: (@MainActor () -> Void)?
+    #endif
 
     /// Detector for the experimental "restart sleep timer via media
     /// gesture" feature. Each command handler routes its event type
@@ -620,6 +687,13 @@ final class NowPlayingService {
         if focusedOwnerID == ownerID {
             focusedOwnerID = ownerRegistrationOrder.last
         }
+        #if os(iOS)
+        phoneHandlersByOwner.removeValue(forKey: ownerID)
+        if handlersByOwner.isEmpty {
+            // No book is open: no unit promises anything.
+            applyPhoneRemoteCommands(.noBook)
+        }
+        #endif
         diagnostic(
             "owner unregistered owner=\(shortOwnerID(ownerID)) wasActive=\(wasActive) "
                 + "wasShown=\(wasShown) fallback=\(shortOptionalOwnerID(activeOwnerID))"
@@ -692,13 +766,33 @@ final class NowPlayingService {
         receivedAt: Date
     ) -> Bool {
         guard gestureDetector.recordEvent(event, at: receivedAt) else { return false }
+        // The reader whose book the media commands reach as the gesture ends
+        // is the one whose timer it restarts (November 13, 2026: each reader
+        // window has a timer of its own), noted now, before another reader
+        // could play.
+        let owner = activeOwnerID
         // Posting on main keeps SwiftUI views and other main-bound
         // observers safe regardless of which queue the command center
         // dispatched the original handler on.
         DispatchQueue.main.async {
-            NotificationCenter.default.post(name: .restartSleepTimer, object: nil)
+            NotificationCenter.default.post(
+                name: .restartSleepTimer,
+                object: nil,
+                userInfo: Self.restartGestureUserInfo(owner: owner)
+            )
         }
         return true
+    }
+
+    /// The key under which a Restart Sleep Timer the media gesture posts
+    /// names the reader that owned TextMouth's media controls as the gesture
+    /// ended (`activeOwnerID`): the reader whose window's timer it restarts.
+    nonisolated static let restartGestureOwnerKey = "restartGestureOwner"
+
+    /// What a Restart Sleep Timer the media gesture posts carries: the reader
+    /// that owns the media controls, or nothing while no reader does.
+    nonisolated static func restartGestureUserInfo(owner: UUID?) -> [String: Any]? {
+        owner.map { [restartGestureOwnerKey: $0] }
     }
 
     /// Update Bluetooth monitoring settings at runtime (from Miscellaneous prefs).
@@ -777,6 +871,15 @@ final class NowPlayingService {
 
         commandCenter.previousTrackCommand.isEnabled = true
         registerRemoteCommand(commandCenter.previousTrackCommand, for: .previousTrack)
+
+        #if os(iOS)
+        // The Mac's fixed 30 and 15 seconds above stay the Mac's: on the
+        // iPhone the skip commands follow the book's unit, and every command
+        // the app doesn't answer is disabled (`PhoneRemoteCommandPolicy`).
+        // Targets are installed at launch, so this runs before any reader.
+        appliedPhoneRemoteCommands = nil
+        applyPhoneRemoteCommands(activeOwnerID.flatMap { phoneHandlersByOwner[$0]?.remoteCommandPolicy() } ?? .noBook)
+        #endif
     }
 
     /// The handler MediaPlayer calls when the system sends `request`'s
@@ -813,6 +916,11 @@ final class NowPlayingService {
         _ request: RemoteMediaCommandRequest,
         by service: NowPlayingService?
     ) -> MPRemoteCommandHandlerStatus {
+        #if os(iOS)
+        // Which commands the AirPods and the lock screen send, in what order
+        // and on which thread, is known only from a first run.
+        DiagnosticLog.event(.playback, "REMOTE_COMMAND: \(request.rawValue) mainThread=\(Thread.isMainThread)")
+        #endif
         guard let service else { return .commandFailed }
         guard Thread.isMainThread else {
             DispatchQueue.main.async {
@@ -841,6 +949,11 @@ final class NowPlayingService {
     /// MediaPlayer handler returns. Production uses the FIFO main dispatch
     /// queue; tests capture the action to verify the acknowledgement boundary.
     func acceptRemoteCommand(_ request: RemoteMediaCommandRequest) -> RemoteCommandDispatchResult {
+        #if os(iOS)
+        // A killed app the system wakes for a Play has no reader yet: the
+        // Play opens the book last open (the engineer's review, F9).
+        if activeOwnerID == nil { return acceptCommandWithNoReader(request) }
+        #endif
         guard activeOwnerID != nil else { return .commandFailed }
 
         let receivedAt = nowProvider()
@@ -1072,6 +1185,11 @@ final class NowPlayingService {
             return .commandFailed
         }
         if consumeForGesture(.pause, receivedAt: receivedAt) { return .success }
+        #if os(iOS)
+        // Siri's Pause during an interruption: Apple's guide says to honor it,
+        // so the interruption's end does not play the book on.
+        PhoneAudioSession.shared.listenerPaused()
+        #endif
         let action = RemoteMediaCommandPolicy.pause(
             isSuppressed: suppressed,
             isPlaying: handlers.isCurrentlyPlaying()
@@ -1207,6 +1325,13 @@ final class NowPlayingService {
     /// center, and remembers whose it is (`shownOwnerID`).
     private func showSystemNowPlaying(_ item: NowPlayingItem, of ownerID: UUID) {
         shownOwnerID = ownerID
+        #if os(iOS)
+        var item = item
+        if let phone = phoneHandlersByOwner[ownerID] {
+            item.phoneDetails = phone.nowPlayingDetails()
+            applyPhoneRemoteCommands(phone.remoteCommandPolicy())
+        }
+        #endif
         writeSystemNowPlaying(item)
     }
 
@@ -1226,6 +1351,13 @@ final class NowPlayingService {
         info[MPMediaItemPropertyArtist] = item.author
         info[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
         info[MPNowPlayingInfoPropertyPlaybackRate] = item.isPlaying ? 1.0 : 0.0
+        #if os(iOS)
+        // The iPhone's words and numbers: the speed as the rate, the default
+        // rate, and an audiobook chapter's clock (`PhoneNowPlayingInfo`).
+        info = PhoneNowPlayingInfo(
+            title: item.title, author: item.author, isPlaying: item.isPlaying, details: item.phoneDetails
+        ).systemDictionary
+        #endif
 
         center.nowPlayingInfo = info
         center.playbackState = item.isPlaying ? .playing : .paused
@@ -1278,7 +1410,15 @@ final class NowPlayingService {
     }
 
     private func mediaPlayerStatus(for result: RemoteCommandDispatchResult) -> MPRemoteCommandHandlerStatus {
+        #if os(iOS)
+        switch result {
+        case .success: return .success
+        case .commandFailed: return .commandFailed
+        case .noActionableNowPlayingItem: return .noActionableNowPlayingItem
+        }
+        #else
         result == .success ? .success : .commandFailed
+        #endif
     }
 
     private func clearSystemNowPlaying() {
@@ -1338,6 +1478,7 @@ final class NowPlayingService {
         // change notification has a meaningful baseline to compare against.
         refreshPreviousDeviceInfo()
 
+        #if os(macOS)
         var defaultOutputAddress = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDefaultOutputDevice,
             mScope: kAudioObjectPropertyScopeGlobal,
@@ -1396,6 +1537,11 @@ final class NowPlayingService {
                 + "defaultActive=\(deviceChangeListenerBlock != nil) "
                 + "devicesActive=\(deviceListListenerBlock != nil)"
         )
+        #else
+        // iOS watches no devices: `PhoneAudioSession` hears the audio session's
+        // route changes instead, so there is nothing to register.
+        diagnostic("listener start ignored reason=device-watching-not-built-on-ios")
+        #endif
     }
 
     /// Handler for the default-output-device-changed notification.
@@ -1563,6 +1709,7 @@ final class NowPlayingService {
         if let defaultOutputDeviceProvider {
             return defaultOutputDeviceProvider()
         }
+        #if os(macOS)
         var deviceID = AudioDeviceID(0)
         var size = UInt32(MemoryLayout<AudioDeviceID>.size)
         var address = AudioObjectPropertyAddress(
@@ -1579,6 +1726,10 @@ final class NowPlayingService {
             &deviceID
         )
         return status == noErr ? deviceID : nil
+        #else
+        // No device query on iOS yet: report no default output device.
+        return nil
+        #endif
     }
 
     /// Whether the given device reports itself as Bluetooth (classic or LE).
@@ -1590,6 +1741,7 @@ final class NowPlayingService {
         if let bluetoothDeviceProvider {
             return bluetoothDeviceProvider(deviceID)
         }
+        #if os(macOS)
         var transportType: UInt32 = 0
         var size = UInt32(MemoryLayout<UInt32>.size)
         var address = AudioObjectPropertyAddress(
@@ -1607,6 +1759,10 @@ final class NowPlayingService {
         )
         guard status == noErr else { return true }
         return RemoteMediaCommandPolicy.isBluetoothTransport(transportType)
+        #else
+        // No transport query on iOS yet: no device is known to be Bluetooth.
+        return false
+        #endif
     }
 
     /// Refresh the cached `previousDeviceWasBluetooth` flag and
@@ -1663,6 +1819,7 @@ final class NowPlayingService {
         if let audioDeviceIDsProvider {
             return audioDeviceIDsProvider()
         }
+        #if os(macOS)
         var address = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDevices,
             mScope: kAudioObjectPropertyScopeGlobal,
@@ -1697,6 +1854,10 @@ final class NowPlayingService {
 
         let actualCount = Int(size) / MemoryLayout<AudioDeviceID>.size
         return Array(deviceIDs.prefix(actualCount))
+        #else
+        // No device list on iOS yet: report none, as a failed query does.
+        return []
+        #endif
     }
 
     private func stopDeviceChangeListener() {
@@ -1705,6 +1866,7 @@ final class NowPlayingService {
             return
         }
 
+        #if os(macOS)
         // The dispatch queue must match the one used in
         // startDeviceChangeListener(), otherwise the unregistration fails.
         if let block = deviceChangeListenerBlock {
@@ -1736,6 +1898,8 @@ final class NowPlayingService {
             )
             deviceListListenerBlock = nil
         }
+        #endif
+        // On iOS no listener is ever installed, so there is none to remove.
 
         isListeningForDeviceChanges = false
         diagnostic("listeners stopped")
@@ -1779,3 +1943,211 @@ final class NowPlayingService {
     }
 
 }
+
+#if os(iOS)
+// MARK: - The iPhone's Audio Session
+
+/// What the iPhone's audio session does through the coordinator: its events'
+/// responses reach the readers here, since `armSuppressAndPauseIfPlaying`'s
+/// neighbours, `invalidateRegisteredAudioBackends` and the owners, are private
+/// to this file. `PhoneAudioSession` observes; `PhoneAudioEventPolicy` decides.
+extension NowPlayingService {
+    /// What the iPhone's audio session asks of one reader, which
+    /// `PhoneAudioSession.attach(_:)` fills with the reader's own iOS methods.
+    struct PhoneHandlers {
+        /// Pauses the book for an interruption, saving its place, with no
+        /// pause sound: a sound would ask for the audio the interruption took.
+        let onInterruptionPause: @MainActor () -> Void
+        /// What the lock screen shows beside the title and author.
+        let nowPlayingDetails: @MainActor () -> PhoneNowPlayingDetails
+        /// The media commands the reader's unit allows.
+        let remoteCommandPolicy: @MainActor () -> PhoneRemoteCommandPolicy
+        /// Readies a reader that isn't playing for the session's deactivation:
+        /// its next Play starts cold, and its speech engine stops running (the
+        /// engineer's review, F8).
+        let prepareForDeactivation: @MainActor () -> Void
+    }
+
+    /// Keeps `handlers` for the reader `ownerID`, and sets the media commands
+    /// from its unit when it is the active reader.
+    func installPhoneHandlers(_ handlers: PhoneHandlers, ownerID: UUID) {
+        guard handlersByOwner[ownerID] != nil else {
+            diagnostic("phone handlers ignored owner=\(shortOwnerID(ownerID)) reason=unregistered")
+            return
+        }
+        phoneHandlersByOwner[ownerID] = handlers
+        phoneRemoteCommandsMayHaveChanged(ownerID: ownerID)
+    }
+
+    /// Sets the media commands again from the unit of the reader `ownerID`,
+    /// when it is the active reader, whose book the commands reach.
+    func phoneRemoteCommandsMayHaveChanged(ownerID: UUID) {
+        guard activeOwnerID == ownerID, let handlers = phoneHandlersByOwner[ownerID] else { return }
+        applyPhoneRemoteCommands(handlers.remoteCommandPolicy())
+    }
+
+    /// Whether any reader's book counts as playing, as each reader counts it
+    /// for the system's commands: playing, about to, or held by Where Am I?.
+    var anyReaderCountsAsPlaying: Bool {
+        handlersByOwner.values.contains { $0.isCurrentlyPlaying() }
+    }
+
+    /// Carries out what `PhoneAudioEventPolicy` decided for an event.
+    func perform(_ response: PhoneAudioResponse) {
+        switch response {
+        case .nothing, .restartFromPlace, .rebuildAudioObjects:
+            // The speech engine restarts from its place itself
+            // (`SpeechService`), and a reset reopens the book
+            // (`PhoneAudioSession`): nothing of the owners changes here.
+            return
+        case .pauseAndSave:
+            pausePlayingReadersForInterruption()
+        case .resume:
+            resumeReaderAfterInterruption()
+        case .pauseForLostRoute:
+            // The engineer's review, F25: no suppress window on the phone. It
+            // gates Play and Toggle for macOS's spurious press, and would eat
+            // the Play of AirPods put back in. A Play accepted for the old
+            // output must not start the book on the speaker, though.
+            noteExternalRoutingChange()
+            if activeHandlers?.isCurrentlyPlaying() == true {
+                // The Mac's own route pause, so its rewind on resume applies.
+                activeHandlers?.onAudioRouteChangePause()
+            }
+            invalidateRegisteredAudioBackends(trigger: "phone-route-lost")
+        case .noteLostRoute:
+            noteExternalRoutingChange()
+            invalidateRegisteredAudioBackends(trigger: "phone-route-lost-while-paused")
+        case .invalidateBackend:
+            invalidateRegisteredAudioBackends(trigger: "phone-route-changed")
+        }
+    }
+
+    /// Readies every reader that isn't playing for the session's
+    /// deactivation (`PhoneHandlers.prepareForDeactivation`).
+    func prepareReadersForSessionDeactivation() {
+        // Taken before any handler runs, so a handler that changes the owners
+        // cannot change the list.
+        let resting = handlersByOwner.filter { !$0.value.isCurrentlyPlaying() }.map(\.key)
+        for ownerID in resting {
+            phoneHandlersByOwner[ownerID]?.prepareForDeactivation()
+        }
+    }
+
+    /// Lets the iPhone's audio session go when no reader plays, as Release
+    /// Media Controls does. A process hosting the tests has no session.
+    func deactivatePhoneSessionIfIdle() {
+        guard installsSystemIntegrations else { return }
+        PhoneAudioSession.shared.deactivateIfIdle()
+    }
+
+    /// Pauses every reader that plays for an interruption, each saving its
+    /// place, and keeps the focus with the book that paused, so the
+    /// interruption's end and the next Play reach it.
+    private func pausePlayingReadersForInterruption() {
+        // A Play accepted before the interruption and still queued must not
+        // start a book into it.
+        noteExternalRoutingChange()
+        // Taken before any handler runs, as `pauseEveryPlayingReader()` takes
+        // its list.
+        let playing = handlersByOwner.filter { $0.value.isCurrentlyPlaying() }
+        for (ownerID, handlers) in playing {
+            if let phone = phoneHandlersByOwner[ownerID] {
+                phone.onInterruptionPause()
+            } else {
+                handlers.onPause()
+            }
+            if !handlers.isCurrentlyPlaying() {
+                playingOwnerPaused(ownerID)
+            }
+        }
+        diagnostic("readers paused count=\(playing.count) trigger=interruption")
+    }
+
+    /// Plays on the book an interruption paused, once it ends with
+    /// `shouldResume`, through the reader's own Play, so Rewind on Resume
+    /// applies, as after a route change (the user's review, with F24).
+    private func resumeReaderAfterInterruption() {
+        guard let ownerID = focusedOwnerID ?? playingOwnerID, let handlers = handlersByOwner[ownerID] else {
+            diagnostic("interruption resume ignored reason=no-owner")
+            return
+        }
+        prepareForPlayback(ownerID: ownerID)
+        handlers.onPlay()
+        if handlers.isCurrentlyPlaying() {
+            playingOwnerID = ownerID
+        }
+        diagnostic("interruption resume owner=\(shortOwnerID(ownerID)) playing=\(handlers.isCurrentlyPlaying())")
+    }
+
+    /// Accepts a command that arrived with no reader open: a Play, or the
+    /// AirPods' press, opens the book last open and plays it, on the main
+    /// queue's next turn, after MediaPlayer's handler has returned, as every
+    /// command's work is (`scheduleRemoteCommandAction`). Anything else has
+    /// nothing to act on.
+    private func acceptCommandWithNoReader(_ request: RemoteMediaCommandRequest) -> RemoteCommandDispatchResult {
+        let outcome = PhoneRemoteCommandPolicy.noReaderOutcome(
+            for: request,
+            canOpenLastBook: noOwnerPlayHandler != nil
+        )
+        diagnostic("command with no reader request=\(request.rawValue) outcome=\(outcome)")
+        guard outcome == .opensLastBook else { return .noActionableNowPlayingItem }
+        scheduleRemoteCommandAction { [weak self] in
+            self?.noOwnerPlayHandler?()
+        }
+        return .success
+    }
+
+    /// Sets each of the system's media commands as `policy` says: enabled or
+    /// not, and a skip command's interval. A set already written is not
+    /// written again. A process hosting the tests touches no system command.
+    func applyPhoneRemoteCommands(_ policy: PhoneRemoteCommandPolicy) {
+        guard installsSystemIntegrations, appliedPhoneRemoteCommands != policy else { return }
+        appliedPhoneRemoteCommands = policy
+        let center = MPRemoteCommandCenter.shared()
+        for command in PhoneRemoteCommandPolicy.Command.allCases {
+            let remoteCommand = mediaPlayerCommand(command, in: center)
+            remoteCommand.isEnabled = policy.isEnabled(command)
+            let intervals = policy.preferredIntervals(for: command)
+            // A disabled skip keeps whatever interval it had: nothing shows it.
+            if let skipCommand = remoteCommand as? MPSkipIntervalCommand, !intervals.isEmpty {
+                skipCommand.preferredIntervals = intervals.map { NSNumber(value: $0) }
+            }
+        }
+        diagnostic(
+            "phone commands skipForward=\(policy.skipForwardSeconds.map { "\(Int($0))s" } ?? "off") "
+                + "skipBackward=\(policy.skipBackwardSeconds.map { "\(Int($0))s" } ?? "off")"
+        )
+    }
+
+    /// The system's command for `command`: every one `MPRemoteCommandCenter.h`
+    /// declares, so none is left as the system set it.
+    private func mediaPlayerCommand(
+        _ command: PhoneRemoteCommandPolicy.Command,
+        in center: MPRemoteCommandCenter
+    ) -> MPRemoteCommand {
+        switch command {
+        case .play: center.playCommand
+        case .pause: center.pauseCommand
+        case .togglePlayPause: center.togglePlayPauseCommand
+        case .nextTrack: center.nextTrackCommand
+        case .previousTrack: center.previousTrackCommand
+        case .skipForward: center.skipForwardCommand
+        case .skipBackward: center.skipBackwardCommand
+        case .changePlaybackPosition: center.changePlaybackPositionCommand
+        case .stop: center.stopCommand
+        case .seekForward: center.seekForwardCommand
+        case .seekBackward: center.seekBackwardCommand
+        case .changePlaybackRate: center.changePlaybackRateCommand
+        case .changeRepeatMode: center.changeRepeatModeCommand
+        case .changeShuffleMode: center.changeShuffleModeCommand
+        case .rating: center.ratingCommand
+        case .like: center.likeCommand
+        case .dislike: center.dislikeCommand
+        case .bookmark: center.bookmarkCommand
+        case .enableLanguageOption: center.enableLanguageOptionCommand
+        case .disableLanguageOption: center.disableLanguageOptionCommand
+        }
+    }
+}
+#endif

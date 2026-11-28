@@ -28,6 +28,23 @@ enum DocumentByteLimit {
         guard byteCount <= current else { throw DocumentTooLargeError(limit: current) }
     }
 
+    /// The size of the document file at `url`, which is known to be within the
+    /// limit and not empty. A symbolic link is sized by what it points to, not
+    /// by its own few bytes, so a link to a huge file is refused; a link that
+    /// points nowhere cannot be read. A reader that opens the file itself (an
+    /// archive, which is not read whole) asks this before it does.
+    /// - Throws: `FileImportError.noTextToRead` for an empty file,
+    ///   `DocumentTooLargeError` for one past the limit, and the file
+    ///   system's error for one that cannot be read.
+    static func size(ofFileAt url: URL) throws -> Int64 {
+        // Resolve the link first: the file size of a link is the length of
+        // its path, which would let any link past the limit.
+        let size = try url.resolvingSymlinksInPath().resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        guard size > 0 else { throw FileImportError.noTextToRead }
+        try check(byteCount: Int64(size))
+        return Int64(size)
+    }
+
     /// The bytes of the document file at `url`, read whole once its size,
     /// taken from the file system before anything is read, is known to be
     /// within the limit; the bytes read are checked again, for a file that
@@ -38,14 +55,8 @@ enum DocumentByteLimit {
     ///   `DocumentTooLargeError` for one past the limit, and the file
     ///   system's error for one that cannot be read.
     static func contents(of url: URL) throws -> Data {
-        // Resolve the link first: the file size of a link is the length of
-        // its path, which would let any link past the limit. A link that
-        // points nowhere stays as it is, and reading it below throws, as for
-        // a missing file.
         let target = url.resolvingSymlinksInPath()
-        let size = try target.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-        guard size > 0 else { throw FileImportError.noTextToRead }
-        try check(byteCount: Int64(size))
+        _ = try size(ofFileAt: url)
         let data = try Data(contentsOf: target)
         guard !data.isEmpty else { throw FileImportError.noTextToRead }
         try check(byteCount: Int64(data.count))
@@ -58,11 +69,17 @@ enum DocumentByteLimit {
 /// A document that holds more than the most TextMouth reads from one
 /// document (`DocumentByteLimit`). Its sentence names the limit, never the
 /// file: an import's failure names the file before it (`ImportFailure`).
-struct DocumentTooLargeError: LocalizedError, Equatable {
+struct DocumentTooLargeError: LocalizedError, LogDescribing, Equatable {
     /// The limit the document passed, in bytes.
     let limit: Int64
 
     var errorDescription: String? {
-        "This document holds more than \(ArchiveFigures.size(limit)), the most TextMouth reads from one document."
+        // Translators: Why a document could not be imported: it is larger than the most TextMouth reads from one document. %@ is that limit with its unit, such as "64 MB".
+        InterfaceText.line("documentTooLargeError.errorDescription", "This document holds more than \(ArchiveFigures.size(limit)), the most TextMouth reads from one document.")
+    }
+
+    /// The failure in English for the debug log (FR34).
+    var logDescription: String {
+        "This document holds more than \(limit) bytes, the most TextMouth reads from one document." // l10n: no (debug log)
     }
 }

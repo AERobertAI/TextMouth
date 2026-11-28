@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import SwiftUI
 
@@ -52,6 +53,11 @@ protocol TextExportWriter: Sendable {
     /// as "html".
     var fileExtension: String { get }
 
+    /// What the walk of the book's content.md keeps for this writer besides
+    /// the words (`ExportWalkOptions`): nothing unless the writer has a place
+    /// for chapters and pages, as an e-book has.
+    var walkOptions: ExportWalkOptions { get }
+
     /// The options each Export dialog starts with.
     @MainActor func defaultOptions() -> Options
 
@@ -76,6 +82,12 @@ protocol TextExportWriter: Sendable {
         to url: URL,
         cancellation: BookExportCancellation
     ) throws
+}
+
+/// What a writer gets without saying so.
+extension TextExportWriter {
+    /// A writer of the words alone asks the walk for nothing more.
+    var walkOptions: ExportWalkOptions { .plain }
 }
 
 extension TextExportWriter where Options == NoTextExportOptions {
@@ -122,6 +134,8 @@ struct TextExportConversion: Sendable, Equatable {
     let name: String
     /// The writer's `fileExtension`.
     let fileExtension: String
+    /// The writer's `walkOptions`: what the walk of the book keeps for it.
+    let walkOptions: ExportWalkOptions
     /// The options chosen, which `==` compares.
     private let options: any TextExportOptions
     /// The writer's `write`, with the options chosen.
@@ -132,6 +146,7 @@ struct TextExportConversion: Sendable, Equatable {
         writerID = writer.id
         name = writer.name
         fileExtension = writer.fileExtension
+        walkOptions = writer.walkOptions
         self.options = options
         writeDocument = { document, url, cancellation in
             try writer.write(document, options: options, to: url, cancellation: cancellation)
@@ -166,6 +181,13 @@ protocol TextExportOptionsEditing: AnyObject {
     func makeView() -> AnyView
     /// The writer with its options as they are now, for an export.
     func conversion() -> TextExportConversion
+    /// The writer's options as braille's, for a braille writer (BRF or PEF),
+    /// which the iPhone's rows read and set where the Mac's view binds them
+    /// (FR31); nil for any other writer, and setting it changes nothing there.
+    var brailleOptions: BrailleExportOptions? { get set }
+    /// Says, once for each change, that the options changed, for a view that reads them through
+    /// `brailleOptions` and must be drawn again (the iPhone's rows).
+    var changes: AnyPublisher<Void, Never> { get }
 }
 
 /// The options of a `Writer` while an Export dialog is open: what its view
@@ -198,6 +220,20 @@ final class TextExportOptionsState<Writer: TextExportWriter>: ObservableObject, 
     func conversion() -> TextExportConversion {
         TextExportConversion(writer, options: options)
     }
+
+    var changes: AnyPublisher<Void, Never> {
+        // `$options` also says the value it starts with, which is no change.
+        $options.dropFirst().map { _ in () }.eraseToAnyPublisher()
+    }
+
+    var brailleOptions: BrailleExportOptions? {
+        get { options as? BrailleExportOptions }
+        set {
+            // Only a braille writer's own options type takes braille options.
+            guard let typed = newValue as? Writer.Options else { return }
+            options = typed
+        }
+    }
 }
 
 /// A writer's options view, drawn again as its options change.
@@ -216,13 +252,25 @@ private struct TextExportOptionsHost<Writer: TextExportWriter>: View {
 /// picker's order. Adding a writer: write its file, and add one line here.
 enum TextExportWriters {
     /// Every writer, in the picker's order.
+    #if os(macOS)
     static let all: [any TextExportWriter] = [
         HTMLExportWriter(),
         RTFExportWriter(),
         WordDocExportWriter(),
+        EPUBExportWriter(),
         BRFExportWriter(),
         PEFExportWriter(),
     ]
+    #else
+    // The Word 97-2003 writer needs AppKit's .docFormat, so iOS never offers it.
+    static let all: [any TextExportWriter] = [
+        HTMLExportWriter(),
+        RTFExportWriter(),
+        EPUBExportWriter(),
+        BRFExportWriter(),
+        PEFExportWriter(),
+    ]
+    #endif
 
     /// The picker's tag for Markdown, the book's text written by
     /// `MarkdownExportWriter` (the picker's default and the export without a

@@ -12,7 +12,13 @@ enum AudioEditWording {
     static func duration(_ seconds: TimeInterval, titleCase: Bool = false) -> String {
         // A length beyond a million hours is no length of audio, and would
         // overflow the whole numbers below.
-        guard seconds.isFinite, seconds >= 0, seconds < 3.6e9 else { return titleCase ? "Unknown Length" : "unknown length" }
+        guard seconds.isFinite, seconds >= 0, seconds < 3.6e9 else {
+            return titleCase
+                // Translators: A length of audio that is no length (not a finite number of seconds), as a menu item's title-cased words, such as the Undo item's "Cut Unknown Length".
+                ? InterfaceText.line("audioEdit.duration.unknownLengthTitle", "Unknown Length")
+                // Translators: A length of audio that is no length (not a finite number of seconds), said in a sentence, such as "Cut unknown length."
+                : InterfaceText.line("audioEdit.duration.unknownLengthSentence", "unknown length")
+        }
         let tenths = (seconds * 10).rounded() / 10
         let shown = tenths == 0 && seconds > 0 ? (seconds * 100).rounded() / 100 : tenths
         let hours = Int(shown / 3_600)
@@ -25,20 +31,37 @@ enum AudioEditWording {
         // Subtracting whole minutes can leave a trace of rounding error, so
         // the seconds are compared to within half a thousandth.
         if rest > 0.000_5 || parts.isEmpty {
-            parts.append("\(number(rest)) \(abs(rest - 1) < 0.000_5 ? "second" : "seconds")")
+            parts.append(secondsPart(rest))
         }
-        let phrase = parts.joined(separator: ", ")
-        return titleCase ? phrase.capitalized(with: Locale(identifier: "en_US")) : phrase
+        // The parts are one spoken list without "and": "1 minute, 4.2
+        // seconds", in each language's own list punctuation.
+        let phrase = parts.formatted(.list(type: .and, width: .narrow).locale(InterfaceLanguage.current.locale))
+        return titleCase && capitalizesTitles ? phrase.capitalized(with: .current) : phrase
     }
 
-    /// `value` with at most two decimal places and no trailing zeros: "4.2",
-    /// "4", "0.04".
+    /// Whether the interface language capitalizes each word of a menu title,
+    /// as English does ("Cut 2.5 Seconds"); other languages write a title in
+    /// their ordinary case.
+    private static var capitalizesTitles: Bool {
+        Locale.current.language.languageCode?.identifier == "en" // l10n: no (a language code)
+    }
+
+    /// The seconds of a duration: counted, as "1 second" or "4 seconds",
+    /// when whole, and with its decimals, as "4.2 seconds", when not.
+    private static func secondsPart(_ rest: Double) -> String {
+        if abs(rest - rest.rounded()) < 0.000_5 {
+            return CountWording.seconds(Int(rest.rounded()))
+        }
+        // A decimal has no plural form of its own, so it is one string
+        // around the formatted number.
+        // Translators: A number of seconds with decimals inside a spoken duration, such as "4.2 seconds" in "12 minutes, 4.2 seconds". %@ is the already formatted number.
+        return InterfaceText.line("common.valueSeconds", "\(number(rest)) seconds")
+    }
+
+    /// `value` with at most two decimal places and no trailing zeros, in the
+    /// region's number format: "4.2", "4", "0.04".
     private static func number(_ value: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.minimumFractionDigits = 0
-        formatter.maximumFractionDigits = 2
-        return formatter.string(from: NSNumber(value: value)) ?? String(value)
+        value.formatted(.number.precision(.fractionLength(0...2)).locale(InterfaceLanguage.current.locale))
     }
 
     /// The edit's name as the Edit menu gives it after "Undo" or "Redo", and
@@ -46,27 +69,38 @@ enum AudioEditWording {
     static func actionName(_ edit: AudioEdit) -> String {
         switch edit {
         case .trimStart:
-            return "Trim Start"
+            // Translators: Name of an edit, as the Undo and Redo menu items and VoiceOver say it after "Undo" or "Redo": trimming the start of the audio.
+            return InterfaceText.line("audioEdit.actionName.trimStart", "Trim Start")
         case .trimEnd:
-            return "Trim End"
+            // Translators: Name of an edit, as the Undo and Redo menu items and VoiceOver say it after "Undo" or "Redo": trimming the end of the audio.
+            return InterfaceText.line("audioEdit.actionName.trimEnd", "Trim End")
         case .cut(let range):
-            return "Cut \(duration(range.duration, titleCase: true))"
+            // Translators: Name of an edit, as the Undo and Redo menu items say it after "Undo" or "Redo": cutting a stretch of audio. %@ is its length in title-cased words, such as "2.5 Seconds".
+            return InterfaceText.line("audioEdit.actionName.cut", "Cut \(duration(range.duration, titleCase: true))")
         case .move(let range, _):
-            return "Move \(duration(range.duration, titleCase: true))"
+            // Translators: Name of an edit, as the Undo and Redo menu items say it after "Undo" or "Redo": moving a stretch of audio. %@ is its length in title-cased words, such as "2.5 Seconds".
+            return InterfaceText.line("audioEdit.actionName.move", "Move \(duration(range.duration, titleCase: true))")
         case .insertSilence(_, let length):
-            return "Insert \(duration(length, titleCase: true)) of Silence"
+            // Translators: Name of an edit, as the Undo and Redo menu items say it after "Undo" or "Redo": inserting silence. %@ is its length in title-cased words, such as "1 Second".
+            return InterfaceText.line("audioEdit.actionName.insertSilence", "Insert \(duration(length, titleCase: true)) of Silence")
         case .replace(let range, _):
-            return "Replace \(duration(range.duration, titleCase: true))"
+            // Translators: Name of an edit, as the Undo and Redo menu items say it after "Undo" or "Redo": replacing a stretch of audio with a new recording. %@ is the replaced length in title-cased words, such as "2.5 Seconds".
+            return InterfaceText.line("audioEdit.actionName.replace", "Replace \(duration(range.duration, titleCase: true))")
         case .insert(_, let take):
-            return "Insert \(duration(take.range.duration, titleCase: true)) of Audio"
+            // Translators: Name of an edit, as the Undo and Redo menu items say it after "Undo" or "Redo": inserting a new recording. %@ is its length in title-cased words, such as "2.5 Seconds".
+            return InterfaceText.line("audioEdit.actionName.insert", "Insert \(duration(take.range.duration, titleCase: true)) of Audio")
         case .setChapter:
-            return "Set Chapter Marker"
+            // Translators: Name of an edit, as the Undo and Redo menu items and VoiceOver say it after "Undo" or "Redo": setting a chapter marker.
+            return InterfaceText.line("audioEdit.actionName.setChapter", "Set Chapter Marker")
         case .removeChapter:
-            return "Remove Chapter Marker"
+            // Translators: Name of an edit, as the Undo and Redo menu items and VoiceOver say it after "Undo" or "Redo": removing a chapter marker.
+            return InterfaceText.line("audioEdit.actionName.removeChapter", "Remove Chapter Marker")
         case .filter:
-            return "Apply Filter"
+            // Translators: Name of an edit, as the Undo and Redo menu items say it after "Undo" or "Redo"; also the title of the audio editor's filter sheet.
+            return InterfaceText.line("common.applyFilter", "Apply Filter")
         case .gain(let decibels, _):
-            return "Change Volume by \(signedDecibels(decibels))"
+            // Translators: Name of an edit, as the Undo and Redo menu items say it after "Undo" or "Redo": changing the volume. %@ is the change with its sign, such as "+3 dB".
+            return InterfaceText.line("audioEdit.actionName.gain", "Change Volume by \(signedDecibels(decibels))")
         }
     }
 
@@ -74,7 +108,8 @@ enum AudioEditWording {
     /// "+1.5 dB".
     static func signedDecibels(_ decibels: Double) -> String {
         let sign = decibels > 0 ? "+" : (decibels < 0 ? "-" : "")
-        return "\(sign)\(number(abs(decibels))) dB"
+        // Translators: A level change in decibels with its sign, such as "+3 dB" or "-6 dB". %1$@ is the sign, "+" or "-" or nothing, and %2$@ the number, already formatted.
+        return InterfaceText.line("audioEdit.signedDecibels", "\(sign)\(number(abs(decibels))) dB")
     }
 
     /// Why undo can go no further, as a sentence, or nil when it can: what
@@ -85,12 +120,14 @@ enum AudioEditWording {
         case .canUndo:
             return nil
         case .nothingToUndo:
-            return "There's nothing to undo."
+            // Translators: Said when Undo is asked for and there is no edit to undo, and the hint of a dimmed Undo in the audio editor.
+            return InterfaceText.line("audioEdit.undoLimit.nothingToUndo", "There's nothing to undo.")
         case .originalDeleted(let date):
-            return "The original audio was deleted on \(date.formatted(date: .long, time: .omitted)), "
-                + "so edits saved before then can't be undone."
+            // Translators: Said when Undo can't reach edits already saved, and the hint of a dimmed Undo in the audio editor: the book's original audio was deleted. %@ is the date it was deleted, in long form.
+            return InterfaceText.line("audioEdit.undoLimit.originalDeleted", "The original audio was deleted on \(date.interfaceFormatted(date: .long, time: .omitted)), so edits saved before then can't be undone.")
         case .editedInPlace:
-            return "No original audio is kept for this book, so saved edits can't be undone."
+            // Translators: Said when Undo can't reach edits already saved, and the hint of a dimmed Undo in the audio editor: the book keeps no original audio.
+            return InterfaceText.line("audioEdit.undoLimit.editedInPlace", "No original audio is kept for this book, so saved edits can't be undone.")
         }
     }
 }

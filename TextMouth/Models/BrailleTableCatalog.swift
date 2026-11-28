@@ -4,7 +4,8 @@ import Foundation
 
 /// Where a braille table comes from (October 20, 2026).
 ///
-/// - **Built into TextMouth** (`bundled`): English, which is Unified English
+/// - **Built into TextMouth** (`bundled`, the tables of the app's own pack: the
+///   Mac's has the four English ones, the iPhone's every table it ships): English, which is Unified English
 ///   Braille and English Braille American Edition, each uncontracted and
 ///   contracted. It stays built in, and its contracted UEB table stays the
 ///   default (decision 1). A bundled table's stored value is its bare file
@@ -44,7 +45,7 @@ enum BrailleTableSource: Equatable, Hashable, Sendable {
     /// Whether `storedValue` names a Mac table by a bare file name: the
     /// prefix, then a name that is not empty, does not start with a dot, and
     /// holds no slash or comma, as the helper's own check
-    /// (`is_bare_table_name` in `TextMouthBraille/main.c`) requires. Such a
+    /// (`tmb_is_bare_table_name` in `TextMouthBraille/TextMouthBrailleLibrary.c`) requires. Such a
     /// value is kept by the setting even when this Mac no longer has the
     /// table, so that an import refuses it by name rather than reading the
     /// book with another table (`BraillePreferences`).
@@ -52,6 +53,12 @@ enum BrailleTableSource: Equatable, Hashable, Sendable {
         let (source, fileName) = parse(storedValue)
         guard source == .mac, let first = fileName.first, first != "." else { return false }
         return !fileName.contains("/") && !fileName.contains(",")
+    }
+
+    /// Whether `value` is a bare table file name, such as "en-nz-g2.ctb" (no prefix, and shaped as the helper's own check
+    /// requires, as `isMacValue(_:)` says): a value some platform's tables may have though this one's do not.
+    static func isBareTableName(_ value: String) -> Bool {
+        parse(value).source == .bundled && isMacValue(mac.storedValue(ofFile: value))
     }
 }
 
@@ -129,6 +136,10 @@ struct BrailleTable: Equatable, Hashable, Sendable, Identifiable {
     /// table on its word; one with no `dots` line is taken only once its
     /// check's sample comes out in six-dot cells (`MacBrailleTableCheck`).
     let declaresSixDots: Bool
+    /// Whether the table writes braille from print and cannot read it back (liblouis's `direction: forward`; on the Mac, as
+    /// the newer release judges it, `BrailleTableCatalog.table(fields:...)`). Such a table is offered for exporting braille
+    /// and never for reading a braille file (FR40, the user's decision of November 24, 2026).
+    let isPrintOnly: Bool
 
     /// A table of these fields; `region` is nil and `declaresSixDots` false
     /// unless given.
@@ -141,7 +152,8 @@ struct BrailleTable: Equatable, Hashable, Sendable, Identifiable {
         contraction: Contraction,
         grade: String?,
         region: String? = nil,
-        declaresSixDots: Bool = false
+        declaresSixDots: Bool = false,
+        isPrintOnly: Bool = false
     ) {
         self.id = id
         self.displayName = displayName
@@ -152,6 +164,24 @@ struct BrailleTable: Equatable, Hashable, Sendable, Identifiable {
         self.grade = grade
         self.region = region
         self.declaresSixDots = declaresSixDots
+        self.isPrintOnly = isPrintOnly
+    }
+
+    /// This table under the stored value `id`: what a platform answers when asked for a value it reads with another source's
+    /// table of the same file name (FR40), so the value it was asked for is the value it keeps and stores.
+    func withID(_ id: String) -> BrailleTable {
+        BrailleTable(
+            id: id, displayName: displayName, indexName: indexName, language: language, system: system,
+            contraction: contraction, grade: grade, region: region, declaresSixDots: declaresSixDots, isPrintOnly: isPrintOnly
+        )
+    }
+
+    /// This table judged to write braille only (or not), as a wrapper that only includes a print-only table is.
+    func making(printOnly: Bool) -> BrailleTable {
+        BrailleTable(
+            id: id, displayName: displayName, indexName: indexName, language: language, system: system,
+            contraction: contraction, grade: grade, region: region, declaresSixDots: declaresSixDots, isPrintOnly: printOnly
+        )
     }
 
     /// Where the table comes from, as its stored value says.
@@ -166,12 +196,25 @@ struct BrailleTable: Equatable, Hashable, Sendable, Identifiable {
     /// table that says neither its contraction nor its grade, "As the table
     /// defines". A table with no grade leaves the bracket out.
     var contractionLabel: String {
-        let bracket = grade.map { " (Grade \($0))" } ?? ""
-        switch contraction {
-        case .no: return "Uncontracted" + bracket
-        case .full: return "Contracted" + bracket
-        case .partial: return "Partly contracted"
-        case .unstated: return "As the table defines"
+        switch (contraction, grade) {
+        case (.no, let grade?):
+            // Translators: How a braille table contracts, for a table of one grade that writes every letter out. %@ is the grade, an identifier such as 1.
+            return InterfaceText.line("brailleTable.contractionLabel.uncontractedGrade", "Uncontracted (Grade \(grade))")
+        case (.no, nil):
+            // Translators: How a braille table contracts, for a table with no grade that writes every letter out.
+            return InterfaceText.line("brailleTable.contractionLabel.uncontracted", "Uncontracted")
+        case (.full, let grade?):
+            // Translators: How a braille table contracts, for a table of one grade that shortens words with contractions. %@ is the grade, an identifier such as 2.
+            return InterfaceText.line("brailleTable.contractionLabel.grade", "Contracted (Grade \(grade))")
+        case (.full, nil):
+            // Translators: How a braille table contracts, for a table with no grade that shortens words with contractions.
+            return InterfaceText.line("brailleTable.contractionLabel.contracted", "Contracted")
+        case (.partial, _):
+            // Translators: How a braille table contracts: it shortens some words, not all.
+            return InterfaceText.line("brailleTable.contractionLabel.partly", "Partly contracted")
+        case (.unstated, _):
+            // Translators: How a braille table contracts, for a table that says neither its contraction nor its grade: it writes as its own rules define.
+            return InterfaceText.line("brailleTable.contractionLabel.defines", "As the table defines")
         }
     }
 }
@@ -217,8 +260,10 @@ struct BrailleLanguage: Equatable, Identifiable, Sendable {
 
 /// The braille tables TextMouth offers (FMT21), read from the tables' own
 /// metadata: the header comments liblouis reads in `analyzeTable`
-/// (`Vendor/liblouis/liblouis/metadata.c`). Adding a table is only adding a
-/// resource to the bundled tables folder.
+/// (`Vendor/liblouis/liblouis/metadata.c`). The bundled tables are listed from
+/// the index of the app's own pack (`BrailleTablePack`, FR40), whose builder
+/// reads the same headers; adding a table is adding its file to
+/// `Vendor/liblouis/tables`.
 ///
 /// Since October 20, 2026 the tables come from two sources
 /// (`BrailleTableSource`): the bundled English tables, built in and the
@@ -335,8 +380,23 @@ enum BrailleTableCatalog {
     /// A `system` is kept when the table names one. Many of this Mac's
     /// tables name none, such as its German and Spanish ones, and their
     /// codes are named from their display names (`codeName(of:)`).
-    private static func table(at file: URL, source: BrailleTableSource) -> BrailleTable? {
-        let fields = metadata(ofTableAt: file)
+    private static func table(at file: URL, source: BrailleTableSource, release: BrailleTablePack.ReleaseDirections?) -> BrailleTable? {
+        table(fields: metadata(ofTableAt: file), fileName: file.lastPathComponent, source: source, release: release)
+    }
+
+    /// The table the file called `fileName` is, from the header `fields` it has
+    /// (the rules of `table(at:source:)`), or nil when it is not one TextMouth
+    /// offers. A pack's index holds the fields of each file (FR40), so the
+    /// bundled tables are made by these same rules without opening a file.
+    ///
+    /// A table's direction is `both` (or none stated), and it is read for reading and writing, or `forward`, and it writes
+    /// braille only (`isPrintOnly`); any other direction is not offered. When `release` is given (this Mac's tables, when
+    /// they are an older liblouis's than the app's), a table the newer release marks print-only is print-only too, whatever
+    /// the file says, since macOS's 3.34.0 copies of `zh_CHN.tbl`, `cs.tbl`, `lv.tbl`, and `sl.tbl` lack the
+    /// `direction: forward` that 3.39.0 gives them; and a table the file marks is print-only whatever the release says (FR40).
+    private static func table(
+        fields: [String: String], fileName: String, source: BrailleTableSource, release: BrailleTablePack.ReleaseDirections? = nil
+    ) -> BrailleTable? {
         guard fields["type"]?.lowercased() == "literary",
               fields["dots"].map({ $0 == "6" }) ?? true,
               let displayName = fields["display-name"],
@@ -352,9 +412,21 @@ enum BrailleTableCatalog {
         } else {
             contraction = fields["grade"].flatMap(Contraction.init(grade:)) ?? .unstated
         }
-        if let direction = fields["direction"], direction.lowercased() != "both" { return nil }
+        // Print-only when either source marks it so: the release's list (a newer liblouis than the file's own), or the file's
+        // own `direction: forward`. The release never makes a table that its own header marks two-way read-only or the
+        // reverse: it only adds a mark an older copy lacks (`releaseDirections(judgingMacVersion:)`).
+        let isPrintOnly: Bool
+        if let release, release.printOnly.contains(fileName) {
+            isPrintOnly = true
+        } else {
+            switch fields["direction"]?.lowercased() {
+            case nil, "both": isPrintOnly = false
+            case "forward": isPrintOnly = true
+            default: return nil
+            }
+        }
         return BrailleTable(
-            id: source.storedValue(ofFile: file.lastPathComponent),
+            id: source.storedValue(ofFile: fileName),
             displayName: displayName,
             indexName: fields["index-name"],
             language: language,
@@ -365,18 +437,42 @@ enum BrailleTableCatalog {
             // language tag's, so "akk-Latn" and a `locale` of "de-CH" keep
             // what follows their language as a region.
             region: region(fields["region"] ?? fields["locale"] ?? tag, of: language),
-            declaresSixDots: fields["dots"] == "6"
+            declaresSixDots: fields["dots"] == "6",
+            isPrintOnly: isPrintOnly
         )
+    }
+
+    /// `candidates` with each wrapper judged as the table it includes is: a table that only includes others, one of them a
+    /// print-only table of its language, writes braille only too, as macOS's `zh_TW.tbl` includes `zh-tw.ctb` and
+    /// `braille-patterns.cti` and does nothing else (FR40).
+    private static func followingTheirTargets(
+        _ candidates: [(table: BrailleTable, includeOnly: [String]?)]
+    ) -> [(table: BrailleTable, includeOnly: [String]?)] {
+        var found = candidates
+        var changed = true
+        while changed {
+            changed = false
+            let printOnly = Set(found.filter(\.table.isPrintOnly).map { $0.table.fileName })
+            let languages = Dictionary(found.map { ($0.table.fileName, $0.table.language) }) { first, _ in first }
+            for index in found.indices where !found[index].table.isPrintOnly {
+                guard let includes = found[index].includeOnly,
+                      includes.contains(where: { printOnly.contains($0) && languages[$0] == found[index].table.language })
+                else { continue }
+                found[index].table = found[index].table.making(printOnly: true)
+                changed = true
+            }
+        }
+        return found
     }
 
     /// The table each candidate twin among `found` includes, by file name: a
     /// table whose only rule is one include of a table found here in the
     /// same language (review F2).
-    private static func twinTargets(of found: [(file: URL, table: BrailleTable)]) -> [String: String] {
+    private static func twinTargets(of found: [(table: BrailleTable, includeOnly: [String]?)]) -> [String: String] {
         let languages = Dictionary(found.map { ($0.table.fileName, $0.table.language) }) { first, _ in first }
         var targets: [String: String] = [:]
         for entry in found {
-            guard let includes = includeOnlyTargets(ofTableAt: entry.file), includes.count == 1,
+            guard let includes = entry.includeOnly, includes.count == 1,
                   let target = includes.first, target != entry.table.fileName,
                   languages[target] == entry.table.language
             else { continue }
@@ -448,30 +544,89 @@ enum BrailleTableCatalog {
     /// Mac's Ukrainian table with capitals includes its plain Ukrainian
     /// table and the Russian one with capitals.
     static func tables(in folder: URL, source: BrailleTableSource = .bundled) -> [BrailleTable] {
+        allTables(in: folder, source: source).filter { !$0.isPrintOnly }
+    }
+
+    /// Every table `tables(in:source:)` offers and those that write braille only (`isPrintOnly`), which are offered for export
+    /// alone. `release` is the newer release's directions for a folder of an older one (this Mac's).
+    /// - Parameter requiresIncludes: Leave out a table whose only rules are includes of a file the folder lacks, which could
+    ///   never load: Apple left out the LGPL 3 includes of VoiceOver's `is.tbl`, `pt.tbl`, and `sr.tbl`, so Icelandic,
+    ///   Portuguese, and Serbian fail to load. A table with rules of its own has its includes unread here (the listing reads
+    ///   no more than each file's header and, for a short file, its include lines), so only such wrappers can be found.
+    static func allTables(
+        in folder: URL, source: BrailleTableSource = .bundled, release: BrailleTablePack.ReleaseDirections? = nil,
+        requiresIncludes: Bool = false
+    ) -> [BrailleTable] {
         let files = (try? FileManager.default.contentsOfDirectory(
             at: folder,
             includingPropertiesForKeys: [.isRegularFileKey],
             options: [.skipsHiddenFiles]
         )) ?? []
+        let present = Set(files.map(\.lastPathComponent))
         let found = files
             .filter { (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true }
-            .compactMap { file in table(at: file, source: source).map { (file: file, table: $0) } }
+            .compactMap { file in
+                table(at: file, source: source, release: release).map { (table: $0, includeOnly: includeOnlyTargets(ofTableAt: file)) }
+            }
+            .filter { !requiresIncludes || hasEveryInclude($0.includeOnly, present: present.contains) }
+        return offered(from: found)
+    }
+
+    /// Whether every file a table that only includes others (`targets`, from `includeOnlyTargets(ofTableAt:)`; nil for any
+    /// other table, which is never judged by its includes) names is there, as `present` says: the rule that leaves out a
+    /// table that could never load, for the listing (`allTables(in:requiresIncludes:)`) and for `storableValue`.
+    private static func hasEveryInclude(_ targets: [String]?, present: (String) -> Bool) -> Bool {
+        (targets ?? []).allSatisfy(present)
+    }
+
+    /// The tables TextMouth offers among the files of `pack` (FR40), read from
+    /// its index alone, by the rules `tables(in:source:)` applies to a folder
+    /// of the same files, and with the bundled source's stored values: a file's
+    /// header fields and its include-only targets come from the index, so
+    /// nothing is unpacked and no file is opened.
+    static func tables(in pack: BrailleTablePack) -> [BrailleTable] {
+        allTables(in: pack).filter { !$0.isPrintOnly }
+    }
+
+    /// Every table of `pack`, those that write braille only (`isPrintOnly`) too.
+    static func allTables(in pack: BrailleTablePack) -> [BrailleTable] {
+        let found = pack.names.compactMap { name -> (table: BrailleTable, includeOnly: [String]?)? in
+            guard let file = pack.files[name],
+                  let table = table(fields: file.fields, fileName: name, source: .bundled)
+            else { return nil }
+            return (table, file.includeOnly)
+        }
+        return offered(from: found)
+    }
+
+    /// The tables of `found`, candidates with their files' include-only
+    /// targets, that are offered: a true twin is left out (review R6, F2), and
+    /// the rest are in the order language, system, contraction, then stored
+    /// value.
+    private static func offered(from candidates: [(table: BrailleTable, includeOnly: [String]?)]) -> [BrailleTable] {
+        let found = followingTheirTargets(candidates)
         let twins = twinTargets(of: found)
         return found
             .filter { !isTrueTwin($0.table.fileName, twins: twins) }
             .map(\.table)
-            .sorted { lhs, rhs in
+            .sortedStably { lhs, rhs in
                 // A tuple of the sort keys, compared in order.
                 (lhs.language, lhs.system, lhs.contraction.rank, lhs.id)
                     < (rhs.language, rhs.system, rhs.contraction.rank, rhs.id)
             }
     }
 
-    /// The tables of the bundled tables folder, empty when the bundle has
-    /// none, read once.
-    static let bundled: [BrailleTable] = {
-        guard let folder = BrailleTranslator.Tool.helper.tablesFolder else { return [] }
-        return tables(in: folder)
+    /// The tables of the app's own pack (`BrailleTables.pack`, FR40), listed
+    /// from its index without unpacking anything, empty when the app has no
+    /// usable pack, read once: on the Mac the four English tables, on the
+    /// iPhone every table liblouis's release gives and TextMouth ships.
+    static let bundled: [BrailleTable] = bundledAll.filter { !$0.isPrintOnly }
+
+    /// Every table of the app's own pack, those that write braille only too (the iPhone's pack has some; the Mac's, none):
+    /// what a stored value is looked up in, and what export offers.
+    static let bundledAll: [BrailleTable] = {
+        guard let unpacker = BrailleTableUnpacker.app else { return [] }
+        return allTables(in: unpacker.pack)
     }()
 
     /// The liblouis TextMouth's braille helper is built from
@@ -509,17 +664,41 @@ enum BrailleTableCatalog {
         /// The folder's liblouis version, from its property list, or nil
         /// when the property list does not say.
         let liblouisVersion: String?
+        /// The tables that write braille only, judged as the app's newer release judges them (`isPrintOnly`): offered for
+        /// export and not for reading, and kept out of `tables`.
+        var printOnly: [BrailleTable] = []
     }
 
     /// The tables of the Mac's folder `folder`, with the version
     /// `propertyList` records; nil when there is no such folder, as on an
     /// older macOS or after Apple moves it.
-    static func macTables(in folder: URL, propertyList: URL) -> MacTables? {
+    static func macTables(
+        in folder: URL, propertyList: URL, release: BrailleTablePack.ReleaseDirections? = BrailleTableUnpacker.app?.pack.releaseDirections,
+        requiresIncludes: Bool = false
+    ) -> MacTables? {
         var isFolder: ObjCBool = false
         guard FileManager.default.fileExists(atPath: folder.path, isDirectory: &isFolder), isFolder.boolValue else {
             return nil
         }
-        return MacTables(tables: tables(in: folder, source: .mac), liblouisVersion: liblouisVersion(inPropertyList: propertyList))
+        let version = liblouisVersion(inPropertyList: propertyList)
+        let all = allTables(
+            in: folder, source: .mac, release: releaseDirections(judgingMacVersion: version, of: release), requiresIncludes: requiresIncludes
+        )
+        return MacTables(tables: all.filter { !$0.isPrintOnly }, liblouisVersion: version, printOnly: all.filter(\.isPrintOnly))
+    }
+
+    /// The release's directions to judge this Mac's tables by, given the liblouis version they are (`OpenSourceVersion`):
+    /// the newer liblouis decides, so when VoiceOver's is older than the app's, or unknown, the release's marks are added
+    /// to the files' own; when VoiceOver's is newer, VoiceOver's own headers decide and the release is not used (FR40). A
+    /// version that is not a number, one that does not begin with a digit, is unknown.
+    static func releaseDirections(
+        judgingMacVersion version: String?, of release: BrailleTablePack.ReleaseDirections?
+    ) -> BrailleTablePack.ReleaseDirections? {
+        // A version that does not begin with a digit ("unknown", "v3.34.0") is no version we can compare: it is unknown.
+        guard let version, version.first?.isASCII == true, version.first?.isNumber == true,
+              version.compare(bundledLiblouisVersion, options: .numeric) == .orderedDescending
+        else { return release }
+        return nil
     }
 
     /// The liblouis version the property list at `url` records
@@ -549,14 +728,23 @@ enum BrailleTableCatalog {
     /// review R2): the liblouis version of this Mac's tables for one of
     /// them, and nil for a bundled table, which changes only with TextMouth.
     static func versionToRecord(forTable table: String) -> String? {
-        BrailleTableSource.parse(table).source == .mac ? currentMacLiblouisVersion() : nil
+        liblouisVersionRead(forTable: table).version
     }
 
     /// This Mac's tables, read once, when first needed (the Braille tab, the
     /// Export dialog's braille options, or a Mac table's stored value); nil
     /// when the Mac has no such folder, and TextMouth then offers only its
     /// own tables, with no error (decision 2).
-    static let mac: MacTables? = macTables(in: macTablesFolder, propertyList: macTablesPropertyList)
+    ///
+    /// The iPhone has no Mac tables, and so reads none: in a simulator the host Mac's folder is visible at its own path, and
+    /// reading it there would offer tables the device never has (the iPhone's pack is what it offers).
+    static let mac: MacTables? = {
+        #if os(macOS)
+        return macTables(in: macTablesFolder, propertyList: macTablesPropertyList, requiresIncludes: true)
+        #else
+        return nil
+        #endif
+    }()
 
     // MARK: The Offered Tables
 
@@ -580,28 +768,159 @@ enum BrailleTableCatalog {
     /// braille helper accept.
     static let offeredTables: [BrailleTable] = offeredCodes.flatMap(\.tables)
 
-    /// The offered table with this stored value, if there is one. A bundled
-    /// table is found among the bundled tables alone, so naming one never
-    /// reads this Mac's folder.
+    /// The codes exporting braille offers: the offered codes' tables and those that write braille only, the bundled ones
+    /// (the iPhone's pack's) and this Mac's, which are one more choice in export alone (FR40). Reading a braille file never
+    /// offers them.
+    static let exportCodes: [BrailleCode] = codes(of: merged(bundled: bundledAll, mac: (mac?.tables ?? []) + (mac?.printOnly ?? [])))
+
+    /// Every table the export codes list.
+    static let exportTables: [BrailleTable] = exportCodes.flatMap(\.tables)
+
+    /// This Mac's tables of every direction.
+    private static var macTablesOfEveryDirection: [BrailleTable] { (mac?.tables ?? []) + (mac?.printOnly ?? []) }
+
+    /// The table with this stored value, if there is one: any table of any direction, since a book or a setting may already
+    /// name one that only writes braille (FR40), and an export offers them; only the lists of choices for reading
+    /// (`offeredCodes`) leave them out. A bundled table is found among the bundled tables alone, so naming one never reads
+    /// this Mac's folder.
     static func table(withID id: String) -> BrailleTable? {
         switch BrailleTableSource.parse(id).source {
-        case .bundled: return bundled.first { $0.id == id }
-        case .mac: return offeredTables.first { $0.id == id }
+        case .bundled:
+            if let found = bundledAll.first(where: { $0.id == id }) { return found }
+            #if os(macOS)
+            // A bare value this Mac's pack lacks, such as a table the iPhone stored (FR32), reads with VoiceOver's file of that
+            // name when it has one, and keeps the value it was asked for.
+            return exportTables.first { $0.id == BrailleTableSource.mac.storedValue(ofFile: id) }?.withID(id)
+            #else
+            return nil
+            #endif
+        case .mac:
+            #if os(iOS)
+            // The iPhone has no Mac tables: a Mac's value is read with the pack's table of the same file name, when it has
+            // one, and the value stays the Mac's (`mac:<file>`), which a copy or a re-read stores as it was.
+            return bundledID(forStored: id).flatMap { bundledID in bundledAll.first { $0.id == bundledID } }?.withID(id)
+            #else
+            // Among the tables listed for reading or export, not every table of the folder: a Mac twin of a bundled table,
+            // such as `mac:en-ueb-g2.ctb`, is left out of that list (the bundled one wins) and so is not found by its Mac value.
+            return exportTables.first { $0.id == id }
+            #endif
         }
+    }
+
+    /// Whether this platform reads the table `stored` names with this Mac's own (VoiceOver's) file: a `mac:` value, and on
+    /// the Mac a bare value its own pack lacks and VoiceOver has. Never true on the iPhone, and never reads the Mac's folder
+    /// for a bare value the app's pack has.
+    static func readsFromMacFolder(_ stored: String) -> Bool {
+        #if os(macOS)
+        let (source, fileName) = BrailleTableSource.parse(stored)
+        if source == .mac { return true }
+        if bundledAll.contains(where: { $0.id == stored }) { return false }
+        return macTablesOfEveryDirection.contains { $0.id == BrailleTableSource.mac.storedValue(ofFile: fileName) }
+        #else
+        return false
+        #endif
+    }
+
+    /// The tables both apps' packs hold, which liblouis reads the same on both platforms (TextMouth's own 3.39.0 files): a
+    /// book read with one keeps no liblouis version (`liblouisVersionRead(forTable:)`). A test keeps this the Mac's whole pack.
+    static let tablesOfEveryPack: Set<String> = ["en-ueb-g1.ctb", "en-ueb-g2.ctb", "en-us-g1.ctb", "en_US.tbl"]
+
+    /// The liblouis version this platform reads `table`, a stored value, with, when a book must keep it, and whether a book
+    /// does. `guarded` is false for a table of every pack (nothing to compare), and for a value this platform refuses. The
+    /// version is this Mac's (VoiceOver's, nil when it names none) for a table read from this Mac's folder, and TextMouth's
+    /// own for any other table the iPhone reads, `mac:` values included (FR40).
+    static func liblouisVersionRead(forTable table: String) -> (guarded: Bool, version: String?) {
+        if readsFromMacFolder(table) { return (true, currentMacLiblouisVersion()) }
+        #if os(iOS)
+        // A Mac's value, whatever its table, was read with a Mac's liblouis; a bare value is guarded unless both apps carry it.
+        guard let bundledID = bundledID(forStored: table),
+              BrailleTableSource.parse(table).source == .mac || !tablesOfEveryPack.contains(bundledID)
+        else { return (false, nil) }
+        return (true, bundledLiblouisVersion)
+        #else
+        return (false, nil)
+        #endif
+    }
+
+    /// The bundled table a stored value names where a Mac's own tables do not
+    /// exist (the iPhone, FR40), by its stored value: a bundled value's own
+    /// when `bundled` lists it, and for a Mac's `mac:<file>`, such as one of a
+    /// library shared with a Mac, the bundled table with that file name; nil
+    /// when `bundled` has none. A table the pack lacks stays refused, in its
+    /// own words (`PhoneImportRefusal.macBrailleTable`).
+    static func bundledID(forStored value: String, among bundled: [BrailleTable] = BrailleTableCatalog.bundledAll) -> String? {
+        let fileName = BrailleTableSource.parse(value).fileName
+        return bundled.first { $0.fileName == fileName }?.id
+    }
+
+    /// The id the lists of tables use for the table a stored value names, so a selection, the "offered" check, the source
+    /// sentence, and a value's words are all worked out from one spelling (FR40). A stored value stays as it is, and each
+    /// platform reads it correctly; the lists spell the same table differently:
+    /// - on the Mac, a bare value its own pack lacks that VoiceOver's folder has, such as the `fr-bfu-g2.ctb` an iPhone stores,
+    ///   is the list's `mac:fr-bfu-g2.ctb` (`readsFromMacFolder`);
+    /// - on the iPhone, a Mac's `mac:fr-bfu-g2.ctb` is the pack's bare `fr-bfu-g2.ctb` (`bundledID(forStored:)`), and on the Mac
+    ///   too, for a table its own pack has: `mac:en-ueb-g2.ctb` is the bundled `en-ueb-g2.ctb`, the twin the lists keep;
+    ///   a table the lists hide behind another for its words or its include (`ga.tbl`, `zh_HK.tbl`) is left as it is;
+    /// - any other value is its own id.
+    /// Never changes what is stored: use it to compare with the lists' ids, never to write a setting or a book.
+    static func listedID(forStored value: String) -> String {
+        let (source, fileName) = BrailleTableSource.parse(value)
+        // A Mac's value for a table the app's own pack has, such as `mac:en-ueb-g2.ctb`, is that bundled table, the one the
+        // lists keep where the two are twins (`merged(bundled:mac:)`), on the iPhone as on the Mac.
+        if source == .mac, let bundled = bundledID(forStored: value) { return bundled }
+        #if os(macOS)
+        if source == .bundled, readsFromMacFolder(value) { return BrailleTableSource.mac.storedValue(ofFile: fileName) }
+        #endif
+        return value
     }
 
     /// The value the setting and config.json keep for `value`: a bundled
     /// table's file name when the bundle offers it, and a Mac table's value
     /// as it is when it names one by a bare file name
-    /// (`BrailleTableSource.isMacValue(_:)`); nil for anything else. It
-    /// never reads this Mac's folder (review R3), so reading the setting or
-    /// decoding config.json, which happens on the main thread at every
-    /// launch, never reads the Mac's table headers. A Mac table this Mac
-    /// does not offer is kept so, and refused by name when it is used
-    /// (decision 5).
-    static func storableValue(_ value: String) -> String? {
+    /// (`BrailleTableSource.isMacValue(_:)`); nil for anything else. A value
+    /// of either of those kinds never reads this Mac's folder (review R3), so
+    /// reading the setting or decoding config.json, which happens on the main
+    /// thread at every launch, does not read the Mac's table headers for it.
+    /// A Mac table this Mac does not offer is kept so, and refused by name
+    /// when it is used (decision 5).
+    ///
+    /// On the Mac a bare value its own pack lacks, such as the `fr-bfu-g2.ctb` an iPhone stores (FR32), is kept too when
+    /// VoiceOver's folder has a file of that name whose header makes a table TextMouth offers, for reading or for export
+    /// (`table(fields:fileName:source:release:)`, the rule the listing applies to each file), and that is not a wrapper of
+    /// files the folder lacks (`hasEveryInclude`, the listing's rule too). A file of that folder that is
+    /// no table, such as an include like `en-ueb-chardefs.uti`, is refused. Only that one file is read (its header, and a
+    /// short file's include lines), never the folder's: decoding runs on the main thread at every launch (review R3). What the listing alone
+    /// judges, such as a table that only includes another, is left to `table(withID:)` when the value is used.
+    /// - Parameters:
+    ///   - folder: VoiceOver's folder, which a test replaces with its own.
+    ///   - headerOf: Reads the header fields of a table file; a test replaces it to count the reads.
+    static func storableValue(
+        _ value: String,
+        in folder: URL = macTablesFolder,
+        propertyList: URL = macTablesPropertyList,
+        headerOf: (URL) -> [String: String] = { metadata(ofTableAt: $0) }
+    ) -> String? {
         if BrailleTableSource.isMacValue(value) { return value }
-        return bundled.first { $0.id == value }?.id
+        if let found = bundledAll.first(where: { $0.id == value }) { return found.id }
+        #if os(macOS)
+        if BrailleTableSource.isMacValue(BrailleTableSource.mac.storedValue(ofFile: value)) {
+            let file = folder.appendingPathComponent(value)
+            if FileManager.default.fileExists(atPath: file.path),
+               // The include rule of the listing: a wrapper whose includes the folder lacks never loads, as Apple's `is.tbl`.
+               hasEveryInclude(includeOnlyTargets(ofTableAt: file), present: {
+                   FileManager.default.fileExists(atPath: folder.appendingPathComponent($0).path)
+               }),
+               table(
+                   fields: headerOf(file), fileName: value, source: .mac,
+                   release: releaseDirections(
+                       judgingMacVersion: liblouisVersion(inPropertyList: propertyList), of: BrailleTableUnpacker.app?.pack.releaseDirections
+                   )
+               ) != nil {
+                return value
+            }
+        }
+        #endif
+        return nil
     }
 
     /// Reads this Mac's tables, and makes the offered codes, on a background
@@ -611,9 +930,10 @@ enum BrailleTableCatalog {
     /// using them meanwhile, reads nothing twice: Swift makes each `static
     /// let` once, and a thread that needs one while another makes it waits.
     /// - Parameter load: The loading, which a test replaces to see where it
-    ///   runs; the app's reads the offered tables.
+    ///   runs; the app's reads the offered tables and the export tables, which a bare value's lookup (`table(withID:)`) goes
+    ///   through, so the first lookup never makes them on its caller's thread.
     @discardableResult
-    static func loadInBackground(_ load: @escaping @Sendable () -> Void = { _ = offeredTables }) -> Task<Void, Never> {
+    static func loadInBackground(_ load: @escaping @Sendable () -> Void = { _ = offeredTables; _ = exportTables }) -> Task<Void, Never> {
         Task.detached(priority: .utility) {
             load()
         }
@@ -659,11 +979,14 @@ enum BrailleTableCatalog {
         }
         return order.compactMap { id in
             guard let members = groups[id], let first = members.first else { return nil }
-            let sorted = members.sorted { lhs, rhs in
+            let sorted = members.sortedStably { lhs, rhs in
                 // A tuple of the sort keys, compared in order: contraction,
-                // then a bundled table (0) before a Mac one (1), then name.
-                (lhs.contraction.rank, lhs.source == .bundled ? 0 : 1, lhs.fileName)
-                    < (rhs.contraction.rank, rhs.source == .bundled ? 0 : 1, rhs.fileName)
+                // then a table that reads back (0) before one that only writes
+                // braille (1), so export's list never loses a table reading
+                // has to one of the same words, then a bundled table (0)
+                // before a Mac one (1), then name.
+                (lhs.contraction.rank, lhs.isPrintOnly ? 1 : 0, lhs.source == .bundled ? 0 : 1, lhs.fileName)
+                    < (rhs.contraction.rank, rhs.isPrintOnly ? 1 : 0, rhs.source == .bundled ? 0 : 1, rhs.fileName)
             }
             var labels = Set<String>()
             return BrailleCode(
@@ -702,9 +1025,11 @@ enum BrailleTableCatalog {
 
     /// The code `table` is listed in: among the bundled codes for a bundled
     /// table, so that naming one never reads this Mac's folder, and among
-    /// the offered codes for a Mac one.
+    /// the offered codes for a Mac one. A table that writes braille only is in no code offered for reading, so it is found
+    /// among the export codes.
     static func code(of table: BrailleTable) -> BrailleCode? {
-        (table.source == .bundled ? bundledCodes : offeredCodes).first { $0.tables.contains(table) }
+        let codes = table.isPrintOnly ? exportCodes : (table.source == .bundled ? bundledCodes : offeredCodes)
+        return codes.first { $0.tables.contains(table) }
     }
 
     /// A table's code name: a known system's own, else the table's display
@@ -712,8 +1037,9 @@ enum BrailleTableCatalog {
     /// added later, or one of this Mac's, is named with no change here.
     static func codeName(of table: BrailleTable) -> String {
         switch table.system {
-        case "ueb": return "Unified English Braille"
-        case "ebae": return "English Braille, American Edition"
+        // The names of braille codes are their own official names, as liblouis and macOS list them, so they are never translated.
+        case "ueb": return "Unified English Braille" // l10n: no (a braille code's own name, as liblouis and macOS list it)
+        case "ebae": return "English Braille, American Edition" // l10n: no (a braille code's own name, as liblouis and macOS list it)
         default: return withoutContractionWords(table.displayName)
         }
     }
@@ -721,7 +1047,7 @@ enum BrailleTableCatalog {
     /// The words that say how far a table contracts, as display names put
     /// them. " partially contracted" holds " contracted", so the phrase that
     /// begins first in the name is the one removed.
-    private static let contractionPhrases = [" uncontracted", " partially contracted", " contracted"]
+    private static let contractionPhrases = [" uncontracted", " partially contracted", " contracted"] // l10n: no (matches the English display names liblouis and macOS give their tables)
 
     /// `name` without the first contraction phrase in it, and its first
     /// letter capitalized.
@@ -753,7 +1079,7 @@ enum BrailleTableCatalog {
             let name = languageName(id, indexName: tables.compactMap(\.indexName).first, displayName: tables.first?.displayName)
             return BrailleLanguage(id: id, name: name, codes: members)
         }
-        return languages.sorted { lhs, rhs in
+        return languages.sortedStably { lhs, rhs in
             let (lhsEnglish, rhsEnglish) = (isEnglish(lhs.id), isEnglish(rhs.id))
             if lhsEnglish != rhsEnglish { return lhsEnglish }
             let order = lhs.name.localizedStandardCompare(rhs.name)
@@ -767,7 +1093,7 @@ enum BrailleTableCatalog {
     }
 
     /// The name of a language in the user's own language
-    /// (`Locale.current.localizedString(forIdentifier:)`), such as "English"
+    /// (`InterfaceLanguage.current.locale.localizedString(forIdentifier:)`), such as "English"
     /// for "en" and "German (Switzerland)" for "de-CH". A language the
     /// system cannot name, such as Classical Hebrew ("hbo"), is named by the
     /// first part of a table's `indexName` (liblouis's index names begin
@@ -775,7 +1101,7 @@ enum BrailleTableCatalog {
     /// words of its `displayName` before "braille", as Munda ("mun") is by
     /// "Munda braille" (review F4), else by its code itself.
     static func languageName(_ language: String, indexName: String? = nil, displayName: String? = nil) -> String {
-        if let name = Locale.current.localizedString(forIdentifier: language) { return name }
+        if let name = InterfaceLanguage.current.locale.localizedString(forIdentifier: language) { return name }
         let fromIndex = indexName?.split(separator: ",").first?.trimmingCharacters(in: .whitespaces)
         let fromDisplay = displayName
             .flatMap { name in name.range(of: " braille", options: .caseInsensitive).map { String(name[..<$0.lowerBound]) } }?
@@ -792,8 +1118,10 @@ enum BrailleTableCatalog {
     /// 2), in French". For a stored value no offered table has, such as a
     /// Mac table a macOS update removed, the value itself. Book Info and
     /// Speak Info use it.
-    static func description(ofTableID id: String) -> String {
-        guard let table = table(withID: id) else { return id }
+    static func description(ofTableID stored: String) -> String {
+        // A value the lists spell otherwise is worded as the list's table is, with its language on the Mac (`listedID`).
+        let id = listedID(forStored: stored)
+        guard let table = table(withID: id) else { return stored }
         let language = table.source == .mac
             ? code(of: table).map { languageName($0.language, indexName: table.indexName, displayName: table.displayName) }
             : nil
@@ -808,9 +1136,14 @@ enum BrailleTableCatalog {
         let label = table.contractionLabel
         var words = codeName(of: table)
         if table.contraction != .unstated {
-            words += ", \(label.prefix(1).lowercased() + label.dropFirst())"
+            let contraction = label.prefix(1).lowercased() + label.dropFirst()
+            // Translators: A braille table in words: its code's name, then how it contracts, in lower case. %1$@ is the code's name, such as Unified English Braille, and %2$@ the contraction, such as uncontracted (Grade 1).
+            words = InterfaceText.line("common.nameAndNote", "\(words), \(contraction)")
         }
-        return language.map { "\(words), in \($0)" } ?? words
+        return language.map {
+            // Translators: A braille table in words, then the language it is in. %1$@ is the table in words, such as Unified English Braille, uncontracted, and %2$@ the language's name, such as English.
+            InterfaceText.line("common.valueInValue", "\(words), in \($0)")
+        } ?? words
     }
 }
 
@@ -829,11 +1162,12 @@ enum BraillePreferences {
     /// otherwise. A Mac table is kept even when this Mac no longer has it,
     /// as after a macOS update, so that an import or an export refuses it by
     /// name rather than quietly using another table (decision 5); reading
-    /// the setting so never reads this Mac's folder.
+    /// the setting never lists this Mac's folder (at most the one header of a
+    /// bare name the pack lacks: `storableValue(_:)`).
     static let table = StoredPreference<String>(
         key: "brailleTable",
         read: { store, key in
-            store.string(forKey: key).flatMap(BrailleTableCatalog.storableValue) ?? BrailleTableCatalog.defaultTableID
+            store.string(forKey: key).flatMap { BrailleTableCatalog.storableValue($0) } ?? BrailleTableCatalog.defaultTableID
         },
         write: { id, store, key in store.set(id, forKey: key) }
     )
@@ -889,5 +1223,22 @@ enum BraillePreferences {
         // A bound id is held to the import's choices as a stored one is:
         // Unicode braille patterns, or an unknown id, reads as the default.
         return BrailleFileCode.importChoice(withID: bound)?.id ?? BrailleFileCode.defaultCode.id
+    }
+
+    /// Whether an import of a BRF or BRL read with a contracted Unified
+    /// English Braille table may read a book clearly written in English
+    /// Braille, American Edition with that code's table instead
+    /// (`BrailleTableGuess`). On unless the listener turns it off in the
+    /// Braille tab; it changes only books not yet imported.
+    static let guessesTable = StoredPreference.flag("brailleGuessesTable", default: true)
+
+    /// Whether imports guess the table in place of the setting, bound by a
+    /// hosted test, as `tableForImports` is.
+    @TaskLocal static var guessesTableForImports: Bool? = nil
+
+    /// Whether this import guesses the table: the one a test bound, else the
+    /// setting in the runtime's preferences store.
+    static func importGuessesTable() -> Bool {
+        guessesTableForImports ?? guessesTable.read(from: TextMouthRuntime.current.preferences)
     }
 }

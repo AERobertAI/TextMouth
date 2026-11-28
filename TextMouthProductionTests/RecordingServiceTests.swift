@@ -242,7 +242,7 @@ final class RecordingServiceTests: XCTestCase {
         XCTAssertEqual(failure, .deviceDisconnected("AirPods Pro"))
         XCTAssertEqual(
             failure.errorDescription,
-            "AirPods Pro was disconnected, so recording stopped. What was recorded until then is kept."
+            "AirPods Pro was disconnected, so recording stopped. What was recorded is kept."
         )
         XCTAssertEqual(take.duration, 2, accuracy: 0.01)
         XCTAssertTrue(FileManager.default.fileExists(atPath: take.url.path))

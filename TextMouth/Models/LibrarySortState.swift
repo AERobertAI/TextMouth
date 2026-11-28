@@ -62,8 +62,15 @@ struct LibraryLocation: Equatable {
     var name: String {
         guard view.kind == .folders else { return view.name }
         return folderPath.isEmpty
-            ? "All Folders"
-            : folderPath.components(separatedBy: "/").last ?? "All Folders"
+            ? Self.allFoldersName
+            : folderPath.components(separatedBy: "/").last ?? Self.allFoldersName
+    }
+
+    /// The name of the root of Folders: every folder's books are reached from
+    /// it, so the window title calls it "All Folders".
+    nonisolated static var allFoldersName: String {
+        // Translators: Name of the library's top level in the Folders view, where the window title and the folder announcements call it that. It holds every folder.
+        InterfaceText.line("libraryLocation.allFoldersName", "All Folders")
     }
 
     /// Whether the location shows its books in an order of its own, which
@@ -118,7 +125,12 @@ struct LibraryLocation: Equatable {
     /// always by title, are named alone: "Library: Reading List", "Library:
     /// Feeds".
     func windowTitle(sortedBy sort: LibrarySortState) -> String {
-        keepsItsOwnOrder || listsOnlyFeeds ? "Library: \(name)" : "Library: \(name) (\(sort.titleFragment))"
+        if keepsItsOwnOrder || listsOnlyFeeds {
+            // Translators: Title of a Library window that shows a view with one fixed order, such as the Reading List. %@ is the view's name.
+            return InterfaceText.line("libraryLocation.windowTitle.name", "Library: \(name)")
+        }
+        // Translators: Title of a Library window. %1$@ is the name of the folder or view it shows. %2$@ is its sort, such as "Title Ascending" or "Manual Order".
+        return InterfaceText.line("libraryLocation.windowTitle.nameAndSort", "Library: \(name) (\(sort.titleFragment))")
     }
 }
 
@@ -247,25 +259,25 @@ struct LibrarySortState: Equatable {
 // MARK: - Showing the Sort
 
 extension LibrarySortState {
-    /// The direction in words, or nil for manual order.
-    private var directionName: String? {
-        guard hasDirection else { return nil }
-        return isAscending ? "Ascending" : "Descending"
-    }
-
     /// The field, then its direction when it has one: "Title, ascending",
     /// or "Manual Order".
     private var spokenSort: String {
-        [field.rawValue, directionName?.lowercased()]
-            .compactMap { $0 }
-            .joined(separator: ", ")
+        guard hasDirection else { return field.title }
+        return isAscending
+            // Translators: A sort, spoken: a sort field and its direction. %@ is the sort field's name, such as Title or Date Added. Used inside announcements and labels about the sort.
+            ? InterfaceText.line("librarySortState.spokenSort.ascending", "\(field.title), ascending")
+            // Translators: A sort, spoken: a sort field and its direction. %@ is the sort field's name, such as Title or Date Added. Used inside announcements and labels about the sort.
+            : InterfaceText.line("librarySortState.spokenSort.descending", "\(field.title), descending")
     }
 
     /// The sort in the window title: "Title Ascending", or "Manual Order".
     var titleFragment: String {
-        [field.rawValue, directionName]
-            .compactMap { $0 }
-            .joined(separator: " ")
+        guard hasDirection else { return field.title }
+        return isAscending
+            // Translators: The sort in a Library window's title: a sort field and its direction, ascending. %@ is the sort field's name, such as Title or Date Added.
+            ? InterfaceText.line("librarySortState.titleFragment.ascending", "\(field.title) Ascending")
+            // Translators: The sort in a Library window's title: a sort field and its direction, descending. %@ is the sort field's name, such as Title or Date Added.
+            : InterfaceText.line("librarySortState.titleFragment.descending", "\(field.title) Descending")
     }
 
     /// Whether the Sort menu checks `candidate`: only the field shown is.
@@ -277,7 +289,11 @@ extension LibrarySortState {
     /// does: "Sort Descending" while ascending, "Sort Ascending" while
     /// descending.
     var directionCommandTitle: String {
-        isAscending ? "Sort Descending" : "Sort Ascending"
+        isAscending
+            // Translators: Title of the Sort menu's command that reverses the sort, while the books are sorted ascending. It switches them to descending.
+            ? InterfaceText.line("librarySortState.directionTitle.descending", "Sort Descending")
+            // Translators: Title of the Sort menu's command that reverses the sort, while the books are sorted descending. It switches them to ascending.
+            : InterfaceText.line("librarySortState.directionTitle.ascending", "Sort Ascending")
     }
 
     /// Whether the direction command can be chosen: not in manual order.
@@ -287,39 +303,49 @@ extension LibrarySortState {
 
     /// Why manual order offers no direction: the direction command's hint,
     /// and the view editor's Order pop-up's, while it is dimmed.
-    static let manualOrderHasNoDirection = "Manual order has no direction"
+    nonisolated static var manualOrderHasNoDirection: String {
+        // Translators: Hint of the Sort menu's direction command, and of the library view editor's order pop-up, while the books are in manual order, which has no ascending or descending.
+        InterfaceText.line("librarySortState.manualOrderHasNoDirection", "Manual order has no direction")
+    }
 
     /// The direction command's hint, which VoiceOver speaks and the pointer
     /// shows as a tooltip. In manual order it says why the command is off.
     var directionCommandHint: String {
-        hasDirection ? "Reverses the order of the books" : Self.manualOrderHasNoDirection
+        hasDirection
+            // Translators: Hint of the Sort menu's direction command: it reverses the order of the books shown.
+            ? InterfaceText.line("librarySortState.directionCommandHint", "Reverses the order of the books")
+            : Self.manualOrderHasNoDirection
     }
 
     /// The Sort button's spoken label: "Sort books by Title, ascending", or
     /// "Sort books by Manual Order".
     var menuAccessibilityLabel: String {
-        "Sort books by \(spokenSort)"
+        // Translators: Spoken label of the Sort button. %@ is the current sort, such as "Title, ascending" or "Manual Order".
+        InterfaceText.line("common.sortBooksByValue", "Sort books by \(spokenSort)")
     }
 
     /// What VoiceOver says when the user changes the sort: "Sorted by
     /// Author, descending", or "Sorted by Manual Order".
     var changeAnnouncement: String {
-        "Sorted by \(spokenSort)"
+        // Translators: VoiceOver announcement after the sort changes. %@ is the new sort, such as "Author, descending" or "Manual Order".
+        InterfaceText.line("common.sortedByValue", "Sorted by \(spokenSort)")
     }
 
     /// What VoiceOver says when the user applies this sort to every
     /// subfolder: "All subfolders now sorted by Title, ascending".
     var subfolderAnnouncement: String {
-        "All subfolders now sorted by \(spokenSort)"
+        // Translators: VoiceOver announcement after the sort is applied to every subfolder. %@ is the sort, such as "Title, ascending".
+        InterfaceText.line("librarySortState.subfolderAnnouncement", "All subfolders now sorted by \(spokenSort)")
     }
 
     /// The books in this sort's order: the one comparator every library list
     /// uses. Manual order is always ascending, because it has no direction.
     /// File sizes come from `fileSizes`, which `LibraryViewModel.sortedBooks`
     /// takes from sizes measured once per book and kept until its file
-    /// changes (`LibraryListCache`), never once per comparison.
-    func sorted(_ books: [Book], fileSizes: [UUID: Int] = [:]) -> [Book] {
-        LibraryBookSorter.sorted(books, by: field, ascending: isAscending, fileSizes: fileSizes)
+    /// changes (`LibraryListCache`), never once per comparison. Titles are
+    /// read as `articles`, the Leading articles setting, says.
+    func sorted(_ books: [Book], fileSizes: [UUID: Int] = [:], articles: LeadingArticles = .partOfTitle) -> [Book] {
+        LibraryBookSorter.sorted(books, by: field, ascending: isAscending, fileSizes: fileSizes, articles: articles)
     }
 }
 

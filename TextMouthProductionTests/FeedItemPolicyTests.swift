@@ -322,8 +322,7 @@ final class FeedItemPolicyTests: XCTestCase {
         // start moves nothing.
         FeedSettings.itemsPreference.write(.everyListedDownloadsByHand, to: world.preferences)
         FeedSettings.keepEntriesPreference.write(3, to: world.preferences)
-        let next = FeedCenter(environment: world.environment)
-        addTeardownBlock { await FeedTestWorld.finish(next) }
+        let next = world.engine(self, on: world.environment)
         await next.start(library: world.library)?.value
         XCTAssertEqual(next.settings.itemPolicy, FeedItemPolicy(choice: .everyListedDownloadsByHand, newestCount: 5))
         XCTAssertNil(next.store.record(of: users.finishIt.feed.id)?.feed.itemPolicyOverride)

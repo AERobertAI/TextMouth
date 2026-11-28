@@ -305,6 +305,20 @@ write_version() {
   } < "$input" > "$output"
 }
 
+# regenerate_project: regenerates TextMouth.xcodeproj as `make generate` does.
+# That is Scripts/agents/regenerate-project.py, which puts back the order in
+# which xcodegen deals out the copy-files phases, so that a version change
+# shows only the version's lines. A tree without that script (as the selftest's
+# sandbox) gets plain `xcodegen generate`.
+regenerate_project() {
+  local regenerator="$ROOT/Scripts/agents/regenerate-project.py"
+  if [[ -f $regenerator ]]; then
+    (cd "$ROOT" && python3 -I -B "$regenerator")
+  else
+    (cd "$ROOT" && xcodegen generate)
+  fi
+}
+
 # set_version <version>: the script's work. It checks <version> against the
 # one in project.yml, rewrites that one setting, regenerates the project, and
 # says what is left to do by hand (commit it, and add the changelog section).
@@ -358,7 +372,7 @@ set_version() {
   # If xcodegen fails, put project.yml back, so that it never claims a version
   # the project does not carry.
   say "Regenerating the Xcode project..."
-  if ! (cd "$ROOT" && xcodegen generate); then
+  if ! regenerate_project; then
     if cp -p "$BACKUP_FILE" "$PROJECT_YML"; then
       die 1 "xcodegen failed, so project.yml is back at version $current. If TextMouth.xcodeproj changed, run make generate."
     fi
@@ -873,6 +887,39 @@ xcodegen_cases() {
   expect_unchanged
   expect_calls 0
   end_case
+
+  begin_case "regenerates through Scripts/agents/regenerate-project.py when the tree has it, not with xcodegen directly" "$nine"
+  write_regenerator_stand_in
+  run_script -- 0.10.0
+  expect_status 0
+  expect_report "New version: 0.10.0"
+  expect_calls 1
+  expect_call "cwd=$sandbox args=regenerate-project"
+  end_case
+
+  begin_case "puts project.yml back when that script fails" "$nine"
+  write_regenerator_stand_in
+  run_script STUB_STATUS=1 -- 0.10.0
+  expect_status 1
+  expect_report "xcodegen failed, so project.yml is back at version 0.9.0"
+  expect_unchanged
+  expect_calls 1
+  end_case
+}
+
+# write_regenerator_stand_in: puts a stand-in for Scripts/agents/regenerate-project.py
+# in the case's sandbox. Like the stand-in xcodegen it records the folder it ran
+# in, and exits with STUB_STATUS (default 0).
+write_regenerator_stand_in() {
+  mkdir -p "$sandbox/Scripts/agents"
+  cat > "$sandbox/Scripts/agents/regenerate-project.py" <<'STUB'
+# Stand-in regenerate-project.py for set-version.sh --selftest.
+import os
+import sys
+with open(os.environ["STUB_LOG"], "a") as log:
+    log.write("cwd=%s args=regenerate-project\n" % os.getcwd())
+sys.exit(int(os.environ.get("STUB_STATUS", "0")))
+STUB
 }
 
 # bump_case <flag> <from> <to>: a case in which <flag> (--patch or --minor)

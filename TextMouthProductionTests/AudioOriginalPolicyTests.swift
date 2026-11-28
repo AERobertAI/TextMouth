@@ -419,12 +419,11 @@ final class AudioOriginalPolicyTests: XCTestCase {
         ])
         XCTAssertEqual(
             AudioEditingSettingsWording.explanation(.deleteAfter(days: 1)),
-            "Each recording and edited audiobook keeps its original audio for 1 day after it was saved or last "
-                + "edited; then the original is deleted."
+            "Originals are kept for 1 day after the book was saved or last edited, then deleted."
         )
         XCTAssertEqual(
             AudioEditingSettingsWording.explanation(.delete),
-            "No original audio is kept: edits change a book's audio in place, and saved edits can't be undone."
+            "No original is kept: edits change the audio in place, and saved edits can't be undone."
         )
         let model = AudioEditingSettingsModel(store: store)
         var changes = 0

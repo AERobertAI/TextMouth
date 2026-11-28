@@ -253,44 +253,34 @@ struct SpeechRefusalReport: Equatable, Sendable {
         typealias Words = SpeechRefusalWording
         var lines = [Words.heading, Words.summary, ""]
 
-        lines.append("Where")
-        lines.append("Book: \(bookTitle) (\(bookFormat))")
+        lines.append(Words.whereHeading)
+        lines.append(Words.book(title: bookTitle, format: bookFormat))
         if !position.isEmpty {
-            lines.append("Position: \(position)")
+            lines.append(Words.position(position))
         }
         lines.append(Words.chapter(index: chapterIndex, of: chapterCount, title: chapterTitle))
-        lines.append("Speech stopped at character \(chapterOffset) of \(chapterLength) in the chapter.")
-        lines.append(
-            "In the spoken text, whose offsets the speech log gives: speech stopped at character \(refusal.offset); "
-                + "the refused text runs from character \(refusal.refusedRange.lowerBound) "
-                + "to \(refusal.refusedRange.upperBound)."
-        )
-        lines.append("Refused here: \(CountWording.phrase(timesRefusedHere, singular: "time", plural: "times")) while this window has been open.")
-        lines.append("Time: \(Words.time(time))")
+        lines.append(Words.stoppedInChapter(offset: chapterOffset, of: chapterLength))
+        lines.append(Words.stoppedInSpokenText(offset: refusal.offset, refused: refusal.refusedRange))
+        lines.append(Words.refusedHere(times: timesRefusedHere))
+        lines.append(Words.timeLine(time))
         lines.append("")
 
-        lines.append(
-            "The passage as the book has it, characters \(bookPassage.range.lowerBound) "
-                + "to \(bookPassage.range.upperBound) of chapter \(chapterIndex + 1):"
-        )
+        lines.append(Words.bookPassageHeading(range: bookPassage.range, chapterNumber: chapterIndex + 1))
         lines += Words.passageLines(bookPassage)
         lines.append("")
 
-        lines.append(
-            "The text handed to the speech engine, after the substitutions and the markup guard, "
-                + "characters \(spokenPassage.range.lowerBound) to \(spokenPassage.range.upperBound) of the spoken text:"
-        )
+        lines.append(Words.spokenPassageHeading(range: spokenPassage.range))
         lines += Words.passageLines(spokenPassage)
         lines.append(Words.markupGuard(strictlyWithin: refusal.strictlyGuardedRange))
         lines.append("")
 
-        lines.append("Voice and speed")
+        lines.append(Words.voiceAndSpeedHeading)
         lines.append(Words.voice(refusal.voice))
         lines.append(Words.speed(of: refusal))
         lines.append("")
 
-        lines.append("This Mac")
-        lines.append("macOS: \(systemVersion)")
+        lines.append(Words.deviceHeading(onPhone: Words.runsOnPhone))
+        lines.append(Words.systemLine(version: systemVersion, onPhone: Words.runsOnPhone))
         lines.append(Words.build(build))
         lines.append("")
 
@@ -310,50 +300,187 @@ struct SpeechRefusalReport: Equatable, Sendable {
 /// Every word of the report of a refusal and of what goes with it: the
 /// sheet's heading, buttons, and labels, and what VoiceOver hears, each
 /// defined once for the screen, VoiceOver, a braille display, and the tests.
+///
+/// A character offset, a chapter's number, and the number of a chapter in
+/// the logs are written as `String(number)`: each names a place that the
+/// speech log gives by the same digits, so it is never grouped ("1,204")
+/// and always matches the log. The speech log's own lines stay as the log
+/// wrote them, English.
 enum SpeechRefusalWording {
     /// The sheet's heading, and the report's first line.
-    static let heading = "Speech Stopped"
+    static var heading: String {
+        // Translators: Heading of the sheet that reports speech stopped because the speech engine refused a passage, and the first line of its report.
+        InterfaceText.line("speechRefusal.heading", "Speech Stopped")
+    }
 
-    /// What happened, in one plain sentence, and what Play does now.
-    static let summary = "The Mac's speech engine refused to speak the text here, twice, so speech stopped. "
-        + "Play tries again from the same place."
+    /// What happened, in one plain sentence, and what Play does now. It names
+    /// no device, so one sentence serves the Mac and the iPhone: the report's
+    /// own device heading says which ("This Mac", "This iPhone").
+    static var summary: String {
+        // Translators: Summary under the heading of the report of a refusal, on the Mac and the iPhone: what happened, and that Play tries again.
+        InterfaceText.line("speechRefusal.summary", "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.")
+    }
+
+    /// Whether this build is the iPhone app, which words the report's device
+    /// lines for the iPhone (the spec, "Words that say Mac"). A parameter of
+    /// the functions below, so that a test on the Mac reaches both.
+    static var runsOnPhone: Bool {
+        #if os(iOS)
+        true
+        #else
+        false
+        #endif
+    }
+
+    /// The heading of the report's lines about the device it ran on.
+    static func deviceHeading(onPhone: Bool) -> String {
+        if onPhone {
+            // Translators: Heading of the report's lines about the device it ran on, on the iPhone.
+            return InterfaceText.line("speechRefusal.deviceHeading.iphone", "This iPhone")
+        }
+        // Translators: Heading of the report's lines about the device it ran on, on the Mac.
+        return InterfaceText.line("speechRefusal.deviceHeading.mac", "This Mac")
+    }
+
+    /// The report's line naming the system and its version: "macOS: ..." on
+    /// the Mac, "iOS: ..." on the iPhone.
+    static func systemLine(version: String, onPhone: Bool) -> String {
+        let system = onPhone ? "iOS" : "macOS" // l10n: no (the operating system's own name)
+        return SentenceWording.labelled(system, version)
+    }
 
     /// What VoiceOver hears at the stop when the book's window is not in
     /// front, where the sheet cannot speak for itself: another window or
     /// app is, or another sheet is over the book, or the report is already
     /// open there.
-    static let announcement = "Speech stopped: the speech engine refused this passage. Details are in the book's window."
+    static var announcement: String {
+        // Translators: Announcement when speech stopped because the speech engine refused a passage and the book's window is not in front, so its report sheet cannot speak.
+        InterfaceText.line("speechRefusal.announcement", "Speech stopped: the speech engine refused this passage. Details are in the book's window.")
+    }
 
     /// The spoken label of the text area holding the whole report.
-    static let detailsLabel = "Details"
+    static var detailsLabel: String {
+        // Translators: VoiceOver label of the text area holding the whole report of a speech refusal.
+        InterfaceText.line("speechRefusal.detailsLabel", "Details")
+    }
 
     /// The button that copies the whole report, and what it does.
-    static let copyTitle = "Copy Details"
-    static let copyHint = "Copies the whole report as plain text, to paste where it helps find the cause"
+    static var copyTitle: String {
+        // Translators: Title of the button of the speech refusal report that copies the whole report.
+        InterfaceText.line("speechRefusal.copyTitle", "Copy Details")
+    }
+    static var copyHint: String {
+        // Translators: VoiceOver hint of the Copy Details button of the speech refusal report.
+        InterfaceText.line("speechRefusal.copyHint", "Copies the whole report as plain text")
+    }
 
     /// What VoiceOver hears once Copy Details has copied the report, and
     /// should the pasteboard refuse it.
-    static let copiedAnnouncement = "Details copied"
-    static let notCopiedAnnouncement = "The details could not be copied"
+    static var copiedAnnouncement: String {
+        // Translators: Announcement after Copy Details copied the report of a speech refusal.
+        InterfaceText.line("speechRefusal.copiedAnnouncement", "Details copied")
+    }
+    static var notCopiedAnnouncement: String {
+        // Translators: Announcement when Copy Details could not copy the report of a speech refusal to the pasteboard.
+        InterfaceText.line("speechRefusal.notCopiedAnnouncement", "The details could not be copied")
+    }
 
     /// The button that closes the sheet, which Return and Escape press, and
     /// what it does.
-    static let closeTitle = "Close"
-    static let closeHint = "Closes the report; Play tries the passage again"
+    static var closeTitle: String {
+        // Translators: Title of the button that closes a sheet, such as the speech refusal report.
+        InterfaceText.line("common.close", "Close")
+    }
+    static var closeHint: String {
+        // Translators: VoiceOver hint of the Close button of the speech refusal report.
+        InterfaceText.line("speechRefusal.closeHint", "Afterwards, Play tries the passage again")
+    }
+
+    // MARK: Where
+
+    /// The heading of the report's lines about where speech stopped.
+    static var whereHeading: String {
+        // Translators: Heading of the lines of a speech refusal report that say where in the book speech stopped.
+        InterfaceText.line("speechRefusal.whereHeading", "Where")
+    }
+
+    /// The book's line: "Book: Moby Dick (EPUB)".
+    static func book(title: String, format: String) -> String {
+        // Translators: A line of the speech refusal report naming the book. %1$@ is its title and %2$@ its format, such as EPUB.
+        InterfaceText.line("speechRefusal.book", "Book: \(title) (\(format))")
+    }
+
+    /// The reader's position in the book, as the book's own position text
+    /// says it: "Position: Page 12".
+    static func position(_ position: String) -> String {
+        SentenceWording.labelled(
+            // Translators: Label before the reader's position in the book, in a line of the speech refusal report.
+            InterfaceText.line("common.position", "Position"),
+            position)
+    }
 
     /// The chapter speech stopped in, the one at `index` counting from 0:
     /// "Chapter 3 of 12 (chapter=2 in the logs): The Battle". The logs count
     /// chapters from 0, the listener from 1.
     static func chapter(index: Int, of count: Int, title: String?) -> String {
-        let place = "Chapter \(index + 1) of \(count) (chapter=\(index) in the logs)"
+        // Translators: A line of the speech refusal report naming the chapter speech stopped in. %1$@ is the chapter's number counting from 1, %2$@ the number of chapters, and %3$@ the chapter's number counting from 0 as the debug log writes it, each written without digit grouping. Keep "chapter=" as it is: it is the log's own tag.
+        let place = InterfaceText.line("speechRefusal.chapter", "Chapter \(String(index + 1)) of \(String(count)) (chapter=\(String(index)) in the logs)")
         guard let title, !title.isEmpty else { return place }
-        return "\(place): \(title)"
+        return SentenceWording.labelled(place, title)
+    }
+
+    /// Where speech stopped, in the chapter's text as the book has it: "Speech
+    /// stopped at character 1204 of 5000 in the chapter."
+    static func stoppedInChapter(offset: Int, of length: Int) -> String {
+        // Translators: A line of the speech refusal report. %1$@ is the character offset where speech stopped and %2$@ the chapter's length in characters, each written without digit grouping like the speech log's offsets.
+        InterfaceText.line("speechRefusal.stoppedInChapter", "Speech stopped at character \(String(offset)) of \(String(length)) in the chapter.")
+    }
+
+    /// Where speech stopped in the spoken text, and what range of it the
+    /// engine refused.
+    static func stoppedInSpokenText(offset: Int, refused: Range<Int>) -> String {
+        // Translators: A line of the speech refusal report. %1$@ is the character offset in the spoken text where speech stopped; %2$@ and %3$@ are where the refused text begins and ends, each written without digit grouping like the speech log's offsets.
+        InterfaceText.line("speechRefusal.stoppedInSpokenText", "In the spoken text, whose offsets the speech log gives: speech stopped at character \(String(offset)); the refused text runs from character \(String(refused.lowerBound)) to \(String(refused.upperBound)).")
+    }
+
+    /// How many times the engine refused text since the window opened.
+    static func refusedHere(times: Int) -> String {
+        // Translators: A line of the speech refusal report. %lld is how many times the speech engine refused text while the book's window has been open.
+        InterfaceText.line("speechRefusal.refusedHere", "Refused here: \(number: times) times while this window has been open.")
     }
 
     /// A time, as the log files write theirs, so that the report's time and
     /// the log's lines can be read side by side: "2026-10-09 22:42:05 +0000".
     static func time(_ date: Date) -> String {
-        "\(date)"
+        "\(date)" // l10n: no (a time as the log files write it)
+    }
+
+    /// The report's time line: "Time: 2026-10-09 22:42:05 +0000".
+    static func timeLine(_ date: Date) -> String {
+        SentenceWording.labelled(
+            // Translators: Label before the time of the refusal, in a line of the speech refusal report; the time is written as the log files write it.
+            InterfaceText.line("common.time", "Time"),
+            time(date))
+    }
+
+    // MARK: Passages
+
+    /// The heading above the passage as the book has it.
+    static func bookPassageHeading(range: Range<Int>, chapterNumber: Int) -> String {
+        // Translators: A line of the speech refusal report that introduces the passage as the book has it. %1$@ and %2$@ are the first and last character offsets of the passage, and %3$@ is the chapter's number, each written without digit grouping.
+        InterfaceText.line("speechRefusal.bookPassageHeading", "The passage as the book has it, characters \(String(range.lowerBound)) to \(String(range.upperBound)) of chapter \(String(chapterNumber)):")
+    }
+
+    /// The heading above the passage as the speech engine was handed it.
+    static func spokenPassageHeading(range: Range<Int>) -> String {
+        // Translators: A line of the speech refusal report that introduces the text the speech engine was handed, after the user's substitution rules and the markup guard. %1$@ and %2$@ are the first and last character offsets in the spoken text, written without digit grouping.
+        InterfaceText.line("speechRefusal.spokenPassageHeading", "The text handed to the speech engine, after the substitutions and the markup guard, characters \(String(range.lowerBound)) to \(String(range.upperBound)) of the spoken text:")
+    }
+
+    /// The heading of the lines about the voice and its speed.
+    static var voiceAndSpeedHeading: String {
+        // Translators: Heading of the lines of a speech refusal report about the voice and the speaking speed.
+        InterfaceText.line("speechRefusal.voiceAndSpeedHeading", "Voice and speed")
     }
 
     /// A passage's lines: its text, with where the refused text begins and
@@ -364,20 +491,24 @@ enum SpeechRefusalWording {
         var lines: [String] = []
         let refused = passage.refusedRange
         if refused.lowerBound < passage.range.lowerBound {
-            lines.append("The refused text began before this passage, at character \(refused.lowerBound).")
+            // Translators: A line of the speech refusal report: the refused text began before the passage shown. %@ is the character offset where it began, written without digit grouping.
+            lines.append(InterfaceText.line("speechRefusal.passageLines.before", "The refused text began before this passage, at character \(String(refused.lowerBound))."))
         } else {
             if !passage.before.isEmpty {
                 lines.append(passage.before)
             }
-            lines.append("The refused text begins here, at character \(refused.lowerBound).")
+            // Translators: A line of the speech refusal report, just before the refused text. %@ is the character offset where it begins, written without digit grouping.
+            lines.append(InterfaceText.line("speechRefusal.passageLines.begins", "The refused text begins here, at character \(String(refused.lowerBound))."))
         }
         if !passage.refused.isEmpty {
             lines.append(passage.refused)
         }
         if refused.upperBound > passage.range.upperBound {
-            lines.append("The refused text goes on past this passage, to character \(refused.upperBound).")
+            // Translators: A line of the speech refusal report: the refused text goes on past the passage shown. %@ is the character offset where it ends, written without digit grouping.
+            lines.append(InterfaceText.line("speechRefusal.passageLines.goes", "The refused text goes on past this passage, to character \(String(refused.upperBound))."))
         } else {
-            lines.append("The refused text ends here, at character \(refused.upperBound).")
+            // Translators: A line of the speech refusal report, just after the refused text. %@ is the character offset where it ends, written without digit grouping.
+            lines.append(InterfaceText.line("speechRefusal.passageLines.ends", "The refused text ends here, at character \(String(refused.upperBound))."))
             if !passage.after.isEmpty {
                 lines.append(passage.after)
             }
@@ -390,17 +521,24 @@ enum SpeechRefusalWording {
     /// refused once, or else only the brackets of tag-shaped text.
     static func markupGuard(strictlyWithin strict: Range<Int>?) -> String {
         guard let strict else {
-            return "Markup guard: the usual one, which silences only the brackets of tag-shaped text."
+            // Translators: A line of the speech refusal report: the markup guard that was used silences only the angle brackets that make tags.
+            return InterfaceText.line("speechRefusal.markupGuard.silences", "Markup guard: the usual one, which silences only the brackets of tag-shaped text.")
         }
-        return "Markup guard: strict, every angle bracket silent, from character \(strict.lowerBound) "
-            + "to \(strict.upperBound) of the spoken text."
+        // Translators: A line of the speech refusal report: the markup guard silenced every angle bracket between two characters. %1$@ and %2$@ are the first and last character offsets in the spoken text, written without digit grouping.
+        return InterfaceText.line("speechRefusal.markupGuard.character", "Markup guard: strict, every angle bracket silent, from character \(String(strict.lowerBound)) to \(String(strict.upperBound)) of the spoken text.")
     }
+
+    // MARK: Voice, Speed, and Build
 
     /// The voice: "Voice: Samantha (com.apple.voice.compact.en-US.Samantha),
     /// en-US, Standard quality".
     static func voice(_ voice: SpeechRefusal.Voice?) -> String {
-        guard let voice else { return "Voice: the system's default voice" }
-        return "Voice: \(voice.name) (\(voice.identifier)), \(voice.language), \(voice.quality) quality"
+        guard let voice else {
+            // Translators: A line of the speech refusal report: no voice was chosen, so the system's default voice spoke.
+            return InterfaceText.line("speechRefusal.voice.default", "Voice: the system's default voice")
+        }
+        // Translators: A line of the speech refusal report naming the voice. %1$@ is its name, %2$@ its system identifier, %3$@ its language code such as en-US, and %4$@ its quality such as Standard, Enhanced, or Premium.
+        return InterfaceText.line("speechRefusal.voice.quality", "Voice: \(voice.name) (\(voice.identifier)), \(voice.language), \(voice.quality) quality")
     }
 
     /// The speed, and the rate, pitch, and volume the refused utterance was
@@ -408,31 +546,58 @@ enum SpeechRefusalWording {
     /// 1.00, volume 1.00".
     static func speed(of refusal: SpeechRefusal) -> String {
         let wordsPerMinute = Int(refusal.wordsPerMinute.rounded())
-        return "Speed: \(wordsPerMinute) words per minute; "
-            + String(format: "rate %.2f, pitch %.2f, volume %.2f", refusal.rate, refusal.pitchMultiplier, refusal.volume)
+        let rate = twoDecimals(refusal.rate)
+        let pitch = twoDecimals(refusal.pitchMultiplier)
+        let volume = twoDecimals(refusal.volume)
+        // Translators: A line of the speech refusal report. %1$lld is the speaking speed in words per minute; %2$@, %3$@, and %4$@ are the engine's rate, pitch multiplier, and volume, each written with two decimals.
+        return InterfaceText.line("speechRefusal.speed", "Speed: \(number: wordsPerMinute) words per minute; rate \(rate), pitch \(pitch), volume \(volume)")
+    }
+
+    /// `value` with two decimals in the interface language: "0.43".
+    private static func twoDecimals(_ value: some BinaryFloatingPoint) -> String {
+        Double(value).formatted(.number.precision(.fractionLength(2)).locale(InterfaceLanguage.current.locale))
     }
 
     /// TextMouth's build, with the details the app's Info.plist holds:
     /// "TextMouth: version 1.0, build 7, Debug, commit abc1234, built
     /// 2026-10-09T17:00:00Z". A detail the build did not record is left out.
     static func build(_ build: BuildIdentity) -> String {
-        let known = { (value: String) in value != "unknown" && !value.isEmpty }
+        let known = { (value: String) in value != "unknown" && !value.isEmpty } // l10n: no (the build record's own marker for a missing detail)
         var details: [String] = []
-        if known(build.version) { details.append("version \(build.version)") }
-        if known(build.buildNumber) { details.append("build \(build.buildNumber)") }
-        if known(build.configuration) { details.append(build.configuration) }
-        if known(build.gitCommit) { details.append("commit \(build.gitCommit)") }
-        if known(build.buildDate) { details.append("built \(build.buildDate)") }
-        guard !details.isEmpty else { return "TextMouth: no build details recorded" }
-        return "TextMouth: " + details.joined(separator: ", ")
+        if known(build.version) {
+            // Translators: A detail of the build line of the speech refusal report. %@ is the app's version, such as 0.5.3.
+            details.append(InterfaceText.line("speechRefusal.build.version", "version \(build.version)"))
+        }
+        if known(build.buildNumber) {
+            // Translators: A detail of the build line of the speech refusal report. %@ is the app's build number.
+            details.append(InterfaceText.line("speechRefusal.build.number", "build \(build.buildNumber)"))
+        }
+        if known(build.configuration) { details.append(build.configuration) } // l10n: no (a build configuration's own name, such as Debug)
+        if known(build.gitCommit) {
+            // Translators: A detail of the build line of the speech refusal report. %@ is the abbreviated identifier of the source commit the app was built from.
+            details.append(InterfaceText.line("speechRefusal.build.commit", "commit \(build.gitCommit)"))
+        }
+        if known(build.buildDate) {
+            // Translators: A detail of the build line of the speech refusal report. %@ is the date and time the app was built, as written in its Info.plist.
+            details.append(InterfaceText.line("speechRefusal.build.built", "built \(build.buildDate)"))
+        }
+        guard !details.isEmpty else {
+            // Translators: A line of the speech refusal report: the app recorded nothing about how it was built.
+            return InterfaceText.line("speechRefusal.build.recorded", "TextMouth: no build details recorded")
+        }
+        return SentenceWording.labelled("TextMouth", SentenceWording.commaJoined(details)) // l10n: no (the app's name)
     }
 
     /// The speech log's lines, as the log file holds them, under a line
     /// saying how many there are and that they hold no words of the book.
     static func logLines(_ lines: [RecentTransitionLines.Line]) -> [String] {
-        guard !lines.isEmpty else { return ["Speech log: no lines."] }
-        let count = CountWording.phrase(lines.count, singular: "line", plural: "lines")
-        return ["Speech log, its last \(count), offsets and lengths only:"] + lines.map(\.logged)
+        guard !lines.isEmpty else {
+            // Translators: A line of the speech refusal report: the speech log has no lines to show.
+            return [InterfaceText.line("speechRefusal.logLines.speechNo", "Speech log: no lines.")]
+        }
+        // Translators: A line of the speech refusal report, above the speech log's own lines (which stay English, as the log wrote them). %lld is how many lines follow.
+        let heading = InterfaceText.line("speechRefusal.logLines.offsets", "Speech log, its last \(number: lines.count) lines, offsets and lengths only:")
+        return [heading] + lines.map(\.logged)
     }
 }
 

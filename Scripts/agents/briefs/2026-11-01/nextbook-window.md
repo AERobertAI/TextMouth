@@ -33,8 +33,8 @@ The Mac has 8 GB of memory and froze under agents' builds on October 31. The orc
 
 1. Commit your work. A new test file needs `xcodegen generate` (`/opt/homebrew/bin/xcodegen`) and the regenerated `TextMouth.xcodeproj/project.pbxproj` committed.
 2. Queue it, naming test classes and `Scripts/test/run-area.py` areas (`python3 -I Scripts/test/run-area.py --list` lists the areas):
-   `python3 -I /Users/roberteggleston/programming/ai/claude/swift/TextMouth/Scripts/agents/build-train.py request --agent nextbook --branch feature/nextbook-window --classes ClassA,ClassB --areas playback-end,reading-list,windows`
-3. Wait with `python3 -I .claude/skills/agent-bbs/scripts/bbs.py watch nextbook --timeout 1800`. Your result is posted to you, with a topic beginning "train". It is also written to `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/train/results/nextbook.md`, which names each failure and the log.
+   `python3 -I <main checkout>/Scripts/agents/build-train.py request --agent nextbook --branch feature/nextbook-window --classes ClassA,ClassB --areas playback-end,reading-list,windows`
+3. Wait with `python3 -I .claude/skills/agent-bbs/scripts/bbs.py watch nextbook --timeout 1800`. Your result is posted to you, with a topic beginning "train". It is also written to `<main checkout>/build/orchestrator/train/results/nextbook.md`, which names each failure and the log.
 4. Batch your work, so each train tests as much as possible. While a train runs, write the next commit's code and tests.
 
 ## What happens today

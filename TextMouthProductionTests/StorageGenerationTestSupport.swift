@@ -38,6 +38,14 @@ extension XCTestCase {
         return scratch.appendingPathComponent("Moved Data", isDirectory: true)
     }
 
+    /// A gate a background thread waits at until the test signals it,
+    /// opened when the test ends so no thread is left waiting.
+    func makeGate() -> DispatchSemaphore {
+        let gate = DispatchSemaphore(value: 0)
+        addTeardownBlock { gate.signal() }
+        return gate
+    }
+
     /// A data directory of the test's own, with its Library folder, made the
     /// current one until the test ends (`makeDataDirectoryMoveDestination`),
     /// when its gate is opened too, in case the test closed it. `label`

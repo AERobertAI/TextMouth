@@ -1,6 +1,6 @@
 # Fix `fixreplace`: Replace Existing keeps a braille book's chosen file characters (review finding 3)
 
-Team `braillecodes`, lead `braillecodes-lead`. Slug `braillecodes-fixreplace`, branch `braillecodes/fixreplace` from `team/braillecodes` (3b9bbee3 or later). Read `Scripts/agents/briefs/2026-10-30/teams-common.md`, "The worker's part", first. The outside review is `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/oct30/review-braillecodes.md`: read its finding 3 (lines 42-53).
+Team `braillecodes`, lead `braillecodes-lead`. Slug `braillecodes-fixreplace`, branch `braillecodes/fixreplace` from `team/braillecodes` (3b9bbee3 or later). Read `Scripts/agents/briefs/2026-10-30/teams-common.md`, "The worker's part", first. The outside review is `<main checkout>/build/orchestrator/oct30/review-braillecodes.md`: read its finding 3 (lines 42-53).
 
 **Do not build.** The disk is nearly full; the lead builds the whole fix round once. Write the code and test carefully (they must compile the first time), run `make lint-tests LINT_BASE=team/braillecodes`, commit, post `done:`, and report.
 

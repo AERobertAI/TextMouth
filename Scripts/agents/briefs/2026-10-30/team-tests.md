@@ -9,7 +9,7 @@ The user asked tonight to "improve the tests". The suite has 8777 tests, 78 skip
 - **Untested code:** production types that no test names.
 
 ## Phase A: find (no build)
-Do it yourself, or with up to two read-only reviewers (`model: "opus"`, no worktree, `description: "tests audit <part>"`) if the reading is large; their prompts must say that they change nothing, never read, copy, or write anything under `~/.TextMouth`, and write their report to `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/oct30/tests-audit-<part>.md`.
+Do it yourself, or with up to two read-only reviewers (`model: "opus"`, no worktree, `description: "tests audit <part>"`) if the reading is large; their prompts must say that they change nothing, never read, copy, or write anything under `~/.TextMouth`, and write their report to `<main checkout>/build/orchestrator/oct30/tests-audit-<part>.md`.
 1. **The load-sensitive tests:** for each, why it is sensitive (a fixed sleep, a wall-clock deadline, a real timer, a race with a background queue, the machine's load in a performance test), and the deterministic form (an injected clock, waiting on the condition itself, an expectation fulfilled by the code under test, a test seam already in the code).
 2. **The skips:** list every `XCTSkip`/`throw XCTSkip`/skip helper with its condition, and which of the 78 are skipped on this Mac in a normal run (the last full suite's log is `build/merge-logs/main-after-encoding-choice-merge.log` in the main checkout; read it by grep). For each always-skipped test, say whether it can run, and how.
 3. **Vacuous tests:** a scan for the patterns above (`grep -E` over `TextMouthProductionTests` and `TextMouthTests`), each hit checked by reading it.

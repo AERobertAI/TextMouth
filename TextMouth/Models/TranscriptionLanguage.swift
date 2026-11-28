@@ -78,6 +78,6 @@ enum TranscriptionLanguage {
     /// messages a transcription gives; the identifier itself when the
     /// system has no name for it.
     static func name(of identifier: String) -> String {
-        Locale.current.localizedString(forIdentifier: identifier) ?? identifier
+        InterfaceLanguage.current.locale.localizedString(forIdentifier: identifier) ?? identifier
     }
 }

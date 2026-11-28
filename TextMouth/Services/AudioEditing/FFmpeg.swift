@@ -1,11 +1,13 @@
 import Foundation
 import os
 
-/// An ffmpeg executable installed on this Mac (FR04), which TextMouth runs,
-/// when the user's setting allows, for every filter ffmpeg has, and to write
-/// MP3 should the LAME encoder built into TextMouth be unavailable
-/// (`MP3Route`). TextMouth bundles nothing of ffmpeg: it only looks for one,
-/// in Homebrew's and MacPorts' folders and along PATH.
+/// An ffmpeg executable installed on this Mac (FR04), which the audio editor
+/// runs, when the user's setting allows ("Use ffmpeg for filters"), for every
+/// filter ffmpeg has, and to write MP3 should the LAME encoder built into
+/// TextMouth be unavailable (`MP3Route`). It only looks for one, in
+/// Homebrew's and MacPorts' folders and along PATH. The import does not use
+/// it: it converts with the FFmpeg libraries TextMouth carries, in its own
+/// helper program (`FFmpegAudioConverter`, FMT50), which has no filters.
 ///
 /// It runs as a separate process, never on the main thread, with its
 /// standard input closed and its errors read back: a refusal becomes
@@ -23,18 +25,32 @@ struct FFmpeg: Equatable, Sendable {
 
     /// The ffmpeg found first in `locations`, then in each folder of the
     /// PATH in `environment`: an executable file named ffmpeg. Nil when there
-    /// is none. Reads only file metadata.
+    /// is none. Reads only file metadata. On iOS always nil: an app there may
+    /// start no child process, even in the Simulator, which sees the Mac's
+    /// own files.
     static func locate(
         in locations: [String] = standardLocations,
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> FFmpeg? {
-        let path = (environment["PATH"] ?? "").split(separator: ":").map { "\($0)/ffmpeg" }
+        locateProgram(named: "ffmpeg", in: locations, environment: environment).map(FFmpeg.init(executable:))
+    }
+
+    /// The first executable file (not a folder) named `name` at one of
+    /// `locations`, then in each folder of the PATH in `environment`; nil
+    /// when there is none. On iOS always nil: an app there may start no
+    /// child process, even in the Simulator, which sees the Mac's own files.
+    private static func locateProgram(named name: String, in locations: [String], environment: [String: String]) -> URL? {
+        #if os(macOS)
+        let path = (environment["PATH"] ?? "").split(separator: ":").map { "\($0)/\(name)" }
         for candidate in locations + path where FileManager.default.isExecutableFile(atPath: candidate) {
             var isFolder: ObjCBool = false
             guard FileManager.default.fileExists(atPath: candidate, isDirectory: &isFolder), !isFolder.boolValue else { continue }
-            return FFmpeg(executable: URL(fileURLWithPath: candidate))
+            return URL(fileURLWithPath: candidate)
         }
         return nil
+        #else
+        return nil
+        #endif
     }
 
     // MARK: Commands
@@ -167,6 +183,7 @@ struct FFmpeg: Equatable, Sendable {
     ///   `.ffmpegFailed` with its own words when it ends in failure, or
     ///   `CancellationError` when the task is cancelled, which stops it.
     func run(_ arguments: [String]) async throws {
+        #if os(macOS)
         let executable = self.executable
         let running = OSAllocatedUnfairLock<Int32?>(initialState: nil)
         let outcome: (status: Int32, errors: Data) = try await withTaskCancellationHandler {
@@ -203,6 +220,12 @@ struct FFmpeg: Equatable, Sendable {
         guard outcome.status == 0 else {
             throw AudioFilterError.ffmpegFailed(Self.describe(String(decoding: outcome.errors, as: UTF8.self), status: outcome.status))
         }
+        #else
+        // iOS cannot start a child process, and `FFmpeg.locate` returns nil
+        // there, so callers take their "no ffmpeg" path; this branch reports
+        // the same thing if one reaches it.
+        throw AudioFilterError.ffmpegMissing
+        #endif
     }
 
     /// What went wrong, in ffmpeg's own words from its standard error: its
@@ -220,7 +243,7 @@ struct FFmpeg: Equatable, Sendable {
                 return text
             }
             .filter { !$0.isEmpty }
-        guard !lines.isEmpty else { return "it ended with code \(status)." }
+        guard !lines.isEmpty else { return "it ended with code \(status)." } // l10n: no (a failure detail written beside ffmpeg's own English words in the message)
         let words = lines.prefix(2).joined(separator: " ")
         return words.hasSuffix(".") ? words : words + "."
     }

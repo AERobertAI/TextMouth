@@ -288,18 +288,18 @@ final class LogWriter: Sendable {
             return nil
         case (_, .fallback(let fallback)):
             return "LOG_LOCATION: writing the logs in \(thisMac), because \(fallback.logDescription(of: dataDirectory)); "
-                + "they go back to the data directory's Logs folder once it can take them"
+                + "they go back to the data directory's Logs folder once it can take them" // l10n: no (debug log text)
         case (nil, _):
             return nil
         case (.fallback?, .dataDirectory):
             return "LOG_LOCATION: writing the logs in the data directory's Logs folder again; "
-                + "the lines written while it couldn't take them are in \(thisMac)"
+                + "the lines written while it couldn't take them are in \(thisMac)" // l10n: no (debug log text)
         case (_, .dataDirectory):
             return "LOG_LOCATION: writing the logs in the data directory's Logs folder, as Storage settings ask; "
-                + "logs written before stay in \(thisMac)"
+                + "logs written before stay in \(thisMac)" // l10n: no (debug log text)
         case (_, .thisMac):
             return "LOG_LOCATION: writing the logs in \(thisMac), as Storage settings ask; "
-                + "logs written before stay where they are"
+                + "logs written before stay where they are" // l10n: no (debug log text)
         }
     }
 

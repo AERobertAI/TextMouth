@@ -58,25 +58,54 @@ enum StorageWork: Sendable, CaseIterable {
     /// The engine's rules deleting feed items' downloaded files: the
     /// after-playing sweep and the newest-N rule (`FeedCenter.removeDue`).
     case removingFeedDownloads
+    /// Removing a synced book's download from this device once its copy in
+    /// the sync folder is proven (FR46): the library's last look at the book,
+    /// its pointer written, and its own files taken away (`StoreRemoval`).
+    case removingSyncedDownloads
+
+    /// What the debug log says while a move waits for this work, in English
+    /// whatever language the interface speaks.
+    var logWaitingMessage: String {
+        switch self {
+        case .importing: return "Waiting for the current import to finish..." // l10n: no (debug log text)
+        case .audioEditing: return "Waiting for audio editing to finish..." // l10n: no (debug log text)
+        case .textExtraction: return "Waiting for text extraction to finish..." // l10n: no (debug log text)
+        case .contentAnalysis: return "Waiting for book analysis to finish..." // l10n: no (debug log text)
+        case .metadataRefresh: return "Waiting for book metadata to be read..." // l10n: no (debug log text)
+        case .savingFeeds: return "Waiting for feed records to be saved..." // l10n: no (debug log text)
+        case .removingFeedDownloads: return "Waiting for feed downloads to be deleted..." // l10n: no (debug log text)
+        case .removingSyncedDownloads: return "Waiting for a book's download to be removed..." // l10n: no (debug log text)
+        }
+    }
 
     /// What a move's status line says while it waits for this work, as the
     /// screen shows it and VoiceOver reads it.
     var waitingMessage: String {
         switch self {
         case .importing:
-            return "Waiting for the current import to finish..."
+            // Translators: Progress text while a move of the library waits for an import to finish first.
+            return InterfaceText.line("storageWork.waitingMessage.importing", "Waiting for the current import to finish...")
         case .audioEditing:
-            return "Waiting for audio editing to finish..."
+            // Translators: Progress text while a move of the library waits for audio editing to finish first.
+            return InterfaceText.line("storageWork.waitingMessage.audioEditing", "Waiting for audio editing to finish...")
         case .textExtraction:
-            return "Waiting for text extraction to finish..."
+            // Translators: Progress text while a move of the library waits for text extraction to finish first.
+            return InterfaceText.line("storageWork.waitingMessage.textExtraction", "Waiting for text extraction to finish...")
         case .contentAnalysis:
-            return "Waiting for book analysis to finish..."
+            // Translators: Progress text while a move of the library waits for the analysis of books to finish first.
+            return InterfaceText.line("storageWork.waitingMessage.contentAnalysis", "Waiting for book analysis to finish...")
         case .metadataRefresh:
-            return "Waiting for book metadata to be read..."
+            // Translators: Progress text while a move of the library waits for the reading of books' metadata to finish first.
+            return InterfaceText.line("storageWork.waitingMessage.metadataRefresh", "Waiting for book metadata to be read...")
         case .savingFeeds:
-            return "Waiting for feed records to be saved..."
+            // Translators: Progress text while a move of the library waits for the feeds' records to be saved first.
+            return InterfaceText.line("storageWork.waitingMessage.savingFeeds", "Waiting for feed records to be saved...")
         case .removingFeedDownloads:
-            return "Waiting for feed downloads to be deleted..."
+            // Translators: Progress text while a move of the library waits for the deletion of feed downloads to finish first.
+            return InterfaceText.line("storageWork.waitingMessage.removingFeedDownloads", "Waiting for feed downloads to be deleted...")
+        case .removingSyncedDownloads:
+            // Translators: Progress text while a move of the library waits for the removal of a synced book's download from this device to finish first. The book stays in iCloud Drive.
+            return InterfaceText.line("storageWork.waitingMessage.syncedDownloads","Waiting for a book's download to be removed...")
         }
     }
 }
@@ -115,13 +144,29 @@ struct StorageBusyError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch reason {
         case .movingDataDirectory:
-            return "TextMouth is already moving its data directory. Try again once that move is done."
+            return SentenceWording.joined([
+                // Translators: First sentence of why an operation was refused: the library is already being moved.
+                InterfaceText.line("storageBusyError.movingDataDirectory.already", "TextMouth is already moving its data directory."),
+                // Translators: Last sentence of why an operation was refused while the library is being moved.
+                InterfaceText.line("storageBusyError.movingDataDirectory.again", "Try again once that move is done."),
+            ])
         case .rebuildingDirectory:
-            return "TextMouth is rebuilding its data directory. Try again when that finishes."
+            return SentenceWording.joined([
+                // Translators: First sentence of why an operation was refused: the library is being rebuilt.
+                InterfaceText.line("storageBusyError.rebuildingDirectory", "TextMouth is rebuilding its data directory."),
+                // Translators: Last sentence of why an operation was refused while something else finishes.
+                InterfaceText.line("storageBusyError.tryAgainWhen", "Try again when that finishes."),
+            ])
         case .movingBooksBetweenFolders:
-            return "TextMouth is moving books between folders. Try again when that finishes."
+            return SentenceWording.joined([
+                // Translators: First sentence of why an operation was refused: books are being moved between folders.
+                InterfaceText.line("storageBusyError.movingBooksBetweenFolders", "TextMouth is moving books between folders."),
+                // Translators: Last sentence of why an operation was refused while something else finishes.
+                InterfaceText.line("storageBusyError.tryAgainWhen", "Try again when that finishes."),
+            ])
         case .switchingLibraries:
-            return "TextMouth is switching to another library and opening again on it."
+            // Translators: Why an operation was refused: TextMouth is switching to another library.
+            return InterfaceText.line("storageBusyError.switchingLibraries", "TextMouth is switching to another library and opening again on it.")
         }
     }
 }
@@ -173,9 +218,27 @@ final class StorageBoundary: @unchecked Sendable {
     /// What the operation holding new work back is doing; nil while no
     /// operation holds it.
     private var holdReason: StorageHoldReason?
+    /// Callers waiting for the operation holding new work back to release
+    /// it (`waitForRelease(after:)`), such as a retry kept until the hold
+    /// ends.
+    private var releaseWaiters: [CheckedContinuation<Void, Never>] = []
+    /// How many times an operation has let held work go, so a caller can
+    /// tell whether a release came since it looked (`releases`).
+    private var releaseCount = 0
+    /// Whether saves from outside the storage work are provisional now
+    /// (`isProvisionalSave(of:rewrite:)`): from the moment a move has made
+    /// its flushes until it releases the work.
+    private var savesAreProvisional = false
+    /// The files saved while saves were provisional, by the file's name in
+    /// the data directory, each with the save that writes it again once the
+    /// move has ended.
+    private var rewritesOwed: [String: @MainActor @Sendable () -> Void] = [:]
     /// The key of this boundary's work depth in each thread's dictionary:
     /// how deep that thread is inside work it is performing here.
     private let workDepthKey = "com.textmouth.storageWorkDepth.\(UUID().uuidString)"
+
+    /// The key of the notification `.dataDirectoryDidMove`'s `userInfo` that holds the new root's path.
+    static let movedRootKey = "root" // l10n: no (a notification's key)
 
     /// A boundary whose first generation is the data directory at `root`.
     init(root: URL) {
@@ -200,10 +263,18 @@ final class StorageBoundary: @unchecked Sendable {
         // Resolved before taking the lock: resolving reads the file system.
         let location = DataDirectoryLocation(root)
         condition.lock()
-        defer { condition.unlock() }
         earlierGenerations.append(generation)
         generation = StorageGeneration(number: generation.number + 1, root: root, location: location)
-        return generation
+        let published = generation
+        condition.unlock()
+        // Said later, on the main queue, with the lock released and outside the persistence queues' write fence this is
+        // called in (`LibraryPersistenceService.betweenWrites`), so no observer can hold either: what reads a file of the data
+        // directory by its path (the person's interface lines, FR39) reads it again at its new place.
+        let movedRoot = published.root.path
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .dataDirectoryDidMove, object: nil, userInfo: [Self.movedRootKey: movedRoot])
+        }
+        return published
     }
 
     /// The current generation and the earlier ones, read together.
@@ -394,12 +465,123 @@ final class StorageBoundary: @unchecked Sendable {
         return holdReason
     }
 
-    /// Lets the held work go on, under the generation current now.
+    /// How many times an operation has let held work go so far: what a
+    /// caller passes to `waitForRelease(after:)`, read when it decides to
+    /// wait, so a release that comes before its wait begins is not missed.
+    var releases: Int {
+        condition.lock()
+        defer { condition.unlock() }
+        return releaseCount
+    }
+
+    /// Returns once an operation has let held work go after `seen` releases
+    /// (`releases`): at once when one has already, or when no operation
+    /// holds the work now. A hold taken since that release is not waited
+    /// for, so a caller that must find the work free, as a retry kept until
+    /// an operation ends does (`PersistenceFailureCenter`), asks `heldFor`
+    /// again on the main actor, where every hold is taken, and waits again
+    /// while one is.
+    func waitForRelease(after seen: Int) async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            condition.lock()
+            guard releaseCount == seen, holdReason != nil else {
+                condition.unlock()
+                continuation.resume()
+                return
+            }
+            releaseWaiters.append(continuation)
+            condition.unlock()
+        }
+    }
+
+    /// Lets the held work go on, under the generation current now, counts
+    /// the release, and resumes every caller waiting for it, outside the lock.
     fileprivate func releaseWork() {
         condition.lock()
         holdReason = nil
+        savesAreProvisional = false
+        releaseCount += 1
+        let waiters = releaseWaiters
+        releaseWaiters.removeAll()
         condition.broadcast()
         condition.unlock()
+        for waiter in waiters {
+            waiter.resume()
+        }
+    }
+
+    // MARK: - Saves During a Move
+
+    /// Starts treating saves from outside the storage work as provisional
+    /// (`isProvisionalSave(of:rewrite:)`), until the hold is released. A
+    /// move calls this once it has made its flushes and is about to copy:
+    /// a save made earlier, while the move only waited for other work, is
+    /// in what the copy takes, so it is final. Nothing changes unless a
+    /// move holds the work.
+    @MainActor
+    func beginProvisionalSaves() {
+        condition.lock()
+        defer { condition.unlock() }
+        savesAreProvisional = holdReason == .movingDataDirectory
+    }
+
+    /// Whether a save of `file` made now is only provisional, because a
+    /// data-directory move is copying the library (`beginProvisionalSaves()`):
+    /// the save lands in the data directory being copied, which the copy may
+    /// already have passed, so the moved library could miss it. A store that
+    /// writes its file from outside the storage work (the substitution rules
+    /// from the main thread, the statistics on their own queue) asks this
+    /// when it saves. When it answers true, `rewrite` is kept, to run once
+    /// the move has ended (`rewriteFilesSavedDuringTheMove()`), and the
+    /// store writes as it would, but does not report the file saved yet,
+    /// since it is not saved where the library will be. Only the latest
+    /// `rewrite` for a file is kept.
+    ///
+    /// Only a move copies the data directory to another. Rebuild Directory
+    /// and a folder edit hold the work but write in the same directory, so a
+    /// save made during them is final. The relocation of a library found
+    /// under another name also publishes a root
+    /// (`LibraryViewModel.useRelocatedDataDirectory`), but to the same
+    /// folder, with no copy, and holds nothing.
+    /// - Parameters:
+    ///   - file: The file's name in the data directory, which the data
+    ///     directory's moving does not change: what a later save of it
+    ///     replaces, so each file is written again once.
+    ///   - rewrite: The save to make again once the move has ended, which
+    ///     writes the file as it stands then, wherever the data directory is.
+    @MainActor
+    func isProvisionalSave(of file: String, rewrite: @escaping @MainActor @Sendable () -> Void) -> Bool {
+        condition.lock()
+        defer { condition.unlock() }
+        guard savesAreProvisional else { return false }
+        rewritesOwed[file] = rewrite
+        return true
+    }
+
+    /// Makes again each save that was only provisional while a move held
+    /// the work (`isProvisionalSave(of:rewrite:)`), each once, in the order
+    /// of their names. A move calls this after it has released the work, so
+    /// these saves are final: the data directory is then the one the
+    /// library lives in, whether the move published its copy or not.
+    /// Nothing happens when no save was made during a move.
+    /// - Returns: How many files were saved again.
+    @MainActor
+    @discardableResult
+    func rewriteFilesSavedDuringTheMove() -> Int {
+        condition.lock()
+        let owed = rewritesOwed
+        rewritesOwed.removeAll()
+        condition.unlock()
+        guard !owed.isEmpty else { return 0 }
+        DiagnosticLog.event(
+            .storage,
+            "DATA_DIRECTORY_MOVE: saving \(CountWording.phrase(owed.count, singular: "file", plural: "files")) again, " // l10n: no (debug log text)
+                + "since each was saved while the move copied the library" // l10n: no (debug log text)
+        )
+        for file in owed.keys.sorted() {
+            owed[file]?()
+        }
+        return owed.count
     }
 
     /// The first kind of work under way, in the order of

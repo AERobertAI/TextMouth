@@ -240,7 +240,7 @@ final class PlaybackFuzzTests: XCTestCase {
     /// repeat it).
     private func fuzz(_ kind: BookKind) throws {
         // Before the world, so the world's readers close first.
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("Playback Fuzz \(kind.rawValue)")
         // Resuming goes on from the cursor, so a check can compare them.
         world.settings.rewindOnResumeUnit = .none
@@ -590,7 +590,8 @@ final class PlaybackFuzzTests: XCTestCase {
         if run.held.requested.count != rendersAsked {
             return "the closed reader asked for a render"
         }
-        if SleepTimerService.shared.isActive {
+        // The closed reader's window's timer: a reader stops its own.
+        if reader.sleepTimerService.isActive {
             return "a sleep timer is still running"
         }
         return nil

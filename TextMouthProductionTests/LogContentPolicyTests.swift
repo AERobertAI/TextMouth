@@ -271,8 +271,9 @@ final class LogContentPolicyTests: XCTestCase {
         // listener chose in Book Information, or automatically (encodingchoice).
         "TEXT_ENCODING_GUESS", "TEXT_ENCODING_CHANGED",
         // A braille book read again with the braille file characters the listener chose in Book
-        // Information (braillecodes).
-        "BRAILLE_FILE_CODE_CHANGED",
+        // Information (braillecodes), and with the braille table (its braille code) the listener chose
+        // there.
+        "BRAILLE_FILE_CODE_CHANGED", "BRAILLE_TABLE_CHANGED",
         // The data directory: a move and what it waits for (TODO S04); a library found again, lost,
         // or back, a switch to another library, the library's identity and session lease, and the
         // files read once it is back (FR02).
@@ -299,7 +300,7 @@ final class LogContentPolicyTests: XCTestCase {
         "CLOUD_DOWNLOAD_FAILED", "CLOUD_DOWNLOAD_FINISHED", "CLOUD_DOWNLOAD_REMOVAL_FAILED",
         "CLOUD_DOWNLOAD_REMOVED", "CLOUD_DOWNLOAD_STARTED", "CLOUD_DOWNLOAD_STOPPED",
         "DOWNLOAD_NOW_FAILED", "DOWNLOAD_NOW_FINISHED", "DOWNLOAD_NOW_STARTED",
-        "KEEP_ON_MAC", "KEPT_BOOK_DOWNLOAD_FAILED", "KEPT_BOOK_DOWNLOAD_FINISHED", "KEPT_BOOK_DOWNLOAD_STARTED",
+        "DOWNLOAD_SKIPPED_NO_ROOM", "KEEP_ON_MAC", "KEPT_BOOK_DOWNLOAD_FAILED", "KEPT_BOOK_DOWNLOAD_FINISHED", "KEPT_BOOK_DOWNLOAD_STARTED",
         "REMOVE_DOWNLOAD_FINISHED", "REMOVE_DOWNLOAD_REFUSED", "REMOVE_DOWNLOAD_STARTED",
         "READER_DOWNLOAD_CANCELLED", "READER_DOWNLOAD_FAILED", "READER_DOWNLOAD_FINISHED",
         "READER_DOWNLOAD_STARTED", "READER_READ_REFUSED",
@@ -352,6 +353,8 @@ final class LogContentPolicyTests: XCTestCase {
         "BOOK_EXPORT", "BOOK_EXPORT_FAILED",
         "TEXT_EDIT_ADOPTED", "TEXT_EDIT_FAILED", "TEXT_EDIT_REFUSED", "TEXT_EDIT_SOURCE_CHANGED",
         "TEXT_EDIT_HELD", "TEXT_EDIT_KEPT",
+        // A text book spoken into one audio file (FMT43): how the export ended, with its chapters and seconds.
+        "SPEECH_EXPORT",
         // The Move to Folder… and Move to Library… sheet appearing, with the places and items it lists.
         "MOVE_SHEET_SHOWN",
         // A reader's load that could not read its book's files because the library moved them
@@ -365,6 +368,8 @@ final class LogContentPolicyTests: XCTestCase {
         "IMPORT_STAGING_REMOVED", "LIBRARY_INDEX", "LIBRARY_REMOVAL", "MIGRATION_STAGING_LEFT",
         "MIGRATION_STAGING_REMOVED", "ORIGINAL_KEPT", "PERSISTENCE_FAILURE",
         "PERSISTENCE_RECOVERED", "PERSISTENCE_WITHDRAWN", "PLAYBACK_RESUME_REJECTED", "SPEECH_PLAYER_EXCEPTION",
+        // A Retry kept until the operation holding the storage work ends (review3, November 15, 2026).
+        "PERSISTENCE_RETRY_WAITS",
         "AUDIO_ENGINE_START_FAILED",
         "READING_TEXT_CACHE_REJECTED", "READING_TEXT_CACHE_SWEPT", "TMB_ID_LISTED", "TMB_RECONCILE", "TRACE_SUPPRESSED",
         // Transcripts of audiobooks (FR05): a transcript.json that cannot be used, preserved beside itself;
@@ -378,6 +383,9 @@ final class LogContentPolicyTests: XCTestCase {
         "TRANSCRIPTION_STARTED", "TRANSCRIPTION_FINISHED", "TRANSCRIPTION_CANCELLED", "TRANSCRIPTION_FAILED",
         // Braille (October 20, 2026): one of this Mac's tables refused by its check, and why.
         "BRAILLE_MAC_TABLE_REFUSED",
+        // Braille tables unpacked from the pack (FR40): a table that could not be unpacked, with its file name and why;
+        // it holds no book text.
+        "BRAILLE_TABLES_UNAVAILABLE",
         // Library index (V03): rows of library.json a newer TextMouth wrote, kept as they are, counted.
         "LIBRARY_ROWS_KEPT",
         // Replace Existing (ST04): a duplicate's new copy taking the old copy's place under its ID, and what an
@@ -391,6 +399,38 @@ final class LogContentPolicyTests: XCTestCase {
         "DUPLICATE_KEEP_FAILED",
         // A package left unadopted because its record names a book the library lists in another package.
         "ORPHAN_ID_LISTED",
+        // Search Library's background preparation (November 13, 2026): how a pass ended, with its counts
+        // and seconds.
+        "LIBRARY_SEARCH_PREPARATION",
+        // Compare Libraries (November 14, 2026): how many differences a comparison found and how many files it
+        // could not read; and a cloud drive's conflict copy of an index or a record, by kind and file name.
+        "LIBRARY_COMPARED", "CONFLICT_COPY_FOUND",
+        // Chapters in audio files (November 15, 2026): an imported file converted without the chapters its
+        // markers or Ogg comments gave (FMT17), and an audio editor's WAVE, AIFF, or CAF file written without
+        // its chapter markers (FMT11), each with why.
+        "AUDIO_CHAPTERS_NOT_KEPT", "AUDIO_MARKERS_NOT_WRITTEN",
+        // The FFmpeg helper's decoder refused packets or frames of a damaged file it converted all the same
+        // (FMT50), with how many of each.
+        "AUDIO_DECODER_REFUSED",
+        // A C library's call in the iPhone app abandoned past its time (DR34, `InProcessEngine`), after
+        // which its engine refuses every call until TextMouth is closed and opened again.
+        "IN_PROCESS_CALL_ABANDONED",
+        // The interface-text engine's problems (FR39): a missing or damaged Strings.pack, an unknown ID, or a text
+        // that fails its check, each once, in English, from InterfaceText.reportProblemsToDiagnosticLog.
+        "INTERFACE_TEXT_PROBLEM",
+        // The person's own interface lines (FR39): how reading interface_text.json came out (counts), and each line, or
+        // the whole file, that was ignored with why. They hold IDs and language codes, never a line's text.
+        "INTERFACE_TEXT_LOADED", "INTERFACE_TEXT_IGNORED",
+        // Edit Interface Text… and Export Interface Text… that could not do their work, and why (a system error's domain
+        // and code, never a path).
+        "INTERFACE_TEXT_EDIT_FAILED", "INTERFACE_TEXT_EXPORT_FAILED",
+        // Syncing the library (FR43): the engine's runs and the backup's; their lines hold counts and a type name, never a title.
+        "SYNC_RUN", "SYNC_BACKUP",
+        // The removal of the downloads of books left unopened (FR45): a book kept, with why (a reason's words and the
+        // book's ID, shortened), and the count removed in a sweep.
+        "UNOPENED_DOWNLOAD_KEPT", "UNOPENED_DOWNLOADS_REMOVED",
+        // A synced book's removal (FR46) waiting while a data-directory move holds storage work.
+        "SYNC_REMOVAL_WAITING",
     ]
 
     /// Each tag still begins a string literal in the app's code, so none was

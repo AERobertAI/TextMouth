@@ -5,21 +5,28 @@ import Foundation
 /// a VoiceOver or braille user meets.
 enum ConvertedOriginalWording {
     /// The toggle's label.
-    static let label = "Keep originals of converted audio"
+    static var label: String {
+        // Translators: Label of the Storage settings switch that keeps the original file of each audio file an import converts.
+        InterfaceText.line("convertedOriginal.label", "Keep originals of converted audio")
+    }
 
     /// The toggle's accessibility hint.
-    static let hint =
-        "Also keeps each audio file that an import converts, such as Ogg or AC-3, inside the book's package."
+    static var hint: String {
+        // Translators: VoiceOver hint of the switch that keeps the originals of converted audio.
+        InterfaceText.line("convertedOriginal.hint", "Keeps each audio file an import converts, such as Ogg or AC-3, inside the book's package.")
+    }
 
     /// The caption while the setting is on.
-    static let keepingCaption =
-        "When TextMouth converts audio at import, it keeps the original file too. An original takes about "
-        + "as much disk space as its converted file, or about twice as much when it is uncompressed. "
-        + "Export offers it as the Original file. A feed episode's original is not kept: it can be "
-        + "downloaded again."
+    static var keepingCaption: String {
+        // Translators: Caption under the Keep Originals switch while it is on. "Original file" names the choice Export offers; keep it the same as that choice's translation.
+        InterfaceText.line("convertedOriginal.keepingCaption", "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.")
+    }
 
     /// The caption while the setting is off.
-    static let notKeepingCaption = "Audio that TextMouth converts at import keeps only the converted file."
+    static var notKeepingCaption: String {
+        // Translators: Caption under the Keep Originals switch while it is off.
+        InterfaceText.line("convertedOriginal.notKeepingCaption", "Audio that TextMouth converts at import keeps only the converted file.")
+    }
 
     /// The caption that explains the setting's present state.
     static func caption(keeping: Bool) -> String {

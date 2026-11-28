@@ -1,0 +1,2283 @@
+{
+ "language": "nl",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "\"%@\" plays the next book in the same folder by sort order.",
+     "id": "settings.continueNextExplanation",
+     "english": "\"%@\" plays the next book in the same folder by sort order.",
+     "before": "“%@” speelt het volgende boek in dezelfde map af, op volgorde van sortering.",
+     "after": "“%@” speelt het volgende boek in dezelfde map af, in de sorteervolgorde.",
+     "why": "natural: \"op volgorde van sortering\" is not Dutch; in de sorteervolgorde"
+    },
+    {
+     "key": "%@, any subfolders, and the %lld books inside will be removed from the library.",
+     "id": "folderRemoval.confirmationMessage.other",
+     "english": {
+      "one": "%@, any subfolders, and the %lld book inside will be removed from the library.",
+      "other": "%@, any subfolders, and the %lld books inside will be removed from the library."
+     },
+     "before": {
+      "one": "%@, alle submappen en het %lld boek erin worden uit de bibliotheek weggehaald.",
+      "other": "%@, alle submappen en de %lld boeken erin worden uit de bibliotheek weggehaald."
+     },
+     "after": {
+      "one": "%@, alle submappen en het boek erin worden uit de bibliotheek weggehaald.",
+      "other": "%@, alle submappen en de %lld boeken erin worden uit de bibliotheek weggehaald."
+     },
+     "why": "natural: \"het 1 boek erin\" is not Dutch; Dutch one means exactly 1, so the form drops the number"
+    },
+    {
+     "key": "%@, by %@, %@, in %@, added %@",
+     "id": "duplicateFinder.bookLabel",
+     "english": "%1$@, by %2$@, %3$@, in %4$@, added %5$@",
+     "before": "%1$@, van %2$@, %3$@, in %4$@, toegevoegd %5$@",
+     "after": "%1$@, van %2$@, %3$@, in %4$@, toegevoegd op %5$@",
+     "why": "grammar: a long date such as 3 november 2026 takes op"
+    },
+    {
+     "key": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "id": "libraryViewsSettings.visibilityCaption",
+     "english": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "before": "Altijd toont een weergave altijd. Indien van toepassing toont die alleen zolang er iets in staat: de Leeslijst zolang die een boek, aflevering of artikel bevat, en Feeds zolang er een feed is. Verborgen laat de weergave weg. Een venster houdt zijn weergave totdat je een andere kiest.",
+     "after": "Met “Altijd” wordt een weergave steeds aangeboden. Met “Indien van toepassing” alleen zolang die iets toont: de Leeslijst zolang die een boek, aflevering of artikel bevat, en Feeds zolang er een feed is. Met “Verborgen” wordt de weergave weggelaten. Een venster houdt zijn weergave totdat je een andere kiest.",
+     "why": "natural: an option name as the subject (\"Altijd toont een weergave altijd\") reads as an adverb; \"Met X\" names the option"
+    },
+    {
+     "key": "Asks whether to %@ or keep them in the TextMouth library folder.",
+     "id": "libraryRemoveCommand.accessibilityHint",
+     "english": "Asks whether to %@ or keep them in the TextMouth library folder.",
+     "before": "Vraagt of je kiest voor: %@, of voor bewaren in de bibliotheekmap van TextMouth.",
+     "after": "Vraagt of je %@ wilt of ze in de bibliotheekmap van TextMouth wilt bewaren.",
+     "why": "natural: \"kiest voor: %@, of voor bewaren\" was clumsy; the fragment is an infinitive phrase that fits \"of je … wilt\""
+    },
+    {
+     "key": "Automatically start playing when you navigate to a heading, bookmark, or search result.",
+     "id": "settings.autoPlayExplanation",
+     "english": "Automatically start playing when you navigate to a heading, bookmark, or search result.",
+     "before": "Begin automatisch met afspelen wanneer je naar een kop, bladwijzer of zoekresultaat navigeert.",
+     "after": "Begint automatisch met afspelen wanneer je naar een kop, bladwijzer of zoekresultaat navigeert.",
+     "why": "meaning: the imperative told the listener to start playing; the explanation says what the checkbox does"
+    },
+    {
+     "key": "Choose a voice for reading. Change takes effect immediately.",
+     "id": "settings.selectVoiceHint",
+     "english": "Choose a voice for reading. Change takes effect immediately.",
+     "before": "Kies een stem om mee te lezen. De wijziging gaat direct in.",
+     "after": "Kiest de stem voor het voorlezen. De wijziging gaat direct in.",
+     "why": "meaning: \"om mee te lezen\" means to read along; a hint in the third person"
+    },
+    {
+     "key": "Chosen By",
+     "id": "libraryViewEditor.chosenByLabel",
+     "english": "Chosen By",
+     "before": "Gekozen door",
+     "after": "Gekozen op",
+     "why": "meaning: \"gekozen door\" names who chooses; the pop-up names the basis of the choice, \"gekozen op\""
+    },
+    {
+     "key": "Compare Libraries in Storage settings lists every difference.",
+     "id": "libraryComparison.newerCopySentence.libraries",
+     "english": "Compare Libraries in Storage settings lists every difference.",
+     "before": "Vergelijk bibliotheken in de instellingen voor Opslag toont elk verschil.",
+     "after": "Met Vergelijk bibliotheken in de instellingen voor Opslag zie je elk verschil.",
+     "why": "natural: an imperative command name as the subject reads as an order; \"Met X zie je\" names the command"
+    },
+    {
+     "key": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "id": "libraryComparison.comparingForUseSentence",
+     "english": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "before": "Deze bibliotheek wordt vergeleken met de kopie in de map die je hebt gekozen, om te zeggen welke de nieuwste is. Dit kan tot een minuut duren; kies Stop met vergelijken om het over te slaan.",
+     "after": "Deze bibliotheek wordt vergeleken met de kopie in de map die je hebt gekozen, om na te gaan welke de nieuwere is. Dit kan tot een minuut duren; kies Stop met vergelijken om het over te slaan.",
+     "why": "natural: \"om te zeggen welke de nieuwste is\" copies the English; two copies take the comparative, as elsewhere"
+    },
+    {
+     "key": "Confirm before removing a book",
+     "id": "storageSettings.confirmBeforeRemovingTitle",
+     "english": "Confirm before removing a book",
+     "before": "Vraag bevestiging voordat een boek wordt verwijderd",
+     "after": "Vraag om bevestiging voordat een boek wordt weggehaald",
+     "why": "term: removing a book is weghalen in the glossary and in this setting’s hints; vragen om bevestiging"
+    },
+    {
+     "key": "Could not read the text back from the editor's file, so the text here is unchanged.",
+     "id": "textImportPolicy.reloadFailed.unchanged",
+     "english": "Could not read the text back from the editor's file, so the text here is unchanged.",
+     "before": "Kan de tekst niet terug lezen uit het bestand van de editor, dus de tekst hier is ongewijzigd.",
+     "after": "Kan de tekst niet teruglezen uit het bestand van de editor, dus de tekst hier is ongewijzigd.",
+     "why": "grammar: the separable verb teruglezen is written as one word"
+    },
+    {
+     "key": "Default Speed: %lld WPM",
+     "id": "settings.defaultSpeedText",
+     "english": {
+      "one": "Default Speed: %lld WPM",
+      "other": "Default Speed: %lld WPM"
+     },
+     "before": {
+      "one": "Standaardsnelheid: %lld woorden per minuut",
+      "other": "Standaardsnelheid: %lld woorden per minuut"
+     },
+     "after": {
+      "one": "Standaardsnelheid: %lld woord per minuut",
+      "other": "Standaardsnelheid: %lld woorden per minuut"
+     },
+     "why": "grammar: a one form must not read 1 woorden, as part 3 chose"
+    },
+    {
+     "key": "Default pitch for new books. 1.0 is normal. Each book can override this.",
+     "id": "settings.defaultPitchExplanation",
+     "english": "Default pitch for new books. 1.0 is normal. Each book can override this.",
+     "before": "Standaardtoonhoogte voor nieuwe boeken. 1,0 is normaal. Elk boek kan dit overschrijven.",
+     "after": "Standaardtoonhoogte voor nieuwe boeken. 1,0 is normaal. Elk boek kan hiervan afwijken.",
+     "why": "natural: overschrijven means overwrite; a book’s own setting afwijkt"
+    },
+    {
+     "key": "Default speed for new books. Each book can override this with its own speed.",
+     "id": "settings.defaultSpeedExplanation",
+     "english": "Default speed for new books. Each book can override this with its own speed.",
+     "before": "Standaardsnelheid voor nieuwe boeken. Elk boek kan dit overschrijven met een eigen snelheid.",
+     "after": "Standaardsnelheid voor nieuwe boeken. Elk boek kan een eigen snelheid hebben.",
+     "why": "natural: overschrijven means overwrite; each book can have its own speed"
+    },
+    {
+     "key": "Don't rewind if paused for less than this.",
+     "id": "settings.minimumPauseExplanation",
+     "english": "Don't rewind if paused for less than this.",
+     "before": "Ga niet terug als de pauze korter is dan dit.",
+     "after": "Spoelt niet terug als de pauze korter is dan dit.",
+     "why": "meaning: the imperative told the listener not to go back; the explanation says what the setting does"
+    },
+    {
+     "key": "EPUB books with the same ISBN identifier",
+     "id": "duplicateFilter.hint.isbn",
+     "english": "EPUB books with the same ISBN identifier",
+     "before": "EPUB-boeken met dezelfde ISBN-identificatie.",
+     "after": "EPUB-boeken met hetzelfde ISBN.",
+     "why": "natural: \"dezelfde ISBN-identificatie\" is clumsy; a book has an ISBN"
+    },
+    {
+     "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "id": "textEncoding.stopsEditingNote",
+     "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "before": "Wijzig tekst stopt voor dit boek; kies Wijzig tekst opnieuw om de nieuwe versie te wijzigen.",
+     "after": "Het wijzigen van de tekst stopt voor dit boek; kies opnieuw Wijzig tekst om de nieuwe versie te wijzigen.",
+     "why": "natural: the command name as the subject (\"Wijzig tekst stopt\") reads as an order"
+    },
+    {
+     "key": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "id": "libraryViewEditor.editDisabledHint",
+     "english": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "before": "Mappen en de Leeslijst tonen altijd wat ze altijd hebben. Je kunt ze verplaatsen en de Leeslijst verbergen.",
+     "after": "Mappen en de Leeslijst tonen altijd wat erin staat. Je kunt ze verplaatsen en de Leeslijst verbergen.",
+     "why": "natural: \"tonen altijd wat ze altijd hebben\" doubled altijd and copied the English"
+    },
+    {
+     "key": "Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly.",
+     "id": "settings.fadeOutExplanation",
+     "english": "Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly.",
+     "before": "Verlaag het volume geleidelijk voordat de slaaptimer pauzeert. Bij 0 wordt direct gepauzeerd.",
+     "after": "Verlaagt het volume geleidelijk voordat de slaaptimer pauzeert. Bij 0 wordt direct gepauzeerd.",
+     "why": "meaning: the imperative told the listener to lower the volume; the explanation says what the setting does"
+    },
+    {
+     "key": "If the file arrives from %@ later, it names the same library.",
+     "id": "libraryFileWait.confirmation.identity.arrives",
+     "english": "If the file arrives from %@ later, it names the same library.",
+     "before": "Als het bestand later van %@ aankomt, benoemt het dezelfde bibliotheek.",
+     "after": "Als het bestand later van %@ aankomt, verwijst het naar dezelfde bibliotheek.",
+     "why": "meaning: benoemen means to appoint; the file refers to the library"
+    },
+    {
+     "key": "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again.",
+     "id": "dataDirectoryMigrationError.bookOutsideFix",
+     "english": "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again.",
+     "before": "Importeer het opnieuw, wat naar het duplicaat vraagt, en kies Vervang bestaande zodat de kopie in de gegevensmap zijn plaats inneemt, of verwijder het uit de bibliotheek en verplaats de gegevensmap dan opnieuw.",
+     "after": "Importeer het opnieuw, waarna TextMouth naar het duplicaat vraagt, en kies Vervang bestaande zodat de kopie in de gegevensmap de plaats ervan inneemt, of haal het uit de bibliotheek weg en verplaats de gegevensmap dan opnieuw.",
+     "why": "natural: \"wat naar het duplicaat vraagt\" copied the English; removing from the library is weghalen in the glossary"
+    },
+    {
+     "key": "It has the same books, places, bookmarks, reading list, and folders.",
+     "id": "libraryComparison.newerCopySentence.bookmarks",
+     "english": "It has the same books, places, bookmarks, reading list, and folders.",
+     "before": "Het heeft dezelfde boeken, leesposities, bladwijzers, leeslijst en mappen.",
+     "after": "Die heeft dezelfde boeken, leesposities, bladwijzers, leeslijst en mappen.",
+     "why": "grammar: it is the other copy, de kopie, so die, not het"
+    },
+    {
+     "key": "It holds the folder of the feed %@.",
+     "id": "folderRemoval.feedsChoiceSentences.holds",
+     "english": "It holds the folder of the feed %@.",
+     "before": "Het bevat de map van de feed %@.",
+     "after": "Deze map bevat de map van de feed %@.",
+     "why": "grammar: it is the folder, de map, which het cannot refer to"
+    },
+    {
+     "key": "It holds the folders of the feeds %@.",
+     "id": "folderRemoval.feedsChoiceSentences.folders",
+     "english": "It holds the folders of the feeds %@.",
+     "before": "Het bevat de mappen van de feeds %@.",
+     "after": "Deze map bevat de mappen van de feeds %@.",
+     "why": "grammar: it is the folder, de map, which het cannot refer to"
+    },
+    {
+     "key": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "id": "folderRemoval.ownFeedsChoiceSentences.downloads",
+     "english": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "Het is de map van de feed %@. Hoe dan ook blijven de feed en de downloads ervan bewaard, in geen enkele map vermeld totdat Feedinformatie de feed een andere geeft; Verwijder feed… op de rij van de feed verwijdert die.",
+     "after": "Het is de map van de feed %@. Hoe dan ook blijven de feed en de downloads ervan bewaard, zonder map, totdat je de feed in Feedinformatie een andere map geeft; met Verwijder feed… op de rij van de feed verwijder je die.",
+     "why": "natural: \"Feedinformatie de feed een andere geeft\" and a command name as the subject copied the English"
+    },
+    {
+     "key": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "id": "folderRemoval.ownFeedsChoiceSentences.their",
+     "english": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "Het is de map van de feeds %@. Hoe dan ook blijven de feeds en hun downloads bewaard, in geen enkele map vermeld totdat Feedinformatie elke feed een andere geeft; Verwijder feed… op de rij van een feed verwijdert die.",
+     "after": "Het is de map van de feeds %@. Hoe dan ook blijven de feeds en hun downloads bewaard, zonder map, totdat je elke feed in Feedinformatie een andere map geeft; met Verwijder feed… op de rij van een feed verwijder je die.",
+     "why": "natural: \"Feedinformatie elke feed een andere geeft\" and a command name as the subject copied the English"
+    },
+    {
+     "key": "Its conditions and sort are deleted. The books, episodes, articles, and feeds it lists stay in the library, and a Library window showing it shows another view.",
+     "id": "libraryViewsSettings.deleteMessage",
+     "english": "Its conditions and sort are deleted. The books, episodes, articles, and feeds it lists stay in the library, and a Library window showing it shows another view.",
+     "before": "De voorwaarden en sortering ervan worden verwijderd. De boeken, afleveringen, artikelen en feeds die erin staan, blijven in de bibliotheek, en een bibliotheekvenster dat de weergave toont, toont een andere weergave.",
+     "after": "De voorwaarden en sortering ervan worden verwijderd. De boeken, afleveringen, artikelen en feeds die erin staan, blijven in de bibliotheek, en een bibliotheekvenster met deze weergave toont dan een andere.",
+     "why": "natural: \"dat de weergave toont, toont een andere weergave\" stacked toont twice"
+    },
+    {
+     "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.episodes",
+     "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "%@ is op zijn plaats gelaten: afleveringen en artikelen blijven in hun feeds; %@ maakt er een boek van je bibliotheek van.",
+     "after": "%@ is op zijn plaats gelaten: afleveringen en artikelen blijven in hun feeds; met %@ maak je er een boek in je bibliotheek van.",
+     "why": "natural: the command name as the subject and \"een boek van je bibliotheek van\" copied the English"
+    },
+    {
+     "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.they",
+     "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "%@ zijn op hun plaats gelaten: afleveringen en artikelen blijven in hun feeds; %@ maakt er een boek van je bibliotheek van.",
+     "after": "%@ zijn op hun plaats gelaten: afleveringen en artikelen blijven in hun feeds; met %@ maak je er een boek in je bibliotheek van.",
+     "why": "natural: the command name as the subject and \"een boek van je bibliotheek van\" copied the English"
+    },
+    {
+     "key": "Makes a view of your own from the conditions you choose.",
+     "id": "libraryViewEditor.newViewHint",
+     "english": "Makes a view of your own from the conditions you choose.",
+     "before": "Maakt een eigen weergave van de voorwaarden die je kiest.",
+     "after": "Maakt een eigen weergave met de voorwaarden die je kiest.",
+     "why": "meaning: \"een weergave van de voorwaarden\" reads as a view that shows the conditions"
+    },
+    {
+     "key": "Moves it one place down",
+     "id": "libraryViewsSettings.moveDownHint",
+     "english": "Moves it one place down",
+     "before": "Verplaatst het één plaats omlaag.",
+     "after": "Verplaatst de weergave één plaats omlaag.",
+     "why": "grammar: it is a view, de weergave, which het cannot refer to"
+    },
+    {
+     "key": "Moves it one place up",
+     "id": "libraryViewsSettings.moveUpHint",
+     "english": "Moves it one place up",
+     "before": "Verplaatst het één plaats omhoog.",
+     "after": "Verplaatst de weergave één plaats omhoog.",
+     "why": "grammar: it is a view, de weergave, which het cannot refer to"
+    },
+    {
+     "key": "None of the %lld selected books is kept on this Mac.",
+     "id": "libraryCloud.noneSelectedBooksKeptMac",
+     "english": {
+      "one": "None of the %lld selected books is kept on this Mac.",
+      "other": "None of the %lld selected books is kept on this Mac."
+     },
+     "before": {
+      "one": "Geen van de %lld geselecteerde boeken wordt op deze Mac bewaard.",
+      "other": "Geen van de %lld geselecteerde boeken wordt op deze Mac bewaard."
+     },
+     "after": {
+      "one": "Het geselecteerde boek wordt niet op deze Mac bewaard.",
+      "other": "Geen van de %lld geselecteerde boeken wordt op deze Mac bewaard."
+     },
+     "why": "grammar: a one form must not read \"Geen van de 1 geselecteerde boeken\", as part 3 chose; Dutch one means exactly 1, so the form drops the number"
+    },
+    {
+     "key": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "id": "brailleFileCode.uncheckedNote",
+     "english": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "before": "Niets controleert of dit de juiste keuze is. Klinken cijfers en leestekens verkeerd, kies dan een andere.",
+     "after": "Er wordt niet gecontroleerd of dit de juiste keuze is. Klinken cijfers en leestekens verkeerd, kies dan een andere.",
+     "why": "natural: \"Niets controleert of\" copies the English subject"
+    },
+    {
+     "key": "Only the Latest from Each Feed",
+     "id": "libraryViewEditor.onePerFeedTitle",
+     "english": "Only the Latest from Each Feed",
+     "before": "Alleen het nieuwste van elke feed",
+     "after": "Alleen het laatst geopende van elke feed",
+     "why": "meaning: the checkbox keeps the item opened last, as its hint says; nieuwste means the newest published"
+    },
+    {
+     "key": "Removal Behavior",
+     "id": "storageSettings.removalBehaviorHeader",
+     "english": "Removal Behavior",
+     "before": "Gedrag bij verwijderen",
+     "after": "Gedrag bij weghalen",
+     "why": "term: the section is about removing a book, weghalen in the glossary and in its checkbox"
+    },
+    {
+     "key": "Reset to Defaults",
+     "id": "common.resetToDefaults",
+     "english": "Reset to Defaults",
+     "before": "Stel standaardwaarden opnieuw in",
+     "after": "Zet terug naar standaardwaarden",
+     "why": "meaning: \"Stel standaardwaarden opnieuw in\" reads as redefining the defaults; the other reset buttons say terugzetten"
+    },
+    {
+     "key": "Retry is at the top of the Library window.",
+     "id": "persistenceBannerRow.announcement.retry",
+     "english": "Retry is at the top of the Library window.",
+     "before": "Opnieuw proberen staat boven in het bibliotheekvenster.",
+     "after": "De knop Probeer opnieuw staat boven in het bibliotheekvenster.",
+     "why": "term: the banner’s button is Probeer opnieuw; \"Opnieuw proberen staat\" named no button"
+    },
+    {
+     "key": "Same ISBN",
+     "id": "duplicateFilter.title.isbn",
+     "english": "Same ISBN",
+     "before": "Dezelfde ISBN",
+     "after": "Hetzelfde ISBN",
+     "why": "grammar: ISBN is a het-word"
+    },
+    {
+     "key": "Select all %lld books",
+     "id": "librarySubview.selectAllLabel",
+     "english": {
+      "one": "Select all %lld book",
+      "other": "Select all %lld books"
+     },
+     "before": {
+      "one": "Selecteer alle %lld boek",
+      "other": "Selecteer alle %lld boeken"
+     },
+     "after": {
+      "one": "Selecteer het boek",
+      "other": "Selecteer alle %lld boeken"
+     },
+     "why": "grammar: \"alle 1 boek\" is not Dutch; Dutch one means exactly 1, so the form drops the number"
+    },
+    {
+     "key": "Set its shortcut with %@ in the %@ tab; the default is %@.",
+     "id": "miscellaneousSettings.restartShortcutNote",
+     "english": "Set its shortcut with %1$@ in the %2$@ tab; the default is %3$@.",
+     "before": "Stel de toets ervoor in met %1$@ in het tabblad %2$@; de standaardtoets is %3$@.",
+     "after": "Stel het toetsenbordcommando ervoor in met %1$@ in het tabblad %2$@; standaard is dat %3$@.",
+     "why": "term: a shortcut is a toetsenbordcommando in the glossary, not one toets"
+    },
+    {
+     "key": "Showing groups %@ to %@ of %@",
+     "id": "duplicateFinder.pageLine.groups",
+     "english": "Showing groups %1$@ to %2$@ of %3$@",
+     "before": "Groep %1$@ tot %2$@ van %3$@ worden getoond",
+     "after": "Groepen %1$@ tot en met %2$@ van %3$@ worden getoond",
+     "why": "grammar: a plural verb needs groepen; a range that includes its end is tot en met"
+    },
+    {
+     "key": "Shows the groups before these.",
+     "id": "duplicateFinder.previousPageHint",
+     "english": "Shows the groups before these.",
+     "before": "Toont de groepen voor deze.",
+     "after": "Toont de vorige groepen.",
+     "why": "meaning: \"de groepen voor deze\" also reads as the groups for these"
+    },
+    {
+     "key": "Skips matches next to letters, digits, or underscores",
+     "id": "substitutions.wholeWordHint",
+     "english": "Skips matches next to letters, digits, or underscores",
+     "before": "Slaat overeenkomsten naast letters, cijfers of liggende streepjes over.",
+     "after": "Slaat treffers naast letters, cijfers of liggende streepjes over.",
+     "why": "term: a match is a treffer in the glossary; overeenkomsten means similarities"
+    },
+    {
+     "key": "Stops comparing. Nothing in either copy has been changed.",
+     "id": "libraryComparison.stopHint",
+     "english": "Stops comparing. Nothing in either copy has been changed.",
+     "before": "Stopt het vergelijken. Er is niets gewijzigd in beide kopieën.",
+     "after": "Stopt het vergelijken. In geen van beide kopieën is iets gewijzigd.",
+     "why": "meaning: \"niets … in beide kopieën\" says not in both; the English means in neither"
+    },
+    {
+     "key": "Stops saying the code was guessed. The book is not read again.",
+     "id": "brailleCode.keepGuessHint",
+     "english": "Stops saying the code was guessed. The book is not read again.",
+     "before": "Stopt met zeggen dat de code is geraden. Het boek wordt niet opnieuw gelezen.",
+     "after": "Meldt niet langer dat de code is geraden. Het boek wordt niet opnieuw gelezen.",
+     "why": "natural: \"Stopt met zeggen\" copies stop saying"
+    },
+    {
+     "key": "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are.",
+     "id": "textNotKept.errorDescription",
+     "english": "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are.",
+     "before": "TextMouth kon de bewerkte tekst van de kopie in je bibliotheek niet naast de tekst van de nieuwe kopie bewaren, dus beide kopieën zijn gelaten zoals ze waren.",
+     "after": "TextMouth kon de bewerkte tekst van de kopie in je bibliotheek niet naast de tekst van de nieuwe kopie bewaren, dus blijven beide kopieën zoals ze zijn.",
+     "why": "natural: the passive \"is gelaten zoals het was\" is stilted; \"blijft zoals het was\" says it plainly"
+    },
+    {
+     "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "id": "textEncoding.editNotKeptRefusal",
+     "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "before": "TextMouth kon de tekst die je in “%@” hebt gewijzigd niet naast de nieuwe versie bewaren, dus het boek is gelaten zoals het was.",
+     "after": "TextMouth kon de tekst die je in “%@” hebt gewijzigd niet naast de nieuwe versie bewaren, dus blijft het boek zoals het was.",
+     "why": "natural: the passive \"is gelaten zoals het was\" is stilted; \"blijft zoals het was\" says it plainly"
+    },
+    {
+     "key": "TextMouth couldn't read “%@” again, so it left the book as it was.",
+     "id": "textEncoding.failedRefusal.withoutReason",
+     "english": "TextMouth couldn't read “%@” again, so it left the book as it was.",
+     "before": "TextMouth kon “%@” niet opnieuw lezen, dus het boek is gelaten zoals het was.",
+     "after": "TextMouth kon “%@” niet opnieuw lezen, dus blijft het boek zoals het was.",
+     "why": "natural: the passive \"is gelaten zoals het was\" is stilted; \"blijft zoals het was\" says it plainly"
+    },
+    {
+     "key": "TextMouth couldn't read “%@” again, so it left the book as it was: %@",
+     "id": "textEncoding.failedRefusal.withReason",
+     "english": "TextMouth couldn't read “%1$@” again, so it left the book as it was: %2$@",
+     "before": "TextMouth kon “%@” niet opnieuw lezen, dus het boek is gelaten zoals het was: %@",
+     "after": "TextMouth kon “%@” niet opnieuw lezen, dus blijft het boek zoals het was: %@",
+     "why": "natural: the passive \"is gelaten zoals het was\" is stilted; \"blijft zoals het was\" says it plainly"
+    },
+    {
+     "key": "TextMouth couldn't save the library's index, so it left both copies as they are.",
+     "id": "indexNotSaved.errorDescription",
+     "english": "TextMouth couldn't save the library's index, so it left both copies as they are.",
+     "before": "TextMouth kon de index van de bibliotheek niet bewaren, dus beide kopieën zijn gelaten zoals ze waren.",
+     "after": "TextMouth kon de bibliotheekindex niet bewaren, dus blijven beide kopieën zoals ze zijn.",
+     "why": "natural: the stilted passive \"zijn gelaten zoals ze waren\"; the glossary term Bibliotheekindex"
+    },
+    {
+     "key": "TextMouth is opening again on another library, so they stay unsaved in this one.",
+     "id": "storageWorkWait.sentence.unsaved",
+     "english": "TextMouth is opening again on another library, so they stay unsaved in this one.",
+     "before": "TextMouth wordt opnieuw geopend met een andere bibliotheek, dus ze blijven in deze onbewaard.",
+     "after": "TextMouth start opnieuw met een andere bibliotheek, dus ze worden in deze bibliotheek niet bewaard.",
+     "why": "natural: onbewaard is hardly a word; niet bewaard; then natural: an app starts, it is not opened by itself (starten, not openen), as part 2 chose"
+    },
+    {
+     "key": "TextMouth is opening again on another library, so they stay where they are in this one.",
+     "id": "storageWorkWait.sentence.where",
+     "english": "TextMouth is opening again on another library, so they stay where they are in this one.",
+     "before": "TextMouth wordt opnieuw geopend met een andere bibliotheek, dus ze blijven in deze waar ze zijn.",
+     "after": "TextMouth start opnieuw met een andere bibliotheek, dus ze blijven in deze bibliotheek waar ze zijn.",
+     "why": "natural: an app starts, it is not opened by itself (starten, not openen), as part 2 chose; \"in deze\" names the library"
+    },
+    {
+     "key": "TextMouth is switching to another library and opening again on it.",
+     "id": "storageBusyError.switchingLibraries",
+     "english": "TextMouth is switching to another library and opening again on it.",
+     "before": "TextMouth schakelt over naar een andere bibliotheek en wordt daarmee opnieuw geopend.",
+     "after": "TextMouth schakelt over naar een andere bibliotheek en start daarmee opnieuw.",
+     "why": "natural: an app starts, it is not opened by itself (starten, not openen), as part 2 chose"
+    },
+    {
+     "key": "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds.",
+     "id": "textEncoding.automaticNote",
+     "english": "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds.",
+     "before": "TextMouth leest zijn bestand zoals het een bestand leest dat je toevoegt: in de codering die het bestand noemt, of anders in de codering die TextMouth vindt.",
+     "after": "TextMouth leest het bestand van het boek zoals een bestand dat je toevoegt: in de codering die het bestand opgeeft, of anders in de codering die TextMouth vindt.",
+     "why": "meaning: \"zijn bestand\" read as TextMouth’s own file; it is the book’s file"
+    },
+    {
+     "key": "TextMouth will open the library in %@ the next time it opens, but it couldn't open again by itself: %@",
+     "id": "libraryViewModel.openNextTime",
+     "english": "TextMouth will open the library in %1$@ the next time it opens, but it couldn't open again by itself: %2$@",
+     "before": "TextMouth opent de bibliotheek in %1$@ de volgende keer dat het opent, maar kon niet zelf opnieuw openen: %2$@",
+     "after": "TextMouth opent de bibliotheek in %1$@ de volgende keer dat het start, maar kon niet zelf opnieuw starten: %2$@",
+     "why": "natural: an app starts, it is not opened by itself (starten, not openen), as part 2 chose"
+    },
+    {
+     "key": "TextMouth will quit and open again to load it.",
+     "id": "storage.useSentence.again",
+     "english": "TextMouth will quit and open again to load it.",
+     "before": "TextMouth sluit af en opent opnieuw om de bibliotheek te laden.",
+     "after": "TextMouth sluit af en start opnieuw om de bibliotheek te laden.",
+     "why": "natural: an app starts, it is not opened by itself (starten, not openen), as part 2 chose"
+    },
+    {
+     "key": "TextMouth will quit and open again to start it.",
+     "id": "storage.startNewLibrarySentence.again",
+     "english": "TextMouth will quit and open again to start it.",
+     "before": "TextMouth sluit af en opent opnieuw om de bibliotheek te starten.",
+     "after": "TextMouth sluit af en start opnieuw om de nieuwe bibliotheek te beginnen.",
+     "why": "natural: an app starts, it is not opened by itself (starten, not openen), as part 2 chose; a new library is begun, as Begin nieuwe bibliotheek says"
+    },
+    {
+     "key": "The %lld selected books are already kept on this Mac.",
+     "id": "libraryCloud.selectedBooksAlready",
+     "english": {
+      "one": "The %lld selected book is already kept on this Mac.",
+      "other": "The %lld selected books are already kept on this Mac."
+     },
+     "before": {
+      "one": "Het %lld geselecteerde boek wordt al op deze Mac bewaard.",
+      "other": "De %lld geselecteerde boeken worden al op deze Mac bewaard."
+     },
+     "after": {
+      "one": "Het geselecteerde boek wordt al op deze Mac bewaard.",
+      "other": "De %lld geselecteerde boeken worden al op deze Mac bewaard."
+     },
+     "why": "natural: \"het 1 geselecteerde boek\" is not Dutch; Dutch one means exactly 1, so the form drops the number"
+    },
+    {
+     "key": "The %lld selected books are kept on this Mac for the reading list.",
+     "id": "libraryCloud.selectedBooksKept",
+     "english": {
+      "one": "The %lld selected book is kept on this Mac for the reading list.",
+      "other": "The %lld selected books are kept on this Mac for the reading list."
+     },
+     "before": {
+      "one": "Het %lld geselecteerde boek wordt op deze Mac bewaard voor de leeslijst.",
+      "other": "De %lld geselecteerde boeken worden op deze Mac bewaard voor de leeslijst."
+     },
+     "after": {
+      "one": "Het geselecteerde boek wordt op deze Mac bewaard voor de leeslijst.",
+      "other": "De %lld geselecteerde boeken worden op deze Mac bewaard voor de leeslijst."
+     },
+     "why": "natural: \"het 1 geselecteerde boek\" is not Dutch; Dutch one means exactly 1, so the form drops the number"
+    },
+    {
+     "key": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "id": "leadingArticle.description.ignoredForBoth",
+     "english": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "before": "The Hobbit sorteert bij de H en wordt getoond als Hobbit, The. Als je H typt, vind je het bij de H.",
+     "after": "The Hobbit wordt bij de H gesorteerd en getoond als Hobbit, The. Als je H typt, vind je het bij de H.",
+     "why": "grammar: sorteren takes an object; a title wordt gesorteerd"
+    },
+    {
+     "key": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "id": "brailleCode.translatedAgainNote",
+     "english": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "before": "Het braille wordt opnieuw naar print vertaald met deze code. Niets controleert of dat de juiste keuze is. Worden woorden verkeerd gelezen, kies dan een andere.",
+     "after": "Het braille wordt met deze code opnieuw naar zwartschrift vertaald. Er wordt niet gecontroleerd of dat de juiste keuze is. Worden woorden verkeerd gelezen, kies dan een andere.",
+     "why": "term: Dutch braille calls print zwartschrift, not print; \"Niets controleert\" copied the English"
+    },
+    {
+     "key": "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another.",
+     "id": "folderRemoval.confirmationMessage.stays",
+     "english": "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another.",
+     "before": "De feed %@ blijft, met de downloads, zonder map totdat Feedinformatie de feed een andere geeft.",
+     "after": "De feed %@ blijft met de downloads bewaard, zonder map, totdat je de feed in Feedinformatie een andere map geeft.",
+     "why": "natural: \"Feedinformatie de feed een andere geeft\" copied the English; you give the feed a folder in Feed Info"
+    },
+    {
+     "key": "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another.",
+     "id": "folderRemoval.confirmationMessage.folders",
+     "english": "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another.",
+     "before": "De feeds %@ blijven, met hun downloads, zonder map totdat Feedinformatie elke feed een andere geeft.",
+     "after": "De feeds %@ blijven met hun downloads bewaard, zonder map, totdat je elke feed in Feedinformatie een andere map geeft.",
+     "why": "natural: \"Feedinformatie de feed een andere geeft\" copied the English; you give the feed a folder in Feed Info"
+    },
+    {
+     "key": "The folders %@ and %@ can't both move into %@: their names mean the same folder on this disk.",
+     "id": "folderOperationConflict.namesCollide",
+     "english": "The folders %1$@ and %2$@ can't both move into %3$@: their names mean the same folder on this disk.",
+     "before": "De mappen %@ en %@ kunnen niet allebei naar %@ worden verplaatst: hun namen betekenen op deze schijf dezelfde map.",
+     "after": "De mappen %@ en %@ kunnen niet allebei naar %@ worden verplaatst: hun namen verwijzen op deze schijf naar dezelfde map.",
+     "why": "natural: names do not \"betekenen\" a folder; they refer to it, as the sentence on the same rule says"
+    },
+    {
+     "key": "The saved copy at %@ keeps the old data.",
+     "id": "libraryIndexRecovery.rebuild.saved",
+     "english": "The saved copy at %@ keeps the old data.",
+     "before": "De bewaarde kopie op %@ bewaart de oude gegevens.",
+     "after": "De bewaarde kopie op %@ bevat de oude gegevens.",
+     "why": "natural: \"De bewaarde kopie … bewaart\" repeated the verb"
+    },
+    {
+     "key": "There is no view %@. Go to View reaches %lld views.",
+     "id": "libraryViewPicker.noView",
+     "english": {
+      "one": "There is no view %@. Go to View reaches %lld view.",
+      "other": "There is no view %@. Go to View reaches %lld views."
+     },
+     "before": {
+      "one": "Er is geen weergave %@. Ga naar weergave bereikt %lld weergave.",
+      "other": "Er is geen weergave %@. Ga naar weergave bereikt %lld weergaven."
+     },
+     "after": {
+      "one": "Er is geen weergave %@. Met Ga naar weergave bereik je %lld weergave.",
+      "other": "Er is geen weergave %@. Met Ga naar weergave bereik je %lld weergaven."
+     },
+     "why": "natural: the command name as the subject (\"Ga naar weergave bereikt\") reads as an order"
+    },
+    {
+     "key": "This folder has no stored name, so it cannot be changed safely.",
+     "id": "folderOperationConflict.invalidPath.changed",
+     "english": "This folder has no stored name, so it cannot be changed safely.",
+     "before": "Deze map heeft geen opgeslagen naam en kan dus niet veilig worden gewijzigd.",
+     "after": "Deze map heeft geen opgeslagen naam, dus die kan niet veilig worden gewijzigd.",
+     "why": "meaning: the name cannot be changed safely, not the folder"
+    },
+    {
+     "key": "To free the space anyway, choose Show in Finder, then %@.",
+     "id": "bookCloud.freeSpaceAnyway",
+     "english": "To free the space anyway, choose Show in Finder, then %@.",
+     "before": "Om de ruimte toch vrij te maken, kies je Toon in Finder en %@.",
+     "after": "Wil je de ruimte toch vrijmaken, kies dan Toon in Finder en %@.",
+     "why": "grammar: the fragment is an imperative (\"kies …\"), which \"kies je … en\" could not join"
+    },
+    {
+     "key": "To use another folder, open Settings, Storage, and choose %@ or %@.",
+     "id": "dataDirectoryUnavailable.anotherFolderPointer",
+     "english": "To use another folder, open Settings, Storage, and choose %1$@ or %2$@.",
+     "before": "Om een andere map te gebruiken, open je Instellingen en Opslag en kies je %1$@ of %2$@.",
+     "after": "Om een andere map te gebruiken, open je Opslag in Instellingen en kies je %1$@ of %2$@.",
+     "why": "meaning: \"open je Instellingen en Opslag\" read as opening two things; Storage is a tab of Settings"
+    },
+    {
+     "key": "Use regular expression matching",
+     "id": "substitutions.regexLabel",
+     "english": "Use regular expression matching",
+     "before": "Gebruik overeenkomst met reguliere expressie",
+     "after": "Gebruik reguliere expressies",
+     "why": "natural: \"Gebruik overeenkomst met reguliere expressie\" copied the English noun stack"
+    },
+    {
+     "key": "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The.",
+     "id": "leadingArticle.languagesNote.portuguese",
+     "english": "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The.",
+     "before": "Als lidwoorden worden genegeerd, slaat een boek waarvan de metadata Frans, Duits, Spaans, Italiaans, Portugees, Nederlands, Catalaans, Zweeds, Deens of Noors noemt de lidwoorden van die taal over, zoals Le en Die, en The.",
+     "after": "Als lidwoorden worden genegeerd, worden bij een boek waarvan de metadata Frans, Duits, Spaans, Italiaans, Portugees, Nederlands, Catalaans, Zweeds, Deens of Noors noemt, de lidwoorden van die taal overgeslagen, zoals Le en Die, en ook The.",
+     "why": "natural: a book does not skip its articles; they are skipped for it, as the sentence before says"
+    },
+    {
+     "key": "When book ends",
+     "id": "settings.whenBookEndsTitle",
+     "english": "When book ends",
+     "before": "Als boek eindigt",
+     "after": "Wanneer een boek eindigt",
+     "why": "natural: the label dropped its article; matches the other end-of-book labels"
+    },
+    {
+     "key": "When enabled, use \\b in the pattern for word boundaries",
+     "id": "substitutions.regexHint",
+     "english": "When enabled, use \\b in the pattern for word boundaries",
+     "before": "Als dit aan staat, kun je \\b in het patroon gebruiken voor woordgrenzen.",
+     "after": "Als dit aanstaat, kun je \\b in het patroon gebruiken voor woordgrenzen.",
+     "why": "grammar: a separable verb at the end of a clause is written as one word (aanstaat, uitstaat), as part 2 chose"
+    },
+    {
+     "key": "When off, its files are deleted permanently and cannot be recovered.",
+     "id": "removalPreferences.trashPreference.permanently",
+     "english": "When off, its files are deleted permanently and cannot be recovered.",
+     "before": "Als dit uit staat, worden de bestanden definitief verwijderd en kunnen ze niet worden hersteld.",
+     "after": "Als dit uitstaat, worden de bestanden definitief verwijderd en kunnen ze niet worden hersteld.",
+     "why": "grammar: a separable verb at the end of a clause is written as one word (aanstaat, uitstaat), as part 2 chose"
+    },
+    {
+     "key": "When off, removing a book will %@ at once.",
+     "id": "removalPreferences.confirmationExplanation.once",
+     "english": "When off, removing a book will %@ at once.",
+     "before": "Als dit uit staat, wordt bij het weghalen van een boek direct het volgende gedaan: %@.",
+     "after": "Als dit uitstaat, zal TextMouth bij het weghalen van een boek meteen %@.",
+     "why": "natural: \"wordt direct het volgende gedaan: %@\" was clumsy; the fragment is an infinitive phrase that fits \"zal TextMouth meteen\"; then grammar: a separable verb at the end of a clause is written as one word (aanstaat, uitstaat), as part 2 chose"
+    },
+    {
+     "key": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
+     "id": "removalPreferences.trashPreference.recover",
+     "english": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
+     "before": "Als dit aan staat, gaan de bestanden van een verwijderd boek naar de prullenmand, waar je ze kunt herstellen totdat de prullenmand is geleegd.",
+     "after": "Als dit aanstaat, gaan de bestanden van een verwijderd boek naar de prullenmand, waar je ze kunt herstellen totdat de prullenmand is geleegd.",
+     "why": "grammar: a separable verb at the end of a clause is written as one word (aanstaat, uitstaat), as part 2 chose"
+    },
+    {
+     "key": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
+     "id": "removalPreferences.confirmation.whether",
+     "english": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
+     "before": "Als dit aan staat, wordt bij het weghalen van een boek eerst gevraagd of je kiest voor: %@, of voor bewaren in de bibliotheekmap van TextMouth.",
+     "after": "Als dit aanstaat, vraagt TextMouth bij het weghalen van een boek eerst of je %@ wilt of ze in de bibliotheekmap van TextMouth wilt bewaren.",
+     "why": "natural: \"kiest voor: %@, of voor bewaren\" was clumsy; the fragment is an infinitive phrase that fits \"of je … wilt\"; then grammar: a separable verb at the end of a clause is written as one word (aanstaat, uitstaat), as part 2 chose"
+    },
+    {
+     "key": "Where TextMouth writes its diagnostic logs. %@ keeps them with your books, so they move and sync with the library. %@ keeps them in %@, which never syncs. A change applies from the next line; existing logs stay.",
+     "id": "logsSettings.pickerHint",
+     "english": "Where TextMouth writes its diagnostic logs. %1$@ keeps them with your books, so they move and sync with the library. %2$@ keeps them in %3$@, which never syncs. A change applies from the next line; existing logs stay.",
+     "before": "Waar TextMouth zijn diagnostische logboeken schrijft. %1$@ houdt ze bij je boeken, zodat ze met de bibliotheek meeverhuizen en synchroniseren. %2$@ houdt ze in %3$@, die nooit synchroniseert. Een wijziging geldt vanaf de volgende regel; bestaande logboeken blijven.",
+     "after": "Waar TextMouth zijn diagnostische logboeken schrijft. Met “%1$@” staan ze bij je boeken, zodat ze met de bibliotheek meeverhuizen en synchroniseren. Met “%2$@” staan ze in %3$@, die nooit synchroniseert. Een wijziging geldt vanaf de volgende regel; bestaande logboeken blijven waar ze zijn.",
+     "why": "natural: the choices are named In de gegevensmap and In de map Logboeken, which read as places when they are the subject"
+    },
+    {
+     "key": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "id": "folderRemoval.feedsChoiceSentences.downloads",
+     "english": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "Met %@ blijven de feed en de downloads ervan bewaard, in geen enkele map vermeld totdat Feedinformatie de feed een andere geeft; Verwijder feed… op de rij van de feed verwijdert die.",
+     "after": "Met %@ blijven de feed en de downloads ervan bewaard, zonder map, totdat je de feed in Feedinformatie een andere map geeft; met Verwijder feed… op de rij van de feed verwijder je die.",
+     "why": "natural: \"Feedinformatie de feed een andere geeft\" and a command name as the subject copied the English"
+    },
+    {
+     "key": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "id": "folderRemoval.feedsChoiceSentences.each",
+     "english": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "Met %@ blijven de feeds en hun downloads bewaard, in geen enkele map vermeld totdat Feedinformatie elke feed een andere geeft; Verwijder feed… op de rij van een feed verwijdert die.",
+     "after": "Met %@ blijven de feeds en hun downloads bewaard, zonder map, totdat je elke feed in Feedinformatie een andere map geeft; met Verwijder feed… op de rij van een feed verwijder je die.",
+     "why": "natural: \"Feedinformatie de feed een andere geeft\" and a command name as the subject copied the English"
+    },
+    {
+     "key": "chapter %@, saved %@, and %@",
+     "id": "conflictCopy.recordState.chapter",
+     "english": "chapter %1$@, saved %2$@, and %3$@",
+     "before": "hoofdstuk %1$@, bewaard %2$@ en %3$@",
+     "after": "hoofdstuk %1$@, bewaard op %2$@ en %3$@",
+     "why": "grammar: a date and time take op"
+    },
+    {
+     "key": "declared in the file",
+     "id": "textEncoding.declaredNote",
+     "english": "declared in the file",
+     "before": "gedeclareerd in het bestand",
+     "after": "opgegeven in het bestand",
+     "why": "natural: an encoding is opgegeven in a file; gedeclareerd is a programmer’s calque"
+    },
+    {
+     "key": "no place saved, and %@",
+     "id": "conflictCopy.recordState.place",
+     "english": "no place saved, and %@",
+     "before": "geen plek bewaard en %@",
+     "after": "geen leespositie bewaard en %@",
+     "why": "term: a place is leespositie everywhere else in Compare Libraries"
+    },
+    {
+     "key": "only the latest from each feed",
+     "id": "libraryViewEditor.description.latest",
+     "english": "only the latest from each feed",
+     "before": "alleen het nieuwste van elke feed",
+     "after": "alleen het laatst geopende van elke feed",
+     "why": "meaning: the filter keeps the item opened last, as the checkbox’s hint says; nieuwste means the newest published"
+    },
+    {
+     "key": "so TextMouth can't tell whether the two copies are one library, and compared nothing.",
+     "id": "libraryComparison.identityMarker.compared",
+     "english": "so TextMouth can't tell whether the two copies are one library, and compared nothing.",
+     "before": "dus TextMouth kan niet zeggen of de twee kopieën één bibliotheek zijn en heeft niets vergeleken.",
+     "after": "dus TextMouth kan niet bepalen of de twee kopieën één bibliotheek zijn en heeft niets vergeleken.",
+     "why": "natural: \"kan niet zeggen\" copies cannot tell; bepalen, as the other Compare Libraries sentences say"
+    }
+   ]
+  },
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ are in your library, unsubscribed. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "id": "feed.importFoundUnsubscribed",
+     "english": "%1$@ are in your library, unsubscribed. Choose %2$@ on a feed's row, or in its %3$@, to check it again.",
+     "before": "%1$@ staan in je bibliotheek, zonder abonnement. Kies %2$@ in de rij van een feed, of in de bijbehorende %3$@, om ze opnieuw te controleren.",
+     "after": "%1$@ staan in je bibliotheek, zonder abonnement. Kies %2$@ in de rij van een feed, of in de bijbehorende %3$@, om die feed opnieuw te controleren.",
+     "why": "meaning: “ze” said one row’s command checks all those feeds again; it checks that one feed"
+    },
+    {
+     "key": "%@ has no transcript to clean up. Transcribe its audio first.",
+     "id": "transcriptCleanup.noTranscript",
+     "english": "%@ has no transcript to clean up. Transcribe its audio first.",
+     "before": "%@ heeft geen transcriptie om op te ruimen. Transcribeer eerst de audio.",
+     "after": "%@ heeft geen transcriptie om op te schonen. Transcribeer eerst de audio.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "%@ is being transcribed. Clean up its transcript once that finishes.",
+     "id": "transcriptCleanup.busyTranscribing",
+     "english": "%@ is being transcribed. Clean up its transcript once that finishes.",
+     "before": "%@ wordt getranscribeerd. Ruim de transcriptie op zodra dat klaar is.",
+     "after": "%@ wordt getranscribeerd. Schoon de transcriptie op zodra dat klaar is.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "%@ isn't available, so TextMouth can't record from it. Choose another microphone.",
+     "id": "recordingFailure.deviceUnavailable",
+     "english": "%@ isn't available, so TextMouth can't record from it. Choose another microphone.",
+     "before": "%@ is niet beschikbaar, dus TextMouth kan er niet van opnemen. Kies een andere microfoon.",
+     "after": "%@ is niet beschikbaar, dus TextMouth kan er niet mee opnemen. Kies een andere microfoon.",
+     "why": "grammar: Dutch records “met” a microphone; “er niet van opnemen” is wrong"
+    },
+    {
+     "key": "A filter preset needs a name.",
+     "id": "audioFilterPresetError.blankName",
+     "english": "A filter preset needs a name.",
+     "before": "Een voorinstelling voor filters heeft een naam nodig.",
+     "after": "Een filtervoorinstelling heeft een naam nodig.",
+     "why": "term: the sheet is named “Filtervoorinstellingen”; one compound for one thing, shorter in braille"
+    },
+    {
+     "key": "Added %@",
+     "ids": [
+      "libraryInfo.addedDate",
+      "audioFilterPresets.added"
+     ],
+     "english": "Added %@",
+     "before": "Toegevoegd %@",
+     "after": "Toegevoegd: %@",
+     "why": "natural: the English order put the participle first; with a colon it fits a preset’s name and a date (“Toegevoegd: vandaag”)"
+    },
+    {
+     "key": "After an automatic refresh, an alert names the feeds with new episodes and articles",
+     "id": "feedSettings.refreshAlertHint",
+     "english": "After an automatic refresh, an alert names the feeds with new episodes and articles",
+     "before": "Toont na een automatische verversing een waarschuwing die de feeds met nieuwe afleveringen en artikelen noemt.",
+     "after": "Toont na een automatische verversing een dialoogvenster dat de feeds met nieuwe afleveringen en artikelen noemt.",
+     "why": "meaning: “waarschuwing” is a warning; this alert only lists feeds, and “melding” already names the notification"
+    },
+    {
+     "key": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "id": "transcription.offerHint",
+     "english": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "before": "Vraagt na elke import van een luisterboek of het moet worden getranscribeerd. Uitgeschakeld worden luisterboeken alleen getranscribeerd met Transcribeer audio.",
+     "after": "Vraagt na elke import van een luisterboek of het moet worden getranscribeerd. Als dit uitstaat, worden luisterboeken alleen getranscribeerd met Transcribeer audio.",
+     "why": "grammar: a leading “Uitgeschakeld” read as an adjective of the audiobooks"
+    },
+    {
+     "key": "Attached “%@” to %@: %@.",
+     "id": "transcription.attached.toAudiobook",
+     "english": "Attached “%1$@” to %2$@: %3$@.",
+     "before": "“%1$@” bijgevoegd aan %2$@: %3$@.",
+     "after": "“%1$@” bij %2$@ gevoegd: %3$@.",
+     "why": "grammar: one adds a file “bij” a book, as Voeg transcriptie bij says; “bijgevoegd aan” is an anglicism"
+    },
+    {
+     "key": "Attaching “%@” to %@.",
+     "id": "transcription.attaching",
+     "english": "Attaching “%1$@” to %2$@.",
+     "before": "“%1$@” wordt bijgevoegd aan %2$@.",
+     "after": "“%1$@” wordt bij %2$@ gevoegd.",
+     "why": "grammar: one adds a file “bij” a book, as Voeg transcriptie bij says; “bijgevoegd aan” is an anglicism"
+    },
+    {
+     "key": "Audio that TextMouth converts at import keeps only the converted file.",
+     "id": "convertedOriginal.notKeepingCaption",
+     "english": "Audio that TextMouth converts at import keeps only the converted file.",
+     "before": "Audio die TextMouth bij het importeren converteert, behoudt alleen het geconverteerde bestand.",
+     "after": "Van audio die TextMouth bij het importeren converteert, wordt alleen het geconverteerde bestand bewaard.",
+     "why": "natural: audio cannot “behouden” a file; the passive reads as Dutch"
+    },
+    {
+     "key": "Checks every subscribed feed and says what came",
+     "id": "feedSettings.refreshAllNowHint",
+     "english": "Checks every subscribed feed and says what came",
+     "before": "Controleert elke feed met abonnement en meldt wat er is gekomen.",
+     "after": "Controleert elke feed met abonnement en meldt wat er is binnengekomen.",
+     "why": "natural: “wat er is gekomen” copies the English; Dutch says “binnengekomen”"
+    },
+    {
+     "key": "Checks this feed again from now on, and at once",
+     "id": "feed.resubscribeHint",
+     "english": "Checks this feed again from now on, and at once",
+     "before": "Controleert deze feed vanaf nu weer, en meteen.",
+     "after": "Controleert deze feed meteen en vanaf nu weer.",
+     "why": "natural: the tacked-on “, en meteen” copies the English order"
+    },
+    {
+     "key": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "id": "feed.importPanelMessage",
+     "english": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "before": "Kies een OPML-bestand met abonnementen, zoals een andere feedlezer die exporteert.",
+     "after": "Kies een OPML-bestand met abonnementen, zoals een andere feedlezer ze exporteert.",
+     "why": "grammar: “die exporteert” read as a relative clause (a feed reader that exports)"
+    },
+    {
+     "key": "Clean Up Transcript (Experimental)…",
+     "id": "transcriptCleanup.commandTitle",
+     "english": "Clean Up Transcript (Experimental)…",
+     "before": "Ruim transcriptie op (experimenteel)…",
+     "after": "Schoon transcriptie op (experimenteel)…",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "Clean Up the Transcript of %@",
+     "id": "transcriptCleanup.sheetTitle",
+     "english": "Clean Up the Transcript of %@",
+     "before": "Ruim de transcriptie van %@ op",
+     "after": "Schoon de transcriptie van %@ op",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "Cleaned up on %@, with rules version %@: %@.",
+     "id": "transcriptCleanup.alreadyCleanedUp.version",
+     "english": "Cleaned up on %1$@, with rules version %2$@: %3$@.",
+     "before": "Opgeruimd op %1$@, met regelversie %2$@: %3$@.",
+     "after": "Opgeschoond op %1$@, met regelversie %2$@: %3$@.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "Cleaned up the transcript of %@: %@.",
+     "id": "transcriptCleanup.applied",
+     "english": "Cleaned up the transcript of %1$@: %2$@.",
+     "before": "Transcriptie van %1$@ opgeruimd: %2$@.",
+     "after": "Transcriptie van %1$@ opgeschoond: %2$@.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "Cleaning up the transcript…",
+     "id": "transcriptCleanup.applyingLine",
+     "english": "Cleaning up the transcript…",
+     "before": "De transcriptie wordt opgeruimd…",
+     "after": "De transcriptie wordt opgeschoond…",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "Couldn't clean up the transcript of %@: %@",
+     "id": "transcriptCleanup.applyFailed",
+     "english": "Couldn't clean up the transcript of %1$@: %2$@",
+     "before": "Kan de transcriptie van %1$@ niet opruimen: %2$@",
+     "after": "Kan de transcriptie van %1$@ niet opschonen: %2$@",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "Couldn't undo the cleanup of the transcript of %@: %@",
+     "id": "transcriptCleanup.undoFailed",
+     "english": "Couldn't undo the cleanup of the transcript of %1$@: %2$@",
+     "before": "Kan het opruimen van de transcriptie van %1$@ niet ongedaan maken: %2$@",
+     "after": "Kan het opschonen van de transcriptie van %1$@ niet ongedaan maken: %2$@",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "Create Folder",
+     "id": "importDecisionChoice.createFolder.title",
+     "english": "Create Folder",
+     "before": "Maak map",
+     "after": "Maak map aan",
+     "why": "grammar: “aanmaken” is separable; Apple’s Dutch button reads “Maak … aan”"
+    },
+    {
+     "key": "Days after an episode finishes before its download is deleted, from 0 (at once) to 365; one open in a reader waits until it closes",
+     "id": "feedThreshold.deleteAfterPlaying.finishes",
+     "english": "Days after an episode finishes before its download is deleted, from 0 (at once) to 365; one open in a reader waits until it closes",
+     "before": "Dagen nadat een aflevering is afgelopen voordat de download wordt verwijderd, van 0 (meteen) tot 365; een download die in een lezer open staat, wacht tot die wordt gesloten.",
+     "after": "Aantal dagen na het einde van een aflevering voordat de download wordt verwijderd, van 0 (meteen) tot 365; een download die in een lezer openstaat, wacht tot die wordt gesloten.",
+     "why": "natural: “Dagen nadat … voordat …” stacked two clauses; “openstaat” is one word"
+    },
+    {
+     "key": "Deleted %@.",
+     "id": "common.deletedValue",
+     "english": "Deleted %@.",
+     "before": "%@ is verwijderd.",
+     "after": "Verwijderd: %@.",
+     "why": "grammar: “is” cannot agree with the list Delete Feed passes; the colon form fits one name and a list"
+    },
+    {
+     "key": "Download %lld of %lld: “%@” from %@",
+     "id": "feedDownloadProgress.item",
+     "english": "Download %1$lld of %2$lld: “%3$@” from %4$@",
+     "before": "Download %1$lld van %2$lld: “%3$@” van %4$@",
+     "after": "Download %1$lld van %2$lld: “%3$@” uit %4$@",
+     "why": "natural: a second “van” (from) after “van” (of) blurs the line; “uit” names the feed"
+    },
+    {
+     "key": "Duplicate Book Found",
+     "id": "importDecision.duplicateTitle",
+     "english": "Duplicate Book Found",
+     "before": "Duplicaat van boek gevonden",
+     "after": "Dubbel boek gevonden",
+     "why": "natural: Dutch says “dubbel”, as the next title “Dubbele kopieën” does"
+    },
+    {
+     "key": "Edit Filter Preset",
+     "id": "audioFilterPresets.editTitle",
+     "english": "Edit Filter Preset",
+     "before": "Wijzig voorinstelling voor filters",
+     "after": "Wijzig filtervoorinstelling",
+     "why": "term: the sheet is named “Filtervoorinstellingen”; one compound for one thing, shorter in braille"
+    },
+    {
+     "key": "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
+     "id": "transcriptCleanup.experimentalLine",
+     "english": "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
+     "before": "Experimenteel. Deze regels corrigeren woorden die de herkenner anders schrijft dan in voorgelezen boeken. Controleer de wijzigingen voordat je ze toepast; met Maak opruiming ongedaan zet je de transcriptie terug.",
+     "after": "Experimenteel. Deze regels corrigeren woorden die de herkenner anders schrijft dan in voorgelezen boeken. Controleer de wijzigingen voordat je ze toepast; met Maak opschoning ongedaan zet je de transcriptie terug.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "Feeds refresh only at launch, if that is on, and when you choose %@ or %@",
+     "id": "feedThreshold.refreshInterval.choose",
+     "english": "Feeds refresh only at launch, if that is on, and when you choose %1$@ or %2$@",
+     "before": "Feeds worden alleen bij het starten ververst, als dat aan staat, en wanneer je %1$@ of %2$@ kiest.",
+     "after": "Feeds worden alleen bij het starten ververst, als dat aanstaat, en wanneer je %1$@ of %2$@ kiest.",
+     "why": "grammar: “aanstaan” is one word at the end of a clause"
+    },
+    {
+     "key": "Found at %@. When on, the editor's filters run through ffmpeg, with every filter it has.",
+     "id": "audioEditingSettings.ffmpegHint",
+     "english": "Found at %@. When on, the editor's filters run through ffmpeg, with every filter it has.",
+     "before": "Gevonden op %@. Als dit aan staat, lopen de filters van de editor via ffmpeg, met alle filters die het heeft.",
+     "after": "Gevonden op %@. Als dit aanstaat, lopen de filters van de editor via ffmpeg, met alle filters die het heeft.",
+     "why": "grammar: “aanstaan” is one word at the end of a clause"
+    },
+    {
+     "key": "Import cancelled while extracting the archive, before any book was imported.",
+     "id": "zipImportCancellation.sentence.whileExtracting",
+     "english": "Import cancelled while extracting the archive, before any book was imported.",
+     "before": "Import geannuleerd tijdens het uitpakken van het archief, voordat een boek was geïmporteerd.",
+     "after": "Import geannuleerd tijdens het uitpakken van het archief, voordat er een boek was geïmporteerd.",
+     "why": "natural: Dutch needs “er” in “voordat er een boek was geïmporteerd”"
+    },
+    {
+     "key": "It lists no audio track with a start that TextMouth can read.",
+     "id": "cueSheet.noTracks",
+     "english": "It lists no audio track with a start that TextMouth can read.",
+     "before": "Het vermeldt geen audiotrack met een begin dat TextMouth kan lezen.",
+     "after": "Het vermeldt geen audiotrack met een begintijd die TextMouth kan lezen.",
+     "why": "natural: “een begin” is vague; a cue sheet gives each track a start time"
+    },
+    {
+     "key": "It names no audio file in its own folder that TextMouth can import.",
+     "id": "playlistImport.refusal",
+     "english": "It names no audio file in its own folder that TextMouth can import.",
+     "before": "Het noemt geen audiobestand in de eigen map dat TextMouth kan importeren.",
+     "after": "Het noemt geen audiobestand in zijn eigen map dat TextMouth kan importeren.",
+     "why": "grammar: “de eigen map” lacks its owner; it is the playlist’s own folder"
+    },
+    {
+     "key": "Its cleanup is replaced too.",
+     "id": "transcription.replaceConfirmationMessage.cleanup",
+     "english": "Its cleanup is replaced too.",
+     "before": "De opruiming wordt ook vervangen.",
+     "after": "De opschoning wordt ook vervangen.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "List and download",
+     "id": "feed.listAndDownloadLabel",
+     "english": "List and download",
+     "before": "Lijst en download",
+     "after": "Tonen en downloaden",
+     "why": "natural: “Lijst” reads as a noun (“lijsten” means to frame); the setting names two actions"
+    },
+    {
+     "key": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "id": "transcriptCleanup.applyHint",
+     "english": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "before": "Voert deze correcties door. De transcriptie van voorheen blijft bewaard, zodat Maak opruiming ongedaan die kan terugzetten.",
+     "after": "Voert deze correcties door. De transcriptie van voorheen blijft bewaard, zodat Maak opschoning ongedaan die kan terugzetten.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "New Filter Preset",
+     "id": "audioFilterPresets.newTitle",
+     "english": "New Filter Preset",
+     "before": "Nieuwe voorinstelling voor filters",
+     "after": "Nieuwe filtervoorinstelling",
+     "why": "term: the sheet is named “Filtervoorinstellingen”; one compound for one thing, shorter in braille"
+    },
+    {
+     "key": "No cleanup to undo: the earlier transcript is gone.",
+     "id": "transcriptCleanupError.nothingToUndo",
+     "english": "No cleanup to undo: the earlier transcript is gone.",
+     "before": "Geen opruiming om ongedaan te maken: de eerdere transcriptie is verdwenen.",
+     "after": "Geen opschoning om ongedaan te maken: de eerdere transcriptie is verdwenen.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "No filter presets. Add one, or reset to the defaults.",
+     "id": "audioFilterPresets.noPresets",
+     "english": "No filter presets. Add one, or reset to the defaults.",
+     "before": "Geen voorinstellingen voor filters. Voeg er een toe of herstel de standaardwaarden.",
+     "after": "Geen filtervoorinstellingen. Voeg er een toe of herstel de standaardwaarden.",
+     "why": "term: the sheet is named “Filtervoorinstellingen”; one compound for one thing, shorter in braille"
+    },
+    {
+     "key": "No filter presets. Add some in Storage settings, under Audio Editing.",
+     "id": "audioEditor.noPresets",
+     "english": "No filter presets. Add some in Storage settings, under Audio Editing.",
+     "before": "Geen voorinstellingen voor filters. Voeg ze toe in de instellingen voor Opslag, onder Audiobewerking.",
+     "after": "Geen filtervoorinstellingen. Voeg ze toe in de instellingen voor Opslag, onder Audiobewerking.",
+     "why": "term: the sheet is named “Filtervoorinstellingen”; one compound for one thing, shorter in braille"
+    },
+    {
+     "key": "No original is kept: edits change the audio in place, and saved edits can't be undone.",
+     "id": "audioEditingSettings.explanation.delete",
+     "english": "No original is kept: edits change the audio in place, and saved edits can't be undone.",
+     "before": "Er wordt geen origineel bewaard: bewerkingen wijzigen de audio ter plekke en bewaarde bewerkingen kunnen niet ongedaan worden gemaakt.",
+     "after": "Er wordt geen origineel bewaard: bewerkingen wijzigen de audio rechtstreeks en bewaarde bewerkingen kunnen niet ongedaan worden gemaakt.",
+     "why": "natural: “ter plekke” means on the spot; edits change the audio file itself"
+    },
+    {
+     "key": "No text was found in the one picture of this comic book archive.",
+     "id": "pageImage.noText.oneArchive",
+     "english": "No text was found in the one picture of this comic book archive.",
+     "before": "Er is geen tekst gevonden in de ene afbeelding van dit stripboekarchief.",
+     "after": "Er is geen tekst gevonden in de enige afbeelding van dit stripboekarchief.",
+     "why": "meaning: “de ene afbeelding” is one of two; it is the only picture"
+    },
+    {
+     "key": "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings.",
+     "id": "importDecision.replacingAcrossKindsSentence",
+     "english": "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings.",
+     "before": "Eén kopie wordt afgespeeld van een opname en de andere wordt voorgelezen uit tekst, dus bij vervangen blijven alleen de map en de plaats op de leeslijst van de bestaande kopie behouden, niet de leespositie, de bladwijzers en hun notities of de instellingen.",
+     "after": "De ene kopie wordt afgespeeld van een opname en de andere wordt voorgelezen uit tekst, dus bij vervangen blijven alleen de map en de plaats op de leeslijst van de bestaande kopie behouden, niet de leespositie, de bladwijzers en hun notities of de instellingen.",
+     "why": "natural: Dutch pairs “de ene … de andere”"
+    },
+    {
+     "key": "Opens the filter presets, to edit, add, reorder, delete, or reset.",
+     "id": "audioEditingSettings.presetsHint",
+     "english": "Opens the filter presets, to edit, add, reorder, delete, or reset.",
+     "before": "Opent de voorinstellingen voor filters, om te wijzigen, toe te voegen, te herschikken, te verwijderen of opnieuw in te stellen.",
+     "after": "Opent de filtervoorinstellingen, om te wijzigen, toe te voegen, te herschikken, te verwijderen of opnieuw in te stellen.",
+     "why": "term: the sheet is named “Filtervoorinstellingen”; one compound for one thing, shorter in braille"
+    },
+    {
+     "key": "Put the feed's folder in",
+     "id": "feed.folderCaption",
+     "english": "Put the feed's folder in",
+     "before": "Zet de map van de feed in",
+     "after": "Plaats de map van de feed in",
+     "why": "meaning: “Zet … in” before the picker reads as the verb “inzetten” (to deploy)"
+    },
+    {
+     "key": "Put the feeds' folders in",
+     "id": "feed.importFolderCaption",
+     "english": "Put the feeds' folders in",
+     "before": "Zet de mappen van de feeds in",
+     "after": "Plaats de mappen van de feeds in",
+     "why": "meaning: “Zet … in” before the picker reads as the verb “inzetten” (to deploy)"
+    },
+    {
+     "key": "Puts back the transcript as it was before the last cleanup.",
+     "id": "transcriptCleanup.undoHint",
+     "english": "Puts back the transcript as it was before the last cleanup.",
+     "before": "Zet de transcriptie terug zoals die was vóór de laatste opruiming.",
+     "after": "Zet de transcriptie terug zoals die was vóór de laatste opschoning.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "id": "audioEditor.explanation.editorPunchIn",
+     "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "before": "Neemt over de selectie of bij de cursor op, na een pieptoon. Nogmaals, of Stop, beëindigt de opname.",
+     "after": "Neemt over de selectie of bij de cursor op, na een pieptoon. Opnieuw kiezen of Stop beëindigt de opname.",
+     "why": "natural: a bare “Nogmaals” cannot be the subject; choosing the button again ends it"
+    },
+    {
+     "key": "Refresh every feed when TextMouth opens",
+     "id": "feedSettings.refreshAtLaunch",
+     "english": "Refresh every feed when TextMouth opens",
+     "before": "Ververs elke feed wanneer TextMouth opent",
+     "after": "Ververs elke feed bij het starten van TextMouth",
+     "why": "natural: an app does not “openen” by itself; the strings around it say “bij het starten”"
+    },
+    {
+     "key": "Reverse",
+     "id": "premadeFilterPreset.title.reverse",
+     "english": "Reverse",
+     "before": "Omgekeerd",
+     "after": "Achterstevoren",
+     "why": "meaning: “Omgekeerd” can mean inverted; this preset plays the audio backwards"
+    },
+    {
+     "key": "Runs a filter preset over the selection or the whole file.",
+     "id": "audioEditor.explanation.editorApplyFilter",
+     "english": "Runs a filter preset over the selection or the whole file.",
+     "before": "Voert een voorinstelling voor filters uit over de selectie of het hele bestand.",
+     "after": "Past een filtervoorinstelling toe op de selectie of het hele bestand.",
+     "why": "term: one compound for filter presets, as the sheet names them; a preset is applied, as Pas toe says"
+    },
+    {
+     "key": "Save your subscriptions as an OPML file, which other feed readers import.",
+     "id": "feed.exportPanelMessage",
+     "english": "Save your subscriptions as an OPML file, which other feed readers import.",
+     "before": "Bewaar je abonnementen als OPML-bestand, dat andere feedlezers importeren.",
+     "after": "Bewaar je abonnementen als OPML-bestand, dat andere feedlezers kunnen importeren.",
+     "why": "natural: Dutch says other readers can import the file"
+    },
+    {
+     "key": "Set Chapter Marker",
+     "id": "audioEdit.actionName.setChapter",
+     "english": "Set Chapter Marker",
+     "before": "Stel hoofdstukmarkering in",
+     "after": "Plaats hoofdstukmarkering",
+     "why": "natural: a marker is placed, as its hint and announcement say; “instellen” is to configure"
+    },
+    {
+     "key": "Show an alert when a refresh brings new episodes",
+     "id": "feedSettings.refreshAlert",
+     "english": "Show an alert when a refresh brings new episodes",
+     "before": "Toon een waarschuwing wanneer een verversing nieuwe afleveringen oplevert",
+     "after": "Toon een dialoogvenster wanneer een verversing nieuwe afleveringen oplevert",
+     "why": "meaning: “waarschuwing” is a warning; this alert only lists feeds, as its hint says"
+    },
+    {
+     "key": "TextMouth can't read “%@” as %@. It may be damaged, or named for another format.",
+     "id": "ffmpegImport.notRecognized",
+     "english": "TextMouth can't read “%1$@” as %2$@. It may be damaged, or named for another format.",
+     "before": "TextMouth kan “%1$@” niet lezen als %2$@. Het bestand is mogelijk beschadigd of heeft de naam van een ander formaat.",
+     "after": "TextMouth kan “%1$@” niet lezen als %2$@. Het bestand is mogelijk beschadigd of heeft de extensie van een ander formaat.",
+     "why": "natural: a file is not “named” after a format; its extension names one"
+    },
+    {
+     "key": "TextMouth could not keep the new copy of “%@”. Choose Cancel to discard the copy, then import the file again.",
+     "id": "duplicateCopy.markerStays",
+     "english": "TextMouth could not keep the new copy of “%@”. Choose Cancel to discard the copy, then import the file again.",
+     "before": "TextMouth kon de nieuwe kopie van “%@” niet bewaren. Kies Annuleer om de kopie te verwerpen en importeer het bestand daarna opnieuw.",
+     "after": "TextMouth kon de nieuwe kopie van “%@” niet bewaren. Kies Annuleer om de kopie weg te gooien en importeer het bestand daarna opnieuw.",
+     "why": "term: “verwerpen” means reject; the glossary’s Discard is “weggooien”"
+    },
+    {
+     "key": "TextMouth couldn't start recording from %@.",
+     "id": "recordingFailure.couldNotStart",
+     "english": "TextMouth couldn't start recording from %@.",
+     "before": "TextMouth kon niet beginnen met opnemen met %@.",
+     "after": "TextMouth kon de opname met %@ niet starten.",
+     "why": "natural: “beginnen met opnemen met” doubled “met”"
+    },
+    {
+     "key": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+     "id": "feedDownloadProgress.comingBack.checks",
+     "english": {
+      "one": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+      "other": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens."
+     },
+     "before": {
+      "one": "TextMouth downloadt %lld ervan opnieuw bij de volgende controles van hun feeds, of de volgende keer dat TextMouth opent.",
+      "other": "TextMouth downloadt %lld ervan opnieuw bij de volgende controles van hun feeds, of de volgende keer dat TextMouth opent."
+     },
+     "after": {
+      "one": "TextMouth downloadt %lld ervan opnieuw bij de volgende controles van hun feeds, of de volgende keer dat TextMouth start.",
+      "other": "TextMouth downloadt %lld ervan opnieuw bij de volgende controles van hun feeds, of de volgende keer dat TextMouth start."
+     },
+     "why": "natural: an app does not “openen” by itself; Dutch says it starts"
+    },
+    {
+     "key": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "id": "feedDownloadProgress.comingBack.check",
+     "english": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "before": "TextMouth downloadt 1 ervan opnieuw bij de volgende controle van de feed, of de volgende keer dat TextMouth opent.",
+     "after": "TextMouth downloadt 1 ervan opnieuw bij de volgende controle van de feed, of de volgende keer dat TextMouth start.",
+     "why": "natural: an app does not “openen” by itself; Dutch says it starts"
+    },
+    {
+     "key": "TextMouth downloads each feed's newest again at its next check, or the next time it opens.",
+     "id": "feedDownloadProgress.retryAfterCancel",
+     "english": "TextMouth downloads each feed's newest again at its next check, or the next time it opens.",
+     "before": "TextMouth downloadt de nieuwste van elke feed opnieuw bij de volgende controle, of de volgende keer dat TextMouth opent.",
+     "after": "TextMouth downloadt de nieuwste van elke feed opnieuw bij de volgende controle, of de volgende keer dat TextMouth start.",
+     "why": "natural: an app does not “openen” by itself; Dutch says it starts"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "id": "feed.notificationsRefused",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "TextMouth mag geen meldingen plaatsen. Schakel ze in via Systeeminstellingen, Meldingen, TextMouth.",
+     "after": "TextMouth mag geen meldingen plaatsen. Schakel ze in via Systeeminstellingen, Berichtgeving, TextMouth.",
+     "why": "term: Apple’s Dutch System Settings names the Notifications pane “Berichtgeving”"
+    },
+    {
+     "key": "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
+     "id": "convertedOriginal.keepingCaption",
+     "english": "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
+     "before": "TextMouth bewaart het originele bestand van audio die het bij het importeren converteert. Een origineel neemt ongeveer evenveel schijfruimte in beslag als het geconverteerde bestand, of twee keer zoveel als het niet is gecomprimeerd. Exporteer biedt het aan als Origineel bestand. Het origineel van een feedaflevering wordt niet bewaard: de aflevering kan opnieuw worden gedownload.",
+     "after": "TextMouth bewaart het originele bestand van audio die het bij het importeren converteert. Een origineel neemt ongeveer evenveel schijfruimte in beslag als het geconverteerde bestand, of twee keer zoveel als het niet is gecomprimeerd. Bij exporteren wordt het aangeboden als Origineel bestand. Het origineel van een feedaflevering wordt niet bewaard: de aflevering kan opnieuw worden gedownload.",
+     "why": "natural: the imperative “Exporteer” cannot be the subject of a sentence"
+    },
+    {
+     "key": "TextMouth's converter stopped before the end of “%@”, so it could not be imported.",
+     "id": "ffmpegImport.endedEarly",
+     "english": "TextMouth's converter stopped before the end of “%@”, so it could not be imported.",
+     "before": "De converter van TextMouth stopte voor het einde van “%@”, dus het kon niet worden geïmporteerd.",
+     "after": "De converter van TextMouth stopte vóór het einde van “%@”, dus het kon niet worden geïmporteerd.",
+     "why": "punctuation: “vóór” marks before, where “voor” reads as for"
+    },
+    {
+     "key": "The article leaves the list for good; the book it became in your library stays.",
+     "id": "feed.deleteItemMessage.article",
+     "english": "The article leaves the list for good; the book it became in your library stays.",
+     "before": "Het artikel verdwijnt voorgoed uit de lijst; het boek dat ervan is gemaakt in je bibliotheek blijft.",
+     "after": "Het artikel verdwijnt voorgoed uit de lijst; het boek dat ervan is gemaakt, blijft in je bibliotheek.",
+     "why": "natural: “in je bibliotheek” sat inside the relative clause, before its verb"
+    },
+    {
+     "key": "The book is being transcribed again. Clean up its transcript once that finishes.",
+     "id": "transcriptCleanupError.busyTranscribing",
+     "english": "The book is being transcribed again. Clean up its transcript once that finishes.",
+     "before": "Het boek wordt opnieuw getranscribeerd. Ruim de transcriptie op zodra dat klaar is.",
+     "after": "Het boek wordt opnieuw getranscribeerd. Schoon de transcriptie op zodra dat klaar is.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "The book's text has changes TextMouth couldn't copy, so it leaves the text as it is.",
+     "id": "transcriptTextError.textNotKept",
+     "english": "The book's text has changes TextMouth couldn't copy, so it leaves the text as it is.",
+     "before": "De tekst van het boek heeft wijzigingen die TextMouth niet kon kopiëren, dus laat de tekst zoals die is.",
+     "after": "De tekst van het boek heeft wijzigingen die TextMouth niet kon kopiëren, dus laat TextMouth de tekst zoals die is.",
+     "why": "grammar: the clause after “dus” lost its subject and read as a command"
+    },
+    {
+     "key": "The book's transcript couldn't be read, so it wasn't exported.",
+     "id": "transcriptExportError.unusable",
+     "english": "The book's transcript couldn't be read, so it wasn't exported.",
+     "before": "De transcriptie van het boek kon niet worden gelezen, dus is niet geëxporteerd.",
+     "after": "De transcriptie van het boek kon niet worden gelezen, dus is die niet geëxporteerd.",
+     "why": "grammar: the clause after “dus” lost its subject"
+    },
+    {
+     "key": "The edit history names a file outside the book, so it isn't used.",
+     "id": "audioEditError.fileOutsidePackage",
+     "english": "The edit history names a file outside the book, so it isn't used.",
+     "before": "De bewerkingsgeschiedenis noemt een bestand buiten het boek, dus wordt niet gebruikt.",
+     "after": "De bewerkingsgeschiedenis noemt een bestand buiten het boek, dus wordt die niet gebruikt.",
+     "why": "grammar: the clause after “dus” lost its subject"
+    },
+    {
+     "key": "The episode leaves the list for good; the book it became in your library stays.",
+     "id": "feed.deleteItemMessage.episode",
+     "english": "The episode leaves the list for good; the book it became in your library stays.",
+     "before": "De aflevering verdwijnt voorgoed uit de lijst; het boek dat ervan is gemaakt in je bibliotheek blijft.",
+     "after": "De aflevering verdwijnt voorgoed uit de lijst; het boek dat ervan is gemaakt, blijft in je bibliotheek.",
+     "why": "natural: “in je bibliotheek” sat inside the relative clause, before its verb"
+    },
+    {
+     "key": "The feed “%@” stays with it.",
+     "id": "feed.deleteFeedRefused.filesStayed.stays",
+     "english": "The feed “%@” stays with it.",
+     "before": "De feed “%@” blijft bij dat onderdeel.",
+     "after": "De feed “%@” blijft samen met dat onderdeel bestaan.",
+     "why": "natural: “blijft bij dat onderdeel” says it waits by the item; the feed is kept along with it"
+    },
+    {
+     "key": "The feed “%@” stays with them.",
+     "id": "feed.deleteFeedRefused.filesStayed.them",
+     "english": "The feed “%@” stays with them.",
+     "before": "De feed “%@” blijft bij die onderdelen.",
+     "after": "De feed “%@” blijft samen met die onderdelen bestaan.",
+     "why": "natural: “blijft bij die onderdelen” says it waits by the items; the feed is kept along with them"
+    },
+    {
+     "key": "The filter presets are reset to the defaults.",
+     "id": "audioFilterPresets.resetAll",
+     "english": "The filter presets are reset to the defaults.",
+     "before": "De voorinstellingen voor filters zijn teruggezet naar de standaardwaarden.",
+     "after": "De filtervoorinstellingen zijn teruggezet naar de standaardwaarden.",
+     "why": "term: the sheet is named “Filtervoorinstellingen”; one compound for one thing, shorter in braille"
+    },
+    {
+     "key": "The import was stopped before its end.",
+     "id": "opmlImportSummary.sentence.stopped",
+     "english": "The import was stopped before its end.",
+     "before": "De import is voor het einde gestopt.",
+     "after": "De import is vóór het einde gestopt.",
+     "why": "punctuation: “vóór” marks before, where “voor” reads as for"
+    },
+    {
+     "key": "The label file “%@” matches no audio file beside it by name, so its headings were not used.",
+     "id": "cueSheet.sheetUnused.matches",
+     "english": "The label file “%@” matches no audio file beside it by name, so its headings were not used.",
+     "before": "Het labelbestand “%@” komt qua naam met geen audiobestand ernaast overeen, dus de koppen zijn niet gebruikt.",
+     "after": "Geen audiobestand naast het labelbestand “%@” heeft een overeenkomende naam, dus de koppen zijn niet gebruikt.",
+     "why": "natural: “komt qua naam met geen … overeen” is stiff officialese"
+    },
+    {
+     "key": "The library isn't available, so the filter presets can't be saved.",
+     "id": "audioFilterPresetError.libraryUnavailable",
+     "english": "The library isn't available, so the filter presets can't be saved.",
+     "before": "De bibliotheek is niet beschikbaar, dus de voorinstellingen voor filters kunnen niet worden bewaard.",
+     "after": "De bibliotheek is niet beschikbaar, dus de filtervoorinstellingen kunnen niet worden bewaard.",
+     "why": "term: the sheet is named “Filtervoorinstellingen”; one compound for one thing, shorter in braille"
+    },
+    {
+     "key": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "id": "feed.itemPolicyQuietNote",
+     "english": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "before": "De lijst volgt een wijziging van %@ meteen; wat wordt gedownload of verdwijnt, wacht tot de wijziging tien seconden is gebleven, en VoiceOver kondigt het dan aan.",
+     "after": "De lijst volgt een wijziging van %@ meteen; wat wordt gedownload of verdwijnt, wacht tot de wijziging tien seconden van kracht is, en VoiceOver kondigt het dan aan.",
+     "why": "natural: “tien seconden is gebleven” copies the English; a choice is “van kracht”, as its announcement says"
+    },
+    {
+     "key": "The page at %@ is larger than TextMouth reads.",
+     "id": "feedFetchError.downloadMessage.tooLarge",
+     "english": "The page at %@ is larger than TextMouth reads.",
+     "before": "De pagina op %@ is groter dan TextMouth leest.",
+     "after": "De pagina op %@ is groter dan TextMouth kan lezen.",
+     "why": "natural: “groter dan TextMouth leest” states a habit; the size is past what it can read"
+    },
+    {
+     "key": "The podcast directory's answer is larger than TextMouth reads.",
+     "id": "feedFetchError.searchMessage.tooLarge",
+     "english": "The podcast directory's answer is larger than TextMouth reads.",
+     "before": "Het antwoord van de podcastgids is groter dan TextMouth leest.",
+     "after": "Het antwoord van de podcastgids is groter dan TextMouth kan lezen.",
+     "why": "natural: “groter dan TextMouth leest” states a habit; the size is past what it can read"
+    },
+    {
+     "key": "The pre-cleanup transcript is only in the cloud. Download the book and try again.",
+     "id": "transcriptCleanupError.previousInCloud",
+     "english": "The pre-cleanup transcript is only in the cloud. Download the book and try again.",
+     "before": "De transcriptie van vóór de opruiming staat alleen in de cloud. Download het boek en probeer het opnieuw.",
+     "after": "De transcriptie van vóór de opschoning staat alleen in de cloud. Download het boek en probeer het opnieuw.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "The transcript changed since this was shown. Reopen Clean Up Transcript to see the changes.",
+     "id": "transcriptCleanupError.transcriptChanged",
+     "english": "The transcript changed since this was shown. Reopen Clean Up Transcript to see the changes.",
+     "before": "De transcriptie is gewijzigd sinds dit werd getoond. Open Ruim transcriptie op opnieuw om de wijzigingen te zien.",
+     "after": "De transcriptie is gewijzigd sinds dit werd getoond. Open Schoon transcriptie op opnieuw om de wijzigingen te zien.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "The transcript from before the cleanup can't be used: %@.",
+     "id": "transcriptCleanupError.previousUnusable",
+     "english": "The transcript from before the cleanup can't be used: %@.",
+     "before": "De transcriptie van vóór de opruiming kan niet worden gebruikt: %@.",
+     "after": "De transcriptie van vóór de opschoning kan niet worden gebruikt: %@.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "The transcript runs to %@, past the audio's end at %@, so it is for other audio.",
+     "id": "outsideTranscriptError.runsPastTheEnd",
+     "english": "The transcript runs to %1$@, past the audio's end at %2$@, so it is for other audio.",
+     "before": "De transcriptie loopt tot %1$@, voorbij het einde van de audio bij %2$@, dus hoort bij andere audio.",
+     "after": "De transcriptie loopt tot %1$@, voorbij het einde van de audio bij %2$@, dus hoort die bij andere audio.",
+     "why": "grammar: the clause after “dus” lost its subject"
+    },
+    {
+     "key": "This book keeps no original audio: saved edits change its audio in place, and can't be undone after.",
+     "id": "audioEditor.policyChanged.delete",
+     "english": "This book keeps no original audio: saved edits change its audio in place, and can't be undone after.",
+     "before": "Dit boek bewaart geen originele audio: bewaarde bewerkingen wijzigen de audio ter plekke en kunnen daarna niet ongedaan worden gemaakt.",
+     "after": "Dit boek bewaart geen originele audio: bewaarde bewerkingen wijzigen de audio rechtstreeks en kunnen daarna niet ongedaan worden gemaakt.",
+     "why": "natural: “ter plekke” means on the spot; edits change the audio file itself"
+    },
+    {
+     "key": "Title for a chapter marker at the cursor. One already there is renamed.",
+     "id": "audioEditor.chapterExplanation",
+     "english": "Title for a chapter marker at the cursor. One already there is renamed.",
+     "before": "Titel voor een hoofdstukmarkering bij de cursor. Een markering die er al staat, krijgt een andere naam.",
+     "after": "Titel voor een hoofdstukmarkering bij de cursor. Een markering die er al staat, krijgt deze titel.",
+     "why": "meaning: “krijgt een andere naam” said it gets some other name; it takes this title"
+    },
+    {
+     "key": "Undid the cleanup of the transcript of %@.",
+     "id": "transcriptCleanup.undone",
+     "english": "Undid the cleanup of the transcript of %@.",
+     "before": "Opruiming van de transcriptie van %@ ongedaan gemaakt.",
+     "after": "Opschoning van de transcriptie van %@ ongedaan gemaakt.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "Undo Cleanup",
+     "id": "transcriptCleanup.undoTitle",
+     "english": "Undo Cleanup",
+     "before": "Maak opruiming ongedaan",
+     "after": "Maak opschoning ongedaan",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "Undo Cleanup puts back the transcript from before.",
+     "id": "transcriptCleanup.alreadyCleanedUp.before",
+     "english": "Undo Cleanup puts back the transcript from before.",
+     "before": "Maak opruiming ongedaan zet de eerdere transcriptie terug.",
+     "after": "Maak opschoning ongedaan zet de eerdere transcriptie terug.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "Wait until the transcription ends, or cancel it",
+     "id": "feedBookUse.remedy.transcribing",
+     "english": "Wait until the transcription ends, or cancel it",
+     "before": "Wacht tot de transcriptie klaar is, of annuleer die",
+     "after": "Wacht tot de transcribering klaar is, of annuleer die",
+     "why": "term: the glossary gives the process (Transcription) “transcribering”, the text “transcriptie”"
+    },
+    {
+     "key": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "id": "feed.useGlobalHint",
+     "english": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "before": "Als dit is aangevinkt, volgt deze feed de instelling in Instellingen, %@; vink uit om de feed een eigen instelling te geven.",
+     "after": "Als dit is aangevinkt, volgt deze feed de instelling in Instellingen, %@; vink het uit om de feed een eigen instelling te geven.",
+     "why": "grammar: “vink uit” lacks its object “het”"
+    },
+    {
+     "key": "You cleaned it up on %@.",
+     "id": "transcription.bookInfoLine.cleaned",
+     "english": "You cleaned it up on %@.",
+     "before": "Je hebt die opgeruimd op %@.",
+     "after": "Je hebt die opgeschoond op %@.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "You cleaned up this transcript on %@. Transcribing again replaces the cleanup.",
+     "id": "transcription.cleanedUpTranscript",
+     "english": "You cleaned up this transcript on %@. Transcribing again replaces the cleanup.",
+     "before": "Je hebt deze transcriptie opgeruimd op %@. Opnieuw transcriberen vervangt de opruiming.",
+     "after": "Je hebt deze transcriptie opgeschoond op %@. Opnieuw transcriberen vervangt de opschoning.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "You edited the transcript on %@, after the cleanup. Undo Cleanup undoes those edits too.",
+     "id": "transcriptCleanup.editedSinceCleanup",
+     "english": "You edited the transcript on %@, after the cleanup. Undo Cleanup undoes those edits too.",
+     "before": "Je hebt de transcriptie gewijzigd op %@, na de opruiming. Maak opruiming ongedaan maakt die wijzigingen ook ongedaan.",
+     "after": "Je hebt de transcriptie gewijzigd op %@, na de opschoning. Maak opschoning ongedaan maakt die wijzigingen ook ongedaan.",
+     "why": "term: text is “opgeschoond”; “opruimen” is tidying a room and “opruiming” a clearance sale"
+    },
+    {
+     "key": "You will be asked whether to delete the original file permanently after each import.",
+     "id": "originalFileDeletion.asking.permanently",
+     "english": "You will be asked whether to delete the original file permanently after each import.",
+     "before": "Na elke import wordt je gevraagd of het originele bestand definitief moet worden verwijderd.",
+     "after": "Na elke import vraagt TextMouth of je het originele bestand definitief wilt verwijderen.",
+     "why": "natural: “wordt je gevraagd” reads as a spelling slip; Dutch says TextMouth asks"
+    },
+    {
+     "key": "You will be asked whether to move the original file to the Trash after each import.",
+     "id": "originalFileDeletion.askingExplanation.trash",
+     "english": "You will be asked whether to move the original file to the Trash after each import.",
+     "before": "Na elke import wordt je gevraagd of het originele bestand naar de prullenmand moet worden verplaatst.",
+     "after": "Na elke import vraagt TextMouth of je het originele bestand naar de prullenmand wilt verplaatsen.",
+     "why": "natural: “wordt je gevraagd” reads as a spelling slip; Dutch says TextMouth asks"
+    },
+    {
+     "key": "Your copy of the rules is empty. Edit Rules… opens it to add some.",
+     "id": "transcriptCleanup.noRules.user",
+     "english": "Your copy of the rules is empty. Edit Rules… opens it to add some.",
+     "before": "Je kopie van de regels is leeg. Wijzig regels… opent die om er toe te voegen.",
+     "after": "Je kopie van de regels is leeg. Wijzig regels… opent die, zodat je er regels aan kunt toevoegen.",
+     "why": "grammar: “om er toe te voegen” has no object; Dutch needs “er regels aan toevoegen”"
+    },
+    {
+     "key": "a kind the system does not name",
+     "id": "pageImage.unnamedKind",
+     "english": "a kind the system does not name",
+     "before": "een soort dat het systeem niet noemt",
+     "after": "een soort waarvoor het systeem geen naam heeft",
+     "why": "meaning: “niet noemt” is does not mention; the system has no name for the kind"
+    },
+    {
+     "key": "is being transcribed, and %@ now would lose the transcript",
+     "id": "feedBookUse.clause.transcribing",
+     "english": "is being transcribed, and %@ now would lose the transcript",
+     "before": "wordt getranscribeerd, en %@ zou nu de transcriptie verliezen",
+     "after": "wordt getranscribeerd, en door %@ zou de transcriptie nu verloren gaan",
+     "why": "natural: an act cannot “verliezen” a transcript; Dutch says it would be lost"
+    },
+    {
+     "key": "it downloads once this Mac is on a network without data limits",
+     "id": "feedDownloadWait.reason.network",
+     "english": "it downloads once this Mac is on a network without data limits",
+     "before": "wordt gedownload zodra deze Mac op een netwerk zonder datalimiet zit",
+     "after": "wordt gedownload zodra deze Mac verbonden is met een netwerk zonder datalimiet",
+     "why": "natural: “op een netwerk zit” is slang; elsewhere the Mac “verbonden is met” a network"
+    },
+    {
+     "key": "returning it to the library",
+     "id": "importStep.phrase.reinstating",
+     "english": "returning it to the library",
+     "before": "teruggeven aan de bibliotheek",
+     "after": "terugzetten in de bibliotheek",
+     "why": "meaning: “teruggeven aan de bibliotheek” is handing a loan back to a public library"
+    },
+    {
+     "key": "the top of your library",
+     "id": "feed.movedToLibrary.topLibrary",
+     "english": "the top of your library",
+     "before": "de bovenkant van je bibliotheek",
+     "after": "het bovenste niveau van je bibliotheek",
+     "why": "meaning: “de bovenkant” is the top surface; this is the library’s top level"
+    },
+    {
+     "key": "“%@” downloads once this Mac is on a network without data limits.",
+     "id": "feedFetchError.download.constrainedNetwork",
+     "english": "“%@” downloads once this Mac is on a network without data limits.",
+     "before": "“%@” wordt gedownload zodra deze Mac op een netwerk zonder datalimiet zit.",
+     "after": "“%@” wordt gedownload zodra deze Mac verbonden is met een netwerk zonder datalimiet.",
+     "why": "natural: “op een netwerk zit” is slang; elsewhere the Mac “verbonden is met” a network"
+    },
+    {
+     "key": "“%@” wasn't attached to %@: %@",
+     "id": "transcription.attachFailed",
+     "english": "“%1$@” wasn't attached to %2$@: %3$@",
+     "before": "“%1$@” is niet bijgevoegd aan %2$@: %3$@",
+     "after": "“%1$@” is niet bij %2$@ gevoegd: %3$@",
+     "why": "grammar: one adds a file “bij” a book, as Voeg transcriptie bij says; “bijgevoegd aan” is an anglicism"
+    }
+   ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ has its default, %@",
+     "id": "shortcutsSettings.defaultsHeldElsewhere",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%@ heeft zijn standaardtoets, %@",
+     "after": "%@ heeft nu de standaardtoets, %@",
+     "why": "meaning: zijn made the default the other action's own; the key is this row's default, which that action now holds"
+    },
+    {
+     "key": "%@ now waits before %@, in case it is pressed twice.",
+     "id": "shortcutsSettings.nowWaits",
+     "english": "%1$@ now waits before %2$@, in case it is pressed twice.",
+     "before": "%@ wacht nu even voor %@, voor het geval de toets twee keer wordt ingedrukt.",
+     "after": "%@ wacht nu even met %@, voor het geval de toets twee keer wordt ingedrukt.",
+     "why": "meaning: wacht voor %@ reads as waits for the action; wachten met is Dutch for holding off before doing it"
+    },
+    {
+     "key": "%@ of %lld chapters could not be read",
+     "id": "extractionReport.summary.value",
+     "english": {
+      "one": "%@ of %lld chapter could not be read",
+      "other": "%@ of %lld chapters could not be read"
+     },
+     "before": {
+      "one": "%@ van %lld hoofdstukken niet gelezen",
+      "other": "%@ van %lld hoofdstukken niet gelezen"
+     },
+     "after": {
+      "one": "%@ van %lld hoofdstuk niet te lezen",
+      "other": "%@ van %lld hoofdstukken niet te lezen"
+     },
+     "why": "grammar: the one form said 1 van 1 hoofdstukken, and niet gelezen means not yet read; niet te lezen is could not be read with no verb to agree"
+    },
+    {
+     "key": "%@ remaining at current speed",
+     "id": "readerTime.timeLeftSpoken",
+     "english": "%@ remaining at current speed",
+     "before": "%@ resterend op huidige snelheid",
+     "after": "Nog %@ bij de huidige snelheid",
+     "why": "natural: resterend op huidige snelheid copies the English and drops the article; matches the total-remaining string"
+    },
+    {
+     "key": "%@ through the book",
+     "id": "readerView.throughTheBook",
+     "english": "%@ through the book",
+     "before": "%@ door het boek",
+     "after": "%@ van het boek",
+     "why": "natural: door het boek is a calque of through the book; Dutch says 42 procent van het boek"
+    },
+    {
+     "key": "%@ times speed",
+     "id": "audioSpeed.spokenLabel",
+     "english": "%@ times speed",
+     "before": "%@ keer de snelheid",
+     "after": "%@ keer zo snel",
+     "why": "natural: keer de snelheid leaves the speed unnamed; Dutch says 1,25 keer zo snel"
+    },
+    {
+     "key": "%@ to %@",
+     "id": "common.valueToValue",
+     "english": "%1$@ to %2$@",
+     "before": "%1$@ tot %2$@",
+     "after": "%1$@ tot en met %2$@",
+     "why": "meaning: tot alone leaves the last page out of the range; tot en met includes it"
+    },
+    {
+     "key": "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "id": "bookExportDeepChapter.message.paragraphs",
+     "english": "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "before": "%@ schrijft dat hoofdstuk als gewone alinea's met zijn regels, met de citaat- en lijsttekens als tekens behouden, en exporteert al het andere zoals gewoonlijk.",
+     "after": "%@ schrijft de regels van dat hoofdstuk als gewone alinea's, waarbij de citaat- en lijsttekens als tekens behouden blijven, en exporteert al het andere zoals gewoonlijk.",
+     "why": "natural: met de tekens als tekens behouden copied the English order; waarbij ... behouden blijven is the Dutch"
+    },
+    {
+     "key": "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "id": "bookExportDeepChapter.message.text",
+     "english": "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "before": "%@ schrijft de tekst als gewone alinea's met zijn regels, met de citaat- en lijsttekens als tekens behouden, en exporteert al het andere zoals gewoonlijk.",
+     "after": "%@ schrijft de regels van de tekst als gewone alinea's, waarbij de citaat- en lijsttekens als tekens behouden blijven, en exporteert al het andere zoals gewoonlijk.",
+     "why": "natural: met de tekens als tekens behouden copied the English order; waarbij ... behouden blijven is the Dutch"
+    },
+    {
+     "key": "%lld rules were left out: regular expressions and rules that are off cannot be written in a lexicon.",
+     "id": "pronunciationLexicon.exported.expressions",
+     "english": {
+      "one": "%lld rule was left out: regular expressions and rules that are off cannot be written in a lexicon.",
+      "other": "%lld rules were left out: regular expressions and rules that are off cannot be written in a lexicon."
+     },
+     "before": {
+      "one": "%lld regel is weggelaten: reguliere expressies en regels die uit staan, kunnen niet in een lexicon worden geschreven.",
+      "other": "%lld regels zijn weggelaten: reguliere expressies en regels die uit staan, kunnen niet in een lexicon worden geschreven."
+     },
+     "after": {
+      "one": "%lld regel is weggelaten: reguliere expressies en regels die uitstaan, kunnen niet in een lexicon worden geschreven.",
+      "other": "%lld regels zijn weggelaten: reguliere expressies en regels die uitstaan, kunnen niet in een lexicon worden geschreven."
+     },
+     "why": "grammar: a separable verb at the clause end is one word (uitstaan), as part 2 writes it"
+    },
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "id": "bookExport.settingHint",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "Voegt een knop Exporteer toe aan de knoppenbalk van elke lezer. Bestand, Exporteer werkt in beide gevallen.",
+     "after": "Voegt een knop Exporteer toe aan de knoppenbalk van elke lezer. Archief, Exporteer werkt in beide gevallen.",
+     "why": "term: the system's File menu is Archief in Apple's Dutch, so Bestand names a menu the listener cannot find"
+    },
+    {
+     "key": "At Sign",
+     "id": "keyBinding.localizedKeyWords.sign",
+     "english": "At Sign",
+     "before": "At-teken",
+     "after": "Apenstaartje",
+     "why": "term: the Dutch name of @ is apenstaartje, as VoiceOver says it"
+    },
+    {
+     "key": "Before page %@",
+     "id": "pagePosition.label.before",
+     "english": "Before page %@",
+     "before": "Voor pagina %@",
+     "after": "Vóór pagina %@",
+     "why": "meaning: voor pagina also reads as for page; the accent says before, as Dutch spelling allows"
+    },
+    {
+     "key": "Chapter %@ could not be played: %@ from the book's package.",
+     "id": "readerViewModel.chapterNotPlayed",
+     "english": "Chapter %1$@ could not be played: %2$@ from the book's package.",
+     "before": "Hoofdstuk %@ kon niet worden afgespeeld: %@ uit het pakket van het boek.",
+     "after": "Hoofdstuk %@ kon niet worden afgespeeld: %@ in het pakket van het boek.",
+     "why": "grammar: %@ ends in ontbreekt, and Dutch says ontbreekt in, not ontbreekt uit"
+    },
+    {
+     "key": "Chooses what Play and the skip buttons move by.",
+     "id": "phoneReader.navigationUnitHint",
+     "english": "Chooses what Play and the skip buttons move by.",
+     "before": "Kiest waarmee Speel af en de springknoppen vooruit of terug gaan.",
+     "after": "Kiest waarmee Speel af en de springknoppen vooruit- of teruggaan.",
+     "why": "grammar: a separable verb at the clause end is one word (vooruit- of teruggaan), as part 2 writes it"
+    },
+    {
+     "key": "Chooses what a book opened from the list does when it ends.",
+     "id": "readingList.continuationHint",
+     "english": "Chooses what a book opened from the list does when it ends.",
+     "before": "Kiest wat een boek dat uit de lijst is geopend doet als het eindigt.",
+     "after": "Kiest wat een boek dat uit de lijst is geopend, doet als het eindigt.",
+     "why": "punctuation: Dutch puts a comma between the verbs of two clauses (is geopend, doet), and VoiceOver pauses on it"
+    },
+    {
+     "key": "Export can't write into TextMouth's library folder. Choose another folder.",
+     "id": "bookExport.destinationInLibrary",
+     "english": "Export can't write into TextMouth's library folder. Choose another folder.",
+     "before": "Exporteren kan niet naar de bibliotheekmap van TextMouth schrijven. Kies een andere map.",
+     "after": "Exporteren naar de bibliotheekmap van TextMouth is niet mogelijk. Kies een andere map.",
+     "why": "natural: Exporteren kan niet schrijven makes the infinitive an agent that writes; Dutch says exporting there is not possible"
+    },
+    {
+     "key": "Export can't write into the folder where TextMouth keeps spoken chapters, which it empties. Choose another folder.",
+     "id": "speechExport.destinationInKeptChapters",
+     "english": "Export can't write into the folder where TextMouth keeps spoken chapters, which it empties. Choose another folder.",
+     "before": "Exporteren kan niet schrijven naar de map waarin TextMouth uitgesproken hoofdstukken bewaart, en die wordt leeggemaakt. Kies een andere map.",
+     "after": "Exporteren naar de map waarin TextMouth uitgesproken hoofdstukken bewaart, is niet mogelijk, want TextMouth maakt die map leeg. Kies een andere map.",
+     "why": "natural: Exporteren kan niet schrijven makes the infinitive an agent, and en die wordt leeggemaakt lost the because"
+    },
+    {
+     "key": "Exporting %lld of %@…",
+     "id": "bookExport.progress.exportingCount",
+     "english": "Exporting %1$lld of %2$@…",
+     "before": "%1$lld van %2$@ wordt geëxporteerd…",
+     "after": "Exporteren: %1$lld van %2$@…",
+     "why": "grammar: %1$lld van %2$@ wordt needs worden for any count but 1; the progress line now has no verb to agree"
+    },
+    {
+     "key": "Finding what can be exported…",
+     "id": "bookExport.listing",
+     "english": "Finding what can be exported…",
+     "before": "Zoeken wat er kan worden geëxporteerd…",
+     "after": "Uitzoeken wat er kan worden geëxporteerd…",
+     "why": "grammar: zoeken does not take a wat clause; uitzoeken wat is the Dutch for finding out what"
+    },
+    {
+     "key": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "id": "readingList.keepBooksHint",
+     "english": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "before": "Bewaart de boeken van de lijst gedownload op deze Mac; elke Mac kiest voor zichzelf. Als je dit uitschakelt, wordt er geen download verwijderd.",
+     "after": "Houdt de boeken van de lijst gedownload op deze Mac; elke Mac kiest voor zichzelf. Als je dit uitschakelt, wordt er geen download verwijderd.",
+     "why": "natural: bewaart gedownload copies keeps downloaded; Dutch keeps something downloaded with houden"
+    },
+    {
+     "key": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+     "id": "speechExport.kept.chaptersGo",
+     "english": {
+      "one": "Kept %@ of %lld chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+      "other": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "one": "%@ van %lld hoofdstuk is bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte.",
+      "other": "%@ van %lld hoofdstukken is bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+     },
+     "after": {
+      "one": "TextMouth bewaart %@ van %lld hoofdstuk totdat de app wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte.",
+      "other": "TextMouth bewaart %@ van %lld hoofdstukken totdat de app wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+     },
+     "why": "grammar: %@ van %lld hoofdstukken is bewaard needs zijn for any count but 1; TextMouth is now the subject"
+    },
+    {
+     "key": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch.",
+     "id": "speechExport.kept.them",
+     "english": {
+      "one": "Kept all %lld spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+      "other": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "one": "Het gesproken hoofdstuk (%lld) is bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om er het audiobestand van te maken, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte.",
+      "other": "Alle %lld gesproken hoofdstukken zijn bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om er het audiobestand van te maken, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+     },
+     "after": {
+      "one": "Het gesproken hoofdstuk is bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om er het audiobestand van te maken, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte.",
+      "other": "Alle %lld gesproken hoofdstukken zijn bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om er het audiobestand van te maken, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+     },
+     "why": "natural: the one form read the count aloud in brackets, (1); Dutch one means exactly one, so it needs no number"
+    },
+    {
+     "key": "Levels 1 to %lld",
+     "id": "headingNavigatorView.filterChoiceTitle.levels",
+     "english": "Levels 1 to %lld",
+     "before": "Niveau 1 tot %lld",
+     "after": "Niveaus 1 tot en met %lld",
+     "why": "meaning: tot alone leaves the last level out, and the choice shows it; levels is plural"
+    },
+    {
+     "key": "Loading book...",
+     "id": "readerView.loadingBook",
+     "english": "Loading book...",
+     "before": "Boek laden…",
+     "after": "Boek wordt geladen…",
+     "why": "meaning: Boek laden… with an ellipsis reads as a command to load a book; this is a progress message"
+    },
+    {
+     "key": "Markup guard: strict, every angle bracket silent, from character %@ to %@ of the spoken text.",
+     "id": "speechRefusal.markupGuard.character",
+     "english": "Markup guard: strict, every angle bracket silent, from character %1$@ to %2$@ of the spoken text.",
+     "before": "Opmaakbeveiliging: streng, elke punthaak wordt niet uitgesproken, van teken %1$@ tot %2$@ van de gesproken tekst.",
+     "after": "Opmaakbeveiliging: streng, geen enkele punthaak wordt uitgesproken, van teken %1$@ tot %2$@ van de gesproken tekst.",
+     "why": "meaning: elke punthaak wordt niet uitgesproken can mean not every bracket is spoken; geen enkele says none is"
+    },
+    {
+     "key": "No rules to export: only plain text rules that are on can be written in a lexicon.",
+     "id": "pronunciationLexicon.nothingToExport",
+     "english": "No rules to export: only plain text rules that are on can be written in a lexicon.",
+     "before": "Geen regels om te exporteren: alleen gewone tekstregels die aan staan, kunnen in een lexicon worden geschreven.",
+     "after": "Geen regels om te exporteren: alleen gewone tekstregels die aanstaan, kunnen in een lexicon worden geschreven.",
+     "why": "grammar: a separable verb at the clause end is one word (aanstaan), as part 2 writes it"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "id": "speechExportError.noVoice",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "Er is geen stem geïnstalleerd. Voeg er een toe in Systeeminstellingen, Toegankelijkheid, Gesproken content, en exporteer daarna opnieuw.",
+     "after": "Er is geen stem geïnstalleerd. Voeg er een toe in Systeeminstellingen, Toegankelijkheid, Gesproken materiaal, en exporteer daarna opnieuw.",
+     "why": "term: Spoken Content is Gesproken materiaal in Apple's Dutch System Settings"
+    },
+    {
+     "key": "None of the %lld chapters could be read",
+     "id": "extractionReport.summary.none",
+     "english": {
+      "one": "None of the %lld chapter could be read",
+      "other": "None of the %lld chapters could be read"
+     },
+     "before": {
+      "one": "Geen van de %lld hoofdstukken kon worden gelezen",
+      "other": "Geen van de %lld hoofdstukken kon worden gelezen"
+     },
+     "after": {
+      "one": "Het enige hoofdstuk kon niet worden gelezen",
+      "other": "Geen van de %lld hoofdstukken kon worden gelezen"
+     },
+     "why": "grammar: the one form said geen van de 1 hoofdstukken; for exactly one chapter Dutch says het enige hoofdstuk"
+    },
+    {
+     "key": "Now Playing: %@",
+     "id": "phoneRow.nowPlayingLabel",
+     "english": "Now Playing: %@",
+     "before": "Speelt nu af: %@",
+     "after": "Wordt nu afgespeeld: %@",
+     "why": "natural: Speelt nu af has the book as a missing subject that plays something; the Dutch for Now Playing is wordt nu afgespeeld"
+    },
+    {
+     "key": "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@.",
+     "id": "pdfExtractionDiagnostics.problem.pages",
+     "english": {
+      "one": "OCR could not run on %@ of %lld page, so text found only in their images is missing: %@.",
+      "other": "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@."
+     },
+     "before": {
+      "one": "OCR kon niet worden uitgevoerd op %@ van %lld pagina's, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@.",
+      "other": "OCR kon niet worden uitgevoerd op %@ van %lld pagina's, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@."
+     },
+     "after": {
+      "one": "OCR kon niet worden uitgevoerd op %@ van %lld pagina, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@.",
+      "other": "OCR kon niet worden uitgevoerd op %@ van %lld pagina's, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@."
+     },
+     "why": "grammar: the one form said 1 pagina's; a comma now parts the two verbs staat and ontbreekt, as Dutch asks"
+    },
+    {
+     "key": "OCR could not run on all %lld pages, so text found only in their images is missing: %@.",
+     "id": "pdfExtractionDiagnostics.problem.allPages",
+     "english": {
+      "one": "OCR could not run on all %lld page, so text found only in its images is missing: %@.",
+      "other": "OCR could not run on all %lld pages, so text found only in their images is missing: %@."
+     },
+     "before": {
+      "one": "OCR kon niet worden uitgevoerd op alle %lld pagina's, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@.",
+      "other": "OCR kon niet worden uitgevoerd op alle %lld pagina's, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@."
+     },
+     "after": {
+      "one": "OCR kon niet worden uitgevoerd op %lld pagina, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@.",
+      "other": "OCR kon niet worden uitgevoerd op alle %lld pagina's, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@."
+     },
+     "why": "grammar: the one form said alle 1 pagina's; a comma now parts the two verbs staat and ontbreekt"
+    },
+    {
+     "key": "OCR could not run on the PDF's only page, so text found only in its images is missing: %@.",
+     "id": "pdfExtractionDiagnostics.problem.page",
+     "english": "OCR could not run on the PDF's only page, so text found only in its images is missing: %@.",
+     "before": "OCR kon niet worden uitgevoerd op de enige pagina van de PDF, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@.",
+     "after": "OCR kon niet worden uitgevoerd op de enige pagina van de PDF, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@.",
+     "why": "punctuation: Dutch puts a comma between the verbs of two clauses (staat, ontbreekt), which VoiceOver also pauses on"
+    },
+    {
+     "key": "Percent through the book",
+     "id": "readerTime.percentFieldLabel",
+     "english": "Percent through the book",
+     "before": "Percentage door het boek",
+     "after": "Percentage van het boek",
+     "why": "natural: door het boek is a calque of through the book; same wording as the percent button"
+    },
+    {
+     "key": "Plays the book and pauses before the next book.",
+     "id": "sleepTimerView.endOfBookHint.continueNext",
+     "english": "Plays the book and pauses before the next book.",
+     "before": "Speelt het boek af en pauzeert voor het volgende boek.",
+     "after": "Speelt het boek af en pauzeert vóór het volgende boek.",
+     "why": "meaning: pauzeert voor het volgende boek also reads as pauses for the next book; the accent says before"
+    },
+    {
+     "key": "Preview %@ sound",
+     "id": "soundEffectsSettings.previewLabel",
+     "english": "Preview %@ sound",
+     "before": "Voorbeeld van geluid %@",
+     "after": "Beluister geluid voor %@",
+     "why": "natural: Voorbeeld van geluid Pauzeer reads as an example of a sound named Pauzeer; Beluister matches Beluister stem and Geluid voor %@"
+    },
+    {
+     "key": "Recording shortcut. Press a key with Command or Control.",
+     "id": "shortcutsSettings.recordingKeyEquivalentLabel",
+     "english": "Recording shortcut. Press a key with Command or Control.",
+     "before": "Toetsenbordcommando opnemen. Druk op een toets met Command of Control.",
+     "after": "Toetsenbordcommando wordt opgenomen. Druk op een toets met Command of Control.",
+     "why": "meaning: the infinitive opnemen reads as the button's command; the label says it is recording now"
+    },
+    {
+     "key": "Recording shortcut. Press a key, or press it twice for a double press.",
+     "id": "shortcutsSettings.recordingLabel",
+     "english": "Recording shortcut. Press a key, or press it twice for a double press.",
+     "before": "Toetsenbordcommando opnemen. Druk op een toets, of druk er twee keer op voor een dubbele druk.",
+     "after": "Toetsenbordcommando wordt opgenomen. Druk op een toets, of druk er twee keer op voor een dubbele druk.",
+     "why": "meaning: the infinitive opnemen reads as the button's command; the label says it is recording now"
+    },
+    {
+     "key": "Refused here: %lld times while this window has been open.",
+     "id": "speechRefusal.refusedHere",
+     "english": {
+      "one": "Refused here: %lld time while this window has been open.",
+      "other": "Refused here: %lld times while this window has been open."
+     },
+     "before": {
+      "one": "Hier geweigerd: %lld keer terwijl dit venster open was.",
+      "other": "Hier geweigerd: %lld keer terwijl dit venster open was."
+     },
+     "after": {
+      "one": "Hier geweigerd: %lld keer sinds dit venster is geopend.",
+      "other": "Hier geweigerd: %lld keer sinds dit venster is geopend."
+     },
+     "why": "meaning: terwijl dit venster open was puts the window in the past; it is still open, so sinds"
+    },
+    {
+     "key": "Remove them: an audiobook of tracks is arranged with tracks.",
+     "id": "bookManifestEdit.sectionsGiven.audiobook",
+     "english": "Remove them: an audiobook of tracks is arranged with tracks.",
+     "before": "Haal ze weg: een luisterboek met tracks is ingedeeld met tracks.",
+     "after": "Haal ze weg: een luisterboek met tracks is ingedeeld in tracks.",
+     "why": "grammar: indelen takes in, not met"
+    },
+    {
+     "key": "Restarting: %@",
+     "id": "endOfBook.restarting",
+     "english": "Restarting: %@",
+     "before": "Opnieuw starten: %@",
+     "after": "Begint opnieuw: %@",
+     "why": "natural: the infinitive Opnieuw starten reads as a command; the other start announcements say Begint"
+    },
+    {
+     "key": "Saves your plain text rules that are on; regular expression rules are left out",
+     "id": "pronunciationLexicon.exportHint",
+     "english": "Saves your plain text rules that are on; regular expression rules are left out",
+     "before": "Bewaart je gewone tekstregels die aan staan; regels met reguliere expressies worden weggelaten.",
+     "after": "Bewaart je gewone tekstregels die aanstaan; regels met reguliere expressies worden weggelaten.",
+     "why": "grammar: a separable verb at the clause end is one word (aanstaan), as part 2 writes it"
+    },
+    {
+     "key": "Section included: %@",
+     "id": "voiceAndSpeed.sectionIncluded",
+     "english": "Section included: %@",
+     "before": "Sectie opgenomen: %@",
+     "after": "Sectie weer meegenomen: %@",
+     "why": "meaning: opgenomen also means recorded, in an app that records; meenemen is the verb of Neem sectie mee"
+    },
+    {
+     "key": "Sleep timer cancelled, because you moved to another book while it faded out.",
+     "id": "sleepTimerHandOver.fadeEndedByTheMove",
+     "english": "Sleep timer cancelled, because you moved to another book while it faded out.",
+     "before": "Slaaptimer geannuleerd, omdat je naar een ander boek ging terwijl het geluid uitfaded.",
+     "after": "Slaaptimer geannuleerd, omdat je naar een ander boek ging terwijl het geluid zachter werd.",
+     "why": "grammar: uitfaded is no Dutch verb form; zachter worden says the fade"
+    },
+    {
+     "key": "Starting again: %@",
+     "id": "endOfBook.startingAgain",
+     "english": "Starting again: %@",
+     "before": "Opnieuw beginnen: %@",
+     "after": "Begint opnieuw: %@",
+     "why": "natural: the infinitive Opnieuw beginnen reads as a command; the other start announcements say Begint"
+    },
+    {
+     "key": "Text not updated: the original file of %@ changed too. The book's text is read from it again the next time the book opens.",
+     "id": "bookTextEdit.refused.sourceChanged",
+     "english": "Text not updated: the original file of %@ changed too. The book's text is read from it again the next time the book opens.",
+     "before": "Tekst niet bijgewerkt: het originele bestand van %@ is ook gewijzigd. De tekst van het boek wordt de volgende keer dat het boek opent opnieuw daaruit gelezen.",
+     "after": "Tekst niet bijgewerkt: het originele bestand van %@ is ook gewijzigd. De tekst van het boek wordt er opnieuw uit gelezen wanneer het boek de volgende keer wordt geopend.",
+     "why": "natural: the English order left de volgende keer dat het boek opent in the middle of the clause; now the time clause follows"
+    },
+    {
+     "key": "Text not updated: the transcript of %@ changed too. The book's text is written from it again the next time the book opens.",
+     "id": "bookTextEdit.refused.transcriptChanged",
+     "english": "Text not updated: the transcript of %@ changed too. The book's text is written from it again the next time the book opens.",
+     "before": "Tekst niet bijgewerkt: de transcriptie van %@ is ook gewijzigd. De tekst van het boek wordt de volgende keer dat het boek opent opnieuw daaruit geschreven.",
+     "after": "Tekst niet bijgewerkt: de transcriptie van %@ is ook gewijzigd. De tekst van het boek wordt op basis daarvan opnieuw geschreven wanneer het boek de volgende keer wordt geopend.",
+     "why": "natural: the English order left de volgende keer dat het boek opent in the middle of the clause; now the time clause follows"
+    },
+    {
+     "key": "TextMouth could not translate this braille.",
+     "id": "failure.failed",
+     "english": "TextMouth could not translate this braille.",
+     "before": "TextMouth kon deze braille niet vertalen.",
+     "after": "TextMouth kon deze brailletekst niet vertalen.",
+     "why": "grammar: braille is a het-word (het braille), so deze braille is wrong; brailletekst is plain"
+    },
+    {
+     "key": "TextMouth hasn't read the latest save yet.",
+     "id": "bookTextEdit.notReadYet",
+     "english": "TextMouth hasn't read the latest save yet.",
+     "before": "TextMouth heeft de laatste bewaring nog niet gelezen.",
+     "after": "TextMouth heeft de laatst bewaarde versie nog niet gelezen.",
+     "why": "natural: bewaring means custody, not a save; Dutch says de laatst bewaarde versie"
+    },
+    {
+     "key": "TextMouth kept the text you changed in %@.",
+     "id": "bookTextEdit.keptOnReRead.changed",
+     "english": "TextMouth kept the text you changed in %@.",
+     "before": "TextMouth heeft de tekst die je in %@ hebt gewijzigd bewaard.",
+     "after": "TextMouth heeft de tekst bewaard die je in %@ hebt gewijzigd.",
+     "why": "natural: hebt gewijzigd bewaard ran two verbs together; the relative clause goes after the participle"
+    },
+    {
+     "key": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "id": "ownAudio.sentence.truncated",
+     "english": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "before": "Het audiobestand %@ eindigt vóór de audio zelf, dus het kon niet worden geconverteerd.",
+     "after": "Het audiobestand %@ eindigt voordat de audio is afgelopen, dus het kon niet worden geconverteerd.",
+     "why": "meaning: vóór de audio zelf can read as in front of the audio; the file stops before its audio has ended"
+    },
+    {
+     "key": "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does.",
+     "id": "bookExport.hint.originalAudio",
+     "english": "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does.",
+     "before": "De audio van het boek zoals die was vóór de eerste wijziging, die TextMouth bewaart zolang de instelling Originele audio aan staat.",
+     "after": "De audio van het boek zoals die was vóór de eerste wijziging, die TextMouth bewaart zolang de instelling Originele audio aanstaat.",
+     "why": "grammar: a separable verb at the clause end is one word (aanstaat), as part 2 writes it"
+    },
+    {
+     "key": "The file “%@” is damaged or incomplete: it begins with a %@ byte-order mark, but the rest is not valid %@ text.",
+     "id": "textEncodingError.invalidForMarkedEncoding",
+     "english": "The file “%1$@” is damaged or incomplete: it begins with a %2$@ byte-order mark, but the rest is not valid %3$@ text.",
+     "before": "Het bestand “%@” is beschadigd of onvolledig: het begint met een %@-byteordemarkering, maar de rest is geen geldige %@-tekst.",
+     "after": "Het bestand “%@” is beschadigd of onvolledig: het begint met een %@-bytevolgordemarkering, maar de rest is geen geldige %@-tekst.",
+     "why": "term: byte order is bytevolgorde in Dutch (orde is rank or class)"
+    },
+    {
+     "key": "The folder holds %lld DAISY books (%@).",
+     "id": "daisyPackageError.severalPackages.folder",
+     "english": {
+      "one": "The folder holds %lld DAISY book (%@).",
+      "other": "The folder holds %lld DAISY books (%@)."
+     },
+     "before": {
+      "one": "De map bevat %lld DAISY-boeken (%@).",
+      "other": "De map bevat %lld DAISY-boeken (%@)."
+     },
+     "after": {
+      "one": "De map bevat %lld DAISY-boek (%@).",
+      "other": "De map bevat %lld DAISY-boeken (%@)."
+     },
+     "why": "grammar: the one form said 1 DAISY-boeken"
+    },
+    {
+     "key": "The other %lld chapters have no text.",
+     "id": "epubParserError.noReadableChapters.other",
+     "english": {
+      "one": "The other %lld chapter has no text.",
+      "other": "The other %lld chapters have no text."
+     },
+     "before": {
+      "one": "Het andere %lld hoofdstuk heeft geen tekst.",
+      "other": "De andere %lld hoofdstukken hebben geen tekst."
+     },
+     "after": {
+      "one": "Het andere hoofdstuk heeft geen tekst.",
+      "other": "De andere %lld hoofdstukken hebben geen tekst."
+     },
+     "why": "grammar: het andere 1 hoofdstuk is not Dutch; for exactly one, het andere hoofdstuk, as the single-chapter string says"
+    },
+    {
+     "key": "The text of %@ can't be read, so it can't be edited.",
+     "id": "bookTextEdit.cannotBegin.unreadable",
+     "english": "The text of %@ can't be read, so it can't be edited.",
+     "before": "De tekst van %@ kan niet worden gelezen, dus kan niet worden gewijzigd.",
+     "after": "De tekst van %@ kan niet worden gelezen, dus kan die niet worden gewijzigd.",
+     "why": "grammar: same choice as part 2 for the clause after dus, which keeps its subject (dus kan die niet)"
+    },
+    {
+     "key": "This PDF needs a password to open.",
+     "id": "pdfParserError.passwordProtected",
+     "english": "This PDF needs a password to open.",
+     "before": "Deze PDF heeft een wachtwoord nodig om te openen.",
+     "after": "Deze PDF kan alleen met een wachtwoord worden geopend.",
+     "why": "natural: heeft een wachtwoord nodig om te openen copies needs a password to open, as if the PDF opened something"
+    },
+    {
+     "key": "This book's text can't be read, so it can't be spoken into an audio file.",
+     "id": "speechExport.unreadableText",
+     "english": "This book's text can't be read, so it can't be spoken into an audio file.",
+     "before": "De tekst van dit boek kan niet worden gelezen, dus kan niet in een audiobestand worden uitgesproken.",
+     "after": "De tekst van dit boek kan niet worden gelezen, dus kan die niet in een audiobestand worden uitgesproken.",
+     "why": "grammar: same choice as part 2 for the clause after dus, which keeps its subject (dus kan die niet)"
+    },
+    {
+     "key": "This file's markup nests more than %@ levels deep, which TextMouth can't read safely.",
+     "id": "markupRefusal.nestedTooDeeply",
+     "english": "This file's markup nests more than %@ levels deep, which TextMouth can't read safely.",
+     "before": "De opmaak van dit bestand nest meer dan %@ niveaus diep, wat TextMouth niet veilig kan lezen.",
+     "after": "De opmaak van dit bestand is meer dan %@ niveaus diep genest, wat TextMouth niet veilig kan lezen.",
+     "why": "natural: nesten is not a Dutch verb in this sense; genest zijn, as the other nesting strings say"
+    },
+    {
+     "key": "This file's markup would take TextMouth far too long to read.",
+     "id": "markupRefusal.tooMuchWork",
+     "english": "This file's markup would take TextMouth far too long to read.",
+     "before": "Het zou TextMouth veel te lang duren om de opmaak van dit bestand te lezen.",
+     "after": "Het lezen van de opmaak van dit bestand zou TextMouth veel te veel tijd kosten.",
+     "why": "natural: het zou TextMouth te lang duren says it would try TextMouth's patience; tijd kosten is the plain Dutch"
+    },
+    {
+     "key": "Type a page as the book numbers it, such as 12 or xii.",
+     "id": "readerPage.typingHint",
+     "english": "Type a page as the book numbers it, such as 12 or xii.",
+     "before": "Typ een pagina zoals het boek die nummert, zoals 12 of xii.",
+     "after": "Typ een pagina zoals het boek die nummert, bijvoorbeeld 12 of xii.",
+     "why": "natural: zoals twice in one short hint; the second is bijvoorbeeld"
+    },
+    {
+     "key": "Untitled",
+     "id": "bookExport.untitled",
+     "english": "Untitled",
+     "before": "Zonder titel",
+     "after": "Naamloos",
+     "why": "term: Apple's Dutch names an untitled document or folder Naamloos, as naamloze kop does here"
+    },
+    {
+     "key": "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead.",
+     "id": "brailleSettings.guessHint",
+     "english": "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead.",
+     "before": "Als dit aan staat, wordt een braillebestand dat als verkort Unified English Braille is gelezen maar duidelijk English Braille, American Edition is, in plaats daarvan als dat gelezen.",
+     "after": "Als dit aanstaat, wordt een braillebestand dat als verkort Unified English Braille is gelezen maar duidelijk English Braille, American Edition is, in plaats daarvan als dat gelezen.",
+     "why": "grammar: a separable verb at the clause end is one word (aanstaat), as part 2 writes it"
+    },
+    {
+     "key": "Whether each page's last line carries its braille page number.",
+     "id": "brailleExport.numbersHint",
+     "english": "Whether each page's last line carries its braille page number.",
+     "before": "Of de laatste regel van elke pagina het braillepaginanummer draagt.",
+     "after": "Of de laatste regel van elke pagina het braillepaginanummer bevat.",
+     "why": "natural: a line does not draagt a number in Dutch; bevat"
+    },
+    {
+     "key": "Whether that code's braille is contracted, which writes common words and letter groups in fewer cells.",
+     "id": "brailleSettings.contractionHint",
+     "english": "Whether that code's braille is contracted, which writes common words and letter groups in fewer cells.",
+     "before": "Of de braille van die code verkort is, waarbij gangbare woorden en lettergroepen in minder cellen worden geschreven.",
+     "after": "Of het braille van die code verkort is, waarbij gangbare woorden en lettergroepen in minder cellen worden geschreven.",
+     "why": "grammar: braille is a het-word, het braille"
+    },
+    {
+     "key": "Whether that code's braille is contracted.",
+     "id": "brailleExport.contractionHint",
+     "english": "Whether that code's braille is contracted.",
+     "before": "Of de braille van die code verkort is.",
+     "after": "Of het braille van die code verkort is.",
+     "why": "grammar: braille is a het-word, het braille"
+    },
+    {
+     "key": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "id": "bookExportDeepChapter.exportAllAsWrittenHint",
+     "english": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "before": "Schrijft dit en elk ander te diep genest hoofdstuk van deze export als gewone alinea's met regels, zonder opnieuw te vragen.",
+     "after": "Schrijft de regels van dit en elk ander te diep genest hoofdstuk van deze export als gewone alinea's, zonder opnieuw te vragen.",
+     "why": "natural: alinea's met regels copied paragraphs of lines; the lines become the paragraphs, as the button's other sentences now say"
+    },
+    {
+     "key": "Writes this chapter as plain paragraphs of its lines, and exports everything else as usual.",
+     "id": "bookExportDeepChapter.exportAsWrittenHint",
+     "english": "Writes this chapter as plain paragraphs of its lines, and exports everything else as usual.",
+     "before": "Schrijft dit hoofdstuk als gewone alinea's met zijn regels en exporteert al het andere zoals gewoonlijk.",
+     "after": "Schrijft de regels van dit hoofdstuk als gewone alinea's en exporteert al het andere zoals gewoonlijk.",
+     "why": "natural: alinea's met zijn regels copied paragraphs of its lines; the lines become the paragraphs"
+    },
+    {
+     "key": "before page %@",
+     "id": "readerPage.cursorPlace.before",
+     "english": "before page %@",
+     "before": "voor pagina %@",
+     "after": "vóór pagina %@",
+     "why": "meaning: voor pagina also reads as for page; the accent says before, as in Vóór pagina"
+    },
+    {
+     "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "id": "bookTextEdit.heldReason.nestedTooDeeply.chapter",
+     "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "before": "zijn hoofdstuk %@ %@, wat TextMouth niet veilig kan lezen. Maak het vlakker en bewaar opnieuw, of maak de wijziging ongedaan, en het boek opent.",
+     "after": "hoofdstuk %@ %@, wat TextMouth niet veilig kan lezen. Maak het vlakker en bewaar opnieuw, of maak de wijziging ongedaan, en het boek opent.",
+     "why": "natural: zijn hoofdstuk 3 copies its chapter; after the colon about the book, hoofdstuk 3 says it"
+    },
+    {
+     "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "id": "bookTextEdit.nestedTooDeeply.chapterShows",
+     "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "before": "zijn hoofdstuk %@ %@, wat TextMouth niet veilig kan lezen. Maak het vlakker en bewaar opnieuw, of maak de wijziging ongedaan, en de tekst verschijnt.",
+     "after": "hoofdstuk %@ %@, wat TextMouth niet veilig kan lezen. Maak het vlakker en bewaar opnieuw, of maak de wijziging ongedaan, en de tekst verschijnt.",
+     "why": "natural: zijn hoofdstuk 3 copies its chapter; after the colon about the book, hoofdstuk 3 says it"
+    }
+   ]
+  }
+ ]
+}

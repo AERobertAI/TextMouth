@@ -83,11 +83,14 @@ final class ProgressOverlayTests: XCTestCase {
     /// The Cancel button is named for what it cancels and says what it does;
     /// an overlay given no cancel action has none.
     func testCancelButtonIsNamedForTheImport() {
-        XCTAssertEqual(ProgressOverlay.cancelButtonLabel, "Cancel Import")
+        XCTAssertEqual(ImportProgressWording.cancelButtonLabel, "Cancel Import")
+        // Not "after the current book" since a book of pictures stops before its next page (FMT34).
         XCTAssertEqual(
-            ProgressOverlay.cancelButtonHint,
-            "Stops importing ZIP archives after the current book. Books already imported stay in the library."
+            ImportProgressWording.cancelButtonHint,
+            "Stops the import under way and those waiting. Books already imported stay."
         )
+        XCTAssertEqual(ProgressOverlay.cancelButtonLabel, ImportProgressWording.cancelButtonLabel)
+        XCTAssertEqual(ProgressOverlay.cancelButtonHint, ImportProgressWording.cancelButtonHint)
         XCTAssertNil(ProgressOverlay(title: "Extracting Text", current: 1, total: 2, message: "", itemNoun: TextExtractionProgress.itemNoun).onCancel)
     }
 

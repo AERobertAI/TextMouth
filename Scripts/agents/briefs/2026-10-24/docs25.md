@@ -5,7 +5,7 @@ You are `docs25`, a Sonnet documentation agent. You build nothing and run no tes
 ## Setup
 Run `git checkout -b docs/encoding-choice integrate/encoding-choice`, then check that `git merge-base --is-ancestor 01265d9f HEAD` succeeds. `integrate/encoding-choice` is main with the `formats/encoding-choice` merge.
 
-These are your sources, in `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/`, and where they disagree, the code wins:
+These are your sources, in `<main checkout>/build/orchestrator/`, and where they disagree, the code wins:
 - `encodingchoice-report.md`: the first report, with every sentence a listener hears;
 - `encodingchoice-fix-report.md`: the fix round, which changed and added sentences;
 - the last commit, 01265d9f: Replace Existing refuses while the same book is read again, with the sentence "TextMouth is reading “<title>” again in another encoding. Try again when that finishes."

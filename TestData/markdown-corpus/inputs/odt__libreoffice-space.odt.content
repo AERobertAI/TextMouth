@@ -1,0 +1,73 @@
+<!-- page: 1 -->
+
+According the ODF 1\.2 specification\, consecutive whitespace characters \(space\, tab\, newline\) should be collapsed to one space within \<text\:p\> and \<text\:h\> elements\. The \<text\:s\> element is not considered for collapsing\. In this document\, several combinations of spaces\, text and \<text\:span\> elements are shown\. The number of spaces that should be displayed between the \'a\' and \'b\' characters is printed at the end of each line\.
+
+# Simple spaces
+
+no space
+
+ab \<span\>a\<\/span\>\<span\>b\<\/span\> 0
+
+one space
+
+a b \<span\>a \<\/span\>\<span\>b\<\/span\> 1
+
+a b \<span\>a\<\/span\> \<span\>b\<\/span\> 1
+
+a b \<span\>a\<\/span\>\<span\> b\<\/span\> 1
+
+two consecutive spaces
+
+a b \<span\>a\<\/span\> \<span\> b\<\/span\> 1
+
+a b \<span\>a \<\/span\>\<span\> b\<\/span\> 1
+
+a b \<span\>a \<\/span\> \<span\>b\<\/span\> 1
+
+three consecutive spaces 
+
+a b \<span\>a \<\/span\> \<span\> b\<\/span\> 1
+
+# Spaces and \<s\/\>
+
+no space
+
+a b \<span\>a\<\/span\>\<s\/\>\<span\>b\<\/span\> 1
+
+one space
+
+a b \<span\>a \<\/span\>\<s\/\>\<span\>b\<\/span\> 2
+
+a b \<span\>a\<\/span\> \<s\/\>\<span\>b\<\/span\> 2
+
+a b \<span\>a\<\/span\>\<s\/\> \<span\>b\<\/span\> 2
+
+a b \<span\>a\<\/span\>\<s\/\>\<span\> b\<\/span\> 2
+
+two spaces
+
+a b \<span\>a \<\/span\> \<s\/\>\<span\>b\<\/span\> 2
+
+a b \<span\>a \<\/span\>\<s\/\> \<span\>b\<\/span\> 3
+
+a b \<span\>a \<\/span\>\<s\/\>\<span\> b\<\/span\> 3
+
+a b \<span\>a\<\/span\> \<s\/\> \<span\>b\<\/span\> 3
+
+a b \<span\>a\<\/span\> \<s\/\>\<span\> b\<\/span\> 3
+
+a b \<span\>a\<\/span\>\<s\/\> \<span\> b\<\/span\> 2
+
+three spaces
+
+a b \<span\>a\<\/span\> \<s\/\> \<span\> b\<\/span\> 3
+
+a b \<span\>a \<\/span\>\<s\/\> \<span\> b\<\/span\> 3
+
+a b \<span\>a \<\/span\> \<s\/\>\<span\> b\<\/span\> 3
+
+a b \<span\>a \<\/span\> \<s\/\> \<span\>b\<\/span\> 3
+
+four spaces
+
+a b \<span\>a \<\/span\> \<s\/\> \<span\> b\<\/span\> 3

@@ -86,7 +86,7 @@ enum SavedFile {
         standIn: String
     ) -> URL? {
         let copy = preserveUnusable(url, bytes: bytes)
-        let preserved = copy.map { "preserved copy: \($0.lastPathComponent)" } ?? "no preserved copy could be made"
+        let preserved = copy.map { "preserved copy: \($0.lastPathComponent)" } ?? "no preserved copy could be made" // l10n: no (debug log text)
         DiagnosticLog.event(
             category,
             "\(tag): could not read \(url.lastPathComponent): \(reason); \(standIn); \(preserved)"
@@ -102,8 +102,12 @@ enum SavedFile {
         let fileName: String
 
         var errorDescription: String? {
-            "\(fileName) is only in the cloud and isn't on this Mac yet, so nothing was written over it. "
-                + "Try again in a moment."
+            SentenceWording.joined([
+                // Translators: First sentence of why a file was not saved: it is only in the cloud. %@ is the file's name, which stays as written.
+                InterfaceText.line("inCloudError.errorDescription", "\(fileName) is only in the cloud and isn't on this Mac yet, so nothing was written over it."),
+                // Translators: Last sentence of why a cloud operation was refused for now: wait and try again.
+                InterfaceText.line("common.tryAgainInAMoment", "Try again in a moment."),
+            ])
         }
     }
 
@@ -113,6 +117,20 @@ enum SavedFile {
     @MainActor
     static func requestDownload(of url: URL) {
         try? CloudServices.itemStatus.requestDownload(of: url)
+    }
+
+    /// Whether a file at `url` that is not on this Mac may still be on its
+    /// way: true when its folder is in a cloud location, where a sync
+    /// service brings a library's small files down one at a time (risk 5
+    /// of the local-first research), so such a file is stood in for rather
+    /// than created afresh, which would put this Mac's copy over the one
+    /// still coming. Asked from file-system metadata, with dataless files
+    /// left in the cloud; false for every folder elsewhere, where a file
+    /// that isn't there simply isn't.
+    @MainActor
+    static func mayStillArrive(_ url: URL) -> Bool {
+        let folder = url.deletingLastPathComponent()
+        return DatalessFiles.withoutDownloading { CloudServices.itemStatus.location(of: folder).isCloud }
     }
 
     // MARK: Replacing in one step

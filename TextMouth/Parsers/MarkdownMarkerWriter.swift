@@ -89,6 +89,65 @@ enum MarkdownMarkerWriter {
         continuationAtMargin: Bool = false,
         into markdown: inout String
     ) {
+        var forgotten = RunMemo()
+        write(
+            marker, inline: inline, keepingWordsApart: keepingWordsApart,
+            continuationAtMargin: continuationAtMargin, remembering: &forgotten, into: &markdown)
+    }
+
+    /// What a caller that writes many markers in a row keeps between its
+    /// writes (`write(_:inline:keepingWordsApart:continuationAtMargin:remembering:into:)`):
+    /// where the last marker went, when it went at the end of the line before
+    /// a blank last line, and the Markdown's length after it.
+    struct RunMemo {
+        /// The Markdown's length in UTF-8 bytes right after the write that made
+        /// this memo; -1 when there is nothing to remember.
+        fileprivate var length = -1
+        /// The UTF-8 offset just after the marker that write inserted, where the
+        /// next marker of the run goes.
+        fileprivate var offset = 0
+        /// The marker inserted, to check the place before it is used.
+        fileprivate var marker = ""
+        fileprivate var keepingWordsApart = false
+
+        /// A memo with nothing remembered: the first marker is placed from the line.
+        init() {}
+    }
+
+    /// `write(_:inline:keepingWordsApart:continuationAtMargin:into:)` for a
+    /// caller that writes many markers one after another, remembering the last
+    /// in `memo`. A marker written after a line break goes at the end of the
+    /// line before, whose words and openings the writer reads to place it,
+    /// from the line's start: on a line of megabytes that is the whole line,
+    /// for every marker of the run (5,000 markers after a 2 MB line took 15.7
+    /// s). While nothing else has been written, the next marker goes just
+    /// after the last: inserting a comment at the end of a line's words changes
+    /// nothing the placement reads (the line's openings, indentation, heading
+    /// opening, and whether it ends its paragraph depend on how it begins and
+    /// on its whole being one repeated mark or a fence, none of which a
+    /// comment of letters can change), and the words end after the comment.
+    /// So the marker is inserted there, and the memo moves on. Anything
+    /// written since (the Markdown's length is not the memo's) or any other
+    /// kind of write is placed from the line, as ever, and forgets the memo.
+    static func write(
+        _ marker: String,
+        inline: Bool,
+        keepingWordsApart: Bool = false,
+        continuationAtMargin: Bool = false,
+        remembering memo: inout RunMemo,
+        into markdown: inout String
+    ) {
+        if inline, !continuationAtMargin, memo.length >= 0, memo.length == markdown.utf8.count, isRememberable(marker),
+           memo.keepingWordsApart == keepingWordsApart, memo.offset >= memo.marker.utf8.count,
+           memo.offset <= memo.length, endsWithMemoMarker(markdown, memo) {
+            let at = markdown.utf8.index(markdown.utf8.startIndex, offsetBy: memo.offset)
+            markdown.unicodeScalars.insert(contentsOf: marker.unicodeScalars, at: at)
+            memo.length = markdown.utf8.count
+            memo.offset += marker.utf8.count
+            memo.marker = marker
+            return
+        }
+        memo = RunMemo()
         let place = inline
             ? placement(atEndOf: markdown, continuationAtMargin: continuationAtMargin)
             : Placement(position: .blockStart, index: markdown.endIndex)
@@ -105,7 +164,18 @@ enum MarkdownMarkerWriter {
         case .continuationLine where continuationAtMargin:
             markdown += "    " + marker
         case .continuationLine:
+            let offset = markdown.utf8.distance(from: markdown.utf8.startIndex, to: place.index)
             markdown.unicodeScalars.insert(contentsOf: marker.unicodeScalars, at: place.index)
+            // The next marker of a run goes just after this one, when the
+            // marker holds a scalar only words hold (a comment does), so the
+            // line cannot become a marker alone or an underline, and ends in
+            // a scalar that the words end with.
+            if isRememberable(marker) {
+                memo.length = markdown.utf8.count
+                memo.offset = offset + marker.utf8.count
+                memo.marker = marker
+                memo.keepingWordsApart = keepingWordsApart
+            }
         case .containerStart(let continuation):
             // The opening keeps one space after its last marker, so the
             // whitespace a source wrote after it cannot make the marker code.
@@ -118,6 +188,25 @@ enum MarkdownMarkerWriter {
             ensureBlankLine(&markdown)
             markdown += marker + "\n\n"
         }
+    }
+
+    /// Whether a run of markers can go on after `marker` without the line being
+    /// read again: it holds a scalar only words hold (a comment does), so the
+    /// line cannot become a marker alone or an underline, and ends in a scalar
+    /// that the line's words end with (not indentation or a backslash, which
+    /// a hard break leaves out of the words).
+    private static func isRememberable(_ marker: String) -> Bool {
+        guard let last = marker.unicodeScalars.last, !Line.isIndentation(last), last != "\\" else { return false }
+        return marker.unicodeScalars.contains(where: provesWords)
+    }
+
+    /// Whether the Markdown holds the memo's marker just before the memo's
+    /// offset, as the memo says.
+    private static func endsWithMemoMarker(_ markdown: String, _ memo: RunMemo) -> Bool {
+        let bytes = markdown.utf8
+        let end = bytes.index(bytes.startIndex, offsetBy: memo.offset)
+        let start = bytes.index(end, offsetBy: -memo.marker.utf8.count)
+        return bytes[start..<end].elementsEqual(memo.marker.utf8)
     }
 
     /// Ensure `markdown` ends with a blank line (two newlines), unless it is
@@ -137,7 +226,10 @@ enum MarkdownMarkerWriter {
 
     /// Where a marker goes at the end of the Markdown: its position, and the
     /// index `write` works at, in the Markdown's Unicode scalars. For
-    /// `withinLine` the index is where the last line's words begin; for
+    /// `withinLine` the index is where the last line's words begin, or, when
+    /// the scan back from the end met a scalar that only a word holds before
+    /// it met the line's start (`scanBackFromEnd`), that scalar, which words
+    /// begin at or before; for
     /// `continuationLine` where the words of the line before it end, or the
     /// end when the marker begins its own line (`continuationAtMargin`); for
     /// `containerStart` and `headingStart` the end of the opening, after
@@ -155,7 +247,15 @@ enum MarkdownMarkerWriter {
     /// or at the beginning.
     private static func placement(atEndOf markdown: String, continuationAtMargin: Bool = false) -> Placement {
         let scalars = markdown.unicodeScalars
-        let lastStart = scalars.lastIndex(of: "\n").map { scalars.index(after: $0) } ?? scalars.startIndex
+        let lastStart: String.Index
+        switch scanBackFromEnd(of: scalars) {
+        case .wordsProved(at: let wordScalar):
+            // The last line holds words, wherever it begins: a long line is
+            // not walked to its start for every marker written in it.
+            return Placement(position: .withinLine, index: wordScalar)
+        case .lineStart(let start):
+            lastStart = start
+        }
         let last = Line(scalars[lastStart...])
         if !last.words.isEmpty || (continuationAtMargin && last.opensContainer) {
             return Placement(position: .withinLine, index: last.wordsStart)
@@ -169,8 +269,7 @@ enum MarkdownMarkerWriter {
             return Placement(position: .blockStart, index: scalars.endIndex)
         }
         let previousEnd = scalars.index(before: lastStart)
-        let previousStart = scalars[..<previousEnd].lastIndex(of: "\n").map { scalars.index(after: $0) }
-            ?? scalars.startIndex
+        let previousStart = startOfLine(endingAt: previousEnd, in: markdown)
         let previous = Line(scalars[previousStart..<previousEnd])
         if previous.words.isEmpty && !previous.opensContainer {
             // After a blank line a new block begins.
@@ -194,6 +293,63 @@ enum MarkdownMarkerWriter {
             return Placement(position: .blockStart, index: scalars.endIndex)
         }
         return Placement(position: .continuationLine, index: wordsEnd)
+    }
+
+    /// Where the line that ends at `end` begins: just after the last line
+    /// feed before `end`, or the start of `markdown`. A line feed is one byte
+    /// that no longer scalar holds, so the bytes are searched, which is
+    /// several times faster than decoding every scalar of a long line.
+    private static func startOfLine(endingAt end: String.Index, in markdown: String) -> String.Index {
+        let bytes = markdown.utf8
+        guard let lineFeed = bytes[..<end].lastIndex(of: UInt8(ascii: "\n")) else { return markdown.startIndex }
+        return bytes.index(after: lineFeed)
+    }
+
+    /// What the scan back from the end of the Markdown met first.
+    private enum EndScan {
+        /// A scalar that only the words of a line can hold, so the last line
+        /// has words, and begins before it.
+        case wordsProved(at: String.Index)
+        /// The start of the last line: just after the last line feed, or the
+        /// start of the Markdown.
+        case lineStart(String.Index)
+    }
+
+    /// Scan back from the end of `scalars` to the first line feed, stopping
+    /// early at a scalar that proves the last line holds words
+    /// (`provesWords(_:)`). A paragraph of many pages is one line of many
+    /// thousands of scalars, and walking it back to its start for every
+    /// marker written in it made the whole conversion quadratic (20,000 pages
+    /// in 2 MB took 116 s). The marker written last holds letters, so a scan
+    /// stops within a marker or the words before it. Only a last line made
+    /// wholly of openings, indentation, and marker characters is read to its
+    /// start, and nothing is written in such a line until a marker is.
+    private static func scanBackFromEnd(of scalars: String.UnicodeScalarView) -> EndScan {
+        var index = scalars.endIndex
+        while index > scalars.startIndex {
+            let before = scalars.index(before: index)
+            let scalar = scalars[before]
+            if scalar == "\n" { return .lineStart(index) }
+            if provesWords(scalar) { return .wordsProved(at: before) }
+            index = before
+        }
+        return .lineStart(scalars.startIndex)
+    }
+
+    /// Whether `scalar`, found in a line, proves the line has words, and that
+    /// those words are not a list item's or heading's marker alone, nor only
+    /// emphasis delimiters (`Line.isMarkerAlone`, `spaceSide`). Every scalar
+    /// the openings (`Line.init`) and those markers are made of is left out:
+    /// indentation, ">", "-", "*", "+", digits, ".", ")", "#", "_", and "~".
+    /// A scalar anywhere else cannot be part of an opening, so the words
+    /// begin at or before it.
+    private static func provesWords(_ scalar: Unicode.Scalar) -> Bool {
+        switch scalar {
+        case " ", "\t", ">", "-", "*", "+", ".", ")", "#", "_", "~", "0"..."9":
+            return false
+        default:
+            return true
+        }
     }
 
     /// Which side of a marker the one space that keeps two words apart goes.
@@ -321,12 +477,23 @@ extension MarkdownMarkerWriter {
             if (1...6).contains(hashes.count), afterHashes.first.map(Self.isIndentation) ?? true {
                 return true
             }
-            let marks = words.filter { !Self.isIndentation($0) }
-            if let mark = marks.first, marks.allSatisfy({ $0 == mark }) {
+            // The line's marks (everything but indentation) are all one scalar,
+            // counted without building them into an array: the walk ends at
+            // the first mark that differs, so an ordinary line costs a step or
+            // two however long it is.
+            var mark: Unicode.Scalar?
+            var markCount = 0
+            var allAlike = true
+            for scalar in words where !Self.isIndentation(scalar) {
+                if let first = mark, scalar != first { allAlike = false; break }
+                mark = scalar
+                markCount += 1
+            }
+            if allAlike, let mark {
                 // "===" or "---" under a line (of any length), or a thematic
                 // break of three or more "*", "-", or "_".
                 if mark == "=" || mark == "-" { return true }
-                if (mark == "*" || mark == "_"), marks.count >= 3 { return true }
+                if (mark == "*" || mark == "_"), markCount >= 3 { return true }
             }
             return words.starts(with: "```".unicodeScalars) || words.starts(with: "~~~".unicodeScalars)
                 || Self.isMarkerAlone(words)

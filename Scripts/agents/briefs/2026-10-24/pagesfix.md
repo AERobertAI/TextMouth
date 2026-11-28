@@ -5,7 +5,7 @@ You are `pagesfix`, an Opus agent. TextMouth is a native macOS text-to-speech an
 Read `common.md` beside this file first: its rules apply to you, except where this brief says otherwise.
 
 ## Setup
-Your worktree is made from main. Run `git checkout -b fix/pages-oct24 integrate/oct24`, and check that `git merge-base --is-ancestor 1d7cb5a5 HEAD` succeeds. `integrate/oct24` holds pages/polish and pages/braille merged, with their review fixes. The verifier's report is `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/verify-pages-report.md`; read its "New problems" and "Not from these fixes" sections.
+Your worktree is made from main. Run `git checkout -b fix/pages-oct24 integrate/oct24`, and check that `git merge-base --is-ancestor 1d7cb5a5 HEAD` succeeds. `integrate/oct24` holds pages/polish and pages/braille merged, with their review fixes. The verifier's report is `<main checkout>/build/orchestrator/verify-pages-report.md`; read its "New problems" and "Not from these fixes" sections.
 
 ## Fix these, each a small commit with its test
 1. **A false "has no words" during playback** (`ReaderViewModel+Pages.swift:259-262`).

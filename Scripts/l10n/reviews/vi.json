@@ -1,0 +1,2782 @@
+{
+ "language": "vi",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "\"%@\" plays the next book in the same folder by sort order.",
+     "id": "settings.continueNextExplanation",
+     "english": "\"%@\" plays the next book in the same folder by sort order.",
+     "before": "“%@” phát sách kế tiếp trong cùng thư mục theo thứ tự sắp xếp.",
+     "after": "“%@” phát sách tiếp theo trong cùng thư mục theo thứ tự sắp xếp.",
+     "why": "term: the choice it explains reads Tiếp tục sang sách tiếp theo, the glossary's Next (Tiếp theo); kế tiếp is the catalog's minority word"
+    },
+    {
+     "key": "%@ also holds %lld books a newer TextMouth added, which are kept.",
+     "id": "folderRemoval.keptBooksChoiceSentences",
+     "english": {
+      "one": "%@ also holds %lld book a newer TextMouth added, which is kept.",
+      "other": "%@ also holds %lld books a newer TextMouth added, which are kept."
+     },
+     "before": {
+      "other": "%@ cũng có %lld sách do TextMouth bản mới hơn thêm vào, và chúng được giữ nguyên."
+     },
+     "after": {
+      "other": "%@ cũng có %lld sách do phiên bản TextMouth mới hơn thêm vào, và chúng được giữ nguyên."
+     },
+     "why": "natural: Vietnamese says phiên bản TextMouth mới hơn, as the catalog's other strings do, not TextMouth bản mới hơn"
+    },
+    {
+     "key": "%@ is filed %@ in %@ and %@ in %@.",
+     "id": "libraryComparison.sentence.bookFiledDifferently",
+     "english": "%1$@ is filed %2$@ in %3$@ and %4$@ in %5$@.",
+     "before": "%1$@ được xếp %2$@ trong %3$@ và %4$@ trong %5$@.",
+     "after": "Trong %3$@, %1$@ được xếp %2$@; trong %5$@, sách được xếp %4$@.",
+     "why": "natural: the copies first, so the placement fragments (trong thư mục “…”) no longer stack two trong phrases"
+    },
+    {
+     "key": "%@, shown when applicable",
+     "id": "libraryViewsSettings.whenApplicable",
+     "english": "%@, shown when applicable",
+     "before": "%@, hiển thị khi áp dụng",
+     "after": "%@, hiển thị khi thích hợp",
+     "why": "meaning: khi áp dụng is when applying; When Applicable is khi thích hợp"
+    },
+    {
+     "key": "%lld Selected",
+     "id": "removal.selectedObject",
+     "english": {
+      "one": "%lld Selected",
+      "other": "%lld Selected"
+     },
+     "before": {
+      "other": "%lld đã chọn"
+     },
+     "after": {
+      "other": "%lld sách đã chọn"
+     },
+     "why": "grammar: the removal title's object needs its noun (Chuyển 3 sách đã chọn vào Thùng rác, not Chuyển 3 đã chọn)"
+    },
+    {
+     "key": "%lld views need a newer TextMouth. They are kept as they are, and not offered.",
+     "id": "libraryViewsSettings.unreadableCaption",
+     "english": {
+      "one": "%lld view needs a newer TextMouth. It is kept as it is, and not offered.",
+      "other": "%lld views need a newer TextMouth. They are kept as they are, and not offered."
+     },
+     "before": {
+      "other": "%lld chế độ xem cần TextMouth bản mới hơn. Chúng được giữ nguyên và không được hiển thị."
+     },
+     "after": {
+      "other": "%lld chế độ xem cần phiên bản TextMouth mới hơn. Chúng được giữ nguyên và không được hiển thị."
+     },
+     "why": "natural: phiên bản TextMouth mới hơn, as elsewhere in the catalog"
+    },
+    {
+     "key": "1 book in this library needs a newer version of TextMouth. It is kept as it is, but not shown.",
+     "id": "storageLocation.booksNeedingNewerTextMouth.needs",
+     "english": "1 book in this library needs a newer version of TextMouth. It is kept as it is, but not shown.",
+     "before": "1 sách trong thư viện này cần phiên bản TextMouth mới hơn. Sách được giữ nguyên nhưng không hiển thị.",
+     "after": "1 cuốn sách trong thư viện này cần phiên bản TextMouth mới hơn. Cuốn sách này được giữ nguyên nhưng không hiển thị.",
+     "why": "natural: a number in a sentence takes its classifier (1 cuốn sách), and the second sentence names it as this book"
+    },
+    {
+     "key": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "id": "libraryViewsSettings.visibilityCaption",
+     "english": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "before": "Luôn luôn hiển thị chế độ xem mọi lúc. Khi áp dụng chỉ hiển thị khi chế độ xem có mục để liệt kê: Danh sách đọc khi có sách, tập hoặc bài viết, và Nguồn cấp khi có nguồn cấp. Ẩn là bỏ chế độ xem đi. Mỗi cửa sổ giữ chế độ xem của nó cho đến khi bạn chọn chế độ khác.",
+     "after": "“Luôn luôn” hiển thị chế độ xem mọi lúc. “Khi thích hợp” chỉ hiển thị chế độ xem khi nó có mục để liệt kê: Danh sách đọc khi có sách, tập hoặc bài viết, và Nguồn cấp khi có nguồn cấp. “Ẩn” không hiển thị chế độ xem. Mỗi cửa sổ giữ chế độ xem của nó cho đến khi bạn chọn chế độ khác.",
+     "why": "meaning: the three choice names are the sentences' subjects, so they are quoted; When Applicable is Khi thích hợp, not Khi áp dụng (when applying)"
+    },
+    {
+     "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "id": "textEncoding.keptTextNote",
+     "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "before": "Bản sửa văn bản của sách được giữ cạnh cách đọc mới, dưới dạng một bản sao trong gói của sách.",
+     "after": "Bản sửa văn bản của sách được giữ bên cạnh kết quả đọc lại, dưới dạng một bản sao trong gói của sách.",
+     "why": "meaning: the new reading is the text a re-read makes (kết quả đọc lại), not cách đọc mới, a new way of reading"
+    },
+    {
+     "key": "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.",
+     "id": "manualBookOrder.noArrangedOrder.folders",
+     "english": "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.",
+     "before": "Không thể di chuyển sách trong chế độ xem này. Hãy vào một thư mục trong Thư mục, hoặc vào Danh sách đọc, rồi thử lại.",
+     "after": "Không thể di chuyển sách trong chế độ xem này. Hãy vào một thư mục trong chế độ xem Thư mục, hoặc vào Danh sách đọc, rồi thử lại.",
+     "why": "meaning: trong Thư mục is heard as in a folder; the Folders view is named as a view"
+    },
+    {
+     "key": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one.",
+     "id": "folderRemoval.keptBooksConfirmationSentences",
+     "english": {
+      "one": "But %@ also holds %lld book a newer TextMouth added: it is kept where it is, and so is every folder that holds it.",
+      "other": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one."
+     },
+     "before": {
+      "other": "Nhưng %@ cũng có %lld sách do TextMouth bản mới hơn thêm vào: chúng được giữ nguyên chỗ, và mọi thư mục chứa chúng cũng vậy."
+     },
+     "after": {
+      "other": "Nhưng %@ cũng có %lld sách do phiên bản TextMouth mới hơn thêm vào: chúng được giữ nguyên chỗ, và mọi thư mục chứa chúng cũng vậy."
+     },
+     "why": "natural: phiên bản TextMouth mới hơn, as elsewhere in the catalog"
+    },
+    {
+     "key": "Condition %@ days",
+     "id": "libraryViewEditor.daysLabel",
+     "english": "Condition %@ days",
+     "before": "Điều kiện %@ số ngày",
+     "after": "Điều kiện %@, số ngày",
+     "why": "natural: the condition and its control are two noun phrases; a comma lets the label read as one (as French does)"
+    },
+    {
+     "key": "Condition %@ folder",
+     "id": "libraryViewEditor.folderLabel",
+     "english": "Condition %@ folder",
+     "before": "Điều kiện %@ thư mục",
+     "after": "Điều kiện %@, thư mục",
+     "why": "natural: the condition and its control are two noun phrases; a comma lets the label read as one (as French does)"
+    },
+    {
+     "key": "Condition %@ format",
+     "id": "libraryViewEditor.formatLabel",
+     "english": "Condition %@ format",
+     "before": "Điều kiện %@ định dạng",
+     "after": "Điều kiện %@, định dạng",
+     "why": "natural: the condition and its control are two noun phrases; a comma lets the label read as one (as French does)"
+    },
+    {
+     "key": "Condition %@ includes subfolders",
+     "id": "libraryViewEditor.subfoldersLabel",
+     "english": "Condition %@ includes subfolders",
+     "before": "Điều kiện %@ gồm cả thư mục con",
+     "after": "Điều kiện %@, gồm cả thư mục con",
+     "why": "natural: the condition and its control are two noun phrases; a comma lets the label read as one (as French does)"
+    },
+    {
+     "key": "Condition %@ reading state",
+     "id": "libraryViewEditor.readingStateLabel",
+     "english": "Condition %@ reading state",
+     "before": "Điều kiện %@ trạng thái đọc",
+     "after": "Điều kiện %@, trạng thái đọc",
+     "why": "natural: the condition and its control are two noun phrases; a comma lets the label read as one (as French does)"
+    },
+    {
+     "key": "Condition %@ relation",
+     "id": "libraryViewEditor.relationLabel",
+     "english": "Condition %@ relation",
+     "before": "Điều kiện %@ quan hệ",
+     "after": "Điều kiện %@, quan hệ",
+     "why": "natural: the condition and its control are two noun phrases; a comma lets the label read as one (as French does)"
+    },
+    {
+     "key": "Condition %@ text",
+     "id": "libraryViewEditor.textLabel",
+     "english": "Condition %@ text",
+     "before": "Điều kiện %@ văn bản",
+     "after": "Điều kiện %@, văn bản",
+     "why": "natural: the condition and its control are two noun phrases; a comma lets the label read as one (as French does)"
+    },
+    {
+     "key": "Continue to Next Book",
+     "id": "endOfBookBehavior.title.continueNext",
+     "english": "Continue to Next Book",
+     "before": "Tiếp tục sang sách kế tiếp",
+     "after": "Tiếp tục sang sách tiếp theo",
+     "why": "term: Next Book is the glossary's Next (Tiếp theo), as the catalog's other next-book strings say"
+    },
+    {
+     "key": "Downloaded. Loading.",
+     "id": "readerCloud.downloadedLoading",
+     "english": "Downloaded. Loading.",
+     "before": "Đã tải về. Đang tải sách.",
+     "after": "Đã tải về. Đang mở sách.",
+     "why": "meaning: after Đã tải về, Đang tải sách is heard as downloading again (tải is both); the book is loading, so Đang mở sách"
+    },
+    {
+     "key": "Duplicate",
+     "id": "libraryViewsSettings.duplicateAction",
+     "english": "Duplicate",
+     "before": "Nhân đôi",
+     "after": "Nhân bản",
+     "why": "term: Apple's Vietnamese Duplicate command is Nhân bản (SwiftUI's menu), not Nhân đôi (double)"
+    },
+    {
+     "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "id": "textEncoding.stopsEditingNote",
+     "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "before": "Sửa văn bản dừng lại với sách này; hãy chọn Sửa văn bản lần nữa để sửa cách đọc mới.",
+     "after": "Việc sửa văn bản cho sách này sẽ dừng; hãy chọn Sửa văn bản lần nữa để sửa kết quả đọc lại.",
+     "why": "meaning: the new reading is the re-read's text (kết quả đọc lại), not cách đọc mới; the editing session ends (việc sửa … sẽ dừng), not the command"
+    },
+    {
+     "key": "Everything",
+     "id": "removal.everythingObject",
+     "english": "Everything",
+     "before": "Mọi thứ",
+     "after": "mọi thứ",
+     "why": "natural: the object of a title (Chuyển mọi thứ vào Thùng rác) is not capitalized in Vietnamese"
+    },
+    {
+     "key": "Everything in %@",
+     "id": "removal.everythingInObject",
+     "english": "Everything in %@",
+     "before": "Mọi thứ trong %@",
+     "after": "mọi thứ trong %@",
+     "why": "natural: the object of a title (Chuyển mọi thứ trong “Fiction” vào Thùng rác?) is not capitalized in Vietnamese"
+    },
+    {
+     "key": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "id": "miscellaneousSettings.restartGestureExplanation",
+     "english": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "before": "Thử nghiệm. Một chuỗi phím đa phương tiện hoặc điều khiển AirPods trong một khoảng thời gian ngắn sẽ đặt lại hẹn giờ ngủ gần nhất, tiện khi một bộ hẹn giờ vừa hết.",
+     "after": "Thử nghiệm. Một chuỗi phím đa phương tiện hoặc điều khiển AirPods trong một khoảng thời gian ngắn sẽ khởi động lại hẹn giờ ngủ gần nhất, tiện khi một bộ hẹn giờ vừa hết.",
+     "why": "meaning: re-arms is khởi động lại, as the switch says (cử chỉ khởi động lại bộ hẹn giờ); đặt lại is the glossary's Reset"
+    },
+    {
+     "key": "Failed to rebuild to default",
+     "id": "libraryViewModel.resetFailureContext",
+     "english": "Failed to rebuild to default",
+     "before": "Không thể xây dựng lại về mặc định",
+     "after": "Không thể đặt lại về vị trí mặc định",
+     "why": "natural: xây dựng lại về mặc định is not Vietnamese; it reports Reset to Default Location (Đặt lại về vị trí mặc định)"
+    },
+    {
+     "key": "Files not read",
+     "id": "libraryComparison.unreadListLabel",
+     "english": "Files not read",
+     "before": "Tệp chưa đọc",
+     "after": "Tệp không đọc được",
+     "why": "meaning: the files the comparison could not read; chưa đọc says not yet read (unread)"
+    },
+    {
+     "key": "Folders and the Reading List have no conditions to copy.",
+     "id": "libraryViewsSettings.duplicateUnavailableHint",
+     "english": "Folders and the Reading List have no conditions to copy.",
+     "before": "Thư mục và Danh sách đọc không có điều kiện để sao chép.",
+     "after": "Chế độ xem Thư mục và Danh sách đọc không có điều kiện để sao chép.",
+     "why": "meaning: a bare Thư mục is heard as folders; the Folders view is named as a view"
+    },
+    {
+     "key": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "id": "libraryViewEditor.editDisabledHint",
+     "english": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "before": "Thư mục và Danh sách đọc luôn liệt kê những gì vốn có của chúng. Bạn có thể di chuyển chúng, và ẩn Danh sách đọc.",
+     "after": "Chế độ xem Thư mục và Danh sách đọc luôn liệt kê những gì vốn có của chúng. Bạn có thể di chuyển chúng, và ẩn Danh sách đọc.",
+     "why": "meaning: a bare Thư mục is heard as folders; the Folders view is named as a view"
+    },
+    {
+     "key": "Folders is always shown: every folder and feed opens there.",
+     "id": "libraryViewsSettings.foldersVisibilityHint",
+     "english": "Folders is always shown: every folder and feed opens there.",
+     "before": "Thư mục luôn được hiển thị: mọi thư mục và nguồn cấp đều mở ở đó.",
+     "after": "Chế độ xem Thư mục luôn được hiển thị: mọi thư mục và nguồn cấp đều mở trong đó.",
+     "why": "meaning: Thư mục luôn được hiển thị said folders are always shown; it is the Folders view"
+    },
+    {
+     "key": "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again.",
+     "id": "dataDirectoryMigrationError.bookOutsideFix",
+     "english": "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again.",
+     "before": "Hãy nhập lại, việc này sẽ hỏi về bản trùng lặp, rồi chọn Thay thế bản hiện có để bản sao lưu trong thư mục dữ liệu thế chỗ, hoặc gỡ nó khỏi thư viện, sau đó di chuyển lại thư mục dữ liệu.",
+     "after": "Hãy nhập lại, việc này sẽ hỏi về bản trùng lặp, rồi chọn Thay thế bản hiện có để bản sao được lưu trong thư mục dữ liệu thế chỗ, hoặc gỡ nó khỏi thư viện, sau đó di chuyển lại thư mục dữ liệu.",
+     "why": "meaning: bản sao lưu reads as a backup (sao lưu); it is the copy stored in the data directory (bản sao được lưu)"
+    },
+    {
+     "key": "In a regular expression, a dollar sign and a group's number, as in $1 or $2, put back what that group matched.",
+     "id": "substitutions.replacementHint",
+     "english": "In a regular expression, a dollar sign and a group's number, as in $1 or $2, put back what that group matched.",
+     "before": "Trong biểu thức chính quy, dấu đô la và số của một nhóm, như $1 hoặc $2, đặt lại phần mà nhóm đó khớp.",
+     "after": "Trong biểu thức chính quy, dấu đô la và số của một nhóm, như $1 hoặc $2, sẽ chèn lại phần mà nhóm đó đã khớp.",
+     "why": "meaning: put back is chèn lại (insert again); đặt lại is the glossary's Reset"
+    },
+    {
+     "key": "In this Mac's Logs folder",
+     "id": "logsSettings.machineChoice",
+     "english": "In this Mac's Logs folder",
+     "before": "Trong thư mục Nhật ký của máy Mac này",
+     "after": "Trong thư mục Logs của máy Mac này",
+     "why": "term: Finder shows the folder as Logs (macOS gives it no Vietnamese name), so its name stays, as in Spanish and French"
+    },
+    {
+     "key": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "id": "folderRemoval.ownFeedsChoiceSentences.downloads",
+     "english": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "Đây là thư mục của nguồn cấp %@. Dù chọn cách nào, nguồn cấp và các bản tải về của nó vẫn còn, không nằm trong thư mục nào cho đến khi Thông tin nguồn cấp gán cho nó thư mục khác; Xóa nguồn cấp… trên hàng của nó sẽ xóa nguồn cấp.",
+     "after": "Đây là thư mục của nguồn cấp %@. Dù chọn cách nào, nguồn cấp và các bản tải về của nó vẫn còn, không nằm trong thư mục nào cho đến khi bạn gán cho nó thư mục khác trong Thông tin nguồn cấp; lệnh Xóa nguồn cấp… trên hàng của nó sẽ xóa nguồn cấp.",
+     "why": "grammar: a bare command name as a subject reads as an imperative; lệnh names it as the command (Xóa nguồn cấp…, and Feed Info as the place where you give the feed a folder)"
+    },
+    {
+     "key": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "id": "folderRemoval.ownFeedsChoiceSentences.their",
+     "english": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "Đây là thư mục của các nguồn cấp %@. Dù chọn cách nào, các nguồn cấp và bản tải về của chúng vẫn còn, không nằm trong thư mục nào cho đến khi Thông tin nguồn cấp gán cho mỗi nguồn cấp một thư mục khác; Xóa nguồn cấp… trên hàng của một nguồn cấp sẽ xóa nó.",
+     "after": "Đây là thư mục của các nguồn cấp %@. Dù chọn cách nào, các nguồn cấp và bản tải về của chúng vẫn còn, không nằm trong thư mục nào cho đến khi bạn gán cho mỗi nguồn cấp một thư mục khác trong Thông tin nguồn cấp; lệnh Xóa nguồn cấp… trên hàng của một nguồn cấp sẽ xóa nguồn cấp đó.",
+     "why": "grammar: a bare command name as a subject reads as an imperative; lệnh names it as the command (Xóa nguồn cấp…, and Feed Info as the place where you give each feed a folder)"
+    },
+    {
+     "key": "Its text is replaced by the new reading.",
+     "id": "textEncoding.replacedNote",
+     "english": "Its text is replaced by the new reading.",
+     "before": "Văn bản của sách sẽ được thay bằng cách đọc mới.",
+     "after": "Văn bản của sách sẽ được thay bằng kết quả đọc lại.",
+     "why": "meaning: the new reading is the re-read's text (kết quả đọc lại), not cách đọc mới, a new way of reading"
+    },
+    {
+     "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.episodes",
+     "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "Đã để nguyên %1$@: tập và bài viết ở lại trong nguồn cấp của chúng; %2$@ biến một mục thành sách trong thư viện của bạn.",
+     "after": "Đã để nguyên %1$@: tập và bài viết ở lại trong nguồn cấp của chúng; lệnh %2$@ biến một mục thành sách trong thư viện của bạn.",
+     "why": "grammar: a bare command name as a subject reads as an imperative; lệnh names it as the command (%2$@ is Move to Library)"
+    },
+    {
+     "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.they",
+     "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "Đã để nguyên %1$@: tập và bài viết ở lại trong nguồn cấp của chúng; %2$@ biến một mục thành sách trong thư viện của bạn.",
+     "after": "Đã để nguyên %1$@: tập và bài viết ở lại trong nguồn cấp của chúng; lệnh %2$@ biến một mục thành sách trong thư viện của bạn.",
+     "why": "grammar: a bare command name as a subject reads as an imperative; lệnh names it as the command (%2$@ is Move to Library)"
+    },
+    {
+     "key": "Make sure its folder can be written to, then try again.",
+     "id": "libraryIndexRecoveryError.couldNotPreserveFix",
+     "english": "Make sure its folder can be written to, then try again.",
+     "before": "Hãy đảm bảo thư mục của nó có thể ghi, rồi thử lại.",
+     "after": "Hãy đảm bảo có thể ghi vào thư mục của nó, rồi thử lại.",
+     "why": "grammar: thư mục có thể ghi said the folder can write; it is written to (ghi vào)"
+    },
+    {
+     "key": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "id": "miscellaneousSettings.patternExplanation",
+     "english": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "before": "Các sự kiện điều khiển phương tiện kích hoạt việc khởi động lại. Sự kiện cuối cùng bị tiêu thụ, không chuyển đến phát lại, nên không thể bắt đầu phát âm thanh.",
+     "after": "Các sự kiện điều khiển phương tiện kích hoạt việc khởi động lại. Sự kiện cuối cùng được giữ lại, không chuyển đến phát lại, nên không thể bắt đầu phát âm thanh.",
+     "why": "natural: bị tiêu thụ copies consumed (as food is); the event is held back (được giữ lại)"
+    },
+    {
+     "key": "Names that differ only in capitalization or accent encoding refer to the same folder on this disk.",
+     "id": "folderOperationConflict.nameInUse.capitalization",
+     "english": "Names that differ only in capitalization or accent encoding refer to the same folder on this disk.",
+     "before": "Những tên chỉ khác nhau ở chữ hoa chữ thường hoặc cách mã hóa dấu thì chỉ cùng một thư mục trên ổ đĩa này.",
+     "after": "Những tên chỉ khác nhau ở chữ hoa chữ thường hoặc cách mã hóa dấu đều trỏ đến cùng một thư mục trên ổ đĩa này.",
+     "why": "meaning: the second chỉ (point to) was heard as only; trỏ đến says refer to"
+    },
+    {
+     "key": "None",
+     "id": "common.none",
+     "english": "None",
+     "before": "Không",
+     "after": "Không có",
+     "why": "term: Apple's Vietnamese None is Không có (AppKit), as the next choice says (Không có (dùng chung)); Không alone is No"
+    },
+    {
+     "key": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "id": "brailleFileCode.uncheckedNote",
+     "english": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "before": "Không có gì kiểm tra xem đây có phải lựa chọn đúng không. Nếu số và dấu câu nghe sai, hãy chọn lựa chọn khác.",
+     "after": "Không có cách nào kiểm tra đây có phải là lựa chọn đúng hay không. Nếu số và dấu câu nghe sai, hãy chọn mã khác.",
+     "why": "natural: Không có gì kiểm tra copied Nothing checks; chọn lựa chọn khác repeated itself, and another means another code"
+    },
+    {
+     "key": "Opens %@, the folder the logs are written to now, in Finder.",
+     "id": "logsSettings.showHint",
+     "english": "Opens %@, the folder the logs are written to now, in Finder.",
+     "before": "Mở %@, thư mục hiện đang ghi nhật ký, trong Finder.",
+     "after": "Mở %@ trong Finder, thư mục mà nhật ký hiện được ghi vào.",
+     "why": "grammar: thư mục hiện đang ghi nhật ký made the folder the writer; the logs are written to it"
+    },
+    {
+     "key": "Paste or type the text here instead, or try again.",
+     "id": "textInput.pasteOrTypeInstead",
+     "english": "Paste or type the text here instead, or try again.",
+     "before": "Hãy dán hoặc nhập văn bản vào đây thay vào đó, hoặc thử lại.",
+     "after": "Thay vào đó, hãy dán hoặc nhập văn bản vào đây, hoặc thử lại.",
+     "why": "natural: thay vào đó (instead) leads the sentence in Vietnamese, not after vào đây"
+    },
+    {
+     "key": "Reading list: “%@” is %@ in %@ and %@ in %@.",
+     "id": "libraryComparison.readingListOptionDiffers",
+     "english": "Reading list: “%1$@” is %2$@ in %3$@ and %4$@ in %5$@.",
+     "before": "Danh sách đọc: “%1$@” là %2$@ trong %3$@ và %4$@ trong %5$@.",
+     "after": "Danh sách đọc: “%1$@” đang %2$@ trong %3$@ và %4$@ trong %5$@.",
+     "why": "grammar: the values are bật and tắt, so the option đang bật, not là bật"
+    },
+    {
+     "key": "Retry is at the top of the Library window.",
+     "id": "persistenceBannerRow.announcement.retry",
+     "english": "Retry is at the top of the Library window.",
+     "before": "Thử lại nằm ở đầu cửa sổ Thư viện.",
+     "after": "Nút Thử lại nằm ở đầu cửa sổ Thư viện.",
+     "why": "grammar: a bare command name as a subject reads as an imperative (Try again is at the top); Nút names it as the button"
+    },
+    {
+     "key": "Set its shortcut with %@ in the %@ tab; the default is %@.",
+     "id": "miscellaneousSettings.restartShortcutNote",
+     "english": "Set its shortcut with %1$@ in the %2$@ tab; the default is %3$@.",
+     "before": "Đặt phím tắt cho nó bằng %1$@ trong thẻ %2$@; mặc định là %3$@.",
+     "after": "Đặt phím tắt của nó ở mục %1$@ trong tab %2$@; mặc định là %3$@.",
+     "why": "term: Apple's Vietnamese says tab (Đóng Tab), not thẻ; and %1$@ is the action's row, so ở mục %1$@, not bằng %1$@"
+    },
+    {
+     "key": "Show When Applicable",
+     "id": "libraryViewsSettings.showAction.whenApplicable",
+     "english": "Show When Applicable",
+     "before": "Hiển thị khi áp dụng",
+     "after": "Hiển thị khi thích hợp",
+     "why": "meaning: khi áp dụng is when applying; When Applicable is khi thích hợp"
+    },
+    {
+     "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "id": "textEncoding.editNotKeptRefusal",
+     "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "before": "TextMouth không thể giữ văn bản bạn đã thay đổi trong “%@” cạnh cách đọc mới, nên đã để nguyên cuốn sách.",
+     "after": "TextMouth không thể giữ văn bản bạn đã thay đổi trong “%@” bên cạnh kết quả đọc lại, nên đã để nguyên cuốn sách.",
+     "why": "meaning: the new reading is the re-read's text (kết quả đọc lại), not cách đọc mới, a new way of reading"
+    },
+    {
+     "key": "TextMouth will quit and open again to load it.",
+     "id": "storage.useSentence.again",
+     "english": "TextMouth will quit and open again to load it.",
+     "before": "TextMouth sẽ thoát và mở lại để tải nó.",
+     "after": "TextMouth sẽ thoát và mở lại để dùng thư viện đó.",
+     "why": "meaning: tải nó is heard as downloading it; TextMouth reopens to use the other library the question names"
+    },
+    {
+     "key": "TextMouth will quit and open again to start it.",
+     "id": "storage.startNewLibrarySentence.again",
+     "english": "TextMouth will quit and open again to start it.",
+     "before": "TextMouth sẽ thoát và mở lại để bắt đầu nó.",
+     "after": "TextMouth sẽ thoát và mở lại để bắt đầu thư viện mới.",
+     "why": "natural: bắt đầu nó left the object vague; the question is about starting a new library (Bắt đầu thư viện mới)"
+    },
+    {
+     "key": "The %@ of %lld of them are kept.",
+     "id": "feedDownloadRemoval.completionMessage.them",
+     "english": {
+      "one": "The %@ of %lld of them are kept.",
+      "other": "The %@ of %lld of them are kept."
+     },
+     "before": {
+      "other": "%@ của %lld mục trong số đó được giữ lại."
+     },
+     "after": {
+      "other": "Vẫn giữ lại %@ của %lld mục trong số đó."
+     },
+     "why": "grammar: the list placeholder is lower case (vị trí và dấu trang), so it cannot begin the sentence"
+    },
+    {
+     "key": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "id": "brailleCode.translatedAgainNote",
+     "english": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "before": "Chữ braille được dịch sang chữ in lại bằng mã này. Không có gì kiểm tra xem đây có phải lựa chọn đúng không. Nếu từ ngữ đọc sai, hãy chọn mã khác.",
+     "after": "Chữ braille được dịch lại sang chữ in bằng mã này. Không có cách nào kiểm tra đây có phải là lựa chọn đúng hay không. Nếu từ ngữ đọc sai, hãy chọn mã khác.",
+     "why": "natural: lại goes with the verb (dịch lại sang chữ in), and Nothing checks reads as there is no way to check"
+    },
+    {
+     "key": "The data directory has no Logs folder, so logs go to %@ until it has one.",
+     "id": "logsSettings.status.fallback.noOne",
+     "english": "The data directory has no Logs folder, so logs go to %@ until it has one.",
+     "before": "Thư mục dữ liệu không có thư mục Nhật ký, nên nhật ký được ghi vào %@ cho đến khi có.",
+     "after": "Thư mục dữ liệu không có thư mục Logs, nên nhật ký được ghi vào %@ cho đến khi có.",
+     "why": "term: the data directory's folder is named Logs on disk, so its name stays, as in Spanish and French"
+    },
+    {
+     "key": "The data directory's Logs folder can't be written (%@), so logs go to %@ until it can.",
+     "id": "logsSettings.status.fallback.written",
+     "english": "The data directory's Logs folder can't be written (%1$@), so logs go to %2$@ until it can.",
+     "before": "Không ghi được vào thư mục Nhật ký của thư mục dữ liệu (%1$@), nên nhật ký được ghi vào %2$@ cho đến khi ghi được.",
+     "after": "Không ghi được vào thư mục Logs của thư mục dữ liệu (%1$@), nên nhật ký được ghi vào %2$@ cho đến khi ghi được.",
+     "why": "term: the data directory's folder is named Logs on disk, so its name stays, as in Spanish and French"
+    },
+    {
+     "key": "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another.",
+     "id": "folderRemoval.confirmationMessage.stays",
+     "english": "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another.",
+     "before": "Nguồn cấp %@ vẫn còn, cùng các bản tải về của nó, không thuộc thư mục nào cho đến khi Thông tin nguồn cấp gán cho nó thư mục khác.",
+     "after": "Nguồn cấp %@ vẫn còn, cùng các bản tải về của nó, không thuộc thư mục nào cho đến khi bạn gán cho nó thư mục khác trong Thông tin nguồn cấp.",
+     "why": "natural: Feed Info is a sheet, not an actor; you give the feed a folder in it (as the chunk 2 sentences now say)"
+    },
+    {
+     "key": "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another.",
+     "id": "folderRemoval.confirmationMessage.folders",
+     "english": "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another.",
+     "before": "Các nguồn cấp %@ vẫn còn, cùng các bản tải về của chúng, không thuộc thư mục nào cho đến khi Thông tin nguồn cấp gán cho mỗi nguồn cấp một thư mục khác.",
+     "after": "Các nguồn cấp %@ vẫn còn, cùng các bản tải về của chúng, không thuộc thư mục nào cho đến khi bạn gán cho mỗi nguồn cấp một thư mục khác trong Thông tin nguồn cấp.",
+     "why": "natural: Feed Info is a sheet, not an actor; you give the feed a folder in it (as the chunk 2 sentences now say)"
+    },
+    {
+     "key": "The folders %@ and %@ can't both move into %@: their names mean the same folder on this disk.",
+     "id": "folderOperationConflict.namesCollide",
+     "english": "The folders %1$@ and %2$@ can't both move into %3$@: their names mean the same folder on this disk.",
+     "before": "Các thư mục %1$@ và %2$@ không thể cùng chuyển vào %3$@: tên của chúng chỉ cùng một thư mục trên ổ đĩa này.",
+     "after": "Các thư mục %1$@ và %2$@ không thể cùng chuyển vào %3$@: tên của chúng trỏ đến cùng một thư mục trên ổ đĩa này.",
+     "why": "meaning: chỉ cùng một thư mục was heard as only the same folder; trỏ đến says refer to"
+    },
+    {
+     "key": "The index is not changed until you choose %@ or %@, which stay available from %@ at the top of the library.",
+     "id": "libraryIndexRecovery.continueReading.available",
+     "english": "The index is not changed until you choose %1$@ or %2$@, which stay available from %3$@ at the top of the library.",
+     "before": "Chỉ mục không thay đổi cho đến khi bạn chọn %1$@ hoặc %2$@, vẫn có sẵn từ %3$@ ở đầu thư viện.",
+     "after": "Chỉ mục không thay đổi cho đến khi bạn chọn %1$@ hoặc %2$@; hai nút này vẫn có sẵn khi bạn chọn %3$@ ở đầu thư viện.",
+     "why": "grammar: the clause vẫn có sẵn từ %3$@ had no subject; the two buttons are reached by choosing Recovery Options"
+    },
+    {
+     "key": "The library isn't available, so logs go to %@ until it is.",
+     "id": "logsSettings.status.fallback.available",
+     "english": "The library isn't available, so logs go to %@ until it is.",
+     "before": "Thư viện không khả dụng, nên nhật ký được ghi vào %@ cho đến khi có.",
+     "after": "Thư viện không khả dụng, nên nhật ký được ghi vào %@ cho đến khi thư viện khả dụng trở lại.",
+     "why": "natural: cho đến khi có (until there is) left the condition unsaid; it is until the library is available again"
+    },
+    {
+     "key": "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.",
+     "id": "miscellaneousSettings.timeWindowExplanation",
+     "english": "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.",
+     "before": "Thời gian tối đa cho cả chuỗi. Cửa sổ ngắn hơn nghĩa là ít khớp nhầm hơn nhưng phải nhấn nhanh hơn.",
+     "after": "Thời gian tối đa cho cả chuỗi. Khoảng thời gian ngắn hơn nghĩa là ít khớp nhầm hơn nhưng phải nhấn nhanh hơn.",
+     "why": "meaning: cửa sổ is a window on the screen (the glossary's Window); a time window is khoảng thời gian, as the slider's label says"
+    },
+    {
+     "key": "The new location, %@, is a link to %@, which cannot be found.",
+     "id": "dataDirectoryMigrationError.unreachableLink",
+     "english": "The new location, %1$@, is a link to %2$@, which cannot be found.",
+     "before": "Vị trí mới, %1$@, là liên kết đến %2$@, không tìm thấy.",
+     "after": "Vị trí mới, %1$@, là liên kết đến %2$@, nhưng không tìm thấy nơi đó.",
+     "why": "grammar: không tìm thấy hung with no subject; the place the link leads to is what cannot be found"
+    },
+    {
+     "key": "Their %@ are kept.",
+     "id": "feedDownloadRemoval.completionMessage.their",
+     "english": "Their %@ are kept.",
+     "before": "%@ của chúng được giữ lại.",
+     "after": "Vẫn giữ lại %@ của chúng.",
+     "why": "grammar: the list placeholder is lower case (vị trí và dấu trang), so it cannot begin the sentence"
+    },
+    {
+     "key": "There is no view %@. Go to View reaches %lld views.",
+     "id": "libraryViewPicker.noView",
+     "english": {
+      "one": "There is no view %@. Go to View reaches %lld view.",
+      "other": "There is no view %@. Go to View reaches %lld views."
+     },
+     "before": {
+      "other": "Không có chế độ xem %@. Đến chế độ xem chỉ tới được %lld chế độ xem."
+     },
+     "after": {
+      "other": "Không có chế độ xem %@. Lệnh Đến chế độ xem chỉ tới được %lld chế độ xem."
+     },
+     "why": "grammar: a bare command name as a subject reads as an imperative; Lệnh names Go to View as the command"
+    },
+    {
+     "key": "Use this after restoring the file from a backup, fixing its permissions, or updating TextMouth to the version that saved it.",
+     "id": "libraryIndexRecovery.tryAgain.restoring",
+     "english": "Use this after restoring the file from a backup, fixing its permissions, or updating TextMouth to the version that saved it.",
+     "before": "Hãy dùng việc này sau khi khôi phục tệp từ bản sao lưu, sửa quyền của nó, hoặc cập nhật TextMouth lên phiên bản đã lưu nó.",
+     "after": "Hãy dùng tùy chọn này sau khi khôi phục tệp từ bản sao lưu, sửa quyền của nó, hoặc cập nhật TextMouth lên phiên bản đã lưu nó.",
+     "why": "natural: dùng việc này (use this matter) does not name the choice; this is Try Again, a choice of the recovery sheet"
+    },
+    {
+     "key": "Visibility of %@",
+     "id": "libraryViewsSettings.visibilityLabel",
+     "english": "Visibility of %@",
+     "before": "Hiển thị của %@",
+     "after": "Chế độ hiển thị của %@",
+     "why": "natural: Hiển thị của %@ is not a noun phrase; the visibility pop-up is Chế độ hiển thị of the view"
+    },
+    {
+     "key": "When Applicable",
+     "id": "libraryViewsSettings.visibilityName.applicable",
+     "english": "When Applicable",
+     "before": "Khi áp dụng",
+     "after": "Khi thích hợp",
+     "why": "meaning: Khi áp dụng is when applying; When Applicable is Khi thích hợp"
+    },
+    {
+     "key": "When off, the sheet stays open showing the remaining time and a reset button",
+     "id": "settings.autoCloseHint",
+     "english": "When off, the sheet stays open showing the remaining time and a reset button",
+     "before": "Khi tắt, hộp thoại vẫn mở và hiện thời gian còn lại cùng nút đặt lại.",
+     "after": "Khi tắt, hộp thoại vẫn mở và hiển thị thời gian còn lại cùng nút đặt lại.",
+     "why": "meaning: hiện thời gian reads as hiện thời (currently); the glossary's Show is hiển thị"
+    },
+    {
+     "key": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
+     "id": "removalPreferences.trashPreference.recover",
+     "english": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
+     "before": "Khi bật, tệp của sách đã xóa được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được làm trống.",
+     "after": "Khi bật, tệp của sách đã xóa được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được dọn sạch.",
+     "why": "term: Finder's Vietnamese empties the Trash with dọn sạch (Dọn sạch Thùng rác), not làm trống"
+    },
+    {
+     "key": "Where TextMouth writes its diagnostic logs. %@ keeps them with your books, so they move and sync with the library. %@ keeps them in %@, which never syncs. A change applies from the next line; existing logs stay.",
+     "id": "logsSettings.pickerHint",
+     "english": "Where TextMouth writes its diagnostic logs. %1$@ keeps them with your books, so they move and sync with the library. %2$@ keeps them in %3$@, which never syncs. A change applies from the next line; existing logs stay.",
+     "before": "Nơi TextMouth ghi nhật ký chẩn đoán. %1$@ giữ chúng cùng sách của bạn, nên chúng di chuyển và đồng bộ cùng thư viện. %2$@ giữ chúng trong %3$@, nơi không bao giờ đồng bộ. Thay đổi áp dụng từ dòng tiếp theo; nhật ký cũ vẫn còn.",
+     "after": "Nơi TextMouth ghi nhật ký chẩn đoán. Nếu chọn %1$@, nhật ký được giữ cùng sách của bạn, nên chúng di chuyển và đồng bộ cùng thư viện. Nếu chọn %2$@, nhật ký được giữ trong %3$@, nơi không bao giờ đồng bộ. Thay đổi áp dụng từ dòng tiếp theo; nhật ký cũ vẫn còn.",
+     "why": "grammar: the two choice names are place phrases (Bên trong thư mục dữ liệu), which cannot be a subject; Nếu chọn X, as the other choice sentences say"
+    },
+    {
+     "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "id": "textEncoding.placesSentence.whereNoneTheirWords",
+     "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Khi không còn từ nào của chúng, %@, mỗi mục chuyển đến khoảng cùng điểm trong chương của nó, hoặc đến đoạn gần nhất mà hai cách đọc cùng có.",
+     "after": "Khi không còn từ nào của chúng, %@, mỗi mục chuyển đến khoảng cùng điểm trong chương của nó, hoặc đến đoạn gần nhất mà cả hai bản văn bản đều có.",
+     "why": "meaning: the two readings are the old and the new text (hai bản văn bản), not hai cách đọc, two ways of reading"
+    },
+    {
+     "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "id": "textEncoding.placesSentence.whereNoneTheir",
+     "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Khi không còn từ nào của chúng, mỗi mục chuyển đến khoảng cùng điểm trong chương của nó, hoặc đến đoạn gần nhất mà hai cách đọc cùng có.",
+     "after": "Khi không còn từ nào của chúng, mỗi mục chuyển đến khoảng cùng điểm trong chương của nó, hoặc đến đoạn gần nhất mà cả hai bản văn bản đều có.",
+     "why": "meaning: the two readings are the old and the new text (hai bản văn bản), not hai cách đọc, two ways of reading"
+    },
+    {
+     "key": "With %@, %@.",
+     "id": "removalChoice.optionSentence",
+     "english": "With %1$@, %2$@.",
+     "before": "Với %1$@, %2$@.",
+     "after": "Nếu chọn %1$@, %2$@.",
+     "why": "natural: Với before a button's name (a verb phrase) does not read; Nếu chọn says if you choose it, as French does"
+    },
+    {
+     "key": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "id": "folderRemoval.feedsChoiceSentences.downloads",
+     "english": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "Với %@, nguồn cấp và các bản tải về của nó vẫn còn, không thuộc thư mục nào cho đến khi Thông tin nguồn cấp gán cho nó thư mục khác; Xóa nguồn cấp… trên hàng của nó sẽ xóa nguồn cấp.",
+     "after": "Nếu chọn %@, nguồn cấp và các bản tải về của nó vẫn còn, không thuộc thư mục nào cho đến khi bạn gán cho nó thư mục khác trong Thông tin nguồn cấp; lệnh Xóa nguồn cấp… trên hàng của nó sẽ xóa nguồn cấp.",
+     "why": "natural: Với before a button's name (a verb phrase) does not read; Nếu chọn says if you choose it, as French does; Feed Info is where you give the feed a folder, and lệnh names Delete Feed… as the subject"
+    },
+    {
+     "key": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "id": "folderRemoval.feedsChoiceSentences.each",
+     "english": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "Với %@, các nguồn cấp và bản tải về của chúng vẫn còn, không thuộc thư mục nào cho đến khi Thông tin nguồn cấp gán cho mỗi nguồn cấp một thư mục khác; Xóa nguồn cấp… trên hàng của một nguồn cấp sẽ xóa nó.",
+     "after": "Nếu chọn %@, các nguồn cấp và bản tải về của chúng vẫn còn, không thuộc thư mục nào cho đến khi bạn gán cho mỗi nguồn cấp một thư mục khác trong Thông tin nguồn cấp; lệnh Xóa nguồn cấp… trên hàng của một nguồn cấp sẽ xóa nguồn cấp đó.",
+     "why": "natural: Với before a button's name (a verb phrase) does not read; Nếu chọn says if you choose it, as French does; Feed Info is where you give each feed a folder, and lệnh names Delete Feed… as the subject"
+    },
+    {
+     "key": "With %@, the folder and everything in it leave the library, and %@.",
+     "id": "folderRemoval.choiceMessage.everything",
+     "english": "With %1$@, the folder and everything in it leave the library, and %2$@.",
+     "before": "Với %1$@, thư mục và mọi thứ trong đó rời khỏi thư viện, và %2$@.",
+     "after": "Nếu chọn %1$@, thư mục và mọi thứ trong đó rời khỏi thư viện, và %2$@.",
+     "why": "natural: Với before a button's name (a verb phrase) does not read; Nếu chọn says if you choose it, as French does"
+    },
+    {
+     "key": "With Move Contents Out, the feed's folder moves with the rest.",
+     "id": "folderRemoval.feedsChoiceSentences.moves",
+     "english": "With Move Contents Out, the feed's folder moves with the rest.",
+     "before": "Với Chuyển nội dung ra ngoài, thư mục của nguồn cấp được chuyển cùng phần còn lại.",
+     "after": "Nếu chọn Di chuyển nội dung ra ngoài, thư mục của nguồn cấp được di chuyển cùng phần còn lại.",
+     "why": "meaning: the button reads Di chuyển nội dung ra ngoài, so the sentence names it so; natural: Với before a button's name (a verb phrase) does not read; Nếu chọn says if you choose it, as French does"
+    },
+    {
+     "key": "With Move Contents Out, their folders move with the rest.",
+     "id": "folderRemoval.feedsChoiceSentences.contents",
+     "english": "With Move Contents Out, their folders move with the rest.",
+     "before": "Với Chuyển nội dung ra ngoài, các thư mục của chúng được chuyển cùng phần còn lại.",
+     "after": "Nếu chọn Di chuyển nội dung ra ngoài, các thư mục của chúng được di chuyển cùng phần còn lại.",
+     "why": "meaning: the button reads Di chuyển nội dung ra ngoài, so the sentence names it so; natural: Với before a button's name (a verb phrase) does not read; Nếu chọn says if you choose it, as French does"
+    },
+    {
+     "key": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "id": "folderRemoval.choiceMessage.contents",
+     "english": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "before": "Với Chuyển nội dung ra ngoài, chúng vẫn ở trong thư viện và chỉ thư mục bị xóa.",
+     "after": "Nếu chọn Di chuyển nội dung ra ngoài, chúng vẫn ở trong thư viện và chỉ thư mục bị xóa.",
+     "why": "meaning: the button reads Di chuyển nội dung ra ngoài, so the sentence names it so; natural: Với before a button's name (a verb phrase) does not read; Nếu chọn says if you choose it, as French does"
+    },
+    {
+     "key": "chapter %@, with the note “%@”",
+     "id": "libraryComparison.bookmarkPhrase.chapter",
+     "english": "chapter %1$@, with the note “%2$@”",
+     "before": "chương %1$@, với ghi chú “%2$@”",
+     "after": "chương %1$@, có ghi chú “%2$@”",
+     "why": "natural: với ghi chú copies with; có ghi chú, beside không có ghi chú of the bookmark with no note"
+    },
+    {
+     "key": "choose Remove Download",
+     "id": "bookCloud.onlineOnlyCommand.iCloudDrive",
+     "english": "choose Remove Download",
+     "before": "chọn Gỡ bản tải về",
+     "after": "chọn Xóa bản tải về",
+     "why": "term: this is the Finder's own command, which Finder's Vietnamese names Xóa bản tải về (TextMouth's own command is Gỡ bản tải về)"
+    },
+    {
+     "key": "its files go to the Trash, where you can recover them until the Trash is emptied",
+     "id": "removalMode.filesClause.trashWhereRecoverEmptied",
+     "english": "its files go to the Trash, where you can recover them until the Trash is emptied",
+     "before": "tệp của nó được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được làm trống",
+     "after": "tệp của nó được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được dọn sạch",
+     "why": "term: Finder's Vietnamese empties the Trash with dọn sạch (Dọn sạch Thùng rác), not làm trống"
+    },
+    {
+     "key": "opened last",
+     "id": "libraryViewEditor.lastOpened",
+     "english": "opened last",
+     "before": "mở gần nhất",
+     "after": "mở sau cùng",
+     "why": "term: the glossary's Opened Last, as the view editor's choice reads (Mở sau cùng)"
+    },
+    {
+     "key": "so its place and bookmarks there were taken from the library index alone.",
+     "id": "libraryComparison.sentence.record",
+     "english": "so its place and bookmarks there were taken from the library index alone.",
+     "before": "nên vị trí và dấu trang của nó ở đó được lấy chỉ từ chỉ mục thư viện.",
+     "after": "nên vị trí và dấu trang của nó ở đó chỉ được lấy từ chỉ mục thư viện.",
+     "why": "natural: chỉ (only) goes before the verb, away from chỉ mục (index)"
+    },
+    {
+     "key": "their files go to the Trash, where you can recover them until the Trash is emptied",
+     "id": "removalMode.filesClause.trashRecoverEmptied",
+     "english": "their files go to the Trash, where you can recover them until the Trash is emptied",
+     "before": "tệp của chúng được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được làm trống",
+     "after": "tệp của chúng được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được dọn sạch",
+     "why": "term: Finder's Vietnamese empties the Trash with dọn sạch (Dọn sạch Thùng rác), not làm trống"
+    },
+    {
+     "key": "when applicable",
+     "id": "libraryViewsSettings.visibilityWord.applicable",
+     "english": "when applicable",
+     "before": "khi áp dụng",
+     "after": "khi thích hợp",
+     "why": "meaning: khi áp dụng is when applying; when applicable is khi thích hợp"
+    }
+   ]
+  },
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ are in your library, unsubscribed. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "id": "feed.importFoundUnsubscribed",
+     "english": "%1$@ are in your library, unsubscribed. Choose %2$@ on a feed's row, or in its %3$@, to check it again.",
+     "before": "%1$@ đã có trong thư viện của bạn nhưng chưa đăng ký. Chọn %2$@ trên hàng của từng nguồn cấp, hoặc trong %3$@ của nguồn cấp đó, để kiểm tra lại.",
+     "after": "%1$@ đã có trong thư viện của bạn nhưng bạn đã hủy đăng ký. Chọn %2$@ trên hàng của từng nguồn cấp, hoặc trong %3$@ của nguồn cấp đó, để kiểm tra lại.",
+     "why": "meaning: chưa đăng ký says never subscribed; these feeds were unsubscribed"
+    },
+    {
+     "key": "%@ is in your library, unsubscribed. Choose %@ on its row, or in its %@, to check it again.",
+     "id": "feedSubscribeError.message.unsubscribedAlready",
+     "english": "%1$@ is in your library, unsubscribed. Choose %2$@ on its row, or in its %3$@, to check it again.",
+     "before": "%1$@ đã có trong thư viện của bạn nhưng chưa đăng ký. Chọn %2$@ trên hàng của nguồn cấp đó, hoặc trong %3$@ của nguồn cấp đó, để kiểm tra lại.",
+     "after": "%1$@ đã có trong thư viện của bạn nhưng bạn đã hủy đăng ký. Chọn %2$@ trên hàng của nguồn cấp đó hoặc trong %3$@ của nó để kiểm tra lại.",
+     "why": "meaning: chưa đăng ký says never subscribed; the feed was unsubscribed (and the doubled của nguồn cấp đó trimmed)"
+    },
+    {
+     "key": "%@ is unsubscribed, so TextMouth doesn't check it. Choose %@ to check it again.",
+     "id": "feed.notChecked",
+     "english": "%1$@ is unsubscribed, so TextMouth doesn't check it. Choose %2$@ to check it again.",
+     "before": "%1$@ đã hủy đăng ký nên TextMouth không kiểm tra. Chọn %2$@ để kiểm tra lại.",
+     "after": "Bạn đã hủy đăng ký %1$@ nên TextMouth không kiểm tra nguồn cấp này. Chọn %2$@ để kiểm tra lại.",
+     "why": "natural: the feed itself read as the one that unsubscribed; the listener did"
+    },
+    {
+     "key": "%@ to convert its Ogg audio to AAC. Free some space, and TextMouth converts it at the next launch.",
+     "id": "oggConversion.notEnoughSpace.converts",
+     "english": "%@ to convert its Ogg audio to AAC. Free some space, and TextMouth converts it at the next launch.",
+     "before": "%@ để chuyển âm thanh Ogg của sách này sang AAC. Hãy giải phóng bớt dung lượng, và TextMouth sẽ chuyển ở lần mở kế tiếp.",
+     "after": "%@ để chuyển âm thanh Ogg của sách này sang AAC. Hãy giải phóng bớt dung lượng, TextMouth sẽ chuyển đổi sách này vào lần mở kế tiếp.",
+     "why": "natural: a bare chuyển (move) had no object, and the comma plus và copied the English"
+    },
+    {
+     "key": "%@ to convert their Ogg audio to AAC. Free some space, and TextMouth converts them at the next launch.",
+     "id": "oggConversion.notEnoughSpace.their",
+     "english": "%@ to convert their Ogg audio to AAC. Free some space, and TextMouth converts them at the next launch.",
+     "before": "%@ để chuyển âm thanh Ogg của các sách này sang AAC. Hãy giải phóng bớt dung lượng, và TextMouth sẽ chuyển ở lần mở kế tiếp.",
+     "after": "%@ để chuyển âm thanh Ogg của các sách này sang AAC. Hãy giải phóng bớt dung lượng, TextMouth sẽ chuyển đổi chúng vào lần mở kế tiếp.",
+     "why": "natural: a bare chuyển (move) had no object, and the comma plus và copied the English"
+    },
+    {
+     "key": "%lld timed passages were too long and cut short.",
+     "id": "transcription.attached.short",
+     "english": {
+      "one": "%lld timed passage was too long and cut short.",
+      "other": "%lld timed passages were too long and cut short."
+     },
+     "before": {
+      "other": "%lld đoạn có thời gian quá dài và đã bị cắt ngắn."
+     },
+     "after": {
+      "other": "%lld đoạn có mốc thời gian quá dài và đã bị cắt ngắn."
+     },
+     "why": "natural: đoạn có thời gian reads as a passage that has (free) time; a timed passage is one with timestamps (có mốc thời gian)"
+    },
+    {
+     "key": "%lld timed passages were unreadable and left out.",
+     "id": "transcription.attached.unreadable",
+     "english": {
+      "one": "%lld timed passage was unreadable and left out.",
+      "other": "%lld timed passages were unreadable and left out."
+     },
+     "before": {
+      "other": "%lld đoạn có thời gian không đọc được và đã bị bỏ qua."
+     },
+     "after": {
+      "other": "%lld đoạn có mốc thời gian không đọc được và đã bị bỏ qua."
+     },
+     "why": "natural: đoạn có thời gian reads as a passage that has (free) time; a timed passage is one with timestamps (có mốc thời gian)"
+    },
+    {
+     "key": "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed.",
+     "id": "feed.addressHelp",
+     "english": "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed.",
+     "before": "Địa chỉ nguồn cấp, như liên kết kết thúc bằng .rss hoặc .xml, hoặc trang web nêu tên nguồn cấp của nó.",
+     "after": "Địa chỉ nguồn cấp, như liên kết kết thúc bằng .rss hoặc .xml, hoặc trang web có liên kết đến nguồn cấp của nó.",
+     "why": "meaning: nêu tên says the page states the feed's name; it links to the feed"
+    },
+    {
+     "key": "Adds the new copy to the library as a separate book.",
+     "id": "importDecisionChoice.keepBoth.separate",
+     "english": "Adds the new copy to the library as a separate book.",
+     "before": "Thêm bản mới vào thư viện như một sách riêng.",
+     "after": "Thêm bản mới vào thư viện thành một sách riêng.",
+     "why": "natural: như một (like a) copied the English as; the copy is added thành (as) a separate book, as the folder import says"
+    },
+    {
+     "key": "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.",
+     "id": "audioFilterPresets.explanation",
+     "english": "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.",
+     "before": "Áp dụng bộ lọc liệt kê các mục này theo thứ tự này. Mỗi mục là một chuỗi bộ lọc theo cú pháp của ffmpeg, chẳng hạn highpass=f=80,volume=3dB. TextMouth chạy các bộ lọc riêng của mình, cùng mọi bộ lọc của ffmpeg khi ffmpeg đã được cài đặt và bật ở trên.",
+     "after": "Lệnh Áp dụng bộ lọc liệt kê các mục này theo thứ tự này. Mỗi mục là một chuỗi bộ lọc theo cú pháp của ffmpeg, chẳng hạn highpass=f=80,volume=3dB. TextMouth chạy các bộ lọc riêng của mình, cùng mọi bộ lọc của ffmpeg khi ffmpeg đã được cài đặt và bật ở trên.",
+     "why": "natural: the command’s name as a bare subject read as the verb phrase it is; Lệnh names it as the command (Áp dụng bộ lọc liệt kê was also heard as apply the listing filter)"
+    },
+    {
+     "key": "Apply Filter plays a preview first, and applies when you choose Apply again.",
+     "id": "audioEditingSettings.previewFiltersHint",
+     "english": "Apply Filter plays a preview first, and applies when you choose Apply again.",
+     "before": "Áp dụng bộ lọc phát bản nghe thử trước, và chỉ áp dụng khi bạn chọn Áp dụng lần nữa.",
+     "after": "Lệnh Áp dụng bộ lọc phát bản nghe thử trước, và chỉ áp dụng khi bạn chọn Áp dụng lần nữa.",
+     "why": "natural: the command’s name as a bare subject read as the verb phrase it is; Lệnh names it as the command"
+    },
+    {
+     "key": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "id": "transcription.offerHint",
+     "english": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "before": "Hỏi sau mỗi lần nhập sách nói xem có chép lời hay không. Khi tắt, sách nói chỉ được chép lời bằng Chép lời âm thanh.",
+     "after": "Hỏi sau mỗi lần nhập sách nói xem có chép lời hay không. Khi tắt, sách nói chỉ được chép lời bằng lệnh Chép lời âm thanh.",
+     "why": "natural: chép lời bằng Chép lời âm thanh ran the verb into the command’s name; lệnh separates them"
+    },
+    {
+     "key": "Attached from %@ files at import, on %@.",
+     "id": "transcription.cameFrom.imported.kindFiles",
+     "english": "Attached from %1$@ files at import, on %2$@.",
+     "before": "Đã đính kèm từ tệp %1$@ khi nhập, vào %2$@.",
+     "after": "Đã đính kèm từ tệp %1$@ khi nhập, vào ngày %2$@.",
+     "why": "meaning: after đính kèm, vào reads as into, so vào plus a date sounded like attached into the date; vào ngày marks the date"
+    },
+    {
+     "key": "Attached from a %@ file on %@.",
+     "id": "transcription.cameFrom.attached.fromKindFileOn",
+     "english": "Attached from a %1$@ file on %2$@.",
+     "before": "Đã đính kèm từ một tệp %1$@ vào %2$@.",
+     "after": "Đã đính kèm từ một tệp %1$@ vào ngày %2$@.",
+     "why": "meaning: after đính kèm, vào reads as into, so vào plus a date sounded like attached into the date; vào ngày marks the date"
+    },
+    {
+     "key": "Attached from a file on %@.",
+     "id": "transcription.cameFrom.attached.file",
+     "english": "Attached from a file on %@.",
+     "before": "Đã đính kèm từ một tệp vào %@.",
+     "after": "Đã đính kèm từ một tệp vào ngày %@.",
+     "why": "meaning: after đính kèm, vào reads as into, so vào plus a date sounded like attached into the date; vào ngày marks the date"
+    },
+    {
+     "key": "Attached from files at import, on %@.",
+     "id": "transcription.cameFrom.imported.attachedFiles",
+     "english": "Attached from files at import, on %@.",
+     "before": "Đã đính kèm từ các tệp khi nhập, vào %@.",
+     "after": "Đã đính kèm từ các tệp khi nhập, vào ngày %@.",
+     "why": "meaning: after đính kèm, vào reads as into, so vào plus a date sounded like attached into the date; vào ngày marks the date"
+    },
+    {
+     "key": "Attached from “%@” at import, on %@.",
+     "id": "transcription.cameFrom.imported.attachedImport",
+     "english": "Attached from “%1$@” at import, on %2$@.",
+     "before": "Đã đính kèm từ “%1$@” khi nhập, vào %2$@.",
+     "after": "Đã đính kèm từ “%1$@” khi nhập, vào ngày %2$@.",
+     "why": "meaning: after đính kèm, vào reads as into, so vào plus a date sounded like attached into the date; vào ngày marks the date"
+    },
+    {
+     "key": "Attached from “%@” on %@.",
+     "id": "transcription.cameFrom.attached.fromNamedOn",
+     "english": "Attached from “%1$@” on %2$@.",
+     "before": "Đã đính kèm từ “%1$@” vào %2$@.",
+     "after": "Đã đính kèm từ “%1$@” vào ngày %2$@.",
+     "why": "meaning: after đính kèm, vào reads as into, so vào plus a date sounded like attached into the date; vào ngày marks the date"
+    },
+    {
+     "key": "Attached on %@.",
+     "id": "transcription.cameFrom.nil",
+     "english": "Attached on %@.",
+     "before": "Đã đính kèm vào %@.",
+     "after": "Đã đính kèm vào ngày %@.",
+     "why": "meaning: after đính kèm, vào reads as into, so vào plus a date sounded like attached into the date; vào ngày marks the date"
+    },
+    {
+     "key": "Audio that TextMouth converts at import keeps only the converted file.",
+     "id": "convertedOriginal.notKeepingCaption",
+     "english": "Audio that TextMouth converts at import keeps only the converted file.",
+     "before": "Âm thanh mà TextMouth chuyển đổi khi nhập chỉ giữ lại tệp đã chuyển đổi.",
+     "after": "Với âm thanh được TextMouth chuyển đổi khi nhập, chỉ tệp đã chuyển đổi được giữ lại.",
+     "why": "natural: the audio itself was the one keeping the file, a copy of the English subject"
+    },
+    {
+     "key": "Audiobook Loudness",
+     "id": "premadeFilterPreset.title.audiobookLoudness",
+     "english": "Audiobook Loudness",
+     "before": "Độ lớn của sách nói",
+     "after": "Độ to cho sách nói",
+     "why": "meaning: Độ lớn của sách nói reads as the size of the audiobook; the preset sets loudness (độ to) for audiobooks"
+    },
+    {
+     "key": "Cancelling after this book...",
+     "id": "importProgress.cancelling",
+     "english": "Cancelling after this book...",
+     "before": "Đang hủy sau sách này...",
+     "after": "Sẽ hủy sau khi xong sách này...",
+     "why": "natural: Đang hủy sau sách này (cancelling now, after this book) contradicts itself; it cancels once the book is done"
+    },
+    {
+     "key": "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of %@, timed from the start of its audio.",
+     "id": "transcription.attachPanelMessage",
+     "english": "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of %@, timed from the start of its audio.",
+     "before": "Chọn bản chép lời WebVTT (.vtt) hoặc SubRip (.srt) của %@, có thời gian tính từ đầu âm thanh.",
+     "after": "Chọn bản chép lời WebVTT (.vtt) hoặc SubRip (.srt) của %@, có mốc thời gian tính từ đầu âm thanh.",
+     "why": "natural: đoạn có thời gian reads as a passage that has (free) time; a timed passage is one with timestamps (có mốc thời gian)"
+    },
+    {
+     "key": "Cleaned up on %@, with rules version %@: %@.",
+     "id": "transcriptCleanup.alreadyCleanedUp.version",
+     "english": "Cleaned up on %1$@, with rules version %2$@: %3$@.",
+     "before": "Đã dọn dẹp vào %1$@, với phiên bản quy tắc %2$@: %3$@.",
+     "after": "Đã dọn dẹp vào ngày %1$@, với phiên bản quy tắc %2$@: %3$@.",
+     "why": "natural: a date such as 4 tháng 10, 2026 after vào needs ngày (vào ngày …), as the attached-on sentences of the same detail now say"
+    },
+    {
+     "key": "Closing ends the recording. %@ saves it as an audiobook, %@ deletes it, and %@ keeps recording.",
+     "id": "recording.closeWhileRecordingExplanation",
+     "english": "Closing ends the recording. %1$@ saves it as an audiobook, %2$@ deletes it, and %3$@ keeps recording.",
+     "before": "Đóng sẽ kết thúc bản ghi âm. %1$@ lưu bản ghi thành sách nói, %2$@ xóa bản ghi, và %3$@ tiếp tục ghi âm.",
+     "after": "Đóng cửa sổ này sẽ kết thúc việc ghi âm. %1$@ lưu bản ghi thành sách nói, %2$@ xóa bản ghi, và %3$@ tiếp tục ghi âm.",
+     "why": "natural: a bare Đóng as the subject read as the command Close, and kết thúc bản ghi âm ended the recorded file, not the recording"
+    },
+    {
+     "key": "Deleted on %@",
+     "id": "audioEditor.originalStatus.deleted",
+     "english": "Deleted on %@",
+     "before": "Đã xóa vào %@",
+     "after": "Đã xóa vào ngày %@",
+     "why": "natural: a date such as 4 tháng 10, 2026 after vào needs ngày (vào ngày …), as the attached-on sentences of the same detail now say"
+    },
+    {
+     "key": "Download %lld of %lld: “%@” from %@",
+     "id": "feedDownloadProgress.item",
+     "english": "Download %1$lld of %2$lld: “%3$@” from %4$@",
+     "before": "Bản tải về %1$lld trên %2$lld: “%3$@” từ %4$@",
+     "after": "Đang tải về %1$lld trên %2$lld: “%3$@” từ %4$@",
+     "why": "term: Bản tải về is the downloaded copy, and this row is the download under way"
+    },
+    {
+     "key": "Drops a marker at the cursor, even while the audio plays.",
+     "id": "audioEditor.explanation.editorAddMarker",
+     "english": "Drops a marker at the cursor, even while the audio plays.",
+     "before": "Thả một điểm đánh dấu tại con trỏ, kể cả khi âm thanh đang phát.",
+     "after": "Đặt một điểm đánh dấu tại con trỏ, kể cả khi âm thanh đang phát.",
+     "why": "natural: Thả (drop) copied the English; a marker is set (đặt), as the editor’s other strings say"
+    },
+    {
+     "key": "Edits of its audio or of its manifest are not kept.",
+     "id": "importDecision.audioEditsNotKept",
+     "english": "Edits of its audio or of its manifest are not kept.",
+     "before": "Các chỉnh sửa âm thanh hoặc bản kê khai của nó không được giữ lại.",
+     "after": "Các chỉnh sửa đối với âm thanh hoặc tệp kê khai của nó không được giữ lại.",
+     "why": "term: the glossary’s Manifest is tệp kê khai (not bản kê khai); đối với makes it edits of the audio, not audio edits"
+    },
+    {
+     "key": "Every feed is unsubscribed, so none was checked. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "id": "feed.everyFeedUnsubscribed",
+     "english": "Every feed is unsubscribed, so none was checked. Choose %1$@ on a feed's row, or in its %2$@, to check it again.",
+     "before": "Mọi nguồn cấp đều chưa đăng ký nên không nguồn nào được kiểm tra. Chọn %1$@ trên hàng của nguồn cấp, hoặc trong %2$@ của nguồn cấp đó, để kiểm tra lại.",
+     "after": "Bạn đã hủy đăng ký mọi nguồn cấp nên không nguồn nào được kiểm tra. Chọn %1$@ trên hàng của một nguồn cấp, hoặc trong %2$@ của nguồn cấp đó, để kiểm tra lại.",
+     "why": "meaning: chưa đăng ký says never subscribed; every feed was unsubscribed"
+    },
+    {
+     "key": "Export Keynote presentations from Keynote as PDF files, then import those.",
+     "id": "refusedFormatAdvice.keynote",
+     "english": "Export Keynote presentations from Keynote as PDF files, then import those.",
+     "before": "Hãy xuất bản thuyết trình Keynote từ Keynote sang tệp PDF, rồi nhập các tệp đó.",
+     "after": "Hãy xuất bài thuyết trình Keynote từ Keynote sang tệp PDF, rồi nhập các tệp đó.",
+     "why": "term: Keynote’s word is bài thuyết trình; xuất bản thuyết trình also heard as xuất bản (publish)"
+    },
+    {
+     "key": "Extracting archive...",
+     "id": "importProgress.startingArchive",
+     "english": "Extracting archive...",
+     "before": "Đang giải nén kho lưu trữ...",
+     "after": "Đang giải nén tệp lưu trữ...",
+     "why": "term: kho lưu trữ is a repository (of code or records); a ZIP archive is a tệp lưu trữ, as other strings say"
+    },
+    {
+     "key": "Fade In",
+     "id": "premadeFilterPreset.title.fadeIn",
+     "english": "Fade In",
+     "before": "Tăng dần",
+     "after": "Tăng dần âm lượng",
+     "why": "meaning: Tăng dần (rising) alone does not say what rises; the preset fades the volume in"
+    },
+    {
+     "key": "Fade Out (Select the Last Second)",
+     "id": "premadeFilterPreset.title.fadeOut",
+     "english": "Fade Out (Select the Last Second)",
+     "before": "Giảm dần (chọn giây cuối)",
+     "after": "Giảm dần âm lượng (chọn giây cuối)",
+     "why": "meaning: Giảm dần (falling) alone does not say what falls; the preset fades the volume out (pairs with Tăng dần âm lượng)"
+    },
+    {
+     "key": "Import cancelled while extracting the archive, before any book was imported.",
+     "id": "zipImportCancellation.sentence.whileExtracting",
+     "english": "Import cancelled while extracting the archive, before any book was imported.",
+     "before": "Đã hủy nhập khi đang giải nén kho lưu trữ, trước khi sách nào được nhập.",
+     "after": "Đã hủy nhập khi đang giải nén tệp lưu trữ, trước khi có sách nào được nhập.",
+     "why": "grammar: trước khi sách nào needs có; and kho lưu trữ (repository) becomes tệp lưu trữ"
+    },
+    {
+     "key": "In at %@.",
+     "id": "audioEditor.markedIn",
+     "english": "In at %@.",
+     "before": "Vào tại %@.",
+     "after": "Điểm vào lúc %@.",
+     "why": "meaning: Vào tại reads as Enter at; Mark In sets the in point (điểm vào), and the editor says times with lúc"
+    },
+    {
+     "key": "Inserts a silence of a length you type at the cursor.",
+     "id": "audioEditor.explanation.editorInsertSilence",
+     "english": "Inserts a silence of a length you type at the cursor.",
+     "before": "Chèn khoảng lặng có độ dài bạn nhập tại con trỏ.",
+     "after": "Chèn tại con trỏ một khoảng lặng có độ dài bạn nhập.",
+     "why": "natural: bạn nhập tại con trỏ said you type at the cursor; the silence goes there"
+    },
+    {
+     "key": "It also deletes %@.",
+     "id": "feed.unsubscribeMessage.deletes",
+     "english": "It also deletes %@.",
+     "before": "Nó cũng xóa %@.",
+     "after": "Thao tác này cũng xóa %@.",
+     "why": "natural: Nó (it) for a command reads as a person or thing; Vietnamese confirmations say Thao tác này"
+    },
+    {
+     "key": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "id": "feed.deletesSentence.goes",
+     "english": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "before": "Nó xóa %@: mục này được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi làm trống Thùng rác.",
+     "after": "Thao tác này xóa %@: mục này được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi làm trống Thùng rác.",
+     "why": "natural: Nó (it) for the Delete Feed command; Vietnamese confirmations say Thao tác này"
+    },
+    {
+     "key": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "id": "feed.deletesSentence.deletedPermanentlyRecovered",
+     "english": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "before": "Nó xóa %@: mục này bị xóa vĩnh viễn và không thể khôi phục.",
+     "after": "Thao tác này xóa %@: mục này bị xóa vĩnh viễn và không thể khôi phục.",
+     "why": "natural: Nó (it) for the Delete Feed command; Vietnamese confirmations say Thao tác này"
+    },
+    {
+     "key": "It deletes %@: it stays in the TextMouth library folder.",
+     "id": "feed.deletesSentence.stays",
+     "english": "It deletes %@: it stays in the TextMouth library folder.",
+     "before": "Nó xóa %@: mục này vẫn nằm trong thư mục thư viện của TextMouth.",
+     "after": "Thao tác này xóa %@: mục này vẫn nằm trong thư mục thư viện của TextMouth.",
+     "why": "natural: Nó (it) for the Delete Feed command; Vietnamese confirmations say Thao tác này"
+    },
+    {
+     "key": "It deletes %@: they are deleted permanently and cannot be recovered.",
+     "id": "feed.deletesSentence.permanentlyRecovered",
+     "english": "It deletes %@: they are deleted permanently and cannot be recovered.",
+     "before": "Nó xóa %@: chúng bị xóa vĩnh viễn và không thể khôi phục.",
+     "after": "Thao tác này xóa %@: chúng bị xóa vĩnh viễn và không thể khôi phục.",
+     "why": "natural: Nó (it) for the Delete Feed command; Vietnamese confirmations say Thao tác này"
+    },
+    {
+     "key": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "id": "feed.deletesSentence.them",
+     "english": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "before": "Nó xóa %@: chúng được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi làm trống Thùng rác.",
+     "after": "Thao tác này xóa %@: chúng được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi làm trống Thùng rác.",
+     "why": "natural: Nó (it) for the Delete Feed command; Vietnamese confirmations say Thao tác này"
+    },
+    {
+     "key": "It deletes %@: they stay in the TextMouth library folder.",
+     "id": "feed.deletesSentence.stay",
+     "english": "It deletes %@: they stay in the TextMouth library folder.",
+     "before": "Nó xóa %@: chúng vẫn nằm trong thư mục thư viện của TextMouth.",
+     "after": "Thao tác này xóa %@: chúng vẫn nằm trong thư mục thư viện của TextMouth.",
+     "why": "natural: Nó (it) for the Delete Feed command; Vietnamese confirmations say Thao tác này"
+    },
+    {
+     "key": "Leaves the audiobook untranscribed; Transcribe Audio does it later.",
+     "id": "transcription.offerNotNowHint",
+     "english": "Leaves the audiobook untranscribed; Transcribe Audio does it later.",
+     "before": "Để sách nói chưa chép lời; Chép lời âm thanh sẽ làm việc đó sau.",
+     "after": "Để sách nói chưa chép lời; bạn có thể dùng lệnh Chép lời âm thanh sau.",
+     "why": "natural: the command’s name as a bare subject with sẽ (will) read as a promise; you can use it later"
+    },
+    {
+     "key": "Moves the cursor to a time you type.",
+     "id": "audioEditor.explanation.editorGoToTime",
+     "english": "Moves the cursor to a time you type.",
+     "before": "Di chuyển con trỏ đến thời gian bạn nhập.",
+     "after": "Di chuyển con trỏ đến thời điểm bạn nhập.",
+     "why": "term: thời gian is a span of time; a point to go to is a thời điểm, as Go to Time (Đến thời điểm) says"
+    },
+    {
+     "key": "No feed download is under way.",
+     "id": "feedDownloadProgress.noDownloadUnderWay",
+     "english": "No feed download is under way.",
+     "before": "Không có bản tải về nào của nguồn cấp đang diễn ra.",
+     "after": "Không có nguồn cấp nào đang tải về.",
+     "why": "natural: bản tải về (a downloaded copy) đang diễn ra mixed a copy with a process; says no feed is downloading"
+    },
+    {
+     "key": "No markers yet. Add Marker drops one at the cursor.",
+     "id": "audioEditor.noMarkers",
+     "english": "No markers yet. Add Marker drops one at the cursor.",
+     "before": "Chưa có điểm đánh dấu nào. Thêm điểm đánh dấu sẽ thả một điểm tại con trỏ.",
+     "after": "Chưa có điểm đánh dấu nào. Lệnh Thêm điểm đánh dấu sẽ đặt một điểm tại con trỏ.",
+     "why": "natural: the command’s name as a bare subject read as an instruction, and thả (drop) copied the English; a marker is set (đặt)"
+    },
+    {
+     "key": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "id": "audioEditor.revertNoOriginal",
+     "english": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "before": "Không giữ bản gốc nào, nên không thể hoàn nguyên. Hoàn tác sẽ lấy lại các chỉnh sửa từ lần lưu gần nhất.",
+     "after": "Không giữ bản gốc nào, nên không thể hoàn nguyên. Hoàn tác sẽ đảo ngược các chỉnh sửa kể từ lần lưu gần nhất.",
+     "why": "meaning: lấy lại các chỉnh sửa says Undo gets the edits back; it takes them back (đảo ngược), since (kể từ) the last save"
+    },
+    {
+     "key": "No text could be read from this comic book archive: OCR could not run (%@).",
+     "id": "pageImage.recognitionUnavailable.archive",
+     "english": "No text could be read from this comic book archive: OCR could not run (%@).",
+     "before": "Không đọc được văn bản nào từ kho lưu trữ truyện tranh này: không chạy được OCR (%@).",
+     "after": "Không đọc được văn bản nào từ tệp lưu trữ truyện tranh này: không chạy được OCR (%@).",
+     "why": "term: kho lưu trữ is a repository (of code or records); a comic book archive is one file, a tệp lưu trữ"
+    },
+    {
+     "key": "No text was found in the one picture of this comic book archive.",
+     "id": "pageImage.noText.oneArchive",
+     "english": "No text was found in the one picture of this comic book archive.",
+     "before": "Không tìm thấy văn bản nào trong ảnh duy nhất của kho lưu trữ truyện tranh này.",
+     "after": "Không tìm thấy văn bản nào trong ảnh duy nhất của tệp lưu trữ truyện tranh này.",
+     "why": "term: kho lưu trữ is a repository (of code or records); a comic book archive is one file, a tệp lưu trữ"
+    },
+    {
+     "key": "No text was found on any of the %lld pages of this comic book archive.",
+     "id": "pageImage.noText.archive",
+     "english": {
+      "one": "No text was found on any of the %lld page of this comic book archive.",
+      "other": "No text was found on any of the %lld pages of this comic book archive."
+     },
+     "before": {
+      "other": "Không tìm thấy văn bản nào trên cả %lld trang của kho lưu trữ truyện tranh này."
+     },
+     "after": {
+      "other": "Không tìm thấy văn bản nào trên cả %lld trang của tệp lưu trữ truyện tranh này."
+     },
+     "why": "term: kho lưu trữ is a repository (of code or records); a comic book archive is one file, a tệp lưu trữ"
+    },
+    {
+     "key": "Not available in this window.",
+     "id": "addToLibrary.unavailableHint",
+     "english": "Not available in this window.",
+     "before": "Không có trong cửa sổ này.",
+     "after": "Không khả dụng trong cửa sổ này.",
+     "why": "term: Apple’s Vietnamese says Không khả dụng for Not available; Không có trong says it is absent"
+    },
+    {
+     "key": "Not extracted: TextMouth extracts archives within an archive only %lld levels deep.",
+     "id": "nestedArchiveUnpacking.tooDeep",
+     "english": {
+      "one": "Not extracted: TextMouth extracts archives within an archive only %lld level deep.",
+      "other": "Not extracted: TextMouth extracts archives within an archive only %lld levels deep."
+     },
+     "before": {
+      "other": "Không giải nén: TextMouth chỉ giải nén kho lưu trữ nằm trong kho lưu trữ khác sâu đến %lld cấp."
+     },
+     "after": {
+      "other": "Không giải nén: TextMouth chỉ giải nén các tệp lưu trữ lồng nhau sâu tối đa %lld cấp."
+     },
+     "why": "natural: the archive-inside-archive phrase copied the English and used kho lưu trữ (repository); now nested archives up to N levels"
+    },
+    {
+     "key": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "id": "audioEditor.closeExplanation",
+     "english": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "before": "Chưa có trong âm thanh của sách. Bỏ sẽ hoàn tác chúng; lần sau khi bạn sửa sách này, Làm lại sẽ khôi phục chúng cho đến khi bạn sửa lần khác.",
+     "after": "Chưa có trong âm thanh của sách. Nút Bỏ sẽ hoàn tác chúng; lần sau khi bạn sửa sách này, Làm lại sẽ khôi phục chúng cho đến khi bạn sửa lần khác.",
+     "why": "natural: a bare Bỏ (discard) as the subject read as the verb; Nút Bỏ names the button"
+    },
+    {
+     "key": "Nothing Imported",
+     "id": "importProgress.nothingImportedTitle",
+     "english": "Nothing Imported",
+     "before": "Chưa nhập gì",
+     "after": "Không có gì được nhập",
+     "why": "meaning: Chưa nhập gì says nothing imported yet, as if more were coming; the batch ended with nothing new"
+    },
+    {
+     "key": "Now %@ long.",
+     "id": "audioEditor.nowLong",
+     "english": "Now %@ long.",
+     "before": "Giờ dài %@.",
+     "after": "Độ dài mới: %@.",
+     "why": "meaning: Giờ (now) is also giờ (hour), so Giờ dài 1 giờ … misleads; the new length is said plainly"
+    },
+    {
+     "key": "Opens Transcribe Audio, which starts at once if the language's model is on this Mac; otherwise, download it there, then choose Transcribe.",
+     "id": "transcription.offerTranscribeHint",
+     "english": "Opens Transcribe Audio, which starts at once if the language's model is on this Mac; otherwise, download it there, then choose Transcribe.",
+     "before": "Mở Chép lời âm thanh, sẽ bắt đầu ngay nếu mô hình của ngôn ngữ đã có trên máy Mac này; nếu không, hãy tải về ở đó, rồi chọn Chép lời.",
+     "after": "Mở Chép lời âm thanh; việc chép lời bắt đầu ngay nếu mô hình của ngôn ngữ đã có trên máy Mac này, nếu không, hãy tải mô hình về ở đó, rồi chọn Chép lời.",
+     "why": "grammar: sẽ bắt đầu ngay had no subject after the comma; the transcription is what starts"
+    },
+    {
+     "key": "Opens your copy of the rules, transcript-cleanup.json, in your text editor, made from TextMouth's own rules the first time. Changes apply when you return to TextMouth.",
+     "id": "transcriptCleanup.editRulesHint",
+     "english": "Opens your copy of the rules, transcript-cleanup.json, in your text editor, made from TextMouth's own rules the first time. Changes apply when you return to TextMouth.",
+     "before": "Mở bản sao các quy tắc của bạn, transcript-cleanup.json, trong trình soạn thảo văn bản của bạn, được tạo từ các quy tắc riêng của TextMouth lần đầu tiên. Các thay đổi có hiệu lực khi bạn quay lại TextMouth.",
+     "after": "Mở bản sao các quy tắc của bạn, transcript-cleanup.json, trong trình soạn thảo văn bản của bạn; lần đầu, bản sao này được tạo từ các quy tắc riêng của TextMouth. Các thay đổi có hiệu lực khi bạn quay lại TextMouth.",
+     "why": "grammar: được tạo từ … lần đầu tiên attached to the text editor, as if TextMouth’s rules made the editor; it is the copy"
+    },
+    {
+     "key": "Out at %@.",
+     "id": "audioEditor.markedOut",
+     "english": "Out at %@.",
+     "before": "Ra tại %@.",
+     "after": "Điểm ra lúc %@.",
+     "why": "meaning: Ra tại reads as Go out at; Mark Out sets the out point (điểm ra), and the editor says times with lúc"
+    },
+    {
+     "key": "Part of %@ could not be decoded and is kept as silence.",
+     "id": "ffmpegImport.partlyDecodedNotice.silence",
+     "english": "Part of %@ could not be decoded and is kept as silence.",
+     "before": "Một phần của %@ không giải mã được và được giữ lại dưới dạng khoảng lặng.",
+     "after": "Một phần của %@ không giải mã được nên được thay bằng khoảng lặng.",
+     "why": "natural: được giữ lại dưới dạng khoảng lặng (kept in the form of silence) copied the English; the part is replaced by silence"
+    },
+    {
+     "key": "Part of %lld files, %@, could not be decoded and is kept as silence.",
+     "id": "ffmpegImport.partlyDecodedNotice.files",
+     "english": {
+      "one": "Part of %lld file, %@, could not be decoded and is kept as silence.",
+      "other": "Part of %lld files, %@, could not be decoded and is kept as silence."
+     },
+     "before": {
+      "other": "Một phần của %lld tệp, %@, không giải mã được và được giữ lại dưới dạng khoảng lặng."
+     },
+     "after": {
+      "other": "Một phần của %lld tệp, %@, không giải mã được nên được thay bằng khoảng lặng."
+     },
+     "why": "natural: được giữ lại dưới dạng khoảng lặng (kept in the form of silence) copied the English; the part is replaced by silence"
+    },
+    {
+     "key": "Post a notification for each feed with new episodes",
+     "id": "feedSettings.notifications",
+     "english": "Post a notification for each feed with new episodes",
+     "before": "Gửi thông báo cho từng nguồn cấp có tập mới",
+     "after": "Gửi thông báo về từng nguồn cấp có tập mới",
+     "why": "meaning: thông báo cho từng nguồn cấp says the notification goes to each feed; it is about each feed"
+    },
+    {
+     "key": "Puts back TextMouth's premade presets, removing the ones you added.",
+     "id": "audioFilterPresets.resetAllHint",
+     "english": "Puts back TextMouth's premade presets, removing the ones you added.",
+     "before": "Khôi phục các giá trị đặt sẵn có sẵn của TextMouth, gỡ những giá trị bạn đã thêm.",
+     "after": "Khôi phục các giá trị đặt sẵn mặc định của TextMouth, gỡ những giá trị bạn đã thêm.",
+     "why": "natural: giá trị đặt sẵn có sẵn doubled sẵn; the premade presets are the defaults (mặc định), as Reset All to Defaults says"
+    },
+    {
+     "key": "Saved as",
+     "id": "audioEditor.savedAsLabel",
+     "english": "Saved as",
+     "before": "Lưu dưới dạng",
+     "after": "Được lưu dưới dạng",
+     "why": "meaning: Lưu dưới dạng is the Save As command; this label says the format the audio is saved as"
+    },
+    {
+     "key": "Saved. The book's audio is now %@ long.",
+     "id": "audioEditor.saved.book",
+     "english": "Saved. The book's audio is now %@ long.",
+     "before": "Đã lưu. Âm thanh của sách giờ dài %@.",
+     "after": "Đã lưu. Âm thanh của sách bây giờ dài %@.",
+     "why": "meaning: giờ (now) is also giờ (hour), so giờ dài 1 giờ … misleads; bây giờ is only now"
+    },
+    {
+     "key": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "id": "transcription.languagePickerHint",
+     "english": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "before": "Đặt ngôn ngữ chép lời. Ngôn ngữ được đánh dấu cần tải về chỉ tải về được từ hộp thoại Chép lời âm thanh.",
+     "after": "Đặt ngôn ngữ chép lời. Mô hình của ngôn ngữ có ghi chú “cần tải về” chỉ tải về được từ hộp thoại Chép lời âm thanh.",
+     "why": "natural: được đánh dấu cần tải về chỉ tải về được ran the status word into the sentence; it is quoted, and the model is what downloads"
+    },
+    {
+     "key": "Silence must be longer than zero.",
+     "id": "audioEditor.silenceTooShort",
+     "english": "Silence must be longer than zero.",
+     "before": "Khoảng lặng phải dài hơn không.",
+     "after": "Khoảng lặng phải dài hơn 0.",
+     "why": "meaning: a sentence-final không (zero) is heard as the question particle, so it asked whether the silence must be longer"
+    },
+    {
+     "key": "Stopped. Back at %@.",
+     "id": "audioEditor.stopped",
+     "english": "Stopped. Back at %@.",
+     "before": "Đã dừng. Quay lại %@.",
+     "after": "Đã dừng. Đã quay lại %@.",
+     "why": "natural: a bare Quay lại %@ read as the command Go back to; it says where the cursor went"
+    },
+    {
+     "key": "TextMouth can't read “%@” as %@. It may be damaged, or named for another format.",
+     "id": "ffmpegImport.notRecognized",
+     "english": "TextMouth can't read “%1$@” as %2$@. It may be damaged, or named for another format.",
+     "before": "TextMouth không đọc được “%1$@” như %2$@. Tệp có thể bị hỏng, hoặc được đặt tên theo định dạng khác.",
+     "after": "TextMouth không đọc được “%1$@” dưới dạng %2$@. Tệp có thể bị hỏng, hoặc được đặt tên theo định dạng khác.",
+     "why": "meaning: như %2$@ says like that format; the file is read as that format (dưới dạng)"
+    },
+    {
+     "key": "TextMouth does not open RAR archives. Unpack them, then import what they hold.",
+     "id": "refusedFormatAdvice.rarArchive",
+     "english": "TextMouth does not open RAR archives. Unpack them, then import what they hold.",
+     "before": "TextMouth không mở kho lưu trữ RAR. Hãy giải nén chúng, rồi nhập những gì chúng chứa.",
+     "after": "TextMouth không mở các tệp lưu trữ RAR. Hãy giải nén chúng, rồi nhập những gì chúng chứa.",
+     "why": "term: kho lưu trữ is a repository (of code or records); an archive file is a tệp lưu trữ, as the other archive strings say"
+    },
+    {
+     "key": "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way.",
+     "id": "transcriptCleanup.noRules.builtIn",
+     "english": "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way.",
+     "before": "TextMouth không có quy tắc riêng: không quy tắc nào đúng trong mọi sách đã thử. Sửa quy tắc… mở bản sao của bạn, nơi bạn có thể thêm quy tắc, chẳng hạn một tên mà trình nhận dạng luôn viết khác.",
+     "after": "TextMouth không có quy tắc riêng: không quy tắc nào đúng trong mọi sách đã thử. Nút Sửa quy tắc… mở bản sao của bạn, nơi bạn có thể thêm quy tắc, chẳng hạn một tên mà trình nhận dạng luôn viết khác.",
+     "why": "natural: the button’s name as a bare subject read as two commands (Sửa quy tắc… mở); Nút names the button"
+    },
+    {
+     "key": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "id": "audioEditor.quitExplanation",
+     "english": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "before": "TextMouth đang thoát và âm thanh của sách chưa có các chỉnh sửa này. Bỏ sẽ hoàn tác chúng; lần sau khi bạn sửa sách này, Làm lại sẽ khôi phục chúng cho đến khi bạn sửa lần khác. Hủy giữ TextMouth đang mở.",
+     "after": "TextMouth đang thoát và âm thanh của sách chưa có các chỉnh sửa này. Nút Bỏ sẽ hoàn tác chúng; lần sau khi bạn sửa sách này, Làm lại sẽ khôi phục chúng cho đến khi bạn sửa lần khác. Nút Hủy sẽ giữ TextMouth mở.",
+     "why": "meaning: Hủy giữ TextMouth đang mở read as cancel keeping TextMouth open; Nút Bỏ and Nút Hủy name the buttons"
+    },
+    {
+     "key": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "id": "duplicateCopy.answerUnderWay",
+     "english": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "before": "TextMouth vẫn đang thực hiện câu trả lời trước của bạn. Hãy chờ đến khi xong.",
+     "after": "TextMouth vẫn đang xử lý câu trả lời trước của bạn. Hãy chờ đến khi xong.",
+     "why": "natural: thực hiện (carry out) takes a command, not an answer; xử lý (process) does"
+    },
+    {
+     "key": "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
+     "id": "convertedOriginal.keepingCaption",
+     "english": "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
+     "before": "TextMouth giữ tệp gốc của âm thanh mà nó chuyển đổi khi nhập. Bản gốc chiếm dung lượng đĩa gần bằng tệp đã chuyển đổi, hoặc gấp đôi nếu chưa nén. Xuất cung cấp nó dưới tên Tệp gốc. Bản gốc của một tập từ nguồn cấp không được giữ: có thể tải về lại.",
+     "after": "TextMouth giữ tệp gốc của âm thanh mà nó chuyển đổi khi nhập. Bản gốc chiếm dung lượng đĩa gần bằng tệp đã chuyển đổi, hoặc gấp đôi nếu chưa nén. Lệnh Xuất cung cấp bản gốc dưới tên Tệp gốc. Bản gốc của một tập từ nguồn cấp không được giữ: có thể tải về lại.",
+     "why": "natural: a bare Xuất (export) as the subject read as a verb; Lệnh Xuất names the command"
+    },
+    {
+     "key": "That isn't a web address. Enter a feed's address, or the address of a page that names one.",
+     "id": "feedSubscribeError.message.invalidAddress",
+     "english": "That isn't a web address. Enter a feed's address, or the address of a page that names one.",
+     "before": "Đó không phải địa chỉ web. Hãy nhập địa chỉ của một nguồn cấp, hoặc địa chỉ của một trang nêu tên nguồn cấp.",
+     "after": "Đó không phải địa chỉ web. Hãy nhập địa chỉ của một nguồn cấp, hoặc địa chỉ của một trang có liên kết đến nguồn cấp.",
+     "why": "meaning: nêu tên says the page states a feed’s name; it links to the feed"
+    },
+    {
+     "key": "That page doesn't name a feed.",
+     "id": "feedSubscribeError.message.pageNamesNoFeed",
+     "english": "That page doesn't name a feed.",
+     "before": "Trang đó không nêu tên nguồn cấp nào.",
+     "after": "Trang đó không có liên kết đến nguồn cấp nào.",
+     "why": "meaning: nêu tên says the page states a feed’s name; it links to the feed"
+    },
+    {
+     "key": "That page names %lld feeds. Choose one, then Subscribe.",
+     "id": "feed.choosePrompt",
+     "english": {
+      "one": "That page names %lld feed. Choose one, then Subscribe.",
+      "other": "That page names %lld feeds. Choose one, then Subscribe."
+     },
+     "before": {
+      "other": "Trang đó nêu tên %lld nguồn cấp. Hãy chọn một nguồn, rồi chọn Đăng ký."
+     },
+     "after": {
+      "other": "Trang đó có liên kết đến %lld nguồn cấp. Hãy chọn một nguồn cấp, rồi chọn Đăng ký."
+     },
+     "why": "meaning: nêu tên says the page states a feed’s name; it links to the feed"
+    },
+    {
+     "key": "The %@ file holds no timed text TextMouth can use.",
+     "id": "timedTextError.noCues",
+     "english": "The %@ file holds no timed text TextMouth can use.",
+     "before": "Tệp %@ không có văn bản có thời gian nào mà TextMouth dùng được.",
+     "after": "Tệp %@ không có văn bản có mốc thời gian nào mà TextMouth dùng được.",
+     "why": "natural: văn bản có thời gian reads as text that has (free) time; timed text has timestamps (có mốc thời gian)"
+    },
+    {
+     "key": "The %@ kept for %lld removed downloads was deleted.",
+     "id": "feed.unsubscribed.downloadsWas",
+     "english": {
+      "one": "The %@ kept for %lld removed download was deleted.",
+      "other": "The %@ kept for %lld removed downloads was deleted."
+     },
+     "before": {
+      "other": "%1$@ được giữ lại cho %2$lld bản tải về đã gỡ đã bị xóa."
+     },
+     "after": {
+      "other": "Đã xóa %1$@ được giữ lại cho %2$lld bản tải về đã gỡ."
+     },
+     "why": "natural: the subject ran on to a second đã before bị xóa; the announcement now starts with Đã xóa"
+    },
+    {
+     "key": "The %@ kept for %lld removed downloads were deleted.",
+     "id": "feed.unsubscribed.were",
+     "english": {
+      "one": "The %@ kept for %lld removed download were deleted.",
+      "other": "The %@ kept for %lld removed downloads were deleted."
+     },
+     "before": {
+      "other": "%1$@ được giữ lại cho %2$lld bản tải về đã gỡ đã bị xóa."
+     },
+     "after": {
+      "other": "Đã xóa %1$@ được giữ lại cho %2$lld bản tải về đã gỡ."
+     },
+     "why": "natural: the subject ran on to a second đã before bị xóa; the announcement now starts with Đã xóa"
+    },
+    {
+     "key": "The archive also holds %lld other books that were not imported; unzip it to import them.",
+     "id": "daisyArchive.originalKept.import",
+     "english": {
+      "one": "The archive also holds %lld other book that was not imported; unzip it to import it.",
+      "other": "The archive also holds %lld other books that were not imported; unzip it to import them."
+     },
+     "before": {
+      "other": "Kho lưu trữ còn chứa %lld sách khác chưa được nhập; hãy giải nén nó để nhập chúng."
+     },
+     "after": {
+      "other": "Tệp lưu trữ còn chứa %lld sách khác chưa được nhập; hãy giải nén nó để nhập chúng."
+     },
+     "why": "term: kho lưu trữ is a repository (of code or records); an archive file is a tệp lưu trữ, as the other archive strings say"
+    },
+    {
+     "key": "The archive holds a file whose path leads outside it, which is never extracted.",
+     "id": "fileImportError.archivePathOutside",
+     "english": "The archive holds a file whose path leads outside it, which is never extracted.",
+     "before": "Kho lưu trữ chứa một tệp có đường dẫn trỏ ra ngoài nó; tệp này không bao giờ được giải nén.",
+     "after": "Tệp lưu trữ chứa một tệp có đường dẫn trỏ ra ngoài nó; tệp này không bao giờ được giải nén.",
+     "why": "term: kho lưu trữ is a repository (of code or records); an archive file is a tệp lưu trữ, as the other archive strings say"
+    },
+    {
+     "key": "The archive holds a link to a file outside it, which is never extracted.",
+     "id": "fileImportError.archiveLinksOutside",
+     "english": "The archive holds a link to a file outside it, which is never extracted.",
+     "before": "Kho lưu trữ chứa một liên kết đến tệp bên ngoài nó; liên kết này không bao giờ được giải nén.",
+     "after": "Tệp lưu trữ chứa một liên kết đến tệp bên ngoài nó; liên kết này không bao giờ được giải nén.",
+     "why": "term: kho lưu trữ is a repository (of code or records); an archive file is a tệp lưu trữ, as the other archive strings say"
+    },
+    {
+     "key": "The archive is damaged, incomplete, or not a ZIP archive.",
+     "id": "fileImportError.unreadableArchive",
+     "english": "The archive is damaged, incomplete, or not a ZIP archive.",
+     "before": "Kho lưu trữ bị hỏng, chưa đầy đủ, hoặc không phải kho lưu trữ ZIP.",
+     "after": "Tệp lưu trữ bị hỏng, chưa đầy đủ, hoặc không phải tệp lưu trữ ZIP.",
+     "why": "term: kho lưu trữ is a repository (of code or records); an archive file is a tệp lưu trữ, as the other archive strings say"
+    },
+    {
+     "key": "The article leaves the list for good; the book it became in your library stays.",
+     "id": "feed.deleteItemMessage.article",
+     "english": "The article leaves the list for good; the book it became in your library stays.",
+     "before": "Bài viết rời khỏi danh sách vĩnh viễn; sách mà nó đã trở thành trong thư viện của bạn vẫn còn.",
+     "after": "Bài viết rời khỏi danh sách vĩnh viễn; sách được tạo từ bài viết này trong thư viện của bạn vẫn còn.",
+     "why": "natural: sách mà nó đã trở thành (the book it became) copied the English; the book made from it"
+    },
+    {
+     "key": "The episode leaves the list for good; the book it became in your library stays.",
+     "id": "feed.deleteItemMessage.episode",
+     "english": "The episode leaves the list for good; the book it became in your library stays.",
+     "before": "Tập rời khỏi danh sách vĩnh viễn; sách mà nó đã trở thành trong thư viện của bạn vẫn còn.",
+     "after": "Tập rời khỏi danh sách vĩnh viễn; sách được tạo từ tập này trong thư viện của bạn vẫn còn.",
+     "why": "natural: sách mà nó đã trở thành (the book it became) copied the English; the book made from it"
+    },
+    {
+     "key": "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input.",
+     "id": "audioEditor.microphoneHint",
+     "english": "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input.",
+     "before": "Micrô mà Ghi đè dùng để ghi. TextMouth ghi nhớ micrô này, tách biệt với đầu vào của macOS.",
+     "after": "Micrô mà lệnh Ghi đè dùng để ghi âm. TextMouth ghi nhớ micrô này, tách biệt với đầu vào của macOS.",
+     "why": "natural: Ghi đè dùng để ghi read as overwrite used to write; lệnh names the command and ghi âm says record"
+    },
+    {
+     "key": "The original audio was deleted on %@, so edits saved before then can't be undone.",
+     "id": "audioEdit.undoLimit.originalDeleted",
+     "english": "The original audio was deleted on %@, so edits saved before then can't be undone.",
+     "before": "Âm thanh gốc đã bị xóa vào %@, nên không thể hoàn tác các chỉnh sửa đã lưu trước đó.",
+     "after": "Âm thanh gốc đã bị xóa vào ngày %@, nên không thể hoàn tác các chỉnh sửa đã lưu trước đó.",
+     "why": "natural: a date such as 4 tháng 10, 2026 after vào needs ngày (vào ngày …), as the attached-on sentences of the same detail now say"
+    },
+    {
+     "key": "The original file was kept: TextMouth imported only the DAISY book “%@” from the archive “%@”.",
+     "id": "daisyArchive.originalKept.book",
+     "english": "The original file was kept: TextMouth imported only the DAISY book “%1$@” from the archive “%2$@”.",
+     "before": "Tệp gốc đã được giữ lại: TextMouth chỉ nhập sách DAISY “%1$@” từ kho lưu trữ “%2$@”.",
+     "after": "Tệp gốc đã được giữ lại: TextMouth chỉ nhập sách DAISY “%1$@” từ tệp lưu trữ “%2$@”.",
+     "why": "term: kho lưu trữ is a repository (of code or records); an archive file is a tệp lưu trữ, as the other archive strings say"
+    },
+    {
+     "key": "The original file was kept: TextMouth imported the audio of “%@” from the archive “%@”, and the archive is the only copy of its text.",
+     "id": "daisyArchive.originalKept.audio",
+     "english": "The original file was kept: TextMouth imported the audio of “%1$@” from the archive “%2$@”, and the archive is the only copy of its text.",
+     "before": "Tệp gốc đã được giữ lại: TextMouth đã nhập âm thanh của “%1$@” từ kho lưu trữ “%2$@”, và kho lưu trữ là bản duy nhất của văn bản đó.",
+     "after": "Tệp gốc đã được giữ lại: TextMouth đã nhập âm thanh của “%1$@” từ tệp lưu trữ “%2$@”, và tệp lưu trữ là bản duy nhất của văn bản đó.",
+     "why": "term: kho lưu trữ is a repository (of code or records); an archive file is a tệp lưu trữ, as the other archive strings say"
+    },
+    {
+     "key": "The podcast's own transcript, downloaded with the episode on %@.",
+     "id": "transcription.cameFrom.podcast",
+     "english": "The podcast's own transcript, downloaded with the episode on %@.",
+     "before": "Bản chép lời riêng của podcast, được tải về cùng tập vào %@.",
+     "after": "Bản chép lời riêng của podcast, được tải về cùng tập vào ngày %@.",
+     "why": "meaning: after tải về, vào reads as into, so the date sounded like a place downloaded into; vào ngày marks the date"
+    },
+    {
+     "key": "The transcript files beside the audio weren't attached: %@",
+     "id": "transcription.broughtTranscriptNotUsed.attached",
+     "english": "The transcript files beside the audio weren't attached: %@",
+     "before": "Các tệp chép lời bên cạnh âm thanh không được đính kèm: %@",
+     "after": "Các tệp bản chép lời bên cạnh âm thanh không được đính kèm: %@",
+     "why": "term: a transcript file is a tệp bản chép lời, as the Replace Existing strings say; tệp chép lời is a transcribing file"
+    },
+    {
+     "key": "The transcript, with your changes, stays with the episode in its feed, even after its download is deleted. Deleting the episode or feed deletes it; Move to Library keeps it as a book.",
+     "id": "transcription.feedEpisodeTranscriptNote",
+     "english": "The transcript, with your changes, stays with the episode in its feed, even after its download is deleted. Deleting the episode or feed deletes it; Move to Library keeps it as a book.",
+     "before": "Bản chép lời, cùng các thay đổi của bạn, vẫn ở cùng tập trong nguồn cấp, kể cả sau khi bản tải về bị xóa. Xóa tập hoặc nguồn cấp sẽ xóa nó; Chuyển vào thư viện giữ nó thành sách.",
+     "after": "Bản chép lời, cùng các thay đổi của bạn, vẫn ở cùng tập trong nguồn cấp, kể cả sau khi bản tải về bị xóa. Xóa tập hoặc nguồn cấp sẽ xóa nó; lệnh Chuyển vào thư viện sẽ giữ nó thành sách.",
+     "why": "natural: the command’s name as a bare subject read as an instruction (move into the library, keep it); lệnh names the command"
+    },
+    {
+     "key": "These transcript files beside the audio weren't attached: %@. The debug log says why.",
+     "id": "transcription.transcriptsNotAttached",
+     "english": "These transcript files beside the audio weren't attached: %@. The debug log says why.",
+     "before": "Các tệp chép lời này bên cạnh âm thanh không được đính kèm: %@. Nhật ký gỡ lỗi cho biết lý do.",
+     "after": "Các tệp bản chép lời này bên cạnh âm thanh không được đính kèm: %@. Nhật ký gỡ lỗi cho biết lý do.",
+     "why": "term: a transcript file is a tệp bản chép lời, as the Replace Existing strings say; tệp chép lời is a transcribing file"
+    },
+    {
+     "key": "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it.",
+     "id": "fileImportService.bookNoValid",
+     "english": "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it.",
+     "before": "Sách này không có gói được quản lý hợp lệ. Chỉ gỡ nó khỏi thư viện, hoặc sửa chữa bộ nhớ của nó trước khi xóa.",
+     "after": "Sách này không có gói được quản lý hợp lệ. Hãy chỉ gỡ sách khỏi thư viện, hoặc sửa lại dữ liệu lưu trữ của sách trước khi xóa.",
+     "why": "meaning: bộ nhớ (memory, the Storage tab) is not the book’s stored files, and a bare Chỉ gỡ read as a description, not an instruction"
+    },
+    {
+     "key": "This comic book archive holds more than the %@ pictures TextMouth reads.",
+     "id": "pageImage.tooManyPictures",
+     "english": "This comic book archive holds more than the %@ pictures TextMouth reads.",
+     "before": "Kho lưu trữ truyện tranh này chứa nhiều hơn %@ ảnh mà TextMouth đọc.",
+     "after": "Tệp lưu trữ truyện tranh này chứa hơn %@ ảnh, vượt mức TextMouth đọc được.",
+     "why": "meaning: the N pictures TextMouth reads read as pictures it had read; it is the most it reads (and kho lưu trữ became tệp lưu trữ)"
+    },
+    {
+     "key": "This comic book archive holds no pictures TextMouth can read.",
+     "id": "pageImage.noPictures",
+     "english": "This comic book archive holds no pictures TextMouth can read.",
+     "before": "Kho lưu trữ truyện tranh này không chứa ảnh nào mà TextMouth đọc được.",
+     "after": "Tệp lưu trữ truyện tranh này không chứa ảnh nào mà TextMouth đọc được.",
+     "why": "term: kho lưu trữ is a repository (of code or records); an archive file is a tệp lưu trữ, as the other archive strings say"
+    },
+    {
+     "key": "This file could not be read as a Word 2003 XML document.",
+     "id": "textutilInputFormat.unreadableSentence.wordml",
+     "english": "This file could not be read as a Word 2003 XML document.",
+     "before": "Không đọc được tệp này như một tài liệu XML Word 2003.",
+     "after": "Không đọc được tệp này dưới dạng tài liệu XML Word 2003.",
+     "why": "natural: như một (like a) copied the English as; a file is read dưới dạng (in the form of) a format"
+    },
+    {
+     "key": "This file could not be read as a Word 97-2003 document.",
+     "id": "textutilInputFormat.unreadableSentence.doc",
+     "english": "This file could not be read as a Word 97-2003 document.",
+     "before": "Không đọc được tệp này như một tài liệu Word 97-2003.",
+     "after": "Không đọc được tệp này dưới dạng tài liệu Word 97-2003.",
+     "why": "natural: như một (like a) copied the English as; a file is read dưới dạng (in the form of) a format"
+    },
+    {
+     "key": "This file could not be read as a comic book archive. It may be damaged, or another kind of file.",
+     "id": "pageImage.notAnArchive",
+     "english": "This file could not be read as a comic book archive. It may be damaged, or another kind of file.",
+     "before": "Không đọc được tệp này như một kho lưu trữ truyện tranh. Tệp có thể bị hỏng, hoặc là một loại tệp khác.",
+     "after": "Không đọc được tệp này dưới dạng tệp lưu trữ truyện tranh. Tệp có thể bị hỏng, hoặc là một loại tệp khác.",
+     "why": "natural: như một (like a) copied the English as; a file is read dưới dạng (in the form of) a format; and kho lưu trữ became tệp lưu trữ"
+    },
+    {
+     "key": "This file could not be read as a picture. It may be damaged, or another kind of file.",
+     "id": "pageImage.notAPicture",
+     "english": "This file could not be read as a picture. It may be damaged, or another kind of file.",
+     "before": "Không đọc được tệp này như một ảnh. Tệp có thể bị hỏng, hoặc là một loại tệp khác.",
+     "after": "Không đọc được tệp này dưới dạng ảnh. Tệp có thể bị hỏng, hoặc là một loại tệp khác.",
+     "why": "natural: như một (like a) copied the English as; a file is read dưới dạng (in the form of) a format"
+    },
+    {
+     "key": "This file could not be read as a rich text document with attachments.",
+     "id": "textutilInputFormat.unreadableSentence.rtfd",
+     "english": "This file could not be read as a rich text document with attachments.",
+     "before": "Không đọc được tệp này như một tài liệu văn bản có định dạng kèm tệp đính kèm.",
+     "after": "Không đọc được tệp này dưới dạng tài liệu văn bản có định dạng kèm tệp đính kèm.",
+     "why": "natural: như một (like a) copied the English as; a file is read dưới dạng (in the form of) a format"
+    },
+    {
+     "key": "This file could not be read as a rich text document.",
+     "id": "textutilInputFormat.unreadableSentence.rtf",
+     "english": "This file could not be read as a rich text document.",
+     "before": "Không đọc được tệp này như một tài liệu văn bản có định dạng.",
+     "after": "Không đọc được tệp này dưới dạng tài liệu văn bản có định dạng.",
+     "why": "natural: như một (like a) copied the English as; a file is read dưới dạng (in the form of) a format"
+    },
+    {
+     "key": "This file could not be read as an OpenDocument text document.",
+     "id": "textutilInputFormat.unreadableSentence.odt",
+     "english": "This file could not be read as an OpenDocument text document.",
+     "before": "Không đọc được tệp này như một tài liệu văn bản OpenDocument.",
+     "after": "Không đọc được tệp này dưới dạng tài liệu văn bản OpenDocument.",
+     "why": "natural: như một (like a) copied the English as; a file is read dưới dạng (in the form of) a format"
+    },
+    {
+     "key": "This picture holds %lld pages, more than the %@ TextMouth reads.",
+     "id": "pageImage.tooManyPages",
+     "english": {
+      "one": "This picture holds %lld page, more than the %@ TextMouth reads.",
+      "other": "This picture holds %lld pages, more than the %@ TextMouth reads."
+     },
+     "before": {
+      "other": "Ảnh này có %lld trang, nhiều hơn %@ mà TextMouth đọc."
+     },
+     "after": {
+      "other": "Ảnh này có %lld trang, vượt mức %@ mà TextMouth đọc được."
+     },
+     "why": "meaning: nhiều hơn %@ mà TextMouth đọc read as more than the pages TextMouth had read; it is the most it reads"
+    },
+    {
+     "key": "This picture is %@, larger than the %lld megapixels TextMouth reads.",
+     "id": "pageImage.tooLarge",
+     "english": {
+      "one": "This picture is %@, larger than the %lld megapixel TextMouth reads.",
+      "other": "This picture is %@, larger than the %lld megapixels TextMouth reads."
+     },
+     "before": {
+      "other": "Ảnh này là %1$@, lớn hơn %2$lld megapixel mà TextMouth đọc."
+     },
+     "after": {
+      "other": "Ảnh này có kích thước %1$@, vượt mức %2$lld megapixel mà TextMouth đọc được."
+     },
+     "why": "grammar: là before the size phrase (rộng … pixel, cao … pixel) cannot read right; có kích thước can, and vượt mức says it is the limit"
+    },
+    {
+     "key": "Too long to keep for pasting. To move it, paste right after cutting.",
+     "id": "audioEditor.cutTooLongToPaste",
+     "english": "Too long to keep for pasting. To move it, paste right after cutting.",
+     "before": "Quá dài để giữ lại để dán. Để di chuyển, hãy dán ngay sau khi cắt.",
+     "after": "Quá dài nên không thể giữ lại để dán. Để di chuyển, hãy dán ngay sau khi cắt.",
+     "why": "natural: Quá dài để giữ lại để dán stacked two để; nên không thể matches the disk-full sentence"
+    },
+    {
+     "key": "Too many timed passages: the limit is %lld.",
+     "id": "timedTextError.tooManyCues",
+     "english": {
+      "one": "Too many timed passages: the limit is %lld.",
+      "other": "Too many timed passages: the limit is %lld."
+     },
+     "before": {
+      "other": "Quá nhiều đoạn có thời gian: giới hạn là %lld."
+     },
+     "after": {
+      "other": "Quá nhiều đoạn có mốc thời gian: giới hạn là %lld."
+     },
+     "why": "natural: đoạn có thời gian reads as a passage that has (free) time; a timed passage has timestamps (có mốc thời gian)"
+    },
+    {
+     "key": "Transcribed on %@, in %@.",
+     "id": "transcription.transcribedOn",
+     "english": "Transcribed on %1$@, in %2$@.",
+     "before": "Đã chép lời vào %1$@, bằng %2$@.",
+     "after": "Đã chép lời vào ngày %1$@, bằng %2$@.",
+     "why": "natural: a date such as 4 tháng 10, 2026 after vào needs ngày (vào ngày …), as the attached-on sentences of the same detail now say"
+    },
+    {
+     "key": "What was kept for %lld removed downloads was deleted.",
+     "id": "feed.unsubscribed.what",
+     "english": {
+      "one": "What was kept for %lld removed download was deleted.",
+      "other": "What was kept for %lld removed downloads was deleted."
+     },
+     "before": {
+      "other": "Những gì được giữ cho %lld bản tải về đã gỡ đã bị xóa."
+     },
+     "after": {
+      "other": "Đã xóa những gì được giữ lại cho %lld bản tải về đã gỡ."
+     },
+     "why": "natural: the subject ran on to a second đã before bị xóa; the sentence now starts with Đã xóa"
+    },
+    {
+     "key": "You cleaned it up on %@.",
+     "id": "transcription.bookInfoLine.cleaned",
+     "english": "You cleaned it up on %@.",
+     "before": "Bạn đã dọn dẹp nó vào %@.",
+     "after": "Bạn đã dọn dẹp nó vào ngày %@.",
+     "why": "natural: a date such as 4 tháng 10, 2026 after vào needs ngày (vào ngày …), as the attached-on sentences of the same detail now say"
+    },
+    {
+     "key": "You cleaned up this transcript on %@. Transcribing again replaces the cleanup.",
+     "id": "transcription.cleanedUpTranscript",
+     "english": "You cleaned up this transcript on %@. Transcribing again replaces the cleanup.",
+     "before": "Bạn đã dọn dẹp bản chép lời này vào %@. Chép lời lại sẽ thay thế kết quả dọn dẹp.",
+     "after": "Bạn đã dọn dẹp bản chép lời này vào ngày %@. Chép lời lại sẽ thay thế kết quả dọn dẹp.",
+     "why": "natural: a date such as 4 tháng 10, 2026 after vào needs ngày (vào ngày …), as the attached-on sentences of the same detail now say"
+    },
+    {
+     "key": "You edited it on %@.",
+     "id": "transcription.bookInfoLine.edited",
+     "english": "You edited it on %@.",
+     "before": "Bạn đã sửa nó vào %@.",
+     "after": "Bạn đã sửa nó vào ngày %@.",
+     "why": "natural: a date such as 4 tháng 10, 2026 after vào needs ngày (vào ngày …), as the attached-on sentences of the same detail now say"
+    },
+    {
+     "key": "You edited the transcript on %@, after the cleanup. Undo Cleanup undoes those edits too.",
+     "id": "transcriptCleanup.editedSinceCleanup",
+     "english": "You edited the transcript on %@, after the cleanup. Undo Cleanup undoes those edits too.",
+     "before": "Bạn đã sửa bản chép lời vào %@, sau lần dọn dẹp. Hoàn tác dọn dẹp cũng hoàn tác các chỉnh sửa đó.",
+     "after": "Bạn đã sửa bản chép lời vào ngày %@, sau lần dọn dẹp. Hoàn tác dọn dẹp cũng hoàn tác các chỉnh sửa đó.",
+     "why": "natural: a date such as 4 tháng 10, 2026 after vào needs ngày (vào ngày …), as the attached-on sentences of the same detail now say"
+    },
+    {
+     "key": "You edited this transcript on %@. Transcribing again replaces your edits.",
+     "id": "transcription.editedTranscript",
+     "english": "You edited this transcript on %@. Transcribing again replaces your edits.",
+     "before": "Bạn đã sửa bản chép lời này vào %@. Chép lời lại sẽ thay thế các chỉnh sửa của bạn.",
+     "after": "Bạn đã sửa bản chép lời này vào ngày %@. Chép lời lại sẽ thay thế các chỉnh sửa của bạn.",
+     "why": "natural: a date such as 4 tháng 10, 2026 after vào needs ngày (vào ngày …), as the attached-on sentences of the same detail now say"
+    },
+    {
+     "key": "Your copy of the rules is empty. Edit Rules… opens it to add some.",
+     "id": "transcriptCleanup.noRules.user",
+     "english": "Your copy of the rules is empty. Edit Rules… opens it to add some.",
+     "before": "Bản sao các quy tắc của bạn đang trống. Sửa quy tắc… mở nó để thêm quy tắc.",
+     "after": "Bản sao các quy tắc của bạn đang trống. Nút Sửa quy tắc… mở bản sao này để bạn thêm quy tắc.",
+     "why": "natural: the button’s name as a bare subject read as two commands (Sửa quy tắc… mở nó); Nút names the button"
+    },
+    {
+     "key": "by %@",
+     "ids": [
+      "feed.byPublisher",
+      "librarySubview.byAuthor"
+     ],
+     "english": "by %@",
+     "before": "bởi %@",
+     "after": "của %@",
+     "why": "natural: bởi copies the English passive by; Vietnamese names an author or publisher with của, as %1$@, của %2$@ does"
+    },
+    {
+     "key": "extracting the archive",
+     "id": "importStep.phrase.extractingArchive",
+     "english": "extracting the archive",
+     "before": "giải nén kho lưu trữ",
+     "after": "giải nén tệp lưu trữ",
+     "why": "term: kho lưu trữ is a repository (of code or records); an archive file is a tệp lưu trữ"
+    },
+    {
+     "key": "it is %@, larger than %lld megapixels",
+     "id": "pageImage.pageTooLarge",
+     "english": {
+      "one": "it is %@, larger than %lld megapixel",
+      "other": "it is %@, larger than %lld megapixels"
+     },
+     "before": {
+      "other": "nó là %1$@, lớn hơn %2$lld megapixel"
+     },
+     "after": {
+      "other": "nó có kích thước %1$@, vượt quá %2$lld megapixel"
+     },
+     "why": "grammar: là before the size phrase (rộng … pixel, cao … pixel) cannot read right; có kích thước can"
+    },
+    {
+     "key": "its file could not be read as a picture",
+     "id": "pageImage.pageNotAPicture",
+     "english": "its file could not be read as a picture",
+     "before": "tệp của nó không đọc được như một ảnh",
+     "after": "tệp của nó không đọc được dưới dạng ảnh",
+     "why": "natural: như một (like a) copied the English as; a file is read dưới dạng (in the form of) a picture"
+    },
+    {
+     "key": "its package is in neither its library folder nor its feed's",
+     "id": "feedItemMoveError.packageMissing",
+     "english": "its package is in neither its library folder nor its feed's",
+     "before": "gói của nó không nằm trong thư mục thư viện của nó lẫn thư mục của nguồn cấp",
+     "after": "gói của nó không nằm trong thư mục thư viện của nó, cũng không nằm trong thư mục của nguồn cấp",
+     "why": "grammar: không … lẫn without cả does not say neither … nor; cũng không does"
+    },
+    {
+     "key": "reading its manifest",
+     "id": "importStep.phrase.readingManifest",
+     "english": "reading its manifest",
+     "before": "đọc bản kê khai của nó",
+     "after": "đọc tệp kê khai của nó",
+     "why": "term: the glossary’s Manifest is tệp kê khai, not bản kê khai"
+    },
+    {
+     "key": "the top of your library",
+     "id": "feed.movedToLibrary.topLibrary",
+     "english": "the top of your library",
+     "before": "đầu thư viện của bạn",
+     "after": "cấp cao nhất trong thư viện của bạn",
+     "why": "meaning: đầu thư viện is the head of the library list; the place is the top level, as at the top of the library says (cấp cao nhất)"
+    }
+   ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ adds one at the current position.",
+     "id": "bookmarkPanelView.emptyListHelp.onePosition",
+     "english": "%@ adds one at the current position.",
+     "before": "%@ thêm một dấu trang tại vị trí hiện tại.",
+     "after": "Nút %@ thêm một dấu trang tại vị trí hiện tại.",
+     "why": "grammar: a bare button name as a subject reads as an imperative; Nút names the button, as parts 1 and 2 did (it read Thêm dấu trang thêm một dấu trang)"
+    },
+    {
+     "key": "%@ does the same for every such chapter of this export, without asking again.",
+     "id": "bookExportDeepChapter.message.without",
+     "english": "%@ does the same for every such chapter of this export, without asking again.",
+     "before": "%@ làm tương tự cho mọi chương như vậy trong lần xuất này, không hỏi lại.",
+     "after": "Nút %@ làm tương tự cho mọi chương như vậy trong lần xuất này, không hỏi lại.",
+     "why": "grammar: a bare button name as a subject reads as an imperative; Nút names the button, as parts 1 and 2 did"
+    },
+    {
+     "key": "%@ has its default, %@",
+     "id": "shortcutsSettings.defaultsHeldElsewhere",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%1$@ dùng phím mặc định của mình, %2$@",
+     "after": "%1$@ đang dùng phím mặc định của hành động này, %2$@",
+     "why": "meaning: %1$@ is the other action that took this row’s default key; của mình said it was that action’s own default"
+    },
+    {
+     "key": "%@ now waits before %@, in case it is pressed twice.",
+     "id": "shortcutsSettings.nowWaits",
+     "english": "%1$@ now waits before %2$@, in case it is pressed twice.",
+     "before": "%1$@ giờ đợi một chút trước khi %2$@, phòng khi được nhấn hai lần.",
+     "after": "%1$@ bây giờ sẽ đợi một chút trước khi %2$@, phòng khi được nhấn hai lần.",
+     "why": "meaning: giờ (now) is also giờ (hour), so J giờ đợi misleads; bây giờ is only now, as part 2 chose"
+    },
+    {
+     "key": "%@ stops the whole export. Files already written stay.",
+     "id": "bookExportDeepChapter.message.already",
+     "english": "%@ stops the whole export. Files already written stay.",
+     "before": "%@ dừng toàn bộ quá trình xuất. Các tệp đã ghi vẫn được giữ lại.",
+     "after": "Nút %@ dừng toàn bộ quá trình xuất. Các tệp đã ghi vẫn được giữ lại.",
+     "why": "grammar: a bare button name as a subject reads as an imperative; Nút names the button, as parts 1 and 2 did"
+    },
+    {
+     "key": "%@ times speed",
+     "id": "audioSpeed.spokenLabel",
+     "english": "%@ times speed",
+     "before": "tốc độ %@ lần",
+     "after": "tốc độ gấp %@ lần",
+     "why": "natural: tốc độ 1,25 lần lacks gấp, the word Vietnamese uses for a multiple"
+    },
+    {
+     "key": "%@ tries again, %@ quits without saving, %@ keeps TextMouth open.",
+     "id": "unsavedChangesPrompt.choices",
+     "english": "%1$@ tries again, %2$@ quits without saving, %3$@ keeps TextMouth open.",
+     "before": "%1$@ để thử lại, %2$@ để thoát mà không lưu, %3$@ để giữ TextMouth mở.",
+     "after": "Chọn %1$@ để thử lại, %2$@ để thoát mà không lưu, hoặc %3$@ để giữ TextMouth mở.",
+     "why": "natural: three button names each with để and no verb read as fragments; Chọn … hoặc makes one sentence"
+    },
+    {
+     "key": "%@ uses it in the menus",
+     "id": "shortcutRefusal.reason.systemCommand",
+     "english": "%@ uses it in the menus",
+     "before": "%@ dùng phím này trong các menu",
+     "after": "lệnh %@ dùng phím này trong các menu",
+     "why": "grammar: a bare command name as a subject reads as an imperative (Sao chép dùng phím này); lệnh names it as the command"
+    },
+    {
+     "key": "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "id": "bookExportDeepChapter.message.paragraphs",
+     "english": "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "before": "%@ ghi chương đó thành các đoạn văn thường gồm các dòng của nó, giữ dấu trích dẫn và dấu danh sách dưới dạng ký tự, và xuất mọi thứ khác như bình thường.",
+     "after": "Nút %@ ghi chương đó thành các đoạn văn thường gồm các dòng của nó, giữ dấu trích dẫn và dấu danh sách dưới dạng ký tự, và xuất mọi thứ khác như bình thường.",
+     "why": "grammar: a bare button name as a subject reads as an imperative; Nút names the button, as parts 1 and 2 did"
+    },
+    {
+     "key": "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "id": "bookExportDeepChapter.message.text",
+     "english": "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "before": "%@ ghi văn bản thành các đoạn văn thường gồm các dòng của nó, giữ dấu trích dẫn và dấu danh sách dưới dạng ký tự, và xuất mọi thứ khác như bình thường.",
+     "after": "Nút %@ ghi văn bản thành các đoạn văn thường gồm các dòng của nó, giữ dấu trích dẫn và dấu danh sách dưới dạng ký tự, và xuất mọi thứ khác như bình thường.",
+     "why": "grammar: a bare button name as a subject reads as an imperative; Nút names the button, as parts 1 and 2 did"
+    },
+    {
+     "key": "%@, finished %@",
+     "id": "readingStatsView.finishedRowLabel",
+     "english": "%1$@, finished %2$@",
+     "before": "%1$@, đã đọc xong %2$@",
+     "after": "%1$@, đã đọc xong vào ngày %2$@",
+     "why": "meaning: a bare date after đã đọc xong read as what was finished (finished reading 18 tháng 11); vào ngày marks the date, as part 2 did"
+    },
+    {
+     "key": "%@: off while Never collapse is checked",
+     "id": "repeatedSymbolStyle.sayCount.collapse",
+     "english": "%@: off while Never collapse is checked",
+     "before": "%@: tắt khi Không bao giờ thu gọn được chọn",
+     "after": "%@: tắt khi “Không bao giờ thu gọn” được chọn",
+     "why": "punctuation: the checkbox name inside a sentence takes quotation marks; bare, Không bao giờ … được chọn read as never chosen"
+    },
+    {
+     "key": "%lld rules were left out: regular expressions and rules that are off cannot be written in a lexicon.",
+     "id": "pronunciationLexicon.exported.expressions",
+     "english": {
+      "one": "%lld rule was left out: regular expressions and rules that are off cannot be written in a lexicon.",
+      "other": "%lld rules were left out: regular expressions and rules that are off cannot be written in a lexicon."
+     },
+     "before": {
+      "other": "%lld quy tắc bị bỏ ra: biểu thức chính quy và các quy tắc đang tắt không thể ghi vào từ điển phát âm."
+     },
+     "after": {
+      "other": "%lld quy tắc đã bị loại ra: biểu thức chính quy và các quy tắc đang tắt không thể ghi vào từ điển phát âm."
+     },
+     "why": "natural: bỏ ra means take out or spend; rules left out are loại ra"
+    },
+    {
+     "key": "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
+     "id": "readerPage.sayInWhereAmIHint",
+     "english": "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
+     "before": "Thêm trang, chẳng hạn Trang 12 trên 300, vào phần tóm tắt của Tôi đang ở đâu, cho sách có nhiều hơn một trang.",
+     "after": "Thêm trang, chẳng hạn Trang 12 trên 300, vào phần tóm tắt của lệnh Tôi đang ở đâu, cho sách có nhiều hơn một trang.",
+     "why": "natural: the bare name Tôi đang ở đâu mid-sentence is heard as a question; lệnh names it as the command"
+    },
+    {
+     "key": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "id": "readerTime.settingHint",
+     "english": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "before": "Thêm tốc độ đang dùng, chẳng hạn 2.0x cho sách nói không ở 1x, hoặc 500 từ mỗi phút cho sách văn bản, trong trình đọc, Tôi đang ở đâu, Sao chép vị trí đọc và thời lượng của hộp thoại Đề mục.",
+     "after": "Thêm tốc độ đang dùng, chẳng hạn 2.0x cho sách nói không ở 1x, hoặc 500 từ mỗi phút cho sách văn bản, trong trình đọc, các lệnh Tôi đang ở đâu và Sao chép vị trí đọc, và thời lượng trong hộp thoại Đề mục.",
+     "why": "natural: the bare command names in the list read as a question and an instruction; các lệnh names them as commands"
+    },
+    {
+     "key": "Afterwards, Play tries the passage again",
+     "id": "speechRefusal.closeHint",
+     "english": "Afterwards, Play tries the passage again",
+     "before": "Sau đó, Phát sẽ thử lại đoạn này.",
+     "after": "Sau đó, nút Phát sẽ thử lại đoạn này.",
+     "why": "grammar: a bare Phát as a subject reads as the command Play; nút names the button, as parts 1 and 2 did"
+    },
+    {
+     "key": "Also write to the library's copy of the EPUB file",
+     "id": "epubMetadataSave.writeBackToggleTitle",
+     "english": "Also write to the library's copy of the EPUB file",
+     "before": "Cũng ghi vào bản sao EPUB của thư viện",
+     "after": "Ghi cả vào bản sao EPUB của thư viện",
+     "why": "natural: a Vietnamese label cannot begin with Cũng (also), which needs a subject before it; ghi cả vào says also write to"
+    },
+    {
+     "key": "Asks for an optional note, then marks the reading position.",
+     "id": "bookmarkPanelView.addBookmarkHint",
+     "english": "Asks for an optional note, then marks the reading position.",
+     "before": "Hỏi ghi chú tùy chọn, rồi đánh dấu vị trí đọc.",
+     "after": "Mời bạn nhập ghi chú nếu muốn, rồi đánh dấu vị trí đọc.",
+     "why": "natural: Hỏi ghi chú tùy chọn (ask the optional note) is not Vietnamese; Mời bạn nhập … nếu muốn says it offers an optional note"
+    },
+    {
+     "key": "Begin",
+     "id": "keyBinding.localizedKeyWords.begin",
+     "english": "Begin",
+     "before": "Begin",
+     "after": "Bắt đầu",
+     "why": "term: AppKit’s Vietnamese key names (FunctionKeyNames) call this key Bắt đầu; only abbreviations and keys printed on Mac keyboards stay English"
+    },
+    {
+     "key": "Bookmark %@, %@, Note: %@, added %@",
+     "id": "bookmark.accessibilityLabel.headingNoteAdded",
+     "english": "Bookmark %1$@, %2$@, Note: %3$@, added %4$@",
+     "before": "Dấu trang %1$@, %2$@, Ghi chú: %3$@, đã thêm %4$@",
+     "after": "Dấu trang %1$@, %2$@, Ghi chú: %3$@, đã thêm vào ngày %4$@",
+     "why": "meaning: a bare date after đã thêm read as what was added (added 9 tháng 10); vào ngày marks the date, as part 2 did"
+    },
+    {
+     "key": "Bookmark %@, %@, added %@",
+     "id": "bookmark.accessibilityLabel.headingAdded",
+     "english": "Bookmark %1$@, %2$@, added %3$@",
+     "before": "Dấu trang %1$@, %2$@, đã thêm %3$@",
+     "after": "Dấu trang %1$@, %2$@, đã thêm vào ngày %3$@",
+     "why": "meaning: a bare date after đã thêm read as what was added (added 9 tháng 10); vào ngày marks the date, as part 2 did"
+    },
+    {
+     "key": "Bookmark %@, Note: %@, added %@",
+     "id": "bookmark.accessibilityLabel.numberNoteAdded",
+     "english": "Bookmark %1$@, Note: %2$@, added %3$@",
+     "before": "Dấu trang %1$@, Ghi chú: %2$@, đã thêm %3$@",
+     "after": "Dấu trang %1$@, Ghi chú: %2$@, đã thêm vào ngày %3$@",
+     "why": "meaning: a bare date after đã thêm read as what was added (added 9 tháng 10); vào ngày marks the date, as part 2 did"
+    },
+    {
+     "key": "Bookmark %@, added %@",
+     "id": "bookmark.accessibilityLabel.numberAdded",
+     "english": "Bookmark %1$@, added %2$@",
+     "before": "Dấu trang %1$@, đã thêm %2$@",
+     "after": "Dấu trang %1$@, đã thêm vào ngày %2$@",
+     "why": "meaning: a bare date after đã thêm read as what was added (added 9 tháng 10); vào ngày marks the date, as part 2 did"
+    },
+    {
+     "key": "Break",
+     "id": "keyBinding.localizedKeyWords.break",
+     "english": "Break",
+     "before": "Break",
+     "after": "Dấu ngắt",
+     "why": "term: AppKit’s Vietnamese key names (FunctionKeyNames) call this key Dấu ngắt; only abbreviations and keys printed on Mac keyboards stay English"
+    },
+    {
+     "key": "Chapter %@ could not be played: %@ from the book's package.",
+     "id": "readerViewModel.chapterNotPlayed",
+     "english": "Chapter %1$@ could not be played: %2$@ from the book's package.",
+     "before": "Không thể phát chương %1$@: %2$@ từ gói của sách.",
+     "after": "Không thể phát chương %1$@: %2$@ trong gói của sách.",
+     "why": "grammar: %2$@ reads không tìm thấy tệp …, so từ gói said not found from the package; the file is missing in it"
+    },
+    {
+     "key": "Check that the disk holding your library is connected, then choose Retry.",
+     "id": "readerViewModel.checkDiskHolding",
+     "english": "Check that the disk holding your library is connected, then choose Retry.",
+     "before": "Hãy kiểm tra ổ đĩa chứa thư viện của bạn đã được kết nối, rồi chọn Thử lại.",
+     "after": "Hãy kiểm tra xem ổ đĩa chứa thư viện của bạn đã được kết nối chưa, rồi chọn Thử lại.",
+     "why": "grammar: kiểm tra takes its clause with xem … chưa; without it the sentence read as check the connected disk"
+    },
+    {
+     "key": "Chooses the file format. M4B is an audiobook; M4A and MP3 play in more apps. M4B and M4A have a chapter for each heading; an MP3, for the first %@.",
+     "id": "speechExport.formatHint",
+     "english": "Chooses the file format. M4B is an audiobook; M4A and MP3 play in more apps. M4B and M4A have a chapter for each heading; an MP3, for the first %@.",
+     "before": "Chọn định dạng tệp. M4B là sách nói; M4A và MP3 phát được trong nhiều ứng dụng hơn. M4B và M4A có một chương cho mỗi đề mục; MP3 chỉ có cho %@ đầu tiên.",
+     "after": "Chọn định dạng tệp. M4B là sách nói; M4A và MP3 phát được trong nhiều ứng dụng hơn. M4B và M4A có một chương cho mỗi đề mục; MP3 chỉ có chương cho %@ đề mục đầu tiên.",
+     "why": "grammar: cho %@ đầu tiên (for the first 255) had no noun in Vietnamese; the chapters are for the first 255 headings"
+    },
+    {
+     "key": "Chooses what Play and the skip buttons move by.",
+     "id": "phoneReader.navigationUnitHint",
+     "english": "Chooses what Play and the skip buttons move by.",
+     "before": "Chọn đơn vị mà Phát và các nút tua di chuyển theo.",
+     "after": "Chọn đơn vị mà nút Phát và các nút tua di chuyển theo.",
+     "why": "grammar: a bare Phát as a subject reads as the command Play; nút Phát pairs it with các nút tua"
+    },
+    {
+     "key": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "id": "shortcutsSettings.worksInHint",
+     "english": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "before": "Việc chọn biến phím tắt thành của riêng bạn; Đặt lại về mặc định khôi phục nơi phím hoạt động theo mặc định.",
+     "after": "Khi bạn chọn, phím tắt trở thành của riêng bạn; nút Đặt lại về mặc định khôi phục nơi phím tắt hoạt động theo mặc định.",
+     "why": "natural: Việc chọn biến … thành copied the English, and the bare button name as a subject read as an imperative; nút names it"
+    },
+    {
+     "key": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "id": "bookTextEdit.stoppedBookReplaced.since",
+     "english": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "before": "Sửa văn bản đã dừng cho %@, vì một bản sao mới đã thay thế nó.",
+     "after": "Việc sửa văn bản cho %@ đã dừng, vì một bản sao mới đã thay thế sách.",
+     "why": "grammar: a bare command name as a subject reads as an imperative (Sửa văn bản đã dừng); Việc sửa văn bản names the session, as part 1 did"
+    },
+    {
+     "key": "Edit Text has stopped for %@, since its file was read again.",
+     "id": "bookTextEdit.stoppedBookReadAgain.since",
+     "english": "Edit Text has stopped for %@, since its file was read again.",
+     "before": "Sửa văn bản đã dừng cho %@, vì tệp của nó đã được đọc lại.",
+     "after": "Việc sửa văn bản cho %@ đã dừng, vì tệp của sách đã được đọc lại.",
+     "why": "grammar: a bare command name as a subject reads as an imperative (Sửa văn bản đã dừng); Việc sửa văn bản names the session, as part 1 did"
+    },
+    {
+     "key": "Export Every Such Chapter as Written",
+     "id": "bookExportDeepChapter.exportAllAsWrittenTitle",
+     "english": "Export Every Such Chapter as Written",
+     "before": "Xuất mọi chương như vậy ở dạng đã ghi",
+     "after": "Xuất nguyên văn mọi chương như vậy",
+     "why": "natural: ở dạng đã ghi (in the recorded form) does not say as written; nguyên văn is Vietnamese for verbatim, as the alert explains"
+    },
+    {
+     "key": "Export as Written",
+     "id": "bookExportDeepChapter.exportAsWrittenTitle",
+     "english": "Export as Written",
+     "before": "Xuất ở dạng đã ghi",
+     "after": "Xuất nguyên văn",
+     "why": "natural: ở dạng đã ghi (in the recorded form) does not say as written; nguyên văn is Vietnamese for verbatim, as the alert explains"
+    },
+    {
+     "key": "Fading out",
+     "id": "sleepTimerService.formattedRemaining",
+     "english": "Fading out",
+     "before": "Đang nhỏ dần âm thanh",
+     "after": "Đang giảm dần âm lượng",
+     "why": "natural: nhỏ dần takes no object (Đang nhỏ dần âm thanh); fading out is giảm dần âm lượng, as part 2 named Fade Out"
+    },
+    {
+     "key": "Find",
+     "id": "common.find",
+     "english": "Find",
+     "before": "Tìm kiếm",
+     "after": "Tìm",
+     "why": "term: AppKit’s Vietnamese key names (FunctionKeyNames) call this key Tìm; Tìm kiếm is the glossary’s Search command"
+    },
+    {
+     "key": "Help",
+     "id": "keyBinding.localizedKeyWords.help",
+     "english": "Help",
+     "before": "Help",
+     "after": "Trợ giúp",
+     "why": "term: AppKit’s Vietnamese key names (FunctionKeyNames) call this key Trợ giúp; only abbreviations and keys printed on Mac keyboards stay English"
+    },
+    {
+     "key": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "id": "shortcutsSettings.doublePressTimeHint",
+     "english": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "before": "Phím thứ hai phải theo sau phím đầu nhanh đến mức nào. Phím có hành động khác nhau cho một lần nhấn và nhấn đúp sẽ đợi chừng này thời gian trước khi hành động của một lần nhấn chạy.",
+     "after": "Lần nhấn thứ hai phải đến trong khoảng thời gian này sau lần nhấn đầu. Phím có hành động khác nhau cho một lần nhấn và nhấn đúp sẽ đợi chừng này thời gian trước khi thực hiện hành động của một lần nhấn.",
+     "why": "meaning: Phím thứ hai said a second key; it is the second press of the same key, and nhanh đến mức nào made the first sentence a question"
+    },
+    {
+     "key": "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.",
+     "id": "shortcutsSettings.letterNavigationNote",
+     "english": "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.",
+     "before": "Trong cửa sổ Thư viện, nhấn riêng một chữ cái sẽ chuyển đến sách hoặc thư mục đầu tiên bắt đầu bằng chữ đó, nên phím tắt chỉ là một chữ cái, chẳng hạn W, chỉ hoạt động trong các cửa sổ khác.",
+     "after": "Trong cửa sổ Thư viện, nhấn riêng một chữ cái sẽ chuyển đến sách hoặc thư mục đầu tiên bắt đầu bằng chữ đó, nên phím tắt gồm một chữ cái đơn lẻ, chẳng hạn W, chỉ hoạt động trong các cửa sổ khác.",
+     "why": "grammar: phím tắt chỉ là một chữ cái read as a clause (the shortcut is only a letter), giving the sentence two main verbs; gồm describes the shortcut"
+    },
+    {
+     "key": "Its earlier text was kept as %@, in the book's package.",
+     "id": "bookTextEdit.earlierTextKept",
+     "english": "Its earlier text was kept as %@, in the book's package.",
+     "before": "Văn bản trước đó được giữ là %@, trong gói của sách.",
+     "after": "Văn bản trước đó được giữ lại dưới tên %@, trong gói của sách.",
+     "why": "natural: được giữ là (kept is) before a file name does not read; a file is kept dưới tên, as part 2 wrote dưới tên Tệp gốc"
+    },
+    {
+     "key": "Its pages run from %@ to %@.",
+     "id": "readerPage.noSuchPage.pages",
+     "english": "Its pages run from %1$@ to %2$@.",
+     "before": "Các trang của nó chạy từ %1$@ đến %2$@.",
+     "after": "Sách có các trang từ %1$@ đến %2$@.",
+     "why": "natural: chạy từ … đến copied run from; Vietnamese gives a page range as có các trang từ … đến"
+    },
+    {
+     "key": "JSON and Markdown",
+     "id": "bookExport.transcriptJSONChoiceName",
+     "english": "JSON and Markdown",
+     "before": "JSON and Markdown",
+     "after": "JSON và Markdown",
+     "why": "meaning: the English and was left untranslated between the two format names"
+    },
+    {
+     "key": "Keeps the order you set with Move Book Up, Move Book Down, or dragging.",
+     "id": "readingList.orderHint",
+     "english": "Keeps the order you set with Move Book Up, Move Book Down, or dragging.",
+     "before": "Giữ thứ tự bạn đã đặt bằng Di chuyển sách lên, Di chuyển sách xuống, hoặc bằng cách kéo.",
+     "after": "Giữ thứ tự bạn đã đặt bằng các lệnh Di chuyển sách lên, Di chuyển sách xuống, hoặc bằng cách kéo.",
+     "why": "natural: bằng Di chuyển sách lên ran the preposition into the command’s name; các lệnh separates them, as part 2 did"
+    },
+    {
+     "key": "Mode Switch",
+     "id": "keyBinding.localizedKeyWords.switch",
+     "english": "Mode Switch",
+     "before": "Mode Switch",
+     "after": "Chuyển đổi chế độ",
+     "why": "term: AppKit’s Vietnamese key names (FunctionKeyNames) call this key Chuyển đổi chế độ; only abbreviations and keys printed on Mac keyboards stay English"
+    },
+    {
+     "key": "Next",
+     "id": "keyBinding.localizedKeyWords.next",
+     "english": "Next",
+     "before": "Next",
+     "after": "Tiếp",
+     "why": "term: AppKit’s Vietnamese key names (FunctionKeyNames) call this key Tiếp; only abbreviations and keys printed on Mac keyboards stay English"
+    },
+    {
+     "key": "No book is loaded.",
+     "id": "readerViewModel.speakWhereAmISummary",
+     "english": "No book is loaded.",
+     "before": "Chưa tải sách nào.",
+     "after": "Chưa mở sách nào.",
+     "why": "meaning: Chưa tải sách nào is heard as no book downloaded (tải is both); Where Am I? says this when no book is open"
+    },
+    {
+     "key": "Overrides the style",
+     "id": "repeatedSymbolsSettingsView.neverCollapseHint",
+     "english": "Overrides the style",
+     "before": "Ghi đè kiểu đã chọn.",
+     "after": "Được ưu tiên hơn kiểu đã chọn.",
+     "why": "meaning: ghi đè (overwrite, and the glossary’s Punch In) said the style is changed; the checkbox takes precedence over it"
+    },
+    {
+     "key": "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in macOS's audio.",
+     "id": "readerViewModel.memoryRunawayMessage.macos",
+     "english": "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in macOS's audio.",
+     "before": "Phát lại đã dừng vì bộ nhớ của TextMouth tăng lên %@ GB trong khi phát âm thanh, một lỗi của âm thanh macOS.",
+     "after": "Đã dừng phát vì bộ nhớ của TextMouth tăng lên %@ GB trong khi phát âm thanh; đây là lỗi âm thanh của macOS.",
+     "why": "natural: the bare Phát lại as a subject reads as the command Replay, and the appositive một lỗi của … copied the English; Đã dừng phát …; đây là lỗi …"
+    },
+    {
+     "key": "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in the system's audio.",
+     "id": "readerViewModel.memoryRunawayMessage.system",
+     "english": "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in the system's audio.",
+     "before": "Phát lại đã dừng vì bộ nhớ của TextMouth tăng lên %@ GB trong khi phát âm thanh, một lỗi của âm thanh hệ thống.",
+     "after": "Đã dừng phát vì bộ nhớ của TextMouth tăng lên %@ GB trong khi phát âm thanh; đây là lỗi âm thanh của hệ thống.",
+     "why": "natural: the bare Phát lại as a subject reads as the command Replay, and the appositive một lỗi của … copied the English; Đã dừng phát …; đây là lỗi …"
+    },
+    {
+     "key": "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
+     "id": "readerViewModel.audioStoppedRespondingMessage",
+     "english": "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
+     "before": "Phát lại đã dừng: âm thanh ngừng phản hồi. Nhấn Phát để thử lại; nếu lại dừng, hãy thoát rồi mở lại TextMouth.",
+     "after": "Đã dừng phát: âm thanh ngừng phản hồi. Hãy nhấn Phát để thử lại; nếu lại dừng, hãy thoát rồi mở lại TextMouth.",
+     "why": "natural: the bare Phát lại as a subject reads as the command Replay; Đã dừng phát says playback stopped"
+    },
+    {
+     "key": "Plays when Where Am I finishes speaking",
+     "id": "soundEffectsSettings.eventHint.whereAmIEnd",
+     "english": "Plays when Where Am I finishes speaking",
+     "before": "Phát khi Tôi đang ở đâu đọc xong.",
+     "after": "Phát khi lệnh Tôi đang ở đâu đọc xong.",
+     "why": "natural: the bare name Tôi đang ở đâu as a subject is heard as a question; lệnh names it as the command"
+    },
+    {
+     "key": "Plays when Where Am I starts speaking",
+     "id": "soundEffectsSettings.eventHint.whereAmIStart",
+     "english": "Plays when Where Am I starts speaking",
+     "before": "Phát khi Tôi đang ở đâu bắt đầu đọc.",
+     "after": "Phát khi lệnh Tôi đang ở đâu bắt đầu đọc.",
+     "why": "natural: the bare name Tôi đang ở đâu as a subject is heard as a question; lệnh names it as the command"
+    },
+    {
+     "key": "Previous",
+     "id": "keyBinding.localizedKeyWords.previous",
+     "english": "Previous",
+     "before": "Previous",
+     "after": "Trước",
+     "why": "term: AppKit’s Vietnamese key names (FunctionKeyNames) call this key Trước; only abbreviations and keys printed on Mac keyboards stay English"
+    },
+    {
+     "key": "Print",
+     "id": "keyBinding.localizedKeyWords.print",
+     "english": "Print",
+     "before": "Print",
+     "after": "In",
+     "why": "term: AppKit’s Vietnamese key names (FunctionKeyNames) call this key In; only abbreviations and keys printed on Mac keyboards stay English"
+    },
+    {
+     "key": "Print Screen",
+     "id": "keyBinding.localizedKeyWords.screen",
+     "english": "Print Screen",
+     "before": "Print Screen",
+     "after": "In màn hình",
+     "why": "term: AppKit’s Vietnamese key names (FunctionKeyNames) call this key In màn hình; only abbreviations and keys printed on Mac keyboards stay English"
+    },
+    {
+     "key": "Question Mark",
+     "id": "keyBinding.localizedKeyWords.question",
+     "english": "Question Mark",
+     "before": "Dấu hỏi",
+     "after": "Dấu chấm hỏi",
+     "why": "meaning: dấu hỏi is also the name of the hỏi tone mark; the ? key is dấu chấm hỏi"
+    },
+    {
+     "key": "Quitting now leaves these changes unsaved:",
+     "id": "unsavedChangesPrompt.quittingLeavesUnsaved",
+     "english": "Quitting now leaves these changes unsaved:",
+     "before": "Thoát bây giờ sẽ để các thay đổi này chưa được lưu:",
+     "after": "Nếu thoát bây giờ, các thay đổi này sẽ không được lưu:",
+     "why": "natural: Thoát bây giờ opened like the command Quit now; Nếu thoát bây giờ says if you quit now"
+    },
+    {
+     "key": "Release Media Controls",
+     "id": "shortcutAction.title.releaseMediaControls",
+     "english": "Release Media Controls",
+     "before": "Nhả điều khiển đa phương tiện",
+     "after": "Trả lại điều khiển phương tiện",
+     "why": "term: the announcements that answer this command say trả lại điều khiển phương tiện; Nhả … đa phương tiện used other words for the same thing"
+    },
+    {
+     "key": "Saves your plain text rules that are on; regular expression rules are left out",
+     "id": "pronunciationLexicon.exportHint",
+     "english": "Saves your plain text rules that are on; regular expression rules are left out",
+     "before": "Lưu các quy tắc văn bản thuần đang bật của bạn; các quy tắc biểu thức chính quy sẽ bị bỏ ra.",
+     "after": "Lưu các quy tắc văn bản thuần đang bật của bạn; các quy tắc biểu thức chính quy sẽ bị loại ra.",
+     "why": "natural: bỏ ra means take out or spend; rules left out are loại ra"
+    },
+    {
+     "key": "Say the page in Where Am I?",
+     "id": "readerPage.sayInWhereAmITitle",
+     "english": "Say the page in Where Am I?",
+     "before": "Đọc trang trong Tôi đang ở đâu",
+     "after": "Đọc trang trong lệnh Tôi đang ở đâu",
+     "why": "natural: the bare name Tôi đang ở đâu is heard as a question; lệnh names it as the command, as its hint now does"
+    },
+    {
+     "key": "Scroll Lock",
+     "id": "keyBinding.localizedKeyWords.scroll",
+     "english": "Scroll Lock",
+     "before": "Scroll Lock",
+     "after": "Khóa cuộn",
+     "why": "term: AppKit’s Vietnamese key names (FunctionKeyNames) call this key Khóa cuộn; only abbreviations and keys printed on Mac keyboards stay English"
+    },
+    {
+     "key": "Space",
+     "id": "keyBinding.localizedKeyWords.space",
+     "english": "Space",
+     "before": "Space",
+     "after": "Dấu cách",
+     "why": "term: AppKit’s Vietnamese key names (FunctionKeyNames) call this key Dấu cách, as menus show the Space key; only abbreviations and keys printed on Mac keyboards stay English"
+    },
+    {
+     "key": "Stops the export and keeps the chapters already spoken until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them.",
+     "id": "speechExport.stopHint",
+     "english": "Stops the export and keeps the chapters already spoken until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them.",
+     "before": "Dừng quá trình xuất và giữ các chương đã đọc cho đến khi TextMouth thoát, một lần xuất âm thanh đọc khác bắt đầu, hoặc giọng nói, văn bản, quy tắc thay thế hay quãng nghỉ của sách thay đổi. Xuất cùng phạm vi với cùng tốc độ và cao độ sẽ tiếp tục từ các chương đó.",
+     "after": "Dừng quá trình xuất và giữ các chương đã đọc cho đến khi TextMouth thoát, một lần xuất âm thanh đọc khác bắt đầu, hoặc giọng nói, văn bản, quy tắc thay thế hay quãng nghỉ của sách thay đổi. Nếu xuất cùng phạm vi với cùng tốc độ và cao độ, quá trình xuất sẽ tiếp tục từ các chương đó.",
+     "why": "grammar: the bare Xuất cùng phạm vi … as a subject reads as the instruction Export the same range; Nếu xuất … makes it the condition"
+    },
+    {
+     "key": "Switch to a Library or book window, then choose Export again.",
+     "id": "bookExport.noWindowInFront",
+     "english": "Switch to a Library or book window, then choose Export again.",
+     "before": "Hãy chuyển sang cửa sổ Thư viện hoặc cửa sổ sách, rồi chọn Xuất lại.",
+     "after": "Hãy chuyển sang cửa sổ Thư viện hoặc cửa sổ sách, rồi chọn Xuất lần nữa.",
+     "why": "natural: chọn Xuất lại reads as choosing a command Re-export; lần nữa says choose Export again, as part 1 wrote"
+    },
+    {
+     "key": "System",
+     "id": "keyBinding.localizedKeyWords.system",
+     "english": "System",
+     "before": "System",
+     "after": "Hệ thống",
+     "why": "term: AppKit’s Vietnamese key names (FunctionKeyNames) call this key Hệ thống; only abbreviations and keys printed on Mac keyboards stay English"
+    },
+    {
+     "key": "Taken from %@",
+     "id": "shortcutsSettings.takenFromSentence",
+     "english": "Taken from %@",
+     "before": "Lấy từ %@",
+     "after": "Đã lấy từ %@",
+     "why": "grammar: a bare Lấy từ reads as the command Take from; the announcement says the key was taken (Đã lấy từ)"
+    },
+    {
+     "key": "Takes %lld to %lld minutes.",
+     "id": "sleepTimerView.customMinutesRangeHint",
+     "english": "Takes %1$lld to %2$lld minutes.",
+     "before": "Nhận từ %1$lld đến %2$lld phút.",
+     "after": "Nhận giá trị từ %1$lld đến %2$lld phút.",
+     "why": "natural: Nhận từ … phút (receives from) does not say what the field takes; Nhận giá trị từ … says it accepts those values"
+    },
+    {
+     "key": "Takes %lld to %lld minutes. Return sets the timer and plays the book.",
+     "id": "sleepTimerView.customMinutesHint",
+     "english": "Takes %1$lld to %2$lld minutes. Return sets the timer and plays the book.",
+     "before": "Nhận từ %1$lld đến %2$lld phút. Return đặt bộ hẹn giờ và phát sách.",
+     "after": "Nhận giá trị từ %1$lld đến %2$lld phút. Phím Return đặt bộ hẹn giờ và phát sách.",
+     "why": "natural: Nhận từ … phút (receives from) does not say what the field takes; Nhận giá trị từ … says it accepts those values; Phím names Return as the key"
+    },
+    {
+     "key": "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.",
+     "id": "readingList.removeFinishedHint",
+     "english": "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.",
+     "before": "Gỡ mỗi sách đã đọc xong khỏi danh sách khi cửa sổ của sách chuyển tiếp hoặc đóng. Các sách đã đọc xong trước khi bạn bật tùy chọn này vẫn được giữ lại.",
+     "after": "Gỡ mỗi sách đã đọc xong khỏi danh sách khi cửa sổ của sách chuyển sang sách khác hoặc đóng. Các sách đã đọc xong trước khi bạn bật tùy chọn này vẫn được giữ lại.",
+     "why": "meaning: chuyển tiếp is forward or transition; the window moves on to another book (chuyển sang sách khác)"
+    },
+    {
+     "key": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "id": "bookTextEdit.stoppedBookGone",
+     "english": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "before": "Chưa cập nhật văn bản: %@ đã bị gỡ, hoặc bản tải về của nó đã bị xóa, nên Sửa văn bản đã dừng cho nó.",
+     "after": "Chưa cập nhật văn bản: %@ đã bị gỡ, hoặc bản tải về của nó đã bị xóa, nên việc sửa văn bản cho sách đã dừng.",
+     "why": "grammar: a bare command name as a subject reads as an imperative (Sửa văn bản đã dừng); việc sửa văn bản names the session, as part 1 did"
+    },
+    {
+     "key": "TextMouth quit on %@: its memory grew to %@ GB while %@ played, because of a fault in macOS's audio. Your place was saved.",
+     "id": "memoryQuitMarker.announcement.because",
+     "english": "TextMouth quit on %1$@: its memory grew to %2$@ GB while %3$@ played, because of a fault in macOS's audio. Your place was saved.",
+     "before": "TextMouth đã thoát vào %1$@: bộ nhớ của nó tăng lên %2$@ GB khi %3$@ đang phát, do lỗi âm thanh của macOS. Vị trí của bạn đã được lưu.",
+     "after": "TextMouth đã thoát vào ngày %1$@: bộ nhớ của nó tăng lên %2$@ GB khi %3$@ đang phát, do lỗi âm thanh của macOS. Vị trí của bạn đã được lưu.",
+     "why": "meaning: after thoát, vào reads as into (quit into the date); vào ngày marks the date and time, as part 2 did"
+    },
+    {
+     "key": "TextMouth quit on %@: its memory grew to %@ GB while a book played, because of a fault in macOS's audio. Your place was saved.",
+     "id": "memoryQuitMarker.announcement.book",
+     "english": "TextMouth quit on %1$@: its memory grew to %2$@ GB while a book played, because of a fault in macOS's audio. Your place was saved.",
+     "before": "TextMouth đã thoát vào %1$@: bộ nhớ của nó tăng lên %2$@ GB khi một sách đang phát, do lỗi âm thanh của macOS. Vị trí của bạn đã được lưu.",
+     "after": "TextMouth đã thoát vào ngày %1$@: bộ nhớ của nó tăng lên %2$@ GB khi một sách đang phát, do lỗi âm thanh của macOS. Vị trí của bạn đã được lưu.",
+     "why": "meaning: after thoát, vào reads as into (quit into the date); vào ngày marks the date and time, as part 2 did"
+    },
+    {
+     "key": "TextMouth quit on %@: its memory grew to %@ GB while nothing was playing. Your place was saved.",
+     "id": "memoryQuitMarker.announcement.nothing",
+     "english": "TextMouth quit on %1$@: its memory grew to %2$@ GB while nothing was playing. Your place was saved.",
+     "before": "TextMouth đã thoát vào %1$@: bộ nhớ của nó tăng lên %2$@ GB khi không có gì đang phát. Vị trí của bạn đã được lưu.",
+     "after": "TextMouth đã thoát vào ngày %1$@: bộ nhớ của nó tăng lên %2$@ GB khi không có gì đang phát. Vị trí của bạn đã được lưu.",
+     "why": "meaning: after thoát, vào reads as into (quit into the date); vào ngày marks the date and time, as part 2 did"
+    },
+    {
+     "key": "The %@ starts %@ into “%@”, before the earlier %@, which starts %@ in.",
+     "id": "audioParseError.startsBeforeEarlierSection",
+     "english": "The %1$@ starts %2$@ into “%3$@”, before the earlier %4$@, which starts %5$@ in.",
+     "before": "Phần %1$@ bắt đầu ở %2$@ trong “%3$@”, trước %4$@ đứng trước nó, vốn bắt đầu ở %5$@.",
+     "after": "Phần %1$@ bắt đầu ở %2$@ trong “%3$@”, sớm hơn phần %4$@ đứng trước nó, vốn bắt đầu ở %5$@.",
+     "why": "natural: two trước (before in the file, before in the book) ran together; sớm hơn says it starts earlier in the file"
+    },
+    {
+     "key": "The DAISY file could not be opened as a ZIP archive.",
+     "id": "daisyParserError.invalidArchive",
+     "english": "The DAISY file could not be opened as a ZIP archive.",
+     "before": "Không thể mở tệp DAISY như một kho lưu trữ ZIP.",
+     "after": "Không thể mở tệp DAISY dưới dạng tệp lưu trữ ZIP.",
+     "why": "term: kho lưu trữ is a repository; a ZIP archive is a tệp lưu trữ (Apple’s type names), opened dưới dạng a format, as part 2 settled"
+    },
+    {
+     "key": "The DOCX file could not be opened as a ZIP archive.",
+     "id": "docxParserError.invalidArchive",
+     "english": "The DOCX file could not be opened as a ZIP archive.",
+     "before": "Không thể mở tệp DOCX như một kho lưu trữ ZIP.",
+     "after": "Không thể mở tệp DOCX dưới dạng tệp lưu trữ ZIP.",
+     "why": "term: kho lưu trữ is a repository; a ZIP archive is a tệp lưu trữ (Apple’s type names), opened dưới dạng a format, as part 2 settled"
+    },
+    {
+     "key": "The EPUB file could not be opened as a ZIP archive.",
+     "id": "epubParserError.invalidArchive",
+     "english": "The EPUB file could not be opened as a ZIP archive.",
+     "before": "Không thể mở tệp EPUB như một kho lưu trữ ZIP.",
+     "after": "Không thể mở tệp EPUB dưới dạng tệp lưu trữ ZIP.",
+     "why": "term: kho lưu trữ is a repository; a ZIP archive is a tệp lưu trữ (Apple’s type names), opened dưới dạng a format, as part 2 settled"
+    },
+    {
+     "key": "The book has no timed transcript to write as captions.",
+     "id": "bookExport.noTimedTranscriptReason",
+     "english": "The book has no timed transcript to write as captions.",
+     "before": "Sách không có bản chép lời theo thời gian để ghi thành phụ đề.",
+     "after": "Sách không có bản chép lời có mốc thời gian để ghi thành phụ đề.",
+     "why": "natural: theo thời gian reads as over time; a timed transcript has timestamps (có mốc thời gian), as part 2 settled"
+    },
+    {
+     "key": "The braille code the book is written in.",
+     "id": "brailleExport.codeHint",
+     "english": "The braille code the book is written in.",
+     "before": "Mã braille mà sách được viết bằng.",
+     "after": "Mã braille được dùng để viết sách.",
+     "why": "grammar: mà sách được viết bằng strands the preposition at the end, as English does; Vietnamese says được dùng để viết sách"
+    },
+    {
+     "key": "The file “%@” in this archive is damaged or incomplete: %@. Get a fresh copy of the archive, then import it again.",
+     "id": "packageDamage.message.archive",
+     "english": "The file “%1$@” in this archive is damaged or incomplete: %2$@. Get a fresh copy of the archive, then import it again.",
+     "before": "Tệp “%1$@” trong kho lưu trữ này bị hỏng hoặc không đầy đủ: %2$@. Hãy lấy một bản sao mới của kho lưu trữ, rồi nhập lại.",
+     "after": "Tệp “%1$@” trong tệp lưu trữ này bị hỏng hoặc không đầy đủ: %2$@. Hãy lấy một bản sao mới của tệp lưu trữ, rồi nhập lại.",
+     "why": "term: kho lưu trữ is a repository; an archive file is a tệp lưu trữ, as part 2 settled"
+    },
+    {
+     "key": "The language of the braille code the book is written in.",
+     "id": "brailleExport.languageHint",
+     "english": "The language of the braille code the book is written in.",
+     "before": "Ngôn ngữ của mã braille mà sách được viết bằng.",
+     "after": "Ngôn ngữ của mã braille được dùng để viết sách.",
+     "why": "grammar: mà sách được viết bằng strands the preposition at the end, as English does; Vietnamese says được dùng để viết sách"
+    },
+    {
+     "key": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+     "id": "speechRefusal.summary",
+     "english": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+     "before": "Bộ máy đọc đã hai lần từ chối đọc văn bản tại đây, nên giọng đọc đã dừng. Phát sẽ thử lại từ cùng vị trí.",
+     "after": "Bộ máy đọc đã hai lần từ chối đọc văn bản tại đây, nên giọng đọc đã dừng. Nút Phát sẽ thử lại từ cùng vị trí.",
+     "why": "grammar: a bare Phát as a subject reads as the command Play; Nút names the reader’s Play button, as parts 1 and 2 did"
+    },
+    {
+     "key": "The text content.md held before was kept as %@, in the book's package.",
+     "id": "bookTextEdit.replaced.content",
+     "english": "The text content.md held before was kept as %@, in the book's package.",
+     "before": "Văn bản content.md có trước đó được giữ là %@, trong gói của sách.",
+     "after": "Văn bản mà content.md có trước đó được giữ lại dưới tên %@, trong gói của sách.",
+     "why": "natural: được giữ là (kept is) before a file name does not read; a file is kept dưới tên, as part 2 wrote dưới tên Tệp gốc"
+    },
+    {
+     "key": "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file.",
+     "id": "failure.notAWebArchive",
+     "english": "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file.",
+     "before": "Tệp này không phải kho lưu trữ web mà TextMouth đọc được. Có thể nó bị hỏng, hoặc là loại tệp khác.",
+     "after": "Tệp này không phải tệp lưu trữ web mà TextMouth đọc được. Có thể nó bị hỏng, hoặc là loại tệp khác.",
+     "why": "term: Apple’s type name is lưu trữ web; kho lưu trữ is a repository, and part 2 made every archive a tệp lưu trữ"
+    },
+    {
+     "key": "This file's markup nests more than %@ levels deep, which TextMouth can't read safely.",
+     "id": "markupRefusal.nestedTooDeeply",
+     "english": "This file's markup nests more than %@ levels deep, which TextMouth can't read safely.",
+     "before": "Đánh dấu của tệp này lồng nhau hơn %@ cấp, mà TextMouth không thể đọc an toàn.",
+     "after": "Mã đánh dấu của tệp này lồng nhau hơn %@ cấp, mà TextMouth không thể đọc an toàn.",
+     "why": "natural: Đánh dấu alone is the verb to mark (and the marker word); markup is mã đánh dấu"
+    },
+    {
+     "key": "This file's markup would take TextMouth far too long to read.",
+     "id": "markupRefusal.tooMuchWork",
+     "english": "This file's markup would take TextMouth far too long to read.",
+     "before": "Đánh dấu của tệp này sẽ khiến TextMouth đọc quá lâu.",
+     "after": "Mã đánh dấu của tệp này sẽ khiến TextMouth mất quá nhiều thời gian để đọc.",
+     "why": "natural: Đánh dấu alone is the verb to mark (and the marker word); markup is mã đánh dấu, and đọc quá lâu said it reads for too long"
+    },
+    {
+     "key": "This web archive holds a file of the type “%@”, not a web page or text, so it has nothing to read.",
+     "id": "failure.notAPage",
+     "english": "This web archive holds a file of the type “%@”, not a web page or text, so it has nothing to read.",
+     "before": "Kho lưu trữ web này chứa một tệp thuộc loại “%@”, không phải trang web hay văn bản, nên không có gì để đọc.",
+     "after": "Tệp lưu trữ web này chứa một tệp thuộc loại “%@”, không phải trang web hay văn bản, nên không có gì để đọc.",
+     "why": "term: Apple’s type name is lưu trữ web; kho lưu trữ is a repository, and part 2 made every archive a tệp lưu trữ"
+    },
+    {
+     "key": "Time at %@",
+     "id": "readerTime.timeFieldLabel.words",
+     "english": "Time at %@",
+     "before": "Thời điểm tại %@",
+     "after": "Thời điểm ở tốc độ %@",
+     "why": "grammar: %@ is a speed (500 từ mỗi phút), so tại (at a place) cannot read; ở tốc độ, as the status row says"
+    },
+    {
+     "key": "Transcribe it first, with Transcribe Audio.",
+     "id": "bookTextEdit.noText.transcribe",
+     "english": "Transcribe it first, with Transcribe Audio.",
+     "before": "Hãy chép lời trước, bằng Chép lời âm thanh.",
+     "after": "Hãy chép lời trước, bằng lệnh Chép lời âm thanh.",
+     "why": "natural: bằng Chép lời âm thanh ran the instrument into the command’s name; lệnh separates them, as part 2 did"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "id": "bookManifestEdit.explanation.quotation",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "Hãy gõ dấu nháy thẳng: trong TextEdit, tắt Trích dẫn thông minh trong Chỉnh sửa, Thay thế.",
+     "after": "Hãy gõ dấu nháy thẳng: trong TextEdit, tắt Trích dẫn thông minh trong menu Sửa, Phương án thay thế.",
+     "why": "term: Apple’s Vietnamese Edit menu is Sửa and its submenu Phương án thay thế (MainMenu); menu marks Sửa as the menu"
+    },
+    {
+     "key": "User",
+     "id": "keyBinding.localizedKeyWords.user",
+     "english": "User",
+     "before": "User",
+     "after": "Người dùng",
+     "why": "term: AppKit’s Vietnamese key names (FunctionKeyNames) call this key Người dùng; only abbreviations and keys printed on Mac keyboards stay English"
+    },
+    {
+     "key": "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning.",
+     "id": "endOfBook.playOnAFinishedBookCaption",
+     "english": "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning.",
+     "before": "Với “%1$@”, Phát trên một sách đã đọc xong sẽ báo là đã xong; với “%2$@”, Phát bắt đầu lại từ đầu.",
+     "after": "Nếu chọn “%1$@”, khi nhấn nút Phát trên một sách đã đọc xong, TextMouth sẽ báo là sách đã xong; nếu chọn “%2$@”, nút Phát sẽ bắt đầu lại sách từ đầu.",
+     "why": "natural: Với before a choice’s name does not read and the bare Phát read as the command; Nếu chọn … and nút Phát, as part 1 wrote"
+    },
+    {
+     "key": "Your edited text was also kept as %@, in the book's package.",
+     "id": "bookTextEdit.kept.package",
+     "english": "Your edited text was also kept as %@, in the book's package.",
+     "before": "Văn bản đã sửa của bạn cũng được giữ là %@, trong gói của sách.",
+     "after": "Văn bản đã sửa của bạn cũng được giữ lại dưới tên %@, trong gói của sách.",
+     "why": "natural: được giữ là (kept is) before a file name does not read; a file is kept dưới tên, as part 2 wrote dưới tên Tệp gốc"
+    },
+    {
+     "key": "Your library is empty. Add to Library adds a book.",
+     "id": "phoneApp.emptyLibrary",
+     "english": "Your library is empty. Add to Library adds a book.",
+     "before": "Thư viện của bạn trống. Thêm vào thư viện sẽ thêm một sách.",
+     "after": "Thư viện của bạn trống. Nút Thêm vào thư viện sẽ thêm một sách.",
+     "why": "grammar: a bare command name as a subject reads as an imperative; Nút names the button, as parts 1 and 2 did"
+    },
+    {
+     "key": "at %@ of %@ at %@",
+     "id": "readerTime.copiedPlace.words",
+     "english": "at %1$@ of %2$@ at %3$@",
+     "before": "tại %1$@ trên tổng %2$@ ở %3$@",
+     "after": "tại %1$@ trên tổng %2$@ ở tốc độ %3$@",
+     "why": "grammar: %3$@ is a speed (500 từ mỗi phút), so a bare ở cannot carry it; ở tốc độ, as the status row says"
+    },
+    {
+     "key": "fading out",
+     "id": "sleepTimerService.spokenStatus",
+     "english": "fading out",
+     "before": "đang nhỏ dần âm thanh",
+     "after": "đang giảm dần âm lượng",
+     "why": "natural: nhỏ dần takes no object (đang nhỏ dần âm thanh); fading out is giảm dần âm lượng, as part 2 named Fade Out"
+    },
+    {
+     "key": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "id": "bookTextEdit.heldReason.nestedTooDeeply.opens",
+     "english": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "before": "nó %@, mà TextMouth không thể đọc an toàn. Hãy làm phẳng nó rồi lưu lại, hoặc hoàn tác thay đổi, và sách sẽ mở.",
+     "after": "nó %@, mà TextMouth không thể đọc an toàn. Hãy làm phẳng nó rồi lưu lại, hoặc hoàn tác thay đổi, để mở được sách.",
+     "why": "natural: Hãy …, và sách sẽ mở copied the English and-then-result; để says what the step brings, as part 2 dropped the same và"
+    },
+    {
+     "key": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "id": "bookTextEdit.heldReason.nestedTooDeeply.shows",
+     "english": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "before": "nó %@, mà TextMouth không thể đọc an toàn. Hãy làm phẳng nó rồi lưu lại, hoặc hoàn tác thay đổi, và văn bản sẽ hiện ra.",
+     "after": "nó %@, mà TextMouth không thể đọc an toàn. Hãy làm phẳng nó rồi lưu lại, hoặc hoàn tác thay đổi, để văn bản hiện ra.",
+     "why": "natural: Hãy …, và sách sẽ mở copied the English and-then-result; để says what the step brings, as part 2 dropped the same và"
+    },
+    {
+     "key": "it adds words to a chapter with no speech, where they can't be kept. Remove them and save again, and the text shows.",
+     "id": "bookTextEdit.heldReason.wordsWithoutSentences",
+     "english": "it adds words to a chapter with no speech, where they can't be kept. Remove them and save again, and the text shows.",
+     "before": "nó thêm từ vào một chương không có lời nói, nơi chúng không thể được giữ lại. Hãy gỡ chúng rồi lưu lại, và văn bản sẽ hiện ra.",
+     "after": "nó thêm từ vào một chương không có lời nói, nơi chúng không thể được giữ lại. Hãy gỡ chúng rồi lưu lại để văn bản hiện ra.",
+     "why": "natural: Hãy …, và sách sẽ mở copied the English and-then-result; để says what the step brings, as part 2 dropped the same và"
+    },
+    {
+     "key": "it changes a chapter's heading, which comes from the audio. Put it back and save again, and the text shows.",
+     "id": "bookTextEdit.heldReason.headingChanged",
+     "english": "it changes a chapter's heading, which comes from the audio. Put it back and save again, and the text shows.",
+     "before": "nó đổi đề mục của một chương, vốn lấy từ âm thanh. Hãy đặt lại như cũ rồi lưu lại, và văn bản sẽ hiện ra.",
+     "after": "nó đổi đề mục của một chương, vốn lấy từ âm thanh. Hãy đặt lại như cũ rồi lưu lại để văn bản hiện ra.",
+     "why": "natural: Hãy …, và sách sẽ mở copied the English and-then-result; để says what the step brings, as part 2 dropped the same và"
+    },
+    {
+     "key": "it has %@, where the audiobook has %@. Keep every line beginning with <!-- chapter: and save again, and the text shows.",
+     "id": "bookTextEdit.heldReason.chaptersChanged",
+     "english": "it has %1$@, where the audiobook has %2$@. Keep every line beginning with <!-- chapter: and save again, and the text shows.",
+     "before": "nó có %1$@, trong khi sách nói có %2$@. Hãy giữ mọi dòng bắt đầu bằng <!-- chapter: rồi lưu lại, và văn bản sẽ hiện ra.",
+     "after": "nó có %1$@, trong khi sách nói có %2$@. Hãy giữ mọi dòng bắt đầu bằng <!-- chapter: rồi lưu lại để văn bản hiện ra.",
+     "why": "natural: Hãy …, và sách sẽ mở copied the English and-then-result; để says what the step brings, as part 2 dropped the same và"
+    },
+    {
+     "key": "it has no chapter with any text. Undo the change and save again, and the book opens.",
+     "id": "bookTextEdit.heldReason.noChapters.opens",
+     "english": "it has no chapter with any text. Undo the change and save again, and the book opens.",
+     "before": "nó không có chương nào có văn bản. Hãy hoàn tác thay đổi rồi lưu lại, và sách sẽ mở.",
+     "after": "nó không có chương nào có văn bản. Hãy hoàn tác thay đổi rồi lưu lại để mở được sách.",
+     "why": "natural: Hãy …, và sách sẽ mở copied the English and-then-result; để says what the step brings, as part 2 dropped the same và"
+    },
+    {
+     "key": "it has no chapter with any text. Undo the change and save again, and the text shows.",
+     "id": "bookTextEdit.heldReason.noChapters.shows",
+     "english": "it has no chapter with any text. Undo the change and save again, and the text shows.",
+     "before": "nó không có chương nào có văn bản. Hãy hoàn tác thay đổi rồi lưu lại, và văn bản sẽ hiện ra.",
+     "after": "nó không có chương nào có văn bản. Hãy hoàn tác thay đổi rồi lưu lại để văn bản hiện ra.",
+     "why": "natural: Hãy …, và sách sẽ mở copied the English and-then-result; để says what the step brings, as part 2 dropped the same và"
+    },
+    {
+     "key": "it isn't UTF-8 text. Save it as UTF-8, and the book opens.",
+     "id": "bookTextEdit.heldReason.notText.opens",
+     "english": "it isn't UTF-8 text. Save it as UTF-8, and the book opens.",
+     "before": "nó không phải là văn bản UTF-8. Hãy lưu dưới dạng UTF-8, và sách sẽ mở.",
+     "after": "nó không phải là văn bản UTF-8. Hãy lưu dưới dạng UTF-8 để mở được sách.",
+     "why": "natural: Hãy …, và sách sẽ mở copied the English and-then-result; để says what the step brings, as part 2 dropped the same và"
+    },
+    {
+     "key": "it isn't UTF-8 text. Save it as UTF-8, and the text shows.",
+     "id": "bookTextEdit.heldReason.notText.shows",
+     "english": "it isn't UTF-8 text. Save it as UTF-8, and the text shows.",
+     "before": "nó không phải là văn bản UTF-8. Hãy lưu dưới dạng UTF-8, và văn bản sẽ hiện ra.",
+     "after": "nó không phải là văn bản UTF-8. Hãy lưu dưới dạng UTF-8 để văn bản hiện ra.",
+     "why": "natural: Hãy …, và sách sẽ mở copied the English and-then-result; để says what the step brings, as part 2 dropped the same và"
+    },
+    {
+     "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "id": "bookTextEdit.heldReason.nestedTooDeeply.chapter",
+     "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "before": "chương %1$@ của nó %2$@, mà TextMouth không thể đọc an toàn. Hãy làm phẳng nó rồi lưu lại, hoặc hoàn tác thay đổi, và sách sẽ mở.",
+     "after": "chương %1$@ của nó %2$@, mà TextMouth không thể đọc an toàn. Hãy làm phẳng nó rồi lưu lại, hoặc hoàn tác thay đổi, để mở được sách.",
+     "why": "natural: Hãy …, và sách sẽ mở copied the English and-then-result; để says what the step brings, as part 2 dropped the same và"
+    },
+    {
+     "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "id": "bookTextEdit.nestedTooDeeply.chapterShows",
+     "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "before": "chương %1$@ của nó %2$@, mà TextMouth không thể đọc an toàn. Hãy làm phẳng nó rồi lưu lại, hoặc hoàn tác thay đổi, và văn bản sẽ hiện ra.",
+     "after": "chương %1$@ của nó %2$@, mà TextMouth không thể đọc an toàn. Hãy làm phẳng nó rồi lưu lại, hoặc hoàn tác thay đổi, để văn bản hiện ra.",
+     "why": "natural: Hãy …, và sách sẽ mở copied the English and-then-result; để says what the step brings, as part 2 dropped the same và"
+    }
+   ]
+  },
+  {
+   "part": 4,
+   "areas": [
+    "the whole app: words carried across the three parts"
+   ],
+   "reviewer": "Claude Opus 5.5 and Claude Sonnet 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "id": "bookExport.settingHint",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "Thêm nút Xuất vào thanh công cụ của mỗi trình đọc. Tệp > Xuất vẫn dùng được trong cả hai trường hợp.",
+     "after": "Thêm nút Xuất vào thanh công cụ của mỗi trình đọc. Tệp, Xuất vẫn dùng được trong cả hai trường hợp.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "id": "feed.deletesSentence.goes",
+     "english": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "before": "Thao tác này xóa %@: mục này được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi làm trống Thùng rác.",
+     "after": "Thao tác này xóa %@: mục này được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi dọn sạch Thùng rác.",
+     "why": "term: Finder's own Empty Trash in Vietnamese is Dọn sạch Thùng rác (Finder's vi MenuBar.strings, macOS 26.3.1), as part 1 writes it"
+    },
+    {
+     "key": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "id": "feed.deletesSentence.them",
+     "english": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "before": "Thao tác này xóa %@: chúng được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi làm trống Thùng rác.",
+     "after": "Thao tác này xóa %@: chúng được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi dọn sạch Thùng rác.",
+     "why": "term: Finder's own Empty Trash in Vietnamese is Dọn sạch Thùng rác (Finder's vi MenuBar.strings, macOS 26.3.1), as part 1 writes it"
+    },
+    {
+     "key": "This file could not be read as a rich text document with attachments.",
+     "id": "textutilInputFormat.unreadableSentence.rtfd",
+     "english": "This file could not be read as a rich text document with attachments.",
+     "before": "Không đọc được tệp này dưới dạng tài liệu văn bản có định dạng kèm tệp đính kèm.",
+     "after": "Không đọc được tệp này dưới dạng tài liệu văn bản đa dạng thức có tệp đính kèm.",
+     "why": "term: TextEdit's own Vietnamese for rich text is văn bản đa dạng thức (TextEdit's tables, macOS 26.3.1), as part 3 writes it"
+    },
+    {
+     "key": "This file could not be read as a rich text document.",
+     "id": "textutilInputFormat.unreadableSentence.rtf",
+     "english": "This file could not be read as a rich text document.",
+     "before": "Không đọc được tệp này dưới dạng tài liệu văn bản có định dạng.",
+     "after": "Không đọc được tệp này dưới dạng tài liệu văn bản đa dạng thức.",
+     "why": "term: TextEdit's own Vietnamese for rich text is văn bản đa dạng thức (TextEdit's tables, macOS 26.3.1), as part 3 writes it"
+    },
+    {
+     "key": "You can recover it from the Trash until the Trash is emptied.",
+     "id": "originalFileDeletion.consequence.recover",
+     "english": "You can recover it from the Trash until the Trash is emptied.",
+     "before": "Bạn có thể khôi phục nó từ Thùng rác cho đến khi làm trống Thùng rác.",
+     "after": "Bạn có thể khôi phục nó từ Thùng rác cho đến khi dọn sạch Thùng rác.",
+     "why": "term: Finder's own Empty Trash in Vietnamese is Dọn sạch Thùng rác (Finder's vi MenuBar.strings, macOS 26.3.1), as part 1 writes it"
+    }
+   ]
+  }
+ ]
+}

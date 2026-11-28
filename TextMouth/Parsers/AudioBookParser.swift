@@ -31,7 +31,7 @@ enum AudioBookParser {
     /// Respect an explicit order without repeating a file when a manifest lists
     /// it twice; append unlisted files in Finder-style numeric order.
     static func orderedFileNames(_ names: [String], manifestOrder: [String]? = nil) -> [String] {
-        let alphabetical = names.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        let alphabetical = names.sortedStably { $0.localizedStandardCompare($1) == .orderedAscending }
         guard let manifestOrder, !manifestOrder.isEmpty else { return alphabetical }
         let available = Set(names)
         var seen = Set<String>()
@@ -92,17 +92,47 @@ enum AudioBookParser {
 
     /// Find the same playable candidates during import and reader loading.
     /// ZIPs commonly contain a wrapper folder; AppleDouble sidecars and symbolic
-    /// links are not chapters, even when their names have an audio extension.
+    /// links inside the folder are not chapters, even when their names have an
+    /// audio extension. The folder itself may be a symbolic link: whoever named
+    /// it chose to read what it leads to, so it is read as that folder
+    /// (`resolvingALinkedFolder(_:)`), while the links inside it stay unfollowed.
     /// - Parameter scan: which formats are tracks (`TrackScan`). Every app
     ///   caller passes it, so each says whether it runs before the import's
     ///   conversion or on a package; the default, the import's list, is what
     ///   this function always did, and is only what older callers (and
     ///   tests) that name no scan rely on.
     static func audioFiles(in directory: URL, scan: TrackScan = .importing) throws -> [URL] {
-        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isDirectoryKey, .isSymbolicLinkKey]
+        let extensions = Set(BookFormat.audio.fileExtensions)
+        let packageExtensions = BookFormat.packageTrackExtensions
+        return try regularFiles(in: directory) { file in
+            let fileExtension = file.pathExtension.lowercased()
+            switch scan {
+            case .importing:
+                return extensions.contains(fileExtension)
+            case .package:
+                // A format played as it is; or a CAF of TextMouth's own,
+                // known by its place, so its path is worked out for a CAF only.
+                return packageExtensions.contains(fileExtension)
+                    || (fileExtension == RecordingTakeFiles.fileExtension
+                        && isOwnCAF(atPath: relativeName(of: file, in: directory)))
+            }
+        }
+    }
+
+    /// The regular files in `directory`, at any depth, that `accepts` takes,
+    /// in Finder's order by their paths from it: the one walk that finds a
+    /// book's tracks (`audioFiles(in:scan:)`) and the cue sheets beside them
+    /// (`CueSheetArrangement`), so both pass over the same things. Hidden
+    /// files, Finder's `__MACOSX` folder, and symbolic links inside the
+    /// folder are passed over; the folder itself may be a link, which is read
+    /// as the folder it leads to (`resolvingALinkedFolder(_:)`).
+    /// - Throws: `AudioParseError.noAudioFiles` when the folder cannot be
+    ///   walked at all, or the error the walk met.
+    static func regularFiles(in directory: URL, accepting accepts: (URL) -> Bool) throws -> [URL] {
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .isDirectoryKey]
         var enumerationError: Error?
         guard let enumerator = FileManager.default.enumerator(
-            at: directory,
+            at: resolvingALinkedFolder(directory),
             includingPropertiesForKeys: Array(keys),
             options: [.skipsHiddenFiles],
             errorHandler: { _, error in
@@ -111,36 +141,33 @@ enum AudioBookParser {
             }
         ) else { throw AudioParseError.noAudioFiles }
 
-        let extensions = Set(BookFormat.audio.fileExtensions)
-        let packageExtensions = BookFormat.packageTrackExtensions
         var files: [URL] = []
         for case let file as URL in enumerator {
             let values = try file.resourceValues(forKeys: keys)
-            if file.lastPathComponent == "__MACOSX" || values.isSymbolicLink == true {
-                enumerator.skipDescendants()
-                continue
-            }
+            // A link is neither a regular file nor entered as a folder, so
+            // the guard below passes it over. The skip is for Finder's
+            // metadata folder alone (`skipFinderMetadataFolder`).
+            if enumerator.skipFinderMetadataFolder(file, isDirectory: values.isDirectory) { continue }
             guard values.isRegularFile == true else { continue }
-            let fileExtension = file.pathExtension.lowercased()
-            switch scan {
-            case .importing:
-                if extensions.contains(fileExtension) { files.append(file) }
-            case .package:
-                // A format played as it is; or a CAF of TextMouth's own,
-                // known by its place, so its path is worked out for a CAF only.
-                if packageExtensions.contains(fileExtension)
-                    || (fileExtension == RecordingTakeFiles.fileExtension
-                        && isOwnCAF(atPath: relativeName(of: file, in: directory))) {
-                    files.append(file)
-                }
-            }
+            if accepts(file) { files.append(file) }
         }
         if let enumerationError { throw enumerationError }
-        return files.sorted {
+        return files.sortedStably {
             relativeName(of: $0, in: directory).localizedStandardCompare(
                 relativeName(of: $1, in: directory)
             ) == .orderedAscending
         }
+    }
+
+    /// `directory` as the folder to walk: the folder a symbolic link leads to
+    /// when `directory` is itself a link, since the file manager's enumerator
+    /// refuses a link ("couldn't be opened", as if the folder were damaged),
+    /// and `directory` as it is otherwise, its spelling kept (a path through
+    /// /var stays one). A link that leads nowhere is returned as it is, and
+    /// the enumerator reports it.
+    static func resolvingALinkedFolder(_ directory: URL) -> URL {
+        let isLink = (try? directory.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true
+        return isLink ? directory.resolvingSymlinksInPath() : directory
     }
 
     /// The path from `directory` of each track `audioFiles(in:scan:)` finds
@@ -158,12 +185,65 @@ enum AudioBookParser {
         return String(file.resolvingSymlinksInPath().path.dropFirst(basePath.count + 1))
     }
 
-    /// Parse a single audio file. Extracts chapters from M4B metadata if available.
-    /// - Parameter prober: checks that the file plays and measures it; the
-    ///   app's AVFoundation probe unless a test stands in for it.
+    /// Where the chapters of a book of one audio file came from
+    /// (`parseFile(url:prober:fallbackChapters:)`).
+    enum ChapterSource: Equatable, Sendable {
+        /// The file's own chapter markers, which always win.
+        case file
+        /// A podcast episode's chapters kept beside the file (FMT25), taken
+        /// because the file has none of its own.
+        case podcastChapters
+        /// None: the book is one chapter, the whole file. Any podcast's
+        /// chapters given for it begin past its end.
+        case wholeFile
+    }
+
+    /// Parse a single audio file. Extracts chapters from M4B metadata if
+    /// available, or takes a podcast's chapters kept beside it
+    /// (`parseFile(url:prober:fallbackChapters:)`).
+    /// - Parameters:
+    ///   - prober: checks that the file plays and measures it; the app's
+    ///     AVFoundation probe unless a test stands in for it.
+    ///   - fallbackChapters: a podcast episode's chapters, kept beside its
+    ///     audio (FMT25), for a file without chapters of its own.
     /// - Throws: `AudioParseError.unplayableFile` naming the file when it
     ///   cannot be played (see `AudioMediaProbe`).
-    static func parse(url: URL, prober: AudioMediaProber = .avFoundation) async throws -> DocumentContent {
+    static func parse(
+        url: URL,
+        prober: AudioMediaProber = .avFoundation,
+        fallbackChapters: PodcastChapters? = nil
+    ) async throws -> DocumentContent {
+        try await parseFile(url: url, prober: prober, fallbackChapters: fallbackChapters).content
+    }
+
+    /// The title a book of the one audio file at `url` takes: the title its
+    /// tags give (`metadataTitle`), or its file's name without the
+    /// extension. A list of places read from the file by hand titles the
+    /// sound before its first place the same way
+    /// (`FileChapterReaders.placedChapters`).
+    static func bookTitle(metadataTitle: String?, of url: URL) -> String {
+        metadataTitle ?? url.deletingPathExtension().lastPathComponent
+    }
+
+    /// Parse a single audio file, saying where its chapters came from.
+    /// Extracts chapters from M4B metadata if available. A file without
+    /// any takes `fallbackChapters`, a podcast episode's chapters kept
+    /// beside it (FMT25), when they fit it
+    /// (`PodcastChapters.bookChapters(fileDuration:)`): each is a chapter
+    /// with one heading, as each of the file's own is. The file's own
+    /// chapters always win.
+    /// - Parameters:
+    ///   - prober: checks that the file plays and measures it; the app's
+    ///     AVFoundation probe unless a test stands in for it.
+    ///   - fallbackChapters: a podcast episode's chapters, kept beside its
+    ///     audio, for a file without chapters of its own; nil for none.
+    /// - Throws: `AudioParseError.unplayableFile` naming the file when it
+    ///   cannot be played (see `AudioMediaProbe`).
+    static func parseFile(
+        url: URL,
+        prober: AudioMediaProber = .avFoundation,
+        fallbackChapters: PodcastChapters? = nil
+    ) async throws -> (content: DocumentContent, chapterSource: ChapterSource) {
         // One file in, one duration out.
         let totalSeconds = try await playableDurations(
             of: [(name: url.lastPathComponent, url: url)],
@@ -172,11 +252,11 @@ enum AudioBookParser {
 
         // Try to extract metadata
         let metadata = await AudioPlaybackService.extractMetadata(from: url)
-        let title = metadata.title ?? url.deletingPathExtension().lastPathComponent
+        let title = bookTitle(metadataTitle: metadata.title, of: url)
         let author = metadata.artist ?? Book.unknownAuthor
 
-        // Try to extract chapter markers
-        let chapters = await AudioPlaybackService.extractChapters(from: url)
+        // Try to extract chapter markers, or take a podcast's chapters
+        let (chapters, source) = await markers(of: url, lasting: totalSeconds, fallback: fallbackChapters)
 
         if chapters.isEmpty {
             // Single chapter for the whole file
@@ -189,9 +269,9 @@ enum AudioBookParser {
                 text: placeholderText,
                 headings: [Heading(level: 1, text: title, chapterIndex: 0, characterOffset: 0)]
             )
-            return DocumentContent(title: title, author: author, chapters: [chapter])
+            return (DocumentContent(title: title, author: author, chapters: [chapter]), source)
         } else {
-            // Multiple chapters from metadata
+            // Multiple chapters, from metadata or from a podcast's chapters
             var parsedChapters: [Chapter] = []
             for (index, ch) in chapters.enumerated() {
                 let chDuration = ch.duration > 0 ? ch.duration : 1
@@ -205,8 +285,26 @@ enum AudioBookParser {
                     headings: [heading]
                 ))
             }
-            return DocumentContent(title: title, author: author, chapters: parsedChapters)
+            return (DocumentContent(title: title, author: author, chapters: parsedChapters), source)
         }
+    }
+
+    /// The chapters of the one audio file at `url`, lasting `fileDuration`
+    /// seconds, and where they came from: the file's own chapter markers,
+    /// which always win; without any, those of `fallback`, a podcast's
+    /// chapters, that fit the file (`PodcastChapters.bookChapters(fileDuration:)`);
+    /// and none when neither gives any.
+    private static func markers(
+        of url: URL,
+        lasting fileDuration: TimeInterval,
+        fallback: PodcastChapters?
+    ) async -> (chapters: [(title: String, startTime: TimeInterval, duration: TimeInterval)], source: ChapterSource) {
+        let own = await AudioPlaybackService.extractChapters(from: url)
+        if !own.isEmpty {
+            return (own, .file)
+        }
+        let podcast = fallback?.bookChapters(fileDuration: fileDuration) ?? []
+        return (podcast, podcast.isEmpty ? .wholeFile : .podcastChapters)
     }
 
     /// Parse a directory of audio files as a multi-chapter audio book.
@@ -608,38 +706,102 @@ enum AudioParseError: LocalizedError, Equatable {
         earlierStart: TimeInterval
     )
 
+    /// Whether the error refuses a valid file for the form of its samples
+    /// (`AudioMediaProblem.unsupportedSamples`, B15), which no word of damage
+    /// may describe.
+    var refusesAValidFile: Bool {
+        if case .unplayableFile(_, .unsupportedSamples) = self { return true }
+        return false
+    }
+
     /// What a listener can do about a section that does not fit its file:
     /// the sentence that ends every such message.
-    static let mismatchAdvice = "The book's navigation does not match its audio; get a fresh copy and import it again."
+    static var mismatchAdvice: String {
+        // Translators: Last sentence of an import failure: a section of a segmented audiobook does not fit the audio file it names, so the book's navigation (its manifest or headings) does not match its audio.
+        InterfaceText.line("audioParseError.mismatchAdvice", "The book's navigation does not match its audio; get a fresh copy and import it again.")
+    }
 
     var errorDescription: String? {
         switch self {
-        case .invalidDuration: return "Could not determine audio duration."
-        case .noAudioFiles: return "No supported audio files found."
-        case .unsupportedFormat: return "Unsupported audio format."
-        case .invalidSegment: return "An audio section refers to a missing file or an invalid time range."
+        case .invalidDuration:
+            // Translators: Why an audio book could not be imported: the length of its audio could not be measured.
+            return InterfaceText.line("audioParseError.invalidDuration", "Could not determine audio duration.")
+        case .noAudioFiles:
+            // Translators: Why an audio book could not be imported: none of the files in it is an audio file TextMouth reads.
+            return InterfaceText.line("audioParseError.noAudioFiles", "No supported audio files found.")
+        case .unsupportedFormat:
+            // Translators: Why an audio file could not be imported: TextMouth does not read its audio format.
+            return InterfaceText.line("audioParseError.unsupportedFormat", "Unsupported audio format.")
+        case .invalidSegment:
+            // Translators: Why an audio book could not be imported: one of its sections names a file that is not there, or a start and end time that do not make a range.
+            return InterfaceText.line("audioParseError.invalidSegment", "An audio section refers to a missing file or an invalid time range.")
         case .unplayableFile(let file, let problem):
-            // Damage is described as it is for every other kind of book.
-            return PackageDamage.message(
-                file: file,
-                reason: problem.reason,
-                container: "this audiobook",
-                original: "the book"
-            )
+            // Damage is described as it is for every other kind of book; a valid file whose samples
+            // cannot be decoded is told its form instead (B15).
+            return problem.sentence(file: file, container: .audiobook)
         // Times are written as they are spoken ("1 hour, 3 minutes"), which
         // reads the same on screen, aloud, and in braille; "1:03:00" can be
         // heard as a time of day.
         case .sectionStartsPastEnd(let section, let file, let start, let fileDuration):
-            return "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into its file “\(file)”, "
-                + "which is only \(TimeFormatting.spoken(fileDuration)) long. \(Self.mismatchAdvice)"
+            return SentenceWording.joined([
+                // Translators: First sentence of why an audiobook could not be imported: a section starts after the end of its audio file. %1$@ is the section, such as "heading “Tide Tables”" or "untitled heading 3" (a masculine noun phrase in English, without its article); %2$@ is how far into the file it starts and %4$@ how long the file is, both spoken times; %3$@ is the file's name.
+                InterfaceText.line("audioParseError.sectionStartsPastEnd", "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into “\(file)”, which is only \(TimeFormatting.spoken(fileDuration)) long."),
+                Self.mismatchAdvice,
+            ])
         case .sectionEndsPastEnd(let section, let file, let end, let fileDuration):
-            return "The \(section.phrase) ends \(TimeFormatting.spoken(end)) into its file “\(file)”, "
-                + "which is only \(TimeFormatting.spoken(fileDuration)) long. \(Self.mismatchAdvice)"
+            return SentenceWording.joined([
+                // Translators: First sentence of why an audiobook could not be imported: a section ends after the end of its audio file. %1$@ is the section, such as "heading “Tide Tables”" or "untitled heading 3" (a masculine noun phrase in English, without its article); %2$@ is how far into the file it ends and %4$@ how long the file is, both spoken times; %3$@ is the file's name.
+                InterfaceText.line("audioParseError.sectionEndsPastEnd", "The \(section.phrase) ends \(TimeFormatting.spoken(end)) into “\(file)”, which is only \(TimeFormatting.spoken(fileDuration)) long."),
+                Self.mismatchAdvice,
+            ])
         case .sectionStartsBeforeEarlierSection(let section, let file, let start, let earlierSection, let earlierStart):
-            return "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into its file “\(file)”, "
-                + "before the \(earlierSection.phrase), which comes earlier in the book and starts "
-                + "\(TimeFormatting.spoken(earlierStart)) in. \(Self.mismatchAdvice)"
+            return SentenceWording.joined([
+                // Translators: First sentence of why an audiobook could not be imported: a section starts before another section that comes earlier in the book and is in the same audio file. %1$@ and %4$@ are sections, such as "heading “Tide Tables”" or "untitled heading 3" (masculine noun phrases in English, without their article); %2$@ and %5$@ are how far into the file each starts, spoken times; %3$@ is the file's name.
+                InterfaceText.line("audioParseError.startsBeforeEarlierSection", "The \(section.phrase) starts \(TimeFormatting.spoken(start)) into “\(file)”, before the earlier \(earlierSection.phrase), which starts \(TimeFormatting.spoken(earlierStart)) in."),
+                Self.mismatchAdvice,
+            ])
         }
+    }
+}
+
+extension AudioParseError: LogDescribing {
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34). Times are spoken in English
+    /// ("1 hour, 3 minutes") and sections named by their English phrase.
+    var logDescription: String {
+        let advice = "The book's navigation does not match its audio; get a fresh copy and import it again." // l10n: no (debug log)
+        switch self {
+        case .invalidDuration: return "Could not determine audio duration." // l10n: no (debug log)
+        case .noAudioFiles: return "No supported audio files found." // l10n: no (debug log)
+        case .unsupportedFormat: return "Unsupported audio format." // l10n: no (debug log)
+        case .invalidSegment: return "An audio section refers to a missing file or an invalid time range." // l10n: no (debug log)
+        case .unplayableFile(let file, let problem):
+            return problem.logSentence(file: file, container: .audiobook)
+        case .sectionStartsPastEnd(let section, let file, let start, let fileDuration):
+            return "The \(section.logPhrase) starts \(Self.logSpoken(start)) into “\(file)”, " // l10n: no (debug log)
+                + "which is only \(Self.logSpoken(fileDuration)) long. \(advice)" // l10n: no (debug log)
+        case .sectionEndsPastEnd(let section, let file, let end, let fileDuration):
+            return "The \(section.logPhrase) ends \(Self.logSpoken(end)) into “\(file)”, " // l10n: no (debug log)
+                + "which is only \(Self.logSpoken(fileDuration)) long. \(advice)" // l10n: no (debug log)
+        case .sectionStartsBeforeEarlierSection(let section, let file, let start, let earlierSection, let earlierStart):
+            return "The \(section.logPhrase) starts \(Self.logSpoken(start)) into “\(file)”, " // l10n: no (debug log)
+                + "before the earlier \(earlierSection.logPhrase), which starts " // l10n: no (debug log)
+                + "\(Self.logSpoken(earlierStart)) in. \(advice)" // l10n: no (debug log)
+        }
+    }
+
+    /// `seconds` spoken in English for the debug log, as `TimeFormatting.spoken`
+    /// says it in English ("1 hour, 3 minutes, 45 seconds"), whatever language
+    /// the interface speaks.
+    private static func logSpoken(_ seconds: TimeInterval) -> String {
+        guard seconds.isFinite, let total = Int(exactly: max(seconds, 0).rounded(.towardZero)) else {
+            return "an unknown time" // l10n: no (debug log)
+        }
+        // Each unit with its count; zero units are left out, except a lone "0 seconds".
+        let units = [(total / 3600, "hour"), ((total % 3600) / 60, "minute"), (total % 60, "second")] // l10n: no (debug log)
+        var parts = units.filter { $0.0 > 0 }.map { "\($0.0) \($0.1)\($0.0 == 1 ? "" : "s")" } // l10n: no (debug log)
+        if parts.isEmpty { parts = ["0 seconds"] } // l10n: no (debug log)
+        return parts.joined(separator: ", ") // l10n: no (debug log)
     }
 }
 
@@ -657,8 +819,22 @@ struct AudioSectionName: Equatable, Sendable {
     /// `untitled heading 3` for a blank title. A title's line breaks become
     /// spaces, so the message stays one line.
     var phrase: String {
-        let oneLine = title.components(separatedBy: .newlines).joined(separator: " ")
+        guard !oneLineTitle.isEmpty else {
+            // Translators: How an error names a section of an audiobook whose heading has no title, in a sentence such as "The untitled heading 3 starts …". %@ is the heading's place among the book's headings, from 1, an identifier written without digit grouping. A masculine noun phrase in English, without its article, starting with a lowercase letter.
+            return InterfaceText.line("audioSectionName.phrase.untitled", "untitled heading \(String(number))")
+        }
+        // Translators: How an error names a section of an audiobook by its heading's title, in a sentence such as "The heading “Tide Tables” starts …". %@ is the title. A masculine noun phrase in English, without its article, starting with a lowercase letter.
+        return InterfaceText.line("audioSectionName.phrase.heading", "heading “\(oneLineTitle)”")
+    }
+
+    /// `phrase` in English for the debug log (FR34).
+    var logPhrase: String {
+        oneLineTitle.isEmpty ? "untitled heading \(number)" : "heading “\(oneLineTitle)”" // l10n: no (debug log)
+    }
+
+    /// The title with its line breaks made spaces and its ends trimmed.
+    private var oneLineTitle: String {
+        title.components(separatedBy: .newlines).joined(separator: " ")
             .trimmingCharacters(in: .whitespaces)
-        return oneLine.isEmpty ? "untitled heading \(number)" : "heading “\(oneLine)”"
     }
 }

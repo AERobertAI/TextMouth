@@ -20,6 +20,10 @@ enum OggHeaderReader {
     /// carry is empty.
     struct Tags: Equatable, Sendable {
         var title = "", artist = "", album = "", genre = "", date = ""
+        /// The chapters its CHAPTERnnn comments list (FMT17), in their
+        /// numbers' order, each with its CHAPTERnnnNAME (empty when it has
+        /// none); see `chapters(in:)`.
+        var chapters: [NeroChapterReader.Chapter] = []
     }
 
     /// What the reader learns of a file.
@@ -718,6 +722,66 @@ enum OggHeaderReader {
         // The artist is ARTIST, else PERFORMER.
         let artist = values["ARTIST"].flatMap { $0.isEmpty ? nil : $0 } ?? values["PERFORMER"] ?? ""
         return Tags(title: values["TITLE"] ?? "", artist: artist, album: values["ALBUM"] ?? "",
-                    genre: values["GENRE"] ?? "", date: values["DATE"] ?? "")
+                    genre: values["GENRE"] ?? "", date: values["DATE"] ?? "", chapters: chapters(in: values))
+    }
+
+    // MARK: - Chapters (FMT17)
+
+    /// The chapters that `values`, a comment packet's comments by their
+    /// names in capitals, list by the Vorbis comment chapter extension
+    /// (xiph.org's Chapter Extension, as its 2012 revision on vorbis-dev
+    /// settled it): `CHAPTER001=00:00:00.000` gives a chapter's start and
+    /// `CHAPTER001NAME=Prologue` its title, with no end. A number of any
+    /// count of digits is read, a start and a name being paired by the
+    /// number's value; a start that is no time leaves its chapter out, and
+    /// a name without a start names nothing. In the numbers' order; empty
+    /// for a stream with no chapter comments.
+    static func chapters(in values: [String: String]) -> [NeroChapterReader.Chapter] {
+        var starts: [Int: TimeInterval] = [:]
+        var names: [Int: String] = [:]
+        let prefix = "CHAPTER"
+        for (name, value) in values where name.hasPrefix(prefix) {
+            var rest = name.dropFirst(prefix.count)
+            let isName = rest.hasSuffix("NAME")
+            if isName { rest = rest.dropLast(4) }
+            // Digits alone, and few enough to be a number.
+            guard !rest.isEmpty, rest.count <= 9, rest.utf8.allSatisfy({ (48...57).contains($0) }),
+                  let number = Int(rest) else { continue }
+            if isName {
+                names[number] = value
+            } else if let start = chapterStart(value) {
+                starts[number] = start
+            }
+        }
+        return starts.keys.sorted().compactMap { number in
+            starts[number].map { NeroChapterReader.Chapter(title: names[number] ?? "", start: $0) }
+        }
+    }
+
+    /// The seconds a chapter comment's time gives: `HH:MM:SS.mmm`, the hours
+    /// in any count of digits, or `MM:SS.mmm`, the fraction of any length or
+    /// none; minutes and seconds below 60. Nil for anything else.
+    static func chapterStart(_ text: String) -> TimeInterval? {
+        let parts = text.trimmingCharacters(in: .whitespaces).split(separator: ":", omittingEmptySubsequences: false)
+        guard (2...3).contains(parts.count), let last = parts.last else { return nil }
+        /// A whole number of ASCII digits, at most `width` of them.
+        func whole(_ part: Substring, width: Int) -> Int? {
+            guard !part.isEmpty, part.count <= width, part.utf8.allSatisfy({ (48...57).contains($0) }) else { return nil }
+            return Int(part)
+        }
+        let secondsParts = last.split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
+        guard let seconds = whole(secondsParts[0], width: 2), seconds < 60 else { return nil }
+        var fraction: TimeInterval = 0
+        if secondsParts.count == 2 {
+            // Every digit is checked; the first nine are enough for a time.
+            let digits = secondsParts[1]
+            guard !digits.isEmpty, digits.utf8.allSatisfy({ (48...57).contains($0) }) else { return nil }
+            let kept = digits.prefix(9)
+            fraction = Double(Int(kept) ?? 0) / pow(10, Double(kept.count))
+        }
+        guard let minutes = whole(parts[parts.count - 2], width: 2), minutes < 60 else { return nil }
+        let hours = parts.count == 3 ? whole(parts[0], width: 6) : 0
+        guard let hours else { return nil }
+        return Double(hours * 3_600 + minutes * 60 + seconds) + fraction
     }
 }

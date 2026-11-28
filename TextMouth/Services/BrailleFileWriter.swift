@@ -58,9 +58,13 @@ enum BrailleFileWriter {
         var character: Character?
 
         var errorDescription: String? {
-            let what = character.map { "writes \u{201C}\($0)\u{201D} as an eight-dot cell" }
-                ?? "writes an eight-dot cell, \(BrailleCells.dotsInWords(of: cell))"
-            return "The braille table \(what), and TextMouth writes BRF and PEF files in six-dot braille only."
+            // One whole sentence for each way the cell is named, not a sentence glued from parts.
+            if let character {
+                // Translators: Why braille could not be written to a BRF or PEF file: the braille table writes a character with an eight-dot cell. %@ is the print character. BRF and PEF are braille file formats.
+                return InterfaceText.line("eightDotCell.errorDescription.brailleTable", "The braille table writes \u{201C}\(String(character))\u{201D} as an eight-dot cell, but TextMouth's BRF and PEF files are six-dot only.")
+            }
+            // Translators: Why braille could not be written to a BRF or PEF file: the braille table writes an eight-dot cell. %@ names the cell's dots, such as "dots 4 and 7". BRF and PEF are braille file formats.
+            return InterfaceText.line("eightDotCell.errorDescription.brailleTableWrites", "The braille table writes an eight-dot cell, \(BrailleCells.dotsInWords(of: cell)), but TextMouth's BRF and PEF files are six-dot only.")
         }
     }
 
@@ -168,7 +172,7 @@ enum BrailleFileWriter {
     static func pef(pages: [[String]], metadata: PEFMetadata, format: BraillePageFormat) throws -> Data {
         let format = format.clamped
         var lines = [
-            #"<?xml version="1.0" encoding="UTF-8"?>"#,
+            #"<?xml version="1.0" encoding="UTF-8"?>"#, // l10n: no (PEF file syntax)
             #"<pef version="2008-1" xmlns="http://www.daisy.org/ns/2008/pef">"#,
             "\t<head>",
             "\t\t<meta xmlns:dc=\"http://purl.org/dc/elements/1.1/\">",
@@ -187,7 +191,7 @@ enum BrailleFileWriter {
             "\t\t</meta>",
             "\t</head>",
             "\t<body>",
-            "\t\t<volume cols=\"\(format.cellsPerLine)\" rows=\"\(format.linesPerPage)\" rowgap=\"0\" duplex=\"false\">",
+            "\t\t<volume cols=\"\(format.cellsPerLine)\" rows=\"\(format.linesPerPage)\" rowgap=\"0\" duplex=\"false\">", // l10n: no (PEF file syntax)
             "\t\t\t<section>",
         ]
         for page in pages {

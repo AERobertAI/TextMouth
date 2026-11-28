@@ -1,0 +1,81 @@
+import Foundation
+
+// The whole of this file is compiled into debug builds only: each of its
+// uses (`TextMouthRuntime.detect`, the iPhone's scene delegate, and its Export
+// sheet) is inside `#if DEBUG`, so a release build holds neither the type nor its three variable
+// names, and no environment variable can steer it.
+#if DEBUG
+
+/// What a UI test, or a run in the iOS simulator, asks of the iPhone app at
+/// launch through the app's environment, in debug builds only: to run with a
+/// library of its own, to be sent a book as another app would send one, and to
+/// export into a folder without the system's picker.
+///
+/// A UI test drives the app from a process of its own, and XCTest names its
+/// configuration (`TextMouthRuntime.testConfigurationVariable`) only in a
+/// process that hosts a test bundle, which the app a UI test drives does not.
+/// So without asking, that app would use its real container's library, and
+/// each test would find what the last one left there. With
+/// `sandboxVariable`, `TextMouthRuntime` gives the launch what a hosted test
+/// has: an empty library and preferences in a sandbox of its own, feeds that
+/// never reach the network, and no joining of the system's media session.
+///
+/// With `openVariable`, the scene delegate hands the file to the life cycle
+/// as if another app had sent it at a cold launch, so the book comes in the
+/// way a person's would: held until the library starts, copied by the
+/// import's copier, imported, and opened. The file is never moved or deleted:
+/// the copier works from a copy, and the phone keeps every original
+/// (`PhoneDefaults`).
+///
+/// With `feedEpisodeVariable`, the app's feed sessions answer one stand-in feed, and its two episodes with the file
+/// named, instead of refusing every request (`PhoneUITestFeedStub`).
+///
+/// With `exportFolderVariable`, the Export sheet takes the folder named as the
+/// folder its files go to, so that a UI test exports without the system's
+/// folder picker, which no test can drive. The folder is used as it is: it
+/// is made when the first file is written, and nothing in it is read.
+///
+/// From a Mac's shell, `xcrun simctl launch` passes each variable with the
+/// prefix `SIMCTL_CHILD_`, as in `SIMCTL_CHILD_TEXTMOUTH_UI_TEST=1`.
+enum PhoneLaunchRequest {
+    /// Set to "1": the launch runs in a sandbox of its own, as a hosted test does.
+    static let sandboxVariable = "TEXTMOUTH_UI_TEST"
+    /// An absolute path: the file the launch is sent, as another app would send it.
+    static let openVariable = "TEXTMOUTH_OPEN_AT_LAUNCH"
+    /// An absolute path: the folder the Export sheet exports to, with no
+    /// folder picker.
+    static let exportFolderVariable = "TEXTMOUTH_EXPORT_TO"
+    /// An absolute path: the audio file the stand-in feed server serves as each of its episodes
+    /// (`PhoneUITestFeedStub`), so that a UI test subscribes, downloads, and plays without the network.
+    static let feedEpisodeVariable = "TEXTMOUTH_UI_FEED_EPISODE"
+
+    /// Whether `environment` asks for a sandbox: only the exact value "1", so
+    /// an empty or mistyped value leaves the app as it is.
+    static func runsInSandbox(_ environment: [String: String]) -> Bool {
+        environment[sandboxVariable] == "1"
+    }
+
+    /// The file `environment` sends, or none. Only an absolute path counts: a
+    /// relative one would be read against a working folder the launch doesn't
+    /// choose.
+    static func filesToOpen(_ environment: [String: String]) -> [URL] {
+        guard let path = environment[openVariable], path.hasPrefix("/") else { return [] }
+        return [URL(fileURLWithPath: path)]
+    }
+
+    /// The episode file `environment` names for the stand-in feed server, or none. Only an absolute path counts, as for
+    /// `filesToOpen(_:)`.
+    static func feedEpisodeFile(_ environment: [String: String]) -> URL? {
+        guard let path = environment[feedEpisodeVariable], path.hasPrefix("/") else { return nil }
+        return URL(fileURLWithPath: path)
+    }
+
+    /// The folder `environment` names for exports, or none. Only an absolute
+    /// path counts, as for `filesToOpen(_:)`.
+    static func exportFolder(_ environment: [String: String]) -> URL? {
+        guard let path = environment[exportFolderVariable], path.hasPrefix("/") else { return nil }
+        return URL(fileURLWithPath: path, isDirectory: true)
+    }
+}
+
+#endif

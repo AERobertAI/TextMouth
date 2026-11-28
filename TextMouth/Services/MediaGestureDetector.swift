@@ -55,13 +55,27 @@ final class MediaGestureDetector: Sendable {
         /// Display name for settings UI / VoiceOver descriptions.
         var displayName: String {
             switch self {
-            case .play: return "Play"
-            case .pause: return "Pause"
-            case .togglePlayPause: return "Play/Pause toggle"
-            case .previousTrack: return "Previous track"
-            case .nextTrack: return "Next track"
-            case .skipForward: return "Skip forward"
-            case .skipBackward: return "Skip backward"
+            case .play:
+                // Translators: Name of the Play media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.
+                return InterfaceText.line("common.play", "Play")
+            case .pause:
+                // Translators: Name of the Pause media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.
+                return InterfaceText.line("common.pauseEvent", "Pause")
+            case .togglePlayPause:
+                // Translators: Name of the media event of the combined Play and Pause key, a choice for one step of the media-key pattern in Settings.
+                return InterfaceText.line("eventType.displayName.togglePlayPause", "Play/Pause toggle")
+            case .previousTrack:
+                // Translators: Name of the Previous Track media event, a choice for one step of the media-key pattern in Settings.
+                return InterfaceText.line("eventType.displayName.previousTrack", "Previous track")
+            case .nextTrack:
+                // Translators: Name of the Next Track media event, a choice for one step of the media-key pattern in Settings.
+                return InterfaceText.line("eventType.displayName.nextTrack", "Next track")
+            case .skipForward:
+                // Translators: Name of the Skip Forward media event, a choice for one step of the media-key pattern in Settings.
+                return InterfaceText.line("eventType.displayName.skipForward", "Skip forward")
+            case .skipBackward:
+                // Translators: Name of the Skip Backward media event, a choice for one step of the media-key pattern in Settings.
+                return InterfaceText.line("eventType.displayName.skipBackward", "Skip backward")
             }
         }
     }

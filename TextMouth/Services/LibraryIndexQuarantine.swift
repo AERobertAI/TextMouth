@@ -48,7 +48,7 @@ enum LibraryIndexQuarantine {
         let names = (try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []
         return names
             .filter { $0.hasPrefix(prefix) }
-            .sorted()
+            .sortedStably()
             .map { directory.appendingPathComponent($0) }
     }
 

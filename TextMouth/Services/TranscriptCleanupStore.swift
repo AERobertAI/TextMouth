@@ -30,24 +30,32 @@ enum TranscriptCleanupError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .transcriptUnavailable:
-            return "The transcript can't be read now. If the book is only in the cloud, download it, then try again."
+            // Translators: Error shown when Clean Up Transcript cannot read the transcript.
+            return InterfaceText.line("transcriptCleanupError.transcriptUnavailable", "The transcript can't be read. If the book is only in the cloud, download it and try again.")
         case .transcriptChanged:
-            return "The transcript changed since this was shown. Open Clean Up Transcript again to see what would change now."
+            // Translators: Error shown when the transcript changed after the Clean Up Transcript sheet showed its changes. Clean Up Transcript is the command's name.
+            return InterfaceText.line("transcriptCleanupError.transcriptChanged", "The transcript changed since this was shown. Reopen Clean Up Transcript to see the changes.")
         case .nothingToChange:
-            return "The rules change nothing in this transcript."
+            // Translators: Error shown when Apply is pressed in the Clean Up Transcript sheet but no rule changes the transcript.
+            return InterfaceText.line("common.noRuleChangesThisTranscript", "No rule changes this transcript.")
         case .nothingToUndo:
-            return "There is no cleanup to undo: the transcript from before it is gone."
+            // Translators: Error shown when Undo Cleanup is pressed but the transcript from before the cleanup is gone.
+            return InterfaceText.line("transcriptCleanupError.nothingToUndo", "No cleanup to undo: the earlier transcript is gone.")
         case .previousInCloud:
-            return "The transcript from before the cleanup is only in the cloud. Download the book, then try again."
+            // Translators: Error shown when Undo Cleanup is pressed and the transcript from before the cleanup has not been downloaded from the cloud drive.
+            return InterfaceText.line("transcriptCleanupError.previousInCloud", "The pre-cleanup transcript is only in the cloud. Download the book and try again.")
         case .previousUnusable(let reason):
-            return "The transcript from before the cleanup can't be used: \(reason)."
+            // Translators: Error shown when Undo Cleanup is pressed and the transcript from before the cleanup is damaged. %@ is the reason, a technical phrase in English.
+            return InterfaceText.line("transcriptCleanupError.previousUnusable", "The transcript from before the cleanup can't be used: \(reason).")
         case .audioChanged(let reason):
-            return "The book's audio changed since it was transcribed (\(reason)), so its transcript no longer fits it. "
-                + "Transcribe it again."
+            // Translators: Error shown when the book's audio files changed since the transcription. %@ is the reason, a short phrase in English.
+            return InterfaceText.line("transcriptCleanupError.audioChanged", "The book's audio changed since it was transcribed (\(reason)), so the transcript no longer fits. Transcribe again.")
         case .busyTranscribing:
-            return "The book is being transcribed again. Clean up its transcript once that finishes."
+            // Translators: Error shown when a cleanup is tried while the book is being transcribed.
+            return InterfaceText.line("transcriptCleanupError.busyTranscribing", "The book is being transcribed again. Clean up its transcript once that finishes.")
         case .libraryUnavailable:
-            return "The library isn't available, so the rules can't be opened now."
+            // Translators: Error shown when Edit Rules is pressed while the library's data folder cannot be used.
+            return InterfaceText.line("transcriptCleanupError.libraryUnavailable", "The library isn't available, so the rules can't be opened now.")
         }
     }
 }

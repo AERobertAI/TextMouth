@@ -62,14 +62,14 @@ struct ReadingStatsView: View {
             Section {
                 tiles(ReadingStatsTile.listeningTime, showing: figures)
             } header: {
-                Text("Listening Time")
+                Text(ReadingStatsViewWording.listeningTimeHeader)
                     .accessibilityAddTraits(.isHeader)
             }
 
             Section {
                 tiles(ReadingStatsTile.progress, showing: figures)
             } header: {
-                Text("Progress")
+                Text(ReadingStatsViewWording.progressHeader)
                     .accessibilityAddTraits(.isHeader)
             }
 
@@ -86,10 +86,10 @@ struct ReadingStatsView: View {
                                 .foregroundColor(.secondary)
                         }
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("\(entry.title), finished \(entry.dateFinished, style: .date)")
+                        .accessibilityLabel(ReadingStatsViewWording.finishedRowLabel(title: entry.title, date: entry.dateFinished))
                     }
                 } header: {
-                    Text("Recently Finished")
+                    Text(ReadingStatsViewWording.recentlyFinishedHeader)
                         .accessibilityAddTraits(.isHeader)
                 }
             }
@@ -122,7 +122,7 @@ struct ReadingStatsView: View {
     /// Ticks every `refreshInterval` seconds on the main run loop, in its
     /// common modes so the pane keeps refreshing while a menu is open.
     private static func timerTicks() -> AnyPublisher<Void, Never> {
-        Timer.publish(every: refreshInterval, on: .main, in: .common)
+        Timer.publish(every: refreshInterval, tolerance: TimerCoalescing.tolerance(forInterval: refreshInterval), on: .main, in: .common)
             .autoconnect()
             .map { _ in () }
             .eraseToAnyPublisher()
@@ -153,5 +153,35 @@ struct ReadingStatsTileRow: View {
         }
         .accessibilityLabel(wording.accessibilityLabel)
         .accessibilityIdentifier(tile.accessibilityIdentifier)
+    }
+}
+
+/// The words of the Stats pane's headings and its Recently Finished rows
+/// (the tiles' own words are `ReadingStatsTile`'s).
+enum ReadingStatsViewWording {
+    /// The heading of the tiles of listening time.
+    static var listeningTimeHeader: String {
+        // Translators: Heading of the section of Settings, Stats that shows the listening time of today, this week, and all time.
+        InterfaceText.line("readingStatsView.listeningTimeHeader", "Listening Time")
+    }
+
+    /// The heading of the tiles of progress.
+    static var progressHeader: String {
+        // Translators: Heading of the section of Settings, Stats that shows the listening streak and the number of books finished.
+        InterfaceText.line("common.progress", "Progress")
+    }
+
+    /// The heading of the list of the books finished most recently.
+    static var recentlyFinishedHeader: String {
+        // Translators: Heading of the section of Settings, Stats that lists the books finished most recently, each with the date.
+        InterfaceText.line("readingStatsView.recentlyFinishedHeader", "Recently Finished")
+    }
+
+    /// What VoiceOver reads for a row of Recently Finished: "Moby Dick,
+    /// finished November 18, 2026".
+    static func finishedRowLabel(title: String, date: Date) -> String {
+        let when = date.interfaceFormatted(date: .long, time: .omitted)
+        // Translators: VoiceOver label of a row of Recently Finished in Settings, Stats. %1$@ is the book's title; %2$@ is the date it was finished, such as November 18, 2026.
+        return InterfaceText.line("readingStatsView.finishedRowLabel", "\(title), finished \(when)")
     }
 }

@@ -6,20 +6,49 @@ import SwiftUI
 /// October 6, 2026. The one difference: books without an author, which Same
 /// Author leaves out, are grouped by Same Title alone.
 enum DuplicateFilter: String, CaseIterable, Identifiable {
-    case md5Hash = "Identical File (MD5)"
-    case isbn = "Same ISBN"
-    case title = "Same Title"
-    case author = "Same Author"
+    // The raw values name a group's identity, so they never change with
+    // the interface language; `title` is what the checkboxes show and say.
+    case md5Hash = "Identical File (MD5)" // l10n: no (stored id: the raw value is the group's identity; `title` is shown)
+    case isbn = "Same ISBN" // l10n: no (stored id: the raw value is the group's identity; `title` is shown)
+    case title = "Same Title" // l10n: no (stored id: the raw value is the group's identity; `title` is shown)
+    case author = "Same Author" // l10n: no (stored id: the raw value is the group's identity; `title` is shown)
 
     var id: String { rawValue }
+
+    /// The criterion's name: its checkbox's title and label, in the
+    /// interface language.
+    var title: String {
+        switch self {
+        case .md5Hash:
+            // Translators: A match criterion of Find Duplicate Books: the files' contents are exactly the same. MD5 is the name of the checksum used to compare them.
+            return InterfaceText.line("duplicateFilter.title.md5Hash", "Identical File (MD5)")
+        case .isbn:
+            // Translators: A match criterion of Find Duplicate Books: the books have the same ISBN, the book's international number. ISBN stays as written.
+            return InterfaceText.line("duplicateFilter.title.isbn", "Same ISBN")
+        case .title:
+            // Translators: A match criterion of Find Duplicate Books: the books have the same title.
+            return InterfaceText.line("duplicateFilter.title.sameName", "Same Title")
+        case .author:
+            // Translators: A match criterion of Find Duplicate Books: the books have the same author.
+            return InterfaceText.line("duplicateFilter.title.author", "Same Author")
+        }
+    }
 
     /// Description shown in the UI
     var hint: String {
         switch self {
-        case .md5Hash: return "Exact file content match — the strongest indicator"
-        case .isbn: return "EPUB books with the same ISBN identifier"
-        case .title: return "Books with the same title, regardless of author"
-        case .author: return "All books by the same author"
+        case .md5Hash:
+            // Translators: Hint of the Identical File criterion of Find Duplicate Books.
+            return InterfaceText.line("duplicateFilter.hint.md5Hash", "Exact file content match — the strongest indicator")
+        case .isbn:
+            // Translators: Hint of the Same ISBN criterion of Find Duplicate Books. EPUB is a book format and ISBN is the book's international number; both stay as written.
+            return InterfaceText.line("duplicateFilter.hint.isbn", "EPUB books with the same ISBN identifier")
+        case .title:
+            // Translators: Hint of the Same Title criterion of Find Duplicate Books.
+            return InterfaceText.line("duplicateFilter.hint.title", "Books with the same title, regardless of author")
+        case .author:
+            // Translators: Hint of the Same Author criterion of Find Duplicate Books.
+            return InterfaceText.line("duplicateFilter.hint.author", "All books by the same author")
         }
     }
 }
@@ -35,7 +64,7 @@ struct DuplicateGroup: Identifiable {
     /// What matched, naming each criterion checked: "Same Title", or "Same
     /// Title and Same Author" for criteria checked together.
     var matchDescription: String {
-        ListFormatter.localizedString(byJoining: matchTypes.map(\.rawValue))
+        CountWording.list(matchTypes.map(\.title))
     }
 
     init(matchKey: String, matchTypes: [DuplicateFilter], books: [Book]) {
@@ -85,7 +114,7 @@ enum DuplicateFinderEngine {
                     books: matchingBooks
                 )
             }
-            .sorted { $0.matchKey.localizedCaseInsensitiveCompare($1.matchKey) == .orderedAscending }
+            .sortedStably { $0.matchKey.localizedCaseInsensitiveCompare($1.matchKey) == .orderedAscending }
     }
 
     private static func keyComponent(
@@ -127,20 +156,20 @@ enum DuplicateFinderEngine {
             case .md5Hash:
                 values.append(books.first?.title ?? component)
             case .isbn:
-                values.append("ISBN: \(component.uppercased())")
+                values.append(DuplicateFinderWording.isbnValue(component.uppercased()))
             case .title:
                 values.append(component.capitalized)
             case .author:
                 // The criteria keep their declared order, so a title, when
                 // checked, is the value appended just before the author.
                 if filters.contains(.title), let title = values.popLast() {
-                    values.append("\(title) by \(component.capitalized)")
+                    values.append(DuplicateFinderWording.titleByAuthor(title, author: component.capitalized))
                 } else {
                     values.append(component.capitalized)
                 }
             }
         }
-        return values.joined(separator: "; ")
+        return SentenceWording.semicolonJoined(values)
     }
 }
 
@@ -265,40 +294,64 @@ struct DuplicateGroupPages: Equatable {
 /// sheet shows as one row or line.
 enum DuplicateFinderWording {
     /// The folder named for a book at the library's top level.
-    static let libraryRoot = "Library Root"
+    static var libraryRoot: String {
+        // Translators: The folder name Find Duplicate Books gives a book at the top level of the library, in a duplicate's spoken label.
+        InterfaceText.line("common.libraryRoot", "Library Root")
+    }
+
+    /// A group's value for the ISBN criterion: "ISBN: 9780000000000".
+    static func isbnValue(_ isbn: String) -> String {
+        // Translators: The shared value of a group of duplicate books that match by ISBN, in the group's heading. %@ is the ISBN. ISBN stays as written.
+        InterfaceText.line("common.isbnValue", "ISBN: \(isbn)")
+    }
+
+    /// A group's value when title and author are matched together: "Atlas by
+    /// Dorothy Vance".
+    static func titleByAuthor(_ title: String, author: String) -> String {
+        // Translators: The shared title and author of a group of duplicate books that match by both, in the group's heading. %1$@ is the title and %2$@ is the author.
+        InterfaceText.line("common.valueByValue", "\(title) by \(author)")
+    }
+
 
     /// A duplicate's row, everything it shows in one label: "Atlas, by
     /// Dorothy Vance, EPUB, in Travel, added October 6, 2026". The date the
     /// book was added tells two copies apart, so it is spoken, not only
     /// shown.
     static func bookLabel(_ book: Book) -> String {
-        [
-            book.title,
-            "by \(book.author)",
-            book.format.displayName,
-            "in \(book.folderPath.isEmpty ? libraryRoot : book.folderPath)",
-            "added \(book.dateAdded.formatted(date: .long, time: .omitted))",
-        ].joined(separator: ", ")
+        // Translators: A duplicate book's row, spoken and shown as one label in Find Duplicate Books. %1$@ is the title, %2$@ the author, %3$@ the format, %4$@ the library folder it is in, and %5$@ the date it was added.
+        InterfaceText.line("duplicateFinder.bookLabel", "\(book.title), by \(book.author), \(book.format.displayName), in \(book.folderPath.isEmpty ? libraryRoot : book.folderPath), added \(book.dateAdded.interfaceFormatted(date: .long, time: .omitted))")
     }
 
     /// What the sheet shows when a scan finds nothing.
-    static let noDuplicates = "No duplicates found."
+    static var noDuplicates: String {
+        // Translators: What Find Duplicate Books shows when a scan finds nothing.
+        InterfaceText.line("duplicateFinder.noDuplicates", "No duplicates found.")
+    }
 
     /// The scan button's title.
-    static let scanTitle = "Scan for Duplicates"
+    static var scanTitle: String {
+        // Translators: Title of the button in Find Duplicate Books that scans the library for duplicates.
+        InterfaceText.line("duplicateFinder.scanTitle", "Scan for Duplicates")
+    }
 
     /// What the sheet shows before its first scan, naming the scan button
     /// by its title, which reads as what to do; it said "press Scan", a
     /// button with another name (TODO A10).
-    static let notScannedYet = "Check the criteria above, then \(scanTitle)."
+    static var notScannedYet: String {
+        // Translators: What Find Duplicate Books shows before its first scan. %@ is the title of the scan button.
+        InterfaceText.line("duplicateFinder.notScannedYet", "Check the criteria above, then \(scanTitle).")
+    }
 
     /// What a scan found, read from its results and spoken when the scan
     /// ends: "No duplicates found with the selected criteria", "1 duplicate
     /// group found", "3 duplicate groups found".
     static func scanResult(groupCount: Int) -> String {
-        groupCount == 0
-            ? "No duplicates found with the selected criteria"
-            : CountWording.phrase(groupCount, singular: "duplicate group found", plural: "duplicate groups found")
+        guard groupCount > 0 else {
+            // Translators: Spoken and read when a scan of Find Duplicate Books ends having found nothing.
+            return InterfaceText.line("duplicateFinder.scanResult.duplicates", "No duplicates found with the selected criteria")
+        }
+        // Translators: Spoken and read when a scan of Find Duplicate Books ends. %lld is the number of groups of duplicate books found.
+        return InterfaceText.line("duplicateFinder.scanResult.groups", "\(number: groupCount) duplicate groups found")
     }
 
     /// Says what a scan the user asked for found, as the removal's outcome
@@ -317,19 +370,78 @@ enum DuplicateFinderWording {
     /// "Showing groups 1 to 7 of 116", or, for a page holding one group,
     /// "Showing group 12 of 116". `range` is a page's group indices.
     static func pageLine(groups range: Range<Int>, of total: Int) -> String {
-        range.count == 1
-            ? "Showing group \(range.upperBound) of \(total)"
-            : "Showing groups \(range.lowerBound + 1) to \(range.upperBound) of \(total)"
+        if range.count == 1 {
+            // Translators: The line over a page of one group of duplicate books. %1$@ is the group's place and %2$@ is how many groups were found.
+            return InterfaceText.line("duplicateFinder.pageLine.group", "Showing group \(range.upperBound.interfaceFormatted()) of \(total.interfaceFormatted())")
+        }
+        // Translators: The line over a page of groups of duplicate books. %1$@ is the place of the first group shown, %2$@ is the place of the last, and %3$@ is how many groups were found.
+        return InterfaceText.line("duplicateFinder.pageLine.groups", "Showing groups \((range.lowerBound + 1).interfaceFormatted()) to \(range.upperBound.interfaceFormatted()) of \(total.interfaceFormatted())")
     }
 
     /// The title of the button turning to the page of groups before.
-    static let previousPageTitle = "Previous Groups"
+    static var previousPageTitle: String {
+        // Translators: Title of the button in Find Duplicate Books that shows the page of groups before the current one.
+        InterfaceText.line("duplicateFinder.previousPageTitle", "Previous Groups")
+    }
     /// What that button does.
-    static let previousPageHint = "Shows the groups before these."
+    static var previousPageHint: String {
+        // Translators: VoiceOver hint of the Previous Groups button of Find Duplicate Books.
+        InterfaceText.line("duplicateFinder.previousPageHint", "Shows the groups before these.")
+    }
     /// The title of the button turning to the page of groups after.
-    static let nextPageTitle = "Next Groups"
+    static var nextPageTitle: String {
+        // Translators: Title of the button in Find Duplicate Books that shows the page of groups after the current one.
+        InterfaceText.line("duplicateFinder.nextPageTitle", "Next Groups")
+    }
     /// What that button does.
-    static let nextPageHint = "Shows the groups after these."
+    static var nextPageHint: String {
+        // Translators: VoiceOver hint of the Next Groups button of Find Duplicate Books.
+        InterfaceText.line("duplicateFinder.nextPageHint", "Shows the groups after these.")
+    }
+
+    // MARK: The Sheet
+
+    /// The sheet's heading.
+    static var sheetTitle: String {
+        // Translators: Heading of the Find Duplicate Books sheet.
+        InterfaceText.line("duplicateFinder.sheetTitle", "Find Duplicate Books")
+    }
+
+    /// The sheet's navigation title.
+    static var navigationTitle: String {
+        // Translators: Navigation title of the Find Duplicate Books sheet.
+        InterfaceText.line("duplicateFinder.navigationTitle", "Find Duplicates")
+    }
+
+    /// The button that closes the sheet.
+    static var doneTitle: String {
+        // Translators: Title of the button that closes the Find Duplicate Books sheet.
+        InterfaceText.line("common.done", "Done")
+    }
+
+    /// The line over the match criteria's checkboxes.
+    static var criteriaHeading: String {
+        // Translators: The line over the checkboxes of Find Duplicate Books that choose how books are matched. Checked criteria must all match together.
+        InterfaceText.line("duplicateFinder.criteriaHeading", "Match criteria (checked filters are combined):")
+    }
+
+    /// The scan button's title while the ISBNs load.
+    static var loadingISBNsTitle: String {
+        // Translators: Title of the scan button in Find Duplicate Books while the books' ISBNs are being read first. ISBN stays as written.
+        InterfaceText.line("duplicateFinder.loadingISBNsTitle", "Loading ISBNs...")
+    }
+
+    /// The scan button's hint.
+    static var scanHint: String {
+        // Translators: VoiceOver hint of the Scan for Duplicates button of Find Duplicate Books.
+        InterfaceText.line("duplicateFinder.scanHint", "Searches the entire library for books matching the selected criteria")
+    }
+
+    /// The button of the removal's confirmation that keeps the books.
+    static var cancelTitle: String {
+        // Translators: Title of the button that cancels the removal of the duplicate books selected, in its confirmation.
+        InterfaceText.line("common.cancel", "Cancel")
+    }
 }
 
 /// The line saying which of a scan's groups the sheet shows, with the
@@ -401,11 +513,11 @@ struct DuplicateFinderView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Find Duplicate Books")
+                Text(DuplicateFinderWording.sheetTitle)
                     .font(.headline)
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
-                Button("Done") { dismiss() }
+                Button(DuplicateFinderWording.doneTitle) { dismiss() }
                     .keyboardShortcut(.escape, modifiers: [])
             }
             .padding()
@@ -414,30 +526,30 @@ struct DuplicateFinderView: View {
 
             // Filter checkboxes
             VStack(alignment: .leading, spacing: 8) {
-                Text("Match criteria (checked filters are combined):")
+                Text(DuplicateFinderWording.criteriaHeading)
                     .font(.callout)
                     .foregroundColor(.secondary)
 
                 ForEach(DuplicateFilter.allCases) { filter in
                     Toggle(isOn: binding(for: filter)) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(filter.rawValue)
+                            Text(filter.title)
                             Text(filter.hint)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                     }
-                    .toggleStyle(.checkbox)
-                    .accessibilityLabel(filter.rawValue)
+                    .checkboxToggleStyle()
+                    .accessibilityLabel(filter.title)
                     .accessibilityHint(filter.hint)
                 }
 
                 HStack {
-                    Button(isLoadingISBNs ? "Loading ISBNs..." : DuplicateFinderWording.scanTitle) {
+                    Button(isLoadingISBNs ? DuplicateFinderWording.loadingISBNsTitle : DuplicateFinderWording.scanTitle) {
                         performScan()
                     }
                     .disabled(activeFilters.isEmpty || isLoadingISBNs)
-                    .accessibilityHint("Searches the entire library for books matching the selected criteria")
+                    .accessibilityHint(DuplicateFinderWording.scanHint)
 
                     if hasScanned && !selectedBooks.isEmpty {
                         Spacer()
@@ -496,7 +608,7 @@ struct DuplicateFinderView: View {
             }
         }
         .frame(width: 600, height: 550)
-        .navigationTitle("Find Duplicates")
+        .navigationTitle(DuplicateFinderWording.navigationTitle)
         .trackingRemovalPreferences($removalPreferences)
         // The confirmation is presented from the sheet itself, so the
         // confirmation preference is honored here too.
@@ -508,7 +620,7 @@ struct DuplicateFinderView: View {
             Button(removal.wording.buttonTitle, role: .destructive) {
                 finishRemoval(of: removal.bookIDs)
             }
-            Button("Cancel", role: .cancel) {}
+            Button(DuplicateFinderWording.cancelTitle, role: .cancel) {}
         } message: { removal in
             Text(removal.wording.confirmationMessage)
         }
@@ -718,7 +830,7 @@ struct DuplicateGroupList: View {
                         Toggle(isOn: selectionBinding(for: book.id)) {
                             DuplicateBookLabel(book: book)
                         }
-                        .toggleStyle(.checkbox)
+                        .checkboxToggleStyle()
                         .padding(.horizontal)
                         .padding(.vertical, 6)
                         .background(selection.contains(book.id)

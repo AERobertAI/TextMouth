@@ -1,0 +1,5 @@
+# IDs that were once used and must never be given again, one per line (a retired ID is never reused for another string); blank lines and lines starting with # are skipped.
+phoneSync.otherDeviceName
+phoneSync.announce.stoppedKeeping
+encryptedArchive.namesMore
+phoneReader.sleepTimerAdjustHint

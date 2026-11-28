@@ -84,10 +84,10 @@ enum TranscriptTextLoader {
             return unchanged.withholding(transcriptInCloud ? .transcriptInCloud : .textInCloud)
         }
 
-        var rebuildReason = "the book's index holds no transcript text"
+        var rebuildReason = "the book's index holds no transcript text"  // l10n: no (a reason for the debug log and inside a translated sentence, English by question 3)
         if let layer = audioIndex.transcript {
             if let failure = layer.validationFailure(against: audioIndex) {
-                rebuildReason = "its index was set aside: \(failure)"
+                rebuildReason = "its index was set aside: \(failure)"  // l10n: no (a reason for the debug log and inside a translated sentence, English by question 3)
             } else {
                 switch audioCheck(of: layer.audioFiles, for: book, audioIndex: audioIndex, isDataless: isDataless, hasher: hasher) {
                 case .changed(let reason):
@@ -95,7 +95,7 @@ enum TranscriptTextLoader {
                     // another Mac transcribed the edited audio again: the
                     // rebuild checks the audio against it, and reports a
                     // transcript that is stale there too.
-                    rebuildReason = "its index describes other audio: \(reason)"
+                    rebuildReason = "its index describes other audio: \(reason)"  // l10n: no (a reason for the debug log and inside a translated sentence, English by question 3)
                 case .current(let audioFiles):
                     if let load = readSavedText(
                         of: book,
@@ -160,7 +160,7 @@ enum TranscriptTextLoader {
                 hasher: hasher
             )
         } catch {
-            rebuildReason = "content.md could not be read"
+            rebuildReason = "content.md could not be read"  // l10n: no (a reason for the debug log and inside a translated sentence, English by question 3)
             return nil
         }
         guard case .current(let fingerprint) = verification else {
@@ -188,12 +188,12 @@ enum TranscriptTextLoader {
         if chapters == nil {
             guard let data = try? cacheBytes(),
                   let markdown = try? MarkdownCacheService.cacheText(from: data, at: cacheURL) else {
-                rebuildReason = "content.md could not be read"
+                rebuildReason = "content.md could not be read"  // l10n: no (a reason for the debug log and inside a translated sentence, English by question 3)
                 return nil
             }
             let parsed = MarkdownCacheService.parseMultiChapterMarkdown(markdown, bookTitle: book.title, bookAuthor: book.author)
             if let reason = readingIndex.alignmentFailure(with: parsed.chapters, countingWords: false) {
-                rebuildReason = "content.md does not line up with its index: \(reason)"
+                rebuildReason = "content.md does not line up with its index: \(reason)"  // l10n: no (a reason for the debug log and inside a translated sentence, English by question 3)
                 return nil
             }
             chapters = parsed.chapters
@@ -417,21 +417,21 @@ enum TranscriptTextLoader {
     ) -> AudioCheck {
         let locations = TranscriptionPlan.audioFileLocations(of: book, index: audioIndex)
         guard Set(locations.map(\.path)) == Set(files.map(\.path)) else {
-            return .changed("the book's audio files are not the ones transcribed")
+            return .changed("the book's audio files are not the ones transcribed")  // l10n: no (a reason for the debug log and inside a translated sentence, English by question 3)
         }
         let urls = Dictionary(locations.map { ($0.path, $0.url) }) { first, _ in first }
         var checked: [TranscriptAudioFile] = []
         for file in files {
-            guard let url = urls[file.path] else { return .changed("\(file.path) is not in the book") }
+            guard let url = urls[file.path] else { return .changed("\(file.path) is not in the book") }  // l10n: no (a reason for the debug log and inside a translated sentence, English by question 3)
             var current = file
             switch file.fingerprint.comparison(with: FileStamp(of: url), isDataless: isDataless(url)) {
             case .same, .dataless:
                 break
             case .resized, .unexamined:
-                return .changed("\(file.path) changed since it was transcribed")
+                return .changed("\(file.path) changed since it was transcribed")  // l10n: no (a reason for the debug log and inside a translated sentence, English by question 3)
             case .redated(let stamp):
                 guard (try? hasher.digestOfFile(url)) == file.fingerprint.digest else {
-                    return .changed("\(file.path) changed since it was transcribed")
+                    return .changed("\(file.path) changed since it was transcribed")  // l10n: no (a reason for the debug log and inside a translated sentence, English by question 3)
                 }
                 current.fingerprint = FileFingerprint(stamp: stamp, digest: file.fingerprint.digest)
             }
@@ -513,8 +513,8 @@ enum TranscriptTextLoader {
         keepCopy: (URL, Data?) -> URL?
     ) -> Bool {
         let kept = keepCopy(url, bytes)
-        let detail = kept.map { "content.md kept as \($0.lastPathComponent) before its text was written again from transcript.json" }
-            ?? "content.md could not be kept before its text was written again from transcript.json"
+        let detail = kept.map { "content.md kept as \($0.lastPathComponent) before its text was written again from transcript.json" }  // l10n: no (written to the debug log)
+            ?? "content.md could not be kept before its text was written again from transcript.json"  // l10n: no (written to the debug log)
         logLine("TEXT_EDIT_KEPT", about: book, detail)
         return kept != nil
     }
@@ -587,11 +587,14 @@ enum TranscriptTextError: LocalizedError {
             // transcription begins.
             return TranscriptionWording.textInCloud
         case .textNotKept:
-            return "The book's text holds changes TextMouth couldn't keep a copy of, so it leaves the text as it is."
+            // Translators: Error shown when a transcript could not replace a book's text because the text's unsaved changes could not be copied first.
+            return InterfaceText.line("transcriptTextError.textNotKept", "The book's text has changes TextMouth couldn't copy, so it leaves the text as it is.")
         case .chaptersNotReadBack:
-            return "The transcript's text did not read back as one chapter for each of the book's chapters."
+            // Translators: Error shown when the text written from a transcript did not have one chapter for each chapter of the audiobook.
+            return InterfaceText.line("transcriptTextError.chaptersNotReadBack", "The transcript's text didn't read back as one chapter per chapter of the book.")
         case .notFingerprinted:
-            return "The transcript's files could not be examined once they were written."
+            // Translators: Error shown when TextMouth could not check the audio files after writing a transcript for them.
+            return InterfaceText.line("transcriptTextError.notFingerprinted", "The transcript's files could not be examined once they were written.")
         }
     }
 }

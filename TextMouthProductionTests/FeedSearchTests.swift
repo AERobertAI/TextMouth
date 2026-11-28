@@ -88,7 +88,7 @@ final class FeedSearchTests: XCTestCase {
         await model.search()?.value
         XCTAssertEqual(
             model.searchFailure,
-            "The podcast directory refused the search. It allows about 20 searches a minute, so wait a minute and try again."
+            "The podcast directory refused the search; it allows about 20 a minute. Wait a minute and try again."
         )
         XCTAssertEqual(heard.last, model.searchFailure)
 
@@ -106,7 +106,7 @@ final class FeedSearchTests: XCTestCase {
         await model.search()?.value
         XCTAssertEqual(
             model.searchFailure,
-            "This Mac is offline, so the podcast directory can't be searched. Connect to the internet and try again."
+            "This Mac is offline, so the directory can't be searched. Connect to the internet and try again."
         )
         XCTAssertEqual(world.server.requests(to: "/search").count, 3, "an offline search was sent")
         XCTAssertTrue(model.searchResults.isEmpty)

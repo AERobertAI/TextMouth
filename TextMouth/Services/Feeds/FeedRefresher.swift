@@ -17,13 +17,28 @@ enum FeedRefreshError: Error, Equatable, Sendable {
         case .fetch(let error):
             return error.message(about: name)
         case .parse(.empty):
-            return "The feed at \(host) is empty."
+            // Translators: Why a feed could not be refreshed or subscribed to: its document is empty. %@ is the feed's server, such as example.com.
+            return InterfaceText.line("feedRefreshError.message.parse.empty", "The feed at \(host) is empty.")
         case .parse(.tooLarge):
             return FeedFetchError.tooLarge(host: host).message(about: name)
         case .parse(.notAFeed):
-            return "The address of \(name) doesn't hold a feed TextMouth can read."
+            // Translators: Why a feed could not be refreshed or subscribed to: its address holds something that is not a feed, such as a web page. %@ is the feed's title or server.
+            return InterfaceText.line("feedRefreshError.message.parse.address", "The address of \(name) doesn't hold a feed TextMouth can read.")
         case let .parse(.damaged(problem, line, _)):
-            return "The feed is damaged at line \(line): \(problem)."
+            // Translators: Why a feed could not be refreshed or subscribed to: its markup is damaged. The first %@ is the line number of the fault, an identifier written without digit grouping. The second is a short technical reason in English, from the parser, kept English as detail for a bug report.
+            return InterfaceText.line("feedRefreshError.message.parse.damaged", "The feed is damaged at line \(String(line)): \(problem).")
+        }
+    }
+
+    /// The failure in English, for the debug log, which stays English
+    /// whatever the interface language is.
+    var logName: String {
+        switch self {
+        case .fetch(let error): return error.logName
+        case .parse(.empty): return "the feed is empty" // l10n: no (debug log text)
+        case .parse(.tooLarge): return "the feed is too large" // l10n: no (debug log text)
+        case .parse(.notAFeed): return "the address holds no feed" // l10n: no (debug log text)
+        case let .parse(.damaged(problem, line, _)): return "the feed is damaged at line \(line): \(problem)" // l10n: no (debug log text)
         }
     }
 
@@ -249,7 +264,7 @@ final class FeedRefresher {
                 startNext()
             }
         }
-        reports.sort { $0.feedTitle.localizedStandardCompare($1.feedTitle) == .orderedAscending }
+        reports.sortStably { $0.feedTitle.localizedStandardCompare($1.feedTitle) == .orderedAscending }
         return FeedRefreshSummary(origin: origin, reports: reports)
     }
 
@@ -307,7 +322,7 @@ final class FeedRefresher {
                     guard current.feed.feedURL != movedTo else { return }
                     DiagnosticLog.event(
                         .feeds,
-                        "FEED_MOVED: \(current.feed.title): from \(FeedHost.of(current.feed.feedURL)) to \(FeedHost.of(movedTo))"
+                        "FEED_MOVED: \(current.feed.title): from \(FeedHost.logName(current.feed.feedURL)) to \(FeedHost.logName(movedTo))"
                     )
                     current.feed.feedURL = movedTo
                 }
@@ -330,7 +345,7 @@ final class FeedRefresher {
                 if let moved {
                     DiagnosticLog.event(
                         .feeds,
-                        "FEED_MOVED: \(current.feed.title): from \(FeedHost.of(current.feed.feedURL)) to \(FeedHost.of(moved))"
+                        "FEED_MOVED: \(current.feed.title): from \(FeedHost.logName(current.feed.feedURL)) to \(FeedHost.logName(moved))"
                     )
                     current.feed.feedURL = moved
                 }
@@ -380,7 +395,7 @@ final class FeedRefresher {
                 state.lastError = FeedRefreshFailure(message: message, date: started)
                 state.isGone = error == .fetch(.gone)
             }
-            DiagnosticLog.event(.feeds, "FEED_REFRESH_FAILED: \(record.feed.title) (\(host)): \(message)")
+            DiagnosticLog.event(.feeds, "FEED_REFRESH_FAILED: \(record.feed.title) (\(host)): \(error.logName)")
             return report(.failed(message))
         }
     }

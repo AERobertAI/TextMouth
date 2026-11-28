@@ -173,6 +173,7 @@ final class LiveReadingPositionsTests: XCTestCase {
         defer { watcher.cancel() }
 
         model.unregisterOpenBook(books[0].id)
+        waitForMainQueueTurn() // the published set follows a turn after the registry (B22)
 
         XCTAssertNil(entry.position)
         XCTAssertEqual(publishes, 1)

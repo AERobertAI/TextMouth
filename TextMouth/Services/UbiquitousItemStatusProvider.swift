@@ -65,6 +65,10 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
         var isDownloading: Bool?
         /// Whether every local change of the item has uploaded.
         var isUploaded: Bool?
+        /// Whether the sync service is uploading the item now.
+        var isUploading: Bool?
+        /// The sync service's last upload error, in words.
+        var uploadError: String?
         /// Whether the sync service holds conflicting versions of the item.
         var hasUnresolvedConflicts: Bool?
         /// The sync service's last download error, in words.
@@ -95,6 +99,8 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
         .ubiquitousItemDownloadingStatusKey,
         .ubiquitousItemIsDownloadingKey,
         .ubiquitousItemIsUploadedKey,
+        .ubiquitousItemIsUploadingKey,
+        .ubiquitousItemUploadingErrorKey,
         .ubiquitousItemHasUnresolvedConflictsKey,
         .ubiquitousItemDownloadingErrorKey,
         .fileSizeKey,
@@ -143,6 +149,8 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
             downloadingStatus: values.ubiquitousItemDownloadingStatus,
             isDownloading: values.ubiquitousItemIsDownloading,
             isUploaded: values.ubiquitousItemIsUploaded,
+            isUploading: values.ubiquitousItemIsUploading,
+            uploadError: values.ubiquitousItemUploadingError?.localizedDescription,
             hasUnresolvedConflicts: values.ubiquitousItemHasUnresolvedConflicts,
             downloadError: values.ubiquitousItemDownloadingError?.localizedDescription,
             byteCount: values.fileSize.map(Int64.init),
@@ -158,6 +166,13 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
     /// another volume, or on the startup disk. A folder that does not exist
     /// yet is judged by its path and its nearest existing ancestor.
     func location(of folder: URL) -> StorageLocation {
+        location(of: folder, isPhone: ThisDevice.isPhone)
+    }
+
+    /// `location(of:)` for a Mac or an iPhone. An iPhone has no other volume a library could be kept on, and its app's own
+    /// container is on the data volume, not the startup volume the root names: comparing them would call the phone's own
+    /// library "on another volume", and refuse every Set Up and Join (R6, FR43).
+    func location(of folder: URL, isPhone: Bool) -> StorageLocation {
         DatalessFiles.withoutDownloading {
             let folder = folder.standardizedFileURL
             if let provider = Self.provider(forPath: folder) {
@@ -177,7 +192,7 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
             if metadata.isUbiquitousItem == true {
                 return .cloud(.iCloudDrive)
             }
-            if let volume = metadata.volumeURL, let startup = startupVolume(), !Self.isSameFolder(volume, startup) {
+            if !isPhone, let volume = metadata.volumeURL, let startup = startupVolume(), !Self.isSameFolder(volume, startup) {
                 return .otherVolume(name: metadata.volumeName ?? volume.lastPathComponent)
             }
             return .local
@@ -197,9 +212,9 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
         let components = url.standardizedFileURL.pathComponents
         // Each "Library" with a place's name after it and one more component
         // after that, the container or the drive's folder.
-        for index in components.indices.dropLast(2) where matches(components[index], "Library") {
+        for index in components.indices.dropLast(2) where matches(components[index], "Library") { // l10n: no (a path component)
             let place = components[index + 1]
-            if matches(place, "Mobile Documents") {
+            if matches(place, "Mobile Documents") { // l10n: no (a path component)
                 return .iCloudDrive
             }
             if matches(place, "CloudStorage") {
@@ -300,8 +315,13 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
     }
 
     /// The status `metadata` describes. An item no sync service manages is
-    /// local; a managed one is described by `state(from:)`. A missing upload
-    /// flag counts as uploaded and a missing conflict flag as no conflict.
+    /// local; a managed one is described by `state(from:)`. A missing
+    /// conflict flag counts as no conflict. A missing upload flag counts as
+    /// not uploaded (Phase 0 of the local-first design): the sync service
+    /// has said nothing to prove the cloud holds the file, which the status
+    /// records (`isUploadReported`), so Remove Download refuses it and says
+    /// so. A file whose content is only in the cloud is the one exception:
+    /// it is there by being uploaded, whatever flags it carries.
     /// A file inside a package iCloud Drive syncs as one item carries no
     /// flags at all, so the package's own flags speak for it: the book
     /// storage reads them (`carriesSyncFlags(_:)`, `flaggedStatus(of:)`).
@@ -311,12 +331,22 @@ struct UbiquitousItemStatusProvider: SyncFlagReporting {
         guard metadata.isUbiquitousItem == true || metadata.isDataless else {
             return .local(byteCount: metadata.byteCount)
         }
+        // Only the sync service knows whether the cloud holds the file: no
+        // answer is not an answer of yes, unless nothing is on this Mac.
+        let isReported = metadata.isUploaded != nil || metadata.isUploading != nil || metadata.isDataless
+        let hasUploaded = metadata.isUploaded ?? metadata.isDataless
         return CloudItemStatus(
             state: state(from: metadata),
-            isUploaded: metadata.isUploaded ?? true,
+            isUploaded: hasUploaded && metadata.isUploading != true,
             byteCount: metadata.byteCount,
             hasUnresolvedConflicts: metadata.hasUnresolvedConflicts ?? false,
-            downloadError: metadata.downloadError
+            downloadError: metadata.downloadError,
+            isUploadReported: isReported,
+            uploadError: metadata.uploadError,
+            // The service's own word that the copy here is its current
+            // version; any other status, or none, is not that word.
+            isCurrent: metadata.isDataless || metadata.downloadingStatus == .current,
+            isCurrentReported: metadata.isDataless || metadata.downloadingStatus != nil
         )
     }
 

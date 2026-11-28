@@ -55,6 +55,20 @@ extension BookCloudStates {
         showsCloudNotes ? state(of: bookID) : nil
     }
 
+    /// Whether Remove Download may be offered for `book`: in a cloud library, when every file is on this Mac
+    /// (the recorded state is Downloaded); in a synced library (FR46), when the book is whole on this device,
+    /// which no state records (a book not checked, or one whose files are all here). A feed's item is left out:
+    /// its feed holds its download, and Delete Download is its command. A book in the cloud, downloading, or
+    /// failed has nothing to remove.
+    func canRemoveDownload(_ book: Book) -> Bool {
+        if isCloudLibrary { return listedState(of: book.id)?.canRemoveDownload == true }
+        guard syncIsOn, book.feedLink == nil else { return false }
+        switch state(of: book.id) {
+        case nil, .local?, .downloaded?: return true
+        case .inCloud?, .downloading?, .downloadFailed?, .waitingForSync?: return false
+        }
+    }
+
     /// How many of `books` the list's summary counts as in the cloud: in a
     /// cloud location, the books whose known state leaves some of their
     /// files off this Mac; always 0 elsewhere.
@@ -64,13 +78,22 @@ extension BookCloudStates {
 
     /// Whether the library row of the book `bookID` says it is kept on this
     /// Mac: only in a cloud location, where the rows have cloud notes, and
-    /// only for a book `kept` names.
+    /// only for a book `kept` keeps, whether the listener kept it or it is on
+    /// the reading list being kept (`KeptBooks.isKept(_:)`).
     func listsAsKept(_ bookID: UUID, in kept: KeptBooks) -> Bool {
-        showsCloudNotes && kept.contains(bookID)
+        showsCloudNotes && kept.isKept(bookID)
+    }
+
+    /// Whether Book Information adds "for the reading list" to the book
+    /// `bookID`'s kept note: in a cloud location, only when the reading list
+    /// alone keeps it (`KeptBooks.isKeptOnlyForReadingList(_:)`).
+    func listsAsKeptOnlyForReadingList(_ bookID: UUID, in kept: KeptBooks) -> Bool {
+        showsCloudNotes && kept.isKeptOnlyForReadingList(bookID)
     }
 
     /// How many of `books` the list's summary counts as kept on this Mac: in
-    /// a cloud location, the books `kept` names; always 0 elsewhere.
+    /// a cloud location, the books `kept` keeps for either reason; always 0
+    /// elsewhere.
     func countKept(_ books: [Book], in kept: KeptBooks) -> Int {
         showsCloudNotes ? kept.count(of: books) : 0
     }
@@ -81,7 +104,16 @@ extension BookCloudStates {
 /// note, and a picture that only repeats them.
 enum KeptOnThisMacNote {
     /// The note's words, shown and spoken.
-    static let text = "Kept on this Mac"
+    static var text: String {
+        // Translators: Note in the library list for a book the listener keeps downloaded on this Mac.
+        InterfaceText.line("keptOnThisMacNote.text", "Kept on this Mac")
+    }
+    /// The words Book Information says when the reading list alone keeps the
+    /// book, not the listener's own choice.
+    static var forReadingListText: String {
+        // Translators: Note in Book Information for a book that only the reading list keeps downloaded on this Mac.
+        InterfaceText.line("keptOnThisMacNote.forReadingListText", "Kept on this Mac for the reading list")
+    }
     /// The SF Symbol drawn before the words.
     static let symbolName = "pin.fill"
 }

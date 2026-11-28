@@ -1,5 +1,60 @@
 import SwiftUI
 
+/// Holds a reader window's sleep timer for the window's content, without
+/// observing it: it publishes nothing. A `@StateObject` timer would subscribe
+/// `ReaderWindowContent` to every change of the timer, and so run its body, and
+/// `BookReaderWindowView.init` below it (a linear look-up of the book among
+/// the library's), once a second in every window with a counting timer. The
+/// sleep timer's sheet observes the timer itself, and the reader's status
+/// shows it as the reader publishes, as it did before each window had one.
+@MainActor
+final class WindowSleepTimerHolder: ObservableObject {
+    /// The window's sleep timer.
+    let timer = SleepTimerService()
+}
+
+/// A reader window's content, above the book it shows (November 13, 2026):
+/// the window's own sleep timer lives here, made once for the window, and
+/// each book the window shows is a `BookReaderWindowView` below it, with an
+/// identity of its own (`.id`). So when listening goes on to another book in
+/// this window (0.2.5), SwiftUI makes a new view and reader for the book, and
+/// the window keeps its timer, which the new reader takes over
+/// (`ReaderViewModel.claimSleepTimerHandOver()`). The user, November 13: "I
+/// want each sleep timer to be refactored to be per book view window not
+/// global".
+struct ReaderWindowContent: View {
+    /// The book the window shows, which the scene keeps: a switch to the
+    /// next book in place sets it.
+    @Binding var bookID: UUID?
+    let libraryViewModel: LibraryViewModel
+    let settingsViewModel: SettingsViewModel
+    /// The window's sleep timer, made once for the window and kept for as
+    /// long as SwiftUI keeps the window, in a holder that publishes nothing
+    /// (`WindowSleepTimerHolder`), so a tick of the timer does not run this
+    /// body.
+    @StateObject private var sleepTimerHolder = WindowSleepTimerHolder()
+
+    var body: some View {
+        let _ = ViewBodyCounter.record("ReaderWindowContent")
+        if let shownBookID = bookID {
+            BookReaderWindowView(
+                bookID: shownBookID,
+                libraryViewModel: libraryViewModel,
+                settingsViewModel: settingsViewModel,
+                sleepTimer: sleepTimerHolder.timer,
+                // Listening goes on to another book in this window (0.2.5):
+                // the window's book changes, and `.id` below makes a new view,
+                // with a new reader, of it.
+                showBook: { nextBookID in $bookID.wrappedValue = nextBookID }
+            )
+            // Without an identity of its own for each book, SwiftUI would
+            // keep the old view and its reader, and the window would go on
+            // showing the old book.
+            .id(shownBookID)
+        }
+    }
+}
+
 /// Root view for a book reader window. Creates and manages a ReaderViewModel for the book.
 struct BookReaderWindowView: View {
     /// The identifier of the reader window scene. Each of its windows
@@ -15,20 +70,90 @@ struct BookReaderWindowView: View {
     /// its own, to open a book's reader while no Library window is open.
     @Environment(\.openWindow) private var openWindow
 
-    init(bookID: UUID, libraryViewModel: LibraryViewModel, settingsViewModel: SettingsViewModel) {
+    /// A view of the book `bookID` in a reader window.
+    ///
+    /// - Parameters:
+    ///   - sleepTimer: The window's sleep timer, which the window's content
+    ///     keeps above each book it shows (`ReaderWindowContent`); nil, for a
+    ///     view with no window content around it, gives the reader the
+    ///     default (`ReaderViewModel.init(sleepTimer:)`).
+    ///   - showBook: Sets the window's book (`makeReader`).
+    init(
+        bookID: UUID,
+        libraryViewModel: LibraryViewModel,
+        settingsViewModel: SettingsViewModel,
+        sleepTimer: SleepTimerService? = nil,
+        showBook: ((UUID) -> Void)? = nil
+    ) {
         self.bookID = bookID
         // Create the ReaderViewModel as a StateObject
         let book = libraryViewModel.bookByID(bookID) ?? Book(
-            title: "Unknown",
+            title: "Unknown", // l10n: no (stand-in for a book the library no longer holds; never shown or stored)
             format: .txt,
             filePath: "",
             md5Hash: ""
         )
-        _viewModel = StateObject(wrappedValue: ReaderViewModel(
+        _viewModel = StateObject(wrappedValue: Self.makeReader(
             book: book,
             libraryViewModel: libraryViewModel,
-            settingsViewModel: settingsViewModel
+            settingsViewModel: settingsViewModel,
+            showBook: showBook,
+            requestedBookID: bookID,
+            sleepTimer: sleepTimer
         ))
+    }
+
+    /// The reader of `book`, given its window's sleep timer and the means to
+    /// show another book in this window when listening goes on to it
+    /// (0.2.5): `showBook` changes the book the window's scene presents,
+    /// which makes a new view, and a new reader, in the same window
+    /// (`ReaderWindowContent`), which keeps the window's timer.
+    ///
+    /// - Parameters:
+    ///   - requestedBookID: The book the window was asked for, which the reader
+    ///     of a placeholder for a missing book does not carry.
+    ///   - autoplayRequests: The stores and center the reader uses: the app's,
+    ///     unless a test gives it its own.
+    ///   - showBook: Sets the window's book; nil, for a view with no
+    ///   scene to set it in, leaves the reader unable to switch, and it then
+    ///   opens a new window as before.
+    ///   - sleepTimer: The sleep timer of the reader's window; nil gives the
+    ///     reader the default (`ReaderViewModel.init(sleepTimer:)`).
+    static func makeReader(
+        book: Book,
+        libraryViewModel: LibraryViewModel,
+        settingsViewModel: SettingsViewModel,
+        showBook: ((UUID) -> Void)?,
+        requestedBookID: UUID,
+        autoplayRequests: ReaderAutoplayRequests? = nil,
+        readingListRequests: ReadingListOpenRequests? = nil,
+        windowSwitchRequests: WindowSwitchRequests? = nil,
+        notificationCenter: NotificationCenter = .default,
+        sleepTimer: SleepTimerService? = nil
+    ) -> ReaderViewModel {
+        let reader = ReaderViewModel(
+            book: book,
+            libraryViewModel: libraryViewModel,
+            settingsViewModel: settingsViewModel,
+            autoplayRequests: autoplayRequests,
+            readingListRequests: readingListRequests,
+            windowSwitchRequests: windowSwitchRequests,
+            notificationCenter: notificationCenter,
+            sleepTimer: sleepTimer
+        )
+        reader.nextBookWindowSwitcher = showBook
+        // A book deleted since the window was asked for is a placeholder with
+        // an ID of its own: a sleep timer held for the book asked for would
+        // never be taken, so it is released, and said once the error view
+        // has read that the book is gone. The release changes the timer's
+        // @Published state, which must not happen while SwiftUI builds this
+        // reader in its update (B22), so it runs on the main queue's next turn.
+        if libraryViewModel.bookByID(requestedBookID) == nil {
+            DispatchQueue.main.async {
+                reader.releaseSleepTimerHeld(forBook: requestedBookID, afterTheReason: true)
+            }
+        }
+        return reader
     }
 
     var body: some View {
@@ -38,7 +163,7 @@ struct BookReaderWindowView: View {
         ReaderView(viewModel: viewModel)
             .background(WindowAccessor(
                 onWindowFound: { window in
-                    viewModel.hostWindow = window
+                    viewModel.attach(to: window)
                     // With no Library window open, the router opens a book's
                     // reader through a reader window like this one (TODO A05).
                     LibraryWindowRouter.shared.registerReaderWindow(window) { bookID in
@@ -58,16 +183,24 @@ struct BookReaderWindowView: View {
             // available while this reader reads its book from the list
             // (FR09), whether or not a view of it holds keyboard focus.
             .focusedSceneValue(\.readsFromReadingList, viewModel.isOpenedFromReadingList)
-            // Next Page, Previous Page, and Go to Page… are available while
-            // this reader's book has pages (PG02), as above.
-            .focusedSceneValue(\.readerHasPages, viewModel.hasPages)
+            // Go to Page… is available while this reader's book has more
+            // than one page (PG02), as above.
+            .focusedSceneValue(\.readerHasPages, viewModel.hasSeveralPages)
+            // Next in Folder and Previous in Folder are offered in a reader
+            // window (0.2.5), whether or not a view of it holds keyboard
+            // focus.
+            .focusedSceneValue(\.isReaderWindow, true)
             .navigationTitle(windowTitle)
             .onAppear {
                 libraryViewModel.markBookOpened(bookID)
                 NotificationCenter.default.post(name: .refreshContextMenus, object: nil)
             }
             .onDisappear {
-                if let window = viewModel.hostWindow {
+                // A reader whose window now shows another book leaves the
+                // window registered: the new view registered the same
+                // window, perhaps before this view disappeared, and an
+                // unregister here would take its entry away (0.2.5).
+                if !viewModel.hasSwitchedWindow, let window = viewModel.hostWindow {
                     LibraryWindowRouter.shared.unregisterReaderWindow(window)
                 }
                 viewModel.close()
@@ -84,7 +217,10 @@ struct BookReaderWindowView: View {
 
     /// What a reader window's title begins with for a book read from
     /// anywhere but the reading list.
-    nonisolated static let windowTitlePrefix = "Book"
+    nonisolated static var windowTitlePrefix: String {
+        // Translators: The word that begins the title of a reader window for a book, before its title and author: "Book: <title> by <author>".
+        InterfaceText.line("common.book", "Book")
+    }
 
     /// The title of the reader window of `book`: "Book: <title> by
     /// <author>", or "Book: <title>" when the author is unknown. A book read
@@ -95,128 +231,10 @@ struct BookReaderWindowView: View {
     nonisolated static func windowTitle(for book: Book, readFromReadingList: Bool) -> String {
         let prefix = readFromReadingList ? ReadingListReaderWording.windowTitlePrefix : windowTitlePrefix
         if Book.isUnknownAuthor(book.author) {
-            return "\(prefix): \(book.title)"
+            // Translators: Title of a reader window for a book whose author is unknown. %1$@ is the word that begins it ("Book" or "Reading List"); %2$@ is the book's title.
+            return InterfaceText.line("common.valueColonValue", "\(prefix): \(book.title)")
         }
-        return "\(prefix): \(book.title) by \(book.author)"
-    }
-}
-
-/// Invisible NSView that captures its hosting NSWindow and passes it back to SwiftUI.
-/// Used so the ReaderViewModel can check whether its window is focused before responding
-/// to keyboard shortcut notifications, and so a view can tell when its
-/// window closes and when it comes on screen again.
-struct WindowAccessor: NSViewRepresentable {
-    let onWindowFound: (NSWindow) -> Void
-    let onWindowBecameKey: () -> Void
-    /// Called as the window closes. SwiftUI keeps a closed window and its
-    /// views for the rest of the session, so a view can stop doing work
-    /// nobody will see (PERF27).
-    let onWindowWillClose: () -> Void
-    /// Called each time the window comes on screen, as when SwiftUI shows a
-    /// closed Library window again for a book opened from Finder.
-    let onWindowBecameVisible: () -> Void
-
-    init(
-        onWindowFound: @escaping (NSWindow) -> Void,
-        onWindowBecameKey: @escaping () -> Void = {},
-        onWindowWillClose: @escaping () -> Void = {},
-        onWindowBecameVisible: @escaping () -> Void = {}
-    ) {
-        self.onWindowFound = onWindowFound
-        self.onWindowBecameKey = onWindowBecameKey
-        self.onWindowWillClose = onWindowWillClose
-        self.onWindowBecameVisible = onWindowBecameVisible
-    }
-
-    func makeNSView(context: Context) -> NSView {
-        let view = WindowAccessorView()
-        pass(to: view)
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        guard let view = nsView as? WindowAccessorView else { return }
-        pass(to: view)
-    }
-
-    /// Gives `view` this accessor's callbacks, the latest SwiftUI made.
-    private func pass(to view: WindowAccessorView) {
-        view.onWindowFound = onWindowFound
-        view.onWindowBecameKey = onWindowBecameKey
-        view.onWindowWillClose = onWindowWillClose
-        view.onWindowBecameVisible = onWindowBecameVisible
-    }
-}
-
-/// Helper NSView that reports attachment, every key-window transition, the
-/// window closing, and the window coming on screen.
-private class WindowAccessorView: NSView {
-    var onWindowFound: ((NSWindow) -> Void)?
-    var onWindowBecameKey: (() -> Void)?
-    var onWindowWillClose: (() -> Void)?
-    var onWindowBecameVisible: (() -> Void)?
-    /// The observations of the host window. Replacing them, as a move to
-    /// another window does, or releasing them with this view stops
-    /// observing, so a closed window never retains the callbacks.
-    private var windowObservations: [NotificationObservation] = []
-
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
-        windowObservations = []
-        guard let window else { return }
-        onWindowFound?(window)
-        if window.isKeyWindow {
-            onWindowBecameKey?()
-        }
-        windowObservations = [
-            observe(NSWindow.didBecomeKeyNotification, of: window) { $0.onWindowBecameKey?() },
-            observe(NSWindow.willCloseNotification, of: window) { $0.onWindowWillClose?() },
-            // Posted as the window is hidden or shown, and closed; only
-            // coming on screen is reported.
-            observe(NSWindow.didChangeOcclusionStateNotification, of: window) { view in
-                if view.window?.occlusionState.contains(.visible) == true {
-                    view.onWindowBecameVisible?()
-                }
-            },
-        ]
-    }
-
-    /// Observes `name` posted by `window`, calling `action` with this view,
-    /// while it exists, on the main queue.
-    private func observe(
-        _ name: Notification.Name,
-        of window: NSWindow,
-        _ action: @escaping @MainActor @Sendable (WindowAccessorView) -> Void
-    ) -> NotificationObservation {
-        NotificationObservation(NotificationCenter.default.addObserver(
-            forName: name,
-            object: window,
-            queue: .main
-        ) { [weak self] _ in
-            // Delivered on the main queue, as `queue: .main` asks.
-            MainActor.assumeIsolated {
-                if let self {
-                    action(self)
-                }
-            }
-        })
-    }
-}
-
-/// One block-based NotificationCenter observation, ended when this object
-/// is released (TODO Q06). The view that owns it is main-actor isolated, but
-/// its deinit is not, so it cannot remove an observer itself; this object's
-/// token never changes after `init`, and `removeObserver(_:)` is
-/// thread-safe, so releasing it from any thread ends the observation.
-private final class NotificationObservation {
-    /// The token `addObserver(forName:object:queue:using:)` returned.
-    private let token: NSObjectProtocol
-
-    init(_ token: NSObjectProtocol) {
-        self.token = token
-    }
-
-    deinit {
-        NotificationCenter.default.removeObserver(token)
+        // Translators: Title of a reader window. %1$@ is the word that begins it ("Book" or "Reading List"); %2$@ is the book's title; %3$@ is the book's author.
+        return InterfaceText.line("bookReaderWindowView.windowTitle", "\(prefix): \(book.title) by \(book.author)")
     }
 }

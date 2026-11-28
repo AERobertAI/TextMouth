@@ -1,0 +1,2721 @@
+{
+ "language": "pl",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ couldn't be read: %@",
+     "id": "libraryComparison.shortReason.cannotBeRead",
+     "english": "%1$@ couldn't be read: %2$@",
+     "before": "Nie można odczytać %1$@: %2$@",
+     "after": "Nie można odczytać pliku %1$@: %2$@",
+     "why": "grammar: the file phrase it takes is nominative (znacznik tożsamości: …), so pliku carries the genitive the negation needs, as in the sibling reasons"
+    },
+    {
+     "key": "%@ downloaded",
+     "id": "libraryCloud.downloadFinished.value",
+     "english": "%@ downloaded",
+     "before": "Pobrano %@",
+     "after": "Pobrano książkę %@",
+     "why": "grammar: a bare title cannot take the accusative Pobrano needs (Lalka, not Lalkę); książkę carries the case"
+    },
+    {
+     "key": "%@ moved to position %@ of %@",
+     "id": "substitutions.moved",
+     "english": "%1$@ moved to position %2$@ of %3$@",
+     "before": "Przeniesiono %1$@ na pozycję %2$@ z %3$@",
+     "after": "Przeniesiono regułę %1$@ na pozycję %2$@ z %3$@",
+     "why": "grammar: a bare rule name cannot take the accusative Przeniesiono needs; regułę carries the case"
+    },
+    {
+     "key": "%@ wasn't downloaded",
+     "id": "libraryCloud.downloadFinished.wasnt",
+     "english": "%@ wasn't downloaded",
+     "before": "Nie pobrano %@",
+     "after": "Nie pobrano książki %@",
+     "why": "grammar: a bare title cannot take the genitive the negation needs; książki carries the case"
+    },
+    {
+     "key": "%@, any subfolders, and the %lld books inside will be removed from the library.",
+     "id": "folderRemoval.confirmationMessage.other",
+     "english": {
+      "one": "%@, any subfolders, and the %lld book inside will be removed from the library.",
+      "other": "%@, any subfolders, and the %lld books inside will be removed from the library."
+     },
+     "before": {
+      "few": "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książki z jego wnętrza.",
+      "many": "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książek z jego wnętrza.",
+      "one": "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książka z jego wnętrza.",
+      "other": "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książki z jego wnętrza."
+     },
+     "after": {
+      "one": "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książka znajdująca się w środku.",
+      "few": "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książki znajdujące się w środku.",
+      "many": "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książek znajdujących się w środku.",
+      "other": "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książki znajdujące się w środku."
+     },
+     "why": "natural: z jego wnętrza (from its interior) is stilted; the books inside, as the single-book string says it"
+    },
+    {
+     "key": "%@, which leads to %@",
+     "id": "dataDirectoryLocation.namedDescription",
+     "english": "%1$@, which leads to %2$@",
+     "before": "%1$@, prowadzi do %2$@",
+     "after": "%1$@ – prowadzi do %2$@",
+     "why": "punctuation: a comma before a verb with no subject reads as a broken sentence; a dash marks the note"
+    },
+    {
+     "key": "%lld files couldn't be read, so the comparison may be missing differences.",
+     "id": "libraryComparison.unreadCountSentence.couldnt",
+     "english": {
+      "one": "%lld file couldn't be read, so the comparison may be missing differences.",
+      "other": "%lld files couldn't be read, so the comparison may be missing differences."
+     },
+     "before": {
+      "few": "Nie udało się odczytać %lld plików, więc w porównaniu mogą brakować różnic.",
+      "many": "Nie udało się odczytać %lld plików, więc w porównaniu mogą brakować różnic.",
+      "one": "Nie udało się odczytać %lld pliku, więc w porównaniu mogą brakować różnic.",
+      "other": "Nie udało się odczytać %lld plików, więc w porównaniu mogą brakować różnic."
+     },
+     "after": {
+      "one": "Nie udało się odczytać %lld pliku, więc w porównaniu może brakować różnic.",
+      "few": "Nie udało się odczytać %lld plików, więc w porównaniu może brakować różnic.",
+      "many": "Nie udało się odczytać %lld plików, więc w porównaniu może brakować różnic.",
+      "other": "Nie udało się odczytać %lld plików, więc w porównaniu może brakować różnic."
+     },
+     "why": "grammar: brakować is impersonal, so może brakować, not mogą brakować"
+    },
+    {
+     "key": "Book only in %@: %@.",
+     "id": "libraryComparison.sentence.bookOnlyIn",
+     "english": "Book only in %1$@: %2$@.",
+     "before": "Książka tylko w: %1$@. %2$@.",
+     "after": "Książka tylko w: %1$@ – %2$@.",
+     "why": "punctuation: the period split the title into a sentence of its own; a dash keeps one sentence without a second colon"
+    },
+    {
+     "key": "Cancel New Folder",
+     "id": "libraryFolderPicker.cancelNewFolderTitle",
+     "english": "Cancel New Folder",
+     "before": "Anuluj nowy folder",
+     "after": "Anuluj tworzenie folderu",
+     "why": "natural: Anuluj nowy folder copies the English; the button cancels making the folder"
+    },
+    {
+     "key": "Choose a folder outside it.",
+     "id": "storage.chooseFolderOutside",
+     "english": "Choose a folder outside it.",
+     "before": "Wybierz folder poza Koszem.",
+     "after": "Wybierz folder poza koszem.",
+     "why": "term: the glossary writes kosz in lower case inside a sentence (Przenieś do kosza), as 28 other strings do"
+    },
+    {
+     "key": "Close sheet after setting timer",
+     "id": "settings.autoCloseTitle",
+     "english": "Close sheet after setting timer",
+     "before": "Zamknij arkusz po ustawieniu wyłącznika",
+     "after": "Zamykaj arkusz po ustawieniu wyłącznika",
+     "why": "register: a checkbox setting takes the habitual imperfective (Zamykaj), as Potwierdzaj and Pokazuj in this catalog and the checkboxes of Apple Polish do"
+    },
+    {
+     "key": "Close sleep timer sheet after setting a timer",
+     "id": "settings.autoCloseLabel",
+     "english": "Close sleep timer sheet after setting a timer",
+     "before": "Zamknij arkusz wyłącznika czasowego po jego ustawieniu",
+     "after": "Zamykaj arkusz wyłącznika czasowego po jego ustawieniu",
+     "why": "register: the spoken label of the checkbox takes the habitual imperfective Zamykaj, as its title does"
+    },
+    {
+     "key": "Don't rewind if paused for less than this.",
+     "id": "settings.minimumPauseExplanation",
+     "english": "Don't rewind if paused for less than this.",
+     "before": "Nie przewijaj do tyłu, jeśli wstrzymanie trwało krócej niż ten czas.",
+     "after": "Nie przewija do tyłu, jeśli wstrzymanie trwało krócej niż ten czas.",
+     "why": "meaning: the imperative Nie przewijaj tells the listener not to rewind; the explanation says what the setting does"
+    },
+    {
+     "key": "Downloading %@ from %@.",
+     "id": "readerCloud.downloadStarted.downloading",
+     "english": "Downloading %1$@ from %2$@.",
+     "before": "Pobieranie %1$@, źródło: %2$@.",
+     "after": "Pobieranie: %1$@, źródło: %2$@.",
+     "why": "grammar: a bare title after Pobieranie needs the genitive it cannot take; a colon, as in Pobieranie: %@, keeps it nominative"
+    },
+    {
+     "key": "Downloading %@, a reading list book",
+     "id": "libraryCloud.readingListStarted.one",
+     "english": "Downloading %@, a reading list book",
+     "before": "Pobieranie %@, książki z listy czytelniczej",
+     "after": "Pobieranie: %@, książka z listy czytelniczej",
+     "why": "grammar: the genitive apposition książki cannot match a bare title; after a colon both stay nominative"
+    },
+    {
+     "key": "Enable %@",
+     "id": "substitutions.enableLabel",
+     "english": "Enable %@",
+     "before": "Włącz %@",
+     "after": "Włącz regułę %@",
+     "why": "grammar: a bare rule name cannot take the accusative Włącz needs; regułę carries the case"
+    },
+    {
+     "key": "Failed to rebuild to default",
+     "id": "libraryViewModel.resetFailureContext",
+     "english": "Failed to rebuild to default",
+     "before": "Nie udało się przywrócić ustawień domyślnych",
+     "after": "Nie udało się przywrócić lokalizacji domyślnej",
+     "why": "meaning: Reset to Default moves the data back to the default location; ustawień domyślnych says settings were reset"
+    },
+    {
+     "key": "In this Mac's Logs folder",
+     "id": "logsSettings.machineChoice",
+     "english": "In this Mac's Logs folder",
+     "before": "W folderze Dzienniki na tym komputerze Mac.",
+     "after": "W folderze Dzienniki na tym komputerze Mac",
+     "why": "punctuation: a pop-up choice takes no period, and its folder path follows it in parentheses"
+    },
+    {
+     "key": "It may have been moved or renamed, or %@ may not have synced it to this Mac yet.",
+     "id": "dataDirectoryUnavailability.likelyCause.renamed",
+     "english": "It may have been moved or renamed, or %@ may not have synced it to this Mac yet.",
+     "before": "Mógł zostać przeniesiony lub zmieniony albo nie został jeszcze zsynchronizowany z tym komputerem Mac (usługa: %@).",
+     "after": "Mógł zostać przeniesiony lub mogła zostać zmieniona jego nazwa albo usługa %@ nie zsynchronizowała go jeszcze z tym komputerem Mac.",
+     "why": "meaning: zmieniony (changed) lost renamed, and the service moved to a parenthesis; the service is now the subject, as in the English"
+    },
+    {
+     "key": "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again.",
+     "id": "feedDownloadRemoval.keptSentence.transcript",
+     "english": "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again.",
+     "before": "Pozycja czytania, zakładki i transkrypcja, jeśli istnieje, zostają zachowane, a pobrany plik można pobrać ponownie.",
+     "after": "Pozycja czytania, zakładki i transkrypcja, jeśli istnieje, zostają zachowane, a plik można pobrać ponownie.",
+     "why": "natural: a pobrany plik można pobrać ponownie (the downloaded file can be downloaded again) is circular once the download is gone"
+    },
+    {
+     "key": "Menu changes are saved as defaults for the current book. Hiding the menus uses the global skip choices; book defaults are kept.",
+     "id": "settings.navigationMenuExplanation",
+     "english": "Menu changes are saved as defaults for the current book. Hiding the menus uses the global skip choices; book defaults are kept.",
+     "before": "Zmiany w menu są zapisywane jako ustawienia domyślne bieżącej książki. Ukrycie menu używa globalnych wyborów przewijania; ustawienia domyślne książek zostają zachowane.",
+     "after": "Zmiany w menu są zapisywane jako ustawienia domyślne bieżącej książki. Po ukryciu menu używane są globalne ustawienia przewijania; ustawienia domyślne książek zostają zachowane.",
+     "why": "natural: Ukrycie menu używa (the hiding uses) copies the English subject; Polish says what is used once the menus are hidden"
+    },
+    {
+     "key": "Move to Trash instead of deleting",
+     "id": "storageSettings.moveToTrashTitle",
+     "english": "Move to Trash instead of deleting",
+     "before": "Przenoś do Kosza zamiast usuwać",
+     "after": "Przenoś do kosza zamiast usuwać",
+     "why": "term: the glossary writes kosz in lower case inside a phrase (Przenieś do kosza), as 28 other strings do"
+    },
+    {
+     "key": "Moved %@ above %@",
+     "id": "moveResult.announcement.above",
+     "english": "Moved %1$@ above %2$@",
+     "before": "Przeniesiono %1$@ nad %2$@",
+     "after": "Przeniesiono książkę %1$@ nad książkę %2$@",
+     "why": "grammar: a bare title cannot take the accusative Przeniesiono and nad need (Lalka, not Lalkę); książkę carries the case"
+    },
+    {
+     "key": "Moved %@ below %@",
+     "id": "moveResult.announcement.below",
+     "english": "Moved %1$@ below %2$@",
+     "before": "Przeniesiono %1$@ pod %2$@",
+     "after": "Przeniesiono książkę %1$@ pod książkę %2$@",
+     "why": "grammar: a bare title cannot take the accusative Przeniesiono and pod need; książkę carries the case"
+    },
+    {
+     "key": "New Folder cancelled.",
+     "id": "libraryFolderPicker.newFolderCancelled.alone",
+     "english": "New Folder cancelled.",
+     "before": "Anulowano nowy folder.",
+     "after": "Anulowano tworzenie folderu.",
+     "why": "natural: Anulowano nowy folder copies the English; it is making the folder that was cancelled"
+    },
+    {
+     "key": "New Folder cancelled. %@: %@.",
+     "id": "libraryFolderPicker.newFolderCancelled.detail",
+     "english": "New Folder cancelled. %1$@: %2$@.",
+     "before": "Anulowano nowy folder. %1$@: %2$@.",
+     "after": "Anulowano tworzenie folderu. %1$@: %2$@.",
+     "why": "natural: Anulowano nowy folder copies the English; it is making the folder that was cancelled"
+    },
+    {
+     "key": "None (Use Global)",
+     "id": "playbackNavigationUnitControlMode.none",
+     "english": "None (Use Global)",
+     "before": "Brak (użyj globalnych)",
+     "after": "Brak (użyj ustawień globalnych)",
+     "why": "natural: użyj globalnych leaves the noun out (global what); the global settings are meant"
+    },
+    {
+     "key": "Re-extracts cached text from all books. Useful after parser fixes or format improvements.",
+     "id": "storageSettings.redoExtractionHint",
+     "english": "Re-extracts cached text from all books. Useful after parser fixes or format improvements.",
+     "before": "Ponownie wyodrębnia tekst z pamięci podręcznej wszystkich książek. Przydatne po poprawkach parsera lub ulepszeniach formatów.",
+     "after": "Ponownie wyodrębnia tekst wszystkich książek, odświeżając jego kopię w pamięci podręcznej. Przydatne po poprawkach parsera lub ulepszeniach formatów.",
+     "why": "meaning: z pamięci podręcznej says the text is extracted from the cache; it is extracted again and the cached copy replaced"
+    },
+    {
+     "key": "Re-extracts every book's cached text.",
+     "id": "storageSettings.redoExtractionCaption.extracts",
+     "english": "Re-extracts every book's cached text.",
+     "before": "Ponownie wyodrębnia tekst z pamięci podręcznej każdej książki.",
+     "after": "Ponownie wyodrębnia tekst każdej książki, odświeżając jego kopię w pamięci podręcznej.",
+     "why": "meaning: z pamięci podręcznej says the text is extracted from the cache; it is extracted again and the cached copy replaced"
+    },
+    {
+     "key": "Reading positions are kept, but character offsets may shift slightly if the text changes.",
+     "id": "storageSettings.redoMessage.positions",
+     "english": "Reading positions are kept, but character offsets may shift slightly if the text changes.",
+     "before": "Pozycje czytania są zachowane, ale przesunięcia znaków mogą się nieco zmienić, jeśli tekst się zmieni.",
+     "after": "Pozycje czytania są zachowane, ale jeśli tekst się zmieni, mogą się przesunąć o kilka znaków.",
+     "why": "natural: przesunięcia znaków mogą się zmienić (the offsets may change) is a calque of character offsets; Polish says the places may shift by a few characters"
+    },
+    {
+     "key": "Reading the audio took longer than %@ seconds; TextMouth stopped waiting.",
+     "id": "timeLimitExceeded.sentence.readingAudioTook",
+     "english": "Reading the audio took longer than %@ seconds; TextMouth stopped waiting.",
+     "before": "Odczyt dźwięku przekroczył limit czasu (sekundy: %@); TextMouth przestał czekać.",
+     "after": "Odczyt dźwięku trwał dłużej niż %@ sekundy; TextMouth przestał czekać.",
+     "why": "natural: (sekundy: %@) is stilted; the value always has a fraction, which takes sekundy, as the sibling strings read"
+    },
+    {
+     "key": "Show bookmark button",
+     "id": "settings.showBookmarkTitle",
+     "english": "Show bookmark button",
+     "before": "Pokaż przycisk zakładki",
+     "after": "Pokazuj przycisk zakładki",
+     "why": "register: a checkbox setting takes the habitual imperfective (Pokazuj), as Apple Polish checkboxes and this catalog (Pokazuj zawsze, Potwierdzaj) do"
+    },
+    {
+     "key": "Show bookmark button in playback controls",
+     "id": "settings.showBookmarkLabel",
+     "english": "Show bookmark button in playback controls",
+     "before": "Pokaż przycisk zakładki w elementach sterujących odtwarzaniem",
+     "after": "Pokazuj przycisk zakładki w elementach sterujących odtwarzaniem",
+     "why": "register: a checkbox setting takes the habitual imperfective (Pokazuj), as Apple Polish checkboxes and this catalog (Pokazuj zawsze, Potwierdzaj) do"
+    },
+    {
+     "key": "Show speed controls",
+     "id": "settings.showSpeedTitle",
+     "english": "Show speed controls",
+     "before": "Pokaż elementy sterujące prędkością",
+     "after": "Pokazuj elementy sterujące prędkością",
+     "why": "register: a checkbox setting takes the habitual imperfective (Pokazuj), as Apple Polish checkboxes and this catalog (Pokazuj zawsze, Potwierdzaj) do"
+    },
+    {
+     "key": "Show speed controls in playback controls",
+     "id": "settings.showSpeedLabel",
+     "english": "Show speed controls in playback controls",
+     "before": "Pokaż elementy sterujące prędkością w elementach sterujących odtwarzaniem",
+     "after": "Pokazuj elementy sterujące prędkością w elementach sterujących odtwarzaniem",
+     "why": "register: a checkbox setting takes the habitual imperfective (Pokazuj), as Apple Polish checkboxes and this catalog (Pokazuj zawsze, Potwierdzaj) do"
+    },
+    {
+     "key": "Start New Library",
+     "id": "storageChoice.startNewLibrary.button",
+     "english": "Start New Library",
+     "before": "Rozpocznij nową bibliotekę",
+     "after": "Utwórz nową bibliotekę",
+     "why": "natural: rozpocząć bibliotekę (begin a library) is a calque; a library is created"
+    },
+    {
+     "key": "Start a New Library?",
+     "id": "storageChoice.startNewLibrary.question",
+     "english": "Start a New Library?",
+     "before": "Rozpocząć nową bibliotekę?",
+     "after": "Utworzyć nową bibliotekę?",
+     "why": "natural: rozpocząć bibliotekę (begin a library) is a calque; a library is created"
+    },
+    {
+     "key": "Storage problems",
+     "id": "persistenceFailureBannerRowView.bannerLabel",
+     "english": "Storage problems",
+     "before": "Problemy z pamięcią",
+     "after": "Problemy z plikami",
+     "why": "meaning: Problemy z pamięcią reads as memory trouble; the banner lists files that could not be saved or removed"
+    },
+    {
+     "key": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "id": "libraryCloud.letGoOfOneBookFirst",
+     "english": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "before": "Zdejmij ją z listy czytelniczej albo najpierw wyczyść %@ w opcjach listy czytelniczej.",
+     "after": "Zdejmij ją z listy czytelniczej albo najpierw odznacz %@ w opcjach listy czytelniczej.",
+     "why": "meaning: %@ is a checkbox, so clear means uncheck (odznacz), not wipe its content (wyczyść)"
+    },
+    {
+     "key": "TextMouth could not check whether to move it to the Trash.",
+     "id": "legacyMigrationError.trashPreferenceUnavailable",
+     "english": "TextMouth could not check whether to move it to the Trash.",
+     "before": "TextMouth nie mógł sprawdzić, czy przenieść go do Kosza.",
+     "after": "TextMouth nie mógł sprawdzić, czy przenieść go do kosza.",
+     "why": "term: the glossary writes kosz in lower case inside a sentence (Przenieś do kosza), as 28 other strings do"
+    },
+    {
+     "key": "TextMouth will quit and open again to start it.",
+     "id": "storage.startNewLibrarySentence.again",
+     "english": "TextMouth will quit and open again to start it.",
+     "before": "TextMouth zakończy działanie i otworzy się ponownie, aby ją uruchomić.",
+     "after": "TextMouth zakończy działanie i otworzy się ponownie, aby ją utworzyć.",
+     "why": "natural: a new library is created (Utwórz nową bibliotekę), not launched (uruchomić)"
+    },
+    {
+     "key": "The folder %@ is in the Trash.",
+     "id": "storage.folderTrash",
+     "english": "The folder %@ is in the Trash.",
+     "before": "Folder %@ jest w Koszu.",
+     "after": "Folder %@ jest w koszu.",
+     "why": "term: the glossary writes kosz in lower case inside a sentence (Przenieś do kosza), as 28 other strings do"
+    },
+    {
+     "key": "The new copy replaced “%@”, but the old copy's files could not be deleted and stay in its folder: %@",
+     "id": "duplicateReplacement.oldCopyLeftMessage.deleted",
+     "english": "The new copy replaced “%1$@”, but the old copy's files could not be deleted and stay in its folder: %2$@",
+     "before": "Nowa kopia zastąpiła „%1$@”, ale nie udało się usunąć plików starej kopii i zostają w jej folderze: %2$@",
+     "after": "Nowa kopia zastąpiła „%1$@”, ale nie udało się usunąć plików starej kopii; zostają w jej folderze: %2$@",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "The new copy replaced “%@”, but the old copy's files could not be moved to the Trash and stay in its folder: %@",
+     "id": "duplicateReplacement.oldCopyLeftMessage.moved",
+     "english": "The new copy replaced “%1$@”, but the old copy's files could not be moved to the Trash and stay in its folder: %2$@",
+     "before": "Nowa kopia zastąpiła „%1$@”, ale nie udało się przenieść plików starej kopii do kosza i zostają w jej folderze: %2$@",
+     "after": "Nowa kopia zastąpiła „%1$@”, ale nie udało się przenieść plików starej kopii do kosza; zostają w jej folderze: %2$@",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.thenLetGoOfOneBook",
+     "english": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Następnie zdejmij ją z listy czytelniczej albo wyczyść %@ w opcjach listy czytelniczej.",
+     "after": "Następnie zdejmij ją z listy czytelniczej albo odznacz %@ w opcjach listy czytelniczej.",
+     "why": "meaning: %@ is a checkbox, so clear means uncheck (odznacz), not wipe its content (wyczyść)"
+    },
+    {
+     "key": "These books could not be deleted and remain in the library:",
+     "id": "removalMode.failureHeading.booksDeleted",
+     "english": "These books could not be deleted and remain in the library:",
+     "before": "Tych książek nie udało się usunąć i pozostają w bibliotece:",
+     "after": "Tych książek nie udało się usunąć; pozostają w bibliotece:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "These books could not be moved to the Trash and remain in the library:",
+     "id": "removalMode.failureHeading.booksMoved",
+     "english": "These books could not be moved to the Trash and remain in the library:",
+     "before": "Tych książek nie udało się przenieść do kosza i pozostają w bibliotece:",
+     "after": "Tych książek nie udało się przenieść do kosza; pozostają w bibliotece:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "These books could not be removed from the library and remain in it:",
+     "id": "common.theseBooksCouldNotBeRemoved",
+     "english": "These books could not be removed from the library and remain in it:",
+     "before": "Tych książek nie udało się usunąć z biblioteki i pozostają w niej:",
+     "after": "Tych książek nie udało się usunąć z biblioteki; pozostają w niej:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "These items could not be deleted and remain in the library:",
+     "id": "removalMode.failureHeading.itemsDeleted",
+     "english": "These items could not be deleted and remain in the library:",
+     "before": "Tych pozycji nie udało się usunąć i pozostają w bibliotece:",
+     "after": "Tych pozycji nie udało się usunąć; pozostają w bibliotece:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "These items could not be moved to the Trash and remain in the library:",
+     "id": "removalMode.failureHeading.itemsMoved",
+     "english": "These items could not be moved to the Trash and remain in the library:",
+     "before": "Tych pozycji nie udało się przenieść do kosza i pozostają w bibliotece:",
+     "after": "Tych pozycji nie udało się przenieść do kosza; pozostają w bibliotece:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "These items could not be removed from the library and remain in it:",
+     "id": "removalMode.failureHeading.itemsRemoved",
+     "english": "These items could not be removed from the library and remain in it:",
+     "before": "Tych pozycji nie udało się usunąć z biblioteki i pozostają w niej:",
+     "after": "Tych pozycji nie udało się usunąć z biblioteki; pozostają w niej:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "This book could not be deleted and remains in the library:",
+     "id": "removalMode.failureHeading.bookDeleted",
+     "english": "This book could not be deleted and remains in the library:",
+     "before": "Tej książki nie udało się usunąć i pozostaje w bibliotece:",
+     "after": "Tej książki nie udało się usunąć; pozostaje w bibliotece:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "This book could not be moved to the Trash and remains in the library:",
+     "id": "removalMode.failureHeading.bookMoved",
+     "english": "This book could not be moved to the Trash and remains in the library:",
+     "before": "Tej książki nie udało się przenieść do kosza i pozostaje w bibliotece:",
+     "after": "Tej książki nie udało się przenieść do kosza; pozostaje w bibliotece:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "This book could not be removed from the library and remains in it:",
+     "id": "common.thisBookCouldNotBeRemoved",
+     "english": "This book could not be removed from the library and remains in it:",
+     "before": "Tej książki nie udało się usunąć z biblioteki i pozostaje w niej:",
+     "after": "Tej książki nie udało się usunąć z biblioteki; pozostaje w niej:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "This item could not be deleted and remains in the library:",
+     "id": "removalMode.failureHeading.itemDeleted",
+     "english": "This item could not be deleted and remains in the library:",
+     "before": "Tej pozycji nie udało się usunąć i pozostaje w bibliotece:",
+     "after": "Tej pozycji nie udało się usunąć; pozostaje w bibliotece:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "This item could not be moved to the Trash and remains in the library:",
+     "id": "removalMode.failureHeading.itemMoved",
+     "english": "This item could not be moved to the Trash and remains in the library:",
+     "before": "Tej pozycji nie udało się przenieść do kosza i pozostaje w bibliotece:",
+     "after": "Tej pozycji nie udało się przenieść do kosza; pozostaje w bibliotece:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "This item could not be removed from the library and remains in it:",
+     "id": "removalMode.failureHeading.itemRemoved",
+     "english": "This item could not be removed from the library and remains in it:",
+     "before": "Tej pozycji nie udało się usunąć z biblioteki i pozostaje w niej:",
+     "after": "Tej pozycji nie udało się usunąć z biblioteki; pozostaje w niej:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "This re-extracts the cached text of every book, which may take a while for a large library.",
+     "id": "storageSettings.redoMessage.extracts",
+     "english": "This re-extracts the cached text of every book, which may take a while for a large library.",
+     "before": "To ponownie wyodrębni tekst z pamięci podręcznej każdej książki, co w dużej bibliotece może chwilę potrwać.",
+     "after": "To ponownie wyodrębni tekst każdej książki i odświeży jego kopię w pamięci podręcznej, co w dużej bibliotece może chwilę potrwać.",
+     "why": "meaning: z pamięci podręcznej says the text is extracted from the cache; it is extracted again and the cached copy replaced"
+    },
+    {
+     "key": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.howToLetGo.reading",
+     "english": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Aby ją zwolnić, zdejmij ją z listy czytelniczej albo wyczyść %@ w opcjach listy czytelniczej.",
+     "after": "Aby ją zwolnić, zdejmij ją z listy czytelniczej albo odznacz %@ w opcjach listy czytelniczej.",
+     "why": "meaning: %@ is a checkbox, so clear means uncheck (odznacz), not wipe its content (wyczyść)"
+    },
+    {
+     "key": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "id": "libraryCloud.howToLetGo.them",
+     "english": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Aby je zwolnić, zdejmij je z listy czytelniczej albo wyczyść %@ w opcjach listy czytelniczej.",
+     "after": "Aby je zwolnić, zdejmij je z listy czytelniczej albo odznacz %@ w opcjach listy czytelniczej.",
+     "why": "meaning: %@ is a checkbox, so clear means uncheck (odznacz), not wipe its content (wyczyść)"
+    },
+    {
+     "key": "Together with the archives inside it, the archive expands to %@, more than the %@ TextMouth extracts from archives holding audio or other archives.",
+     "id": "archiveBudgetError.expandsPastLimit.innerHolding",
+     "english": "Together with the archives inside it, the archive expands to %1$@, more than the %2$@ TextMouth extracts from archives holding audio or other archives.",
+     "before": "Razem z archiwami w środku archiwum po rozpakowaniu zajmie %1$@, więcej niż %2$@, które TextMouth wyodrębnia z archiwów zawierających dźwięk lub inne archiwa.",
+     "after": "Archiwum wraz z zawartymi w nim archiwami zajmie po rozpakowaniu %1$@, więcej niż %2$@, które TextMouth wyodrębnia z archiwów zawierających dźwięk lub inne archiwa.",
+     "why": "natural: Razem z archiwami w środku archiwum… makes a listener hear the archives inside the archive and lose the subject; the archive comes first"
+    },
+    {
+     "key": "Together with the archives inside it, the archive expands to %@, more than the %@ TextMouth extracts from archives without audio.",
+     "id": "archiveBudgetError.expandsPastLimit.innerWithout",
+     "english": "Together with the archives inside it, the archive expands to %1$@, more than the %2$@ TextMouth extracts from archives without audio.",
+     "before": "Razem z archiwami w środku archiwum po rozpakowaniu zajmie %1$@, więcej niż %2$@, które TextMouth wyodrębnia z archiwów bez dźwięku.",
+     "after": "Archiwum wraz z zawartymi w nim archiwami zajmie po rozpakowaniu %1$@, więcej niż %2$@, które TextMouth wyodrębnia z archiwów bez dźwięku.",
+     "why": "natural: Razem z archiwami w środku archiwum… makes a listener hear the archives inside the archive and lose the subject; the archive comes first"
+    },
+    {
+     "key": "Together with the archives inside it, the archive holds %@ files and folders, more than the %@ TextMouth extracts in one import.",
+     "id": "archiveBudgetError.tooManyEntries.together",
+     "english": "Together with the archives inside it, the archive holds %1$@ files and folders, more than the %2$@ TextMouth extracts in one import.",
+     "before": "Razem z archiwami w środku archiwum zawiera %1$@ plików i folderów, więcej niż %2$@, które TextMouth wyodrębnia podczas jednego importu.",
+     "after": "Archiwum wraz z zawartymi w nim archiwami zawiera %1$@ plików i folderów, więcej niż %2$@, które TextMouth wyodrębnia podczas jednego importu.",
+     "why": "natural: Razem z archiwami w środku archiwum… makes a listener hear the archives inside the archive and lose the subject; the archive comes first"
+    },
+    {
+     "key": "What happens when a book finishes playing",
+     "id": "settings.endOfBookHint",
+     "english": "What happens when a book finishes playing",
+     "before": "Co się dzieje po zakończeniu odtwarzania książki.",
+     "after": "Określa, co się dzieje po zakończeniu odtwarzania książki.",
+     "why": "voiceover: a hint is a sentence that starts with a third-person verb; Co się dzieje… alone is a fragment"
+    },
+    {
+     "key": "What happens when you hold Shift and skip backward",
+     "id": "settings.shiftSkipBackwardHint",
+     "english": "What happens when you hold Shift and skip backward",
+     "before": "Co się dzieje po przytrzymaniu Shift i przewinięciu do tyłu.",
+     "after": "Określa, co się dzieje po przytrzymaniu Shift i przewinięciu do tyłu.",
+     "why": "voiceover: a hint is a sentence that starts with a third-person verb; Co się dzieje… alone is a fragment"
+    },
+    {
+     "key": "What happens when you hold Shift and skip forward",
+     "id": "settings.shiftSkipForwardHint",
+     "english": "What happens when you hold Shift and skip forward",
+     "before": "Co się dzieje po przytrzymaniu Shift i przewinięciu do przodu.",
+     "after": "Określa, co się dzieje po przytrzymaniu Shift i przewinięciu do przodu.",
+     "why": "voiceover: a hint is a sentence that starts with a third-person verb; Co się dzieje… alone is a fragment"
+    },
+    {
+     "key": "What happens when you skip backward",
+     "id": "settings.skipBackwardHint",
+     "english": "What happens when you skip backward",
+     "before": "Co się dzieje po przewinięciu do tyłu.",
+     "after": "Określa, co się dzieje po przewinięciu do tyłu.",
+     "why": "voiceover: a hint is a sentence that starts with a third-person verb; Co się dzieje… alone is a fragment"
+    },
+    {
+     "key": "What happens when you skip forward",
+     "id": "settings.skipForwardHint",
+     "english": "What happens when you skip forward",
+     "before": "Co się dzieje po przewinięciu do przodu.",
+     "after": "Określa, co się dzieje po przewinięciu do przodu.",
+     "why": "voiceover: a hint is a sentence that starts with a third-person verb; Co się dzieje… alone is a fragment"
+    },
+    {
+     "key": "What to do with the original file after importing a book",
+     "id": "storageSettings.originalFileHint",
+     "english": "What to do with the original file after importing a book",
+     "before": "Co zrobić z oryginalnym plikiem po zaimportowaniu książki.",
+     "after": "Określa, co zrobić z oryginalnym plikiem po zaimportowaniu książki.",
+     "why": "voiceover: a hint is a sentence that starts with a third-person verb; Co zrobić… alone is a fragment"
+    },
+    {
+     "key": "When checked, matches must use the same upper and lower case",
+     "id": "bookSearch.matchCaseHint",
+     "english": "When checked, matches must use the same upper and lower case",
+     "before": "Gdy zaznaczone, trafienia muszą mieć taką samą wielkość liter.",
+     "after": "Gdy ta opcja jest zaznaczona, trafienia muszą mieć taką samą wielkość liter.",
+     "why": "grammar: Gdy włączone/zaznaczone without a subject copies the English When on; Polish needs Gdy ta opcja jest …"
+    },
+    {
+     "key": "When checked, the search text is an ICU regular expression",
+     "id": "librarySearch.regexHint",
+     "english": "When checked, the search text is an ICU regular expression",
+     "before": "Gdy zaznaczone, szukany tekst jest wyrażeniem regularnym ICU.",
+     "after": "Gdy ta opcja jest zaznaczona, szukany tekst jest wyrażeniem regularnym ICU.",
+     "why": "grammar: Gdy włączone/zaznaczone without a subject copies the English When on; Polish needs Gdy ta opcja jest …"
+    },
+    {
+     "key": "When enabled, search text is treated as a regular expression",
+     "id": "bookSearch.regexHint",
+     "english": "When enabled, search text is treated as a regular expression",
+     "before": "Gdy włączone, szukany tekst jest traktowany jak wyrażenie regularne.",
+     "after": "Gdy ta opcja jest włączona, szukany tekst jest traktowany jak wyrażenie regularne.",
+     "why": "grammar: Gdy włączone/zaznaczone without a subject copies the English When on; Polish needs Gdy ta opcja jest …"
+    },
+    {
+     "key": "When off, its files are deleted permanently and cannot be recovered.",
+     "id": "removalPreferences.trashPreference.permanently",
+     "english": "When off, its files are deleted permanently and cannot be recovered.",
+     "before": "Gdy wyłączone, pliki są trwale usuwane i nie można ich odzyskać.",
+     "after": "Gdy ta opcja jest wyłączona, pliki są trwale usuwane i nie można ich odzyskać.",
+     "why": "grammar: Gdy włączone/zaznaczone without a subject copies the English When on; Polish needs Gdy ta opcja jest …"
+    },
+    {
+     "key": "When off, removing a book will %@ at once.",
+     "id": "removalPreferences.confirmationExplanation.once",
+     "english": "When off, removing a book will %@ at once.",
+     "before": "Gdy wyłączone, usunięcie książki od razu powoduje: %@.",
+     "after": "Gdy ta opcja jest wyłączona, usunięcie książki od razu powoduje: %@.",
+     "why": "grammar: Gdy włączone/zaznaczone without a subject copies the English When on; Polish needs Gdy ta opcja jest …"
+    },
+    {
+     "key": "When off, the sheet stays open showing the remaining time and a reset button",
+     "id": "settings.autoCloseHint",
+     "english": "When off, the sheet stays open showing the remaining time and a reset button",
+     "before": "Gdy wyłączone, arkusz pozostaje otwarty i pokazuje pozostały czas oraz przycisk resetowania.",
+     "after": "Gdy ta opcja jest wyłączona, arkusz pozostaje otwarty i pokazuje pozostały czas oraz przycisk resetowania.",
+     "why": "grammar: Gdy wyłączone without a subject copies the English When off; Polish needs Gdy ta opcja jest …"
+    },
+    {
+     "key": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
+     "id": "removalPreferences.trashPreference.recover",
+     "english": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
+     "before": "Gdy włączone, pliki usuniętej książki trafiają do kosza, skąd można je odzyskać do czasu opróżnienia kosza.",
+     "after": "Gdy ta opcja jest włączona, pliki usuniętej książki trafiają do kosza, skąd można je odzyskać do czasu opróżnienia kosza.",
+     "why": "grammar: Gdy włączone/zaznaczone without a subject copies the English When on; Polish needs Gdy ta opcja jest …"
+    },
+    {
+     "key": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
+     "id": "removalPreferences.confirmation.whether",
+     "english": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
+     "before": "Gdy włączone, usunięcie książki najpierw pyta, czy wybrać %@, czy zachować pliki w folderze biblioteki TextMouth.",
+     "after": "Gdy ta opcja jest włączona, przed usunięciem książki TextMouth pyta, czy wybrać %@, czy zachować pliki w folderze biblioteki TextMouth.",
+     "why": "grammar: Gdy włączone has no subject, and usunięcie książki pyta (the removal asks) reads oddly; TextMouth asks before the removal"
+    },
+    {
+     "key": "Where TextMouth writes its diagnostic logs. %@ keeps them with your books, so they move and sync with the library. %@ keeps them in %@, which never syncs. A change applies from the next line; existing logs stay.",
+     "id": "logsSettings.pickerHint",
+     "english": "Where TextMouth writes its diagnostic logs. %1$@ keeps them with your books, so they move and sync with the library. %2$@ keeps them in %3$@, which never syncs. A change applies from the next line; existing logs stay.",
+     "before": "Gdzie TextMouth zapisuje swoje dzienniki diagnostyczne. %1$@ przechowuje je razem z książkami, więc przenoszą się i synchronizują z biblioteką. %2$@ przechowuje je w %3$@, który nigdy się nie synchronizuje. Zmiana działa od następnego wiersza; istniejące dzienniki pozostają.",
+     "after": "Określa, gdzie TextMouth zapisuje swoje dzienniki diagnostyczne. Opcja %1$@ przechowuje je razem z książkami, więc przenoszą się i synchronizują z biblioteką. Opcja %2$@ przechowuje je w %3$@, który nigdy się nie synchronizuje. Zmiana działa od następnego wiersza; istniejące dzienniki pozostają.",
+     "why": "grammar: the choice names (Wewnątrz folderu danych, W folderze Dzienniki…) read as adverbs, not subjects, until Opcja names them; the hint now starts with a verb"
+    },
+    {
+     "key": "“%@” is being exported. %@, then %@.",
+     "id": "textEncoding.exportingRefusal",
+     "english": "“%1$@” is being exported. %2$@, then %3$@.",
+     "before": "„%1$@” jest eksportowana. %2$@, a potem %3$@.",
+     "after": "Książka „%1$@” jest eksportowana. %2$@, a potem %3$@.",
+     "why": "grammar: the feminine jest eksportowana cannot agree with every title (Pan Tadeusz); Książka carries the gender"
+    },
+    {
+     "key": "“%@” is now read as %@.",
+     "id": "textEncoding.sentences",
+     "english": "“%1$@” is now read as %2$@.",
+     "before": "„%1$@” jest teraz odczytywana jako: %2$@.",
+     "after": "Książka „%1$@” jest teraz odczytywana jako: %2$@.",
+     "why": "grammar: the feminine odczytywana cannot agree with every title; Książka carries the gender"
+    }
+   ]
+  },
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ couldn't send the feed (error %@). Try again later.",
+     "id": "feedFetchError.message.serverError",
+     "english": "%1$@ couldn't send the feed (error %2$@). Try again later.",
+     "before": "%1$@ nie wysłał kanału (błąd %2$@). Spróbuj ponownie później.",
+     "after": "Serwer %1$@ nie wysłał kanału (błąd %2$@). Spróbuj ponownie później.",
+     "why": "grammar: a host name has no gender in Polish, so the masculine verb needs Serwer as its subject"
+    },
+    {
+     "key": "%@ couldn't send the file (error %@). Try again later.",
+     "id": "feedFetchError.downloadMessage.serverError",
+     "english": "%1$@ couldn't send the file (error %2$@). Try again later.",
+     "before": "%1$@ nie wysłał pliku (błąd %2$@). Spróbuj ponownie później.",
+     "after": "Serwer %1$@ nie wysłał pliku (błąd %2$@). Spróbuj ponownie później.",
+     "why": "grammar: a host name has no gender in Polish, so the masculine verb needs Serwer as its subject"
+    },
+    {
+     "key": "%@ didn't answer for %lld seconds.",
+     "id": "feedFetchError.didntAnswerSeconds",
+     "english": {
+      "one": "%@ didn't answer for %lld second.",
+      "other": "%@ didn't answer for %lld seconds."
+     },
+     "before": {
+      "few": "%@ nie odpowiedział w ciągu %lld sekund.",
+      "many": "%@ nie odpowiedział w ciągu %lld sekund.",
+      "one": "%@ nie odpowiedział w ciągu %lld sekundy.",
+      "other": "%@ nie odpowiedział w ciągu %lld sekundy."
+     },
+     "after": {
+      "one": "Serwer %@ nie odpowiedział w ciągu %lld sekundy.",
+      "few": "Serwer %@ nie odpowiedział w ciągu %lld sekund.",
+      "many": "Serwer %@ nie odpowiedział w ciągu %lld sekund.",
+      "other": "Serwer %@ nie odpowiedział w ciągu %lld sekundy."
+     },
+     "why": "grammar: a host name has no gender in Polish, so the masculine verb needs Serwer as its subject"
+    },
+    {
+     "key": "%@ lists %lld feeds. Each gets its own folder, named after it.",
+     "id": "feed.importLists",
+     "english": {
+      "one": "%@ lists %lld feed. Each gets its own folder, named after it.",
+      "other": "%@ lists %lld feeds. Each gets its own folder, named after it."
+     },
+     "before": {
+      "few": "Plik %@ zawiera %lld kanały. Każdy dostaje własny folder o tej samej nazwie.",
+      "many": "Plik %@ zawiera %lld kanałów. Każdy dostaje własny folder o tej samej nazwie.",
+      "one": "Plik %@ zawiera %lld kanał. Dostaje własny folder o tej samej nazwie.",
+      "other": "Plik %@ zawiera %lld kanału. Każdy dostaje własny folder o tej samej nazwie."
+     },
+     "after": {
+      "one": "Plik %@ zawiera %lld kanał. Kanał dostaje własny folder o tej samej nazwie.",
+      "few": "Plik %@ zawiera %lld kanały. Każdy dostaje własny folder o tej samej nazwie.",
+      "many": "Plik %@ zawiera %lld kanałów. Każdy dostaje własny folder o tej samej nazwie.",
+      "other": "Plik %@ zawiera %lld kanału. Każdy dostaje własny folder o tej samej nazwie."
+     },
+     "why": "meaning: in the one form the bare Dostaje took the file as its subject, so the file got the folder"
+    },
+    {
+     "key": "%@ moved to position %lld of %lld",
+     "id": "audioFilterPresets.moved",
+     "english": "%1$@ moved to position %2$lld of %3$lld",
+     "before": "Przeniesiono %1$@ na pozycję %2$lld z %3$lld",
+     "after": "%1$@: przeniesiono na pozycję %2$lld z %3$lld",
+     "why": "grammar: a preset name the listener types may not take the accusative; it now leads, before a colon"
+    },
+    {
+     "key": "%@ of %@ transcribed",
+     "id": "transcription.secondsLine",
+     "english": "%1$@ of %2$@ transcribed",
+     "before": "Przetranskrybowano %1$@ z %2$@",
+     "after": "Przetranskrybowano: %1$@ (całość: %2$@)",
+     "why": "grammar: a spoken length such as 2 godziny is nominative and cannot be the object or follow z; both now follow colons"
+    },
+    {
+     "key": "%@ on this book",
+     "id": "importProgress.timeOnBook",
+     "english": "%@ on this book",
+     "before": "%@ na tej książce",
+     "after": "Import tej książki: %@",
+     "why": "natural: na tej książce is a calque of on this book; Polish names the time spent as a labelled value"
+    },
+    {
+     "key": "%lld of %@ listed",
+     "id": "feed.sizePhrase",
+     "english": {
+      "one": "%lld of %@ listed",
+      "other": "%lld of %@ listed"
+     },
+     "before": {
+      "few": "%lld z %@ na liście",
+      "many": "%lld z %@ na liście",
+      "one": "%lld z %@ na liście",
+      "other": "%lld z %@ na liście"
+     },
+     "after": {
+      "one": "%lld na liście, łącznie %@",
+      "few": "%lld na liście, łącznie %@",
+      "many": "%lld na liście, łącznie %@",
+      "other": "%lld na liście, łącznie %@"
+     },
+     "why": "grammar: z needs the genitive, which a total such as 23 odcinki is not; łącznie takes the total as it comes"
+    },
+    {
+     "key": "%lld timed passages were too long and cut short.",
+     "id": "transcription.attached.short",
+     "english": {
+      "one": "%lld timed passage was too long and cut short.",
+      "other": "%lld timed passages were too long and cut short."
+     },
+     "before": {
+      "few": "%lld fragmenty z czasem były zbyt długie i zostały skrócone.",
+      "many": "%lld fragmentów z czasem było zbyt długich i zostało skróconych.",
+      "one": "%lld fragment z czasem był zbyt długi i został skrócony.",
+      "other": "%lld fragmentów z czasem było zbyt długich i zostało skróconych."
+     },
+     "after": {
+      "one": "%lld fragment ze znacznikiem czasu był zbyt długi i został skrócony.",
+      "few": "%lld fragmenty ze znacznikami czasu były zbyt długie i zostały skrócone.",
+      "many": "%lld fragmentów ze znacznikami czasu było zbyt długich i zostało skróconych.",
+      "other": "%lld fragmentów ze znacznikami czasu było zbyt długich i zostało skróconych."
+     },
+     "why": "meaning: z czasem also means eventually; a timed passage is a fragment ze znacznikiem czasu"
+    },
+    {
+     "key": "%lld timed passages were unreadable and left out.",
+     "id": "transcription.attached.unreadable",
+     "english": {
+      "one": "%lld timed passage was unreadable and left out.",
+      "other": "%lld timed passages were unreadable and left out."
+     },
+     "before": {
+      "few": "%lld fragmenty z czasem były nieczytelne i zostały pominięte.",
+      "many": "%lld fragmentów z czasem było nieczytelnych i zostało pominiętych.",
+      "one": "%lld fragment z czasem był nieczytelny i został pominięty.",
+      "other": "%lld fragmentów z czasem było nieczytelnych i zostało pominiętych."
+     },
+     "after": {
+      "one": "%lld fragment ze znacznikiem czasu był nieczytelny i został pominięty.",
+      "few": "%lld fragmenty ze znacznikami czasu były nieczytelne i zostały pominięte.",
+      "many": "%lld fragmentów ze znacznikami czasu było nieczytelnych i zostało pominiętych.",
+      "other": "%lld fragmentów ze znacznikami czasu było nieczytelnych i zostało pominiętych."
+     },
+     "why": "meaning: z czasem also means eventually; a timed passage is a fragment ze znacznikiem czasu"
+    },
+    {
+     "key": "%lld waiting for room on this Mac",
+     "id": "feedDownloadProgress.waits.room",
+     "english": {
+      "one": "%lld waiting for room on this Mac",
+      "other": "%lld waiting for room on this Mac"
+     },
+     "before": {
+      "few": "%lld czeka na miejsce na tym komputerze Mac",
+      "many": "%lld czeka na miejsce na tym komputerze Mac",
+      "one": "%lld czeka na miejsce na tym komputerze Mac",
+      "other": "%lld czeka na miejsce na tym komputerze Mac"
+     },
+     "after": {
+      "one": "%lld czeka na miejsce na tym komputerze Mac",
+      "few": "%lld czekają na miejsce na tym komputerze Mac",
+      "many": "%lld czeka na miejsce na tym komputerze Mac",
+      "other": "%lld czeka na miejsce na tym komputerze Mac"
+     },
+     "why": "grammar: 2 to 4 take a plural verb (3 czekają), not czeka"
+    },
+    {
+     "key": "%lld waiting until this Mac is on a network without data limits",
+     "id": "feedDownloadProgress.waits.network",
+     "english": {
+      "one": "%lld waiting until this Mac is on a network without data limits",
+      "other": "%lld waiting until this Mac is on a network without data limits"
+     },
+     "before": {
+      "few": "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych",
+      "many": "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych",
+      "one": "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych",
+      "other": "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych"
+     },
+     "after": {
+      "one": "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych",
+      "few": "%lld czekają, aż ten komputer Mac połączy się z siecią bez limitów danych",
+      "many": "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych",
+      "other": "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych"
+     },
+     "why": "grammar: 2 to 4 take a plural verb (3 czekają), not czeka"
+    },
+    {
+     "key": "; %@ stay",
+     "id": "feed.unsubscribed.stay",
+     "english": "; %@ stay",
+     "before": "; zostają %@",
+     "after": "; zachowano %@",
+     "why": "grammar: zostają cannot agree with a count of 5 or more (jego 5 pobranych odcinków zostaje); the impersonal zachowano fits every count"
+    },
+    {
+     "key": "A transcript is being attached to %@. Transcribe it once that finishes.",
+     "id": "transcription.transcribeWhileAttaching",
+     "english": "A transcript is being attached to %@. Transcribe it once that finishes.",
+     "before": "Do audiobooka %@ jest dołączana transkrypcja. Transkrybuj jego dźwięk po jej zakończeniu.",
+     "after": "Do audiobooka %@ jest dołączana transkrypcja. Transkrybuj jego dźwięk po zakończeniu dołączania.",
+     "why": "meaning: po jej zakończeniu pointed at the transcript, not at the attaching that must finish"
+    },
+    {
+     "key": "About %@ left",
+     "id": "importProgress.timeLeft.about",
+     "english": "About %@ left",
+     "before": "Pozostało około %@",
+     "after": "Szacowany czas do końca: %@",
+     "why": "grammar: około needs the genitive, which a spoken time such as 4 minuty is not; the time now follows a colon"
+    },
+    {
+     "key": "After a pause of %@, at %@.",
+     "id": "audioEditor.afterPause",
+     "english": "After a pause of %1$@, at %2$@.",
+     "before": "Po przerwie %1$@, czas: %2$@.",
+     "after": "Po przerwie (%1$@), czas: %2$@.",
+     "why": "grammar: przerwie 1 sekunda mixes cases; the length stands in parentheses"
+    },
+    {
+     "key": "Applied %@ to %@.",
+     "id": "audioEditor.appliedFilter.toSelection",
+     "english": "Applied %1$@ to %2$@.",
+     "before": "Zastosowano %1$@ do zaznaczenia: %2$@.",
+     "after": "Zastosowano filtr %1$@ do zaznaczenia: %2$@.",
+     "why": "grammar: a preset name such as Wyrównaj poziom cannot stand as the object; filtr carries the case"
+    },
+    {
+     "key": "Applied %@ to all of the audio.",
+     "id": "audioEditor.appliedFilter.toAllAudio",
+     "english": "Applied %@ to all of the audio.",
+     "before": "Zastosowano %@ do całego dźwięku.",
+     "after": "Zastosowano filtr %@ do całego dźwięku.",
+     "why": "grammar: a preset name such as Wyrównaj poziom cannot stand as the object; filtr carries the case"
+    },
+    {
+     "key": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "id": "transcription.offerHint",
+     "english": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "before": "Po każdym imporcie audiobooka pyta, czy go transkrybować. Gdy wyłączone, audiobooki są transkrybowane tylko poleceniem Transkrybuj dźwięk.",
+     "after": "Po każdym imporcie audiobooka pyta, czy go transkrybować. Gdy ta opcja jest wyłączona, audiobooki są transkrybowane tylko poleceniem Transkrybuj dźwięk.",
+     "why": "grammar: Gdy wyłączone lacks its subject and verb"
+    },
+    {
+     "key": "Attached “%@” to %@: %@.",
+     "id": "transcription.attached.toAudiobook",
+     "english": "Attached “%1$@” to %2$@: %3$@.",
+     "before": "Dołączono „%1$@” do %2$@: %3$@.",
+     "after": "Dołączono „%1$@” do audiobooka %2$@: %3$@.",
+     "why": "grammar: a bare book title cannot take the genitive here; audiobooka carries the case"
+    },
+    {
+     "key": "Attaching “%@” to %@.",
+     "id": "transcription.attaching",
+     "english": "Attaching “%1$@” to %2$@.",
+     "before": "Dołączanie „%1$@” do %2$@.",
+     "after": "Dołączanie „%1$@” do audiobooka %2$@.",
+     "why": "grammar: a bare book title cannot take the genitive here; audiobooka carries the case"
+    },
+    {
+     "key": "Checking now",
+     "id": "feed.checkingNow",
+     "english": "Checking now",
+     "before": "Sprawdzanie teraz",
+     "after": "Trwa sprawdzanie",
+     "why": "natural: Sprawdzanie teraz copies Checking now word for word; Polish says Trwa sprawdzanie"
+    },
+    {
+     "key": "Checks this feed again from now on, and at once",
+     "id": "feed.resubscribeHint",
+     "english": "Checks this feed again from now on, and at once",
+     "before": "Sprawdza ten kanał ponownie od teraz i od razu.",
+     "after": "Od teraz znów sprawdza ten kanał, zaczynając od razu.",
+     "why": "natural: od teraz i od razu read as a clumsy pair; the hint now says it resumes checking, starting at once"
+    },
+    {
+     "key": "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of %@, timed from the start of its audio.",
+     "id": "transcription.attachPanelMessage",
+     "english": "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of %@, timed from the start of its audio.",
+     "before": "Wybierz transkrypcję WebVTT (.vtt) lub SubRip (.srt) dla: %@, z czasem liczonym od początku dźwięku.",
+     "after": "Wybierz transkrypcję WebVTT (.vtt) lub SubRip (.srt) audiobooka %@, z czasem liczonym od początku jego dźwięku.",
+     "why": "grammar: a colon after dla is not Polish; audiobooka carries the case"
+    },
+    {
+     "key": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "id": "feed.importPanelMessage",
+     "english": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "before": "Wybierz plik OPML z subskrypcjami, tak jak eksportuje je inny czytnik kanałów.",
+     "after": "Wybierz plik OPML z subskrypcjami, wyeksportowany z innego czytnika kanałów.",
+     "why": "natural: tak jak eksportuje je inny czytnik copied the English clause; Polish names the file as exported from another reader"
+    },
+    {
+     "key": "Cleaned up the transcript of %@: %@.",
+     "id": "transcriptCleanup.applied",
+     "english": "Cleaned up the transcript of %1$@: %2$@.",
+     "before": "Oczyszczono transkrypcję %1$@: %2$@.",
+     "after": "Oczyszczono transkrypcję audiobooka %1$@: %2$@.",
+     "why": "grammar: a bare book title cannot take the genitive here; audiobooka carries the case"
+    },
+    {
+     "key": "Clears the selection.",
+     "id": "audioEditor.explanation.editorClearSelection",
+     "english": "Clears the selection.",
+     "before": "Odznacza zaznaczenie.",
+     "after": "Anuluje zaznaczenie.",
+     "why": "natural: Odznacza zaznaczenie is a tautology; Polish says Anuluje zaznaczenie"
+    },
+    {
+     "key": "Copied %@.",
+     "id": "audioEditor.copied",
+     "english": "Copied %@.",
+     "before": "Skopiowano %@.",
+     "after": "Skopiowano: %@.",
+     "why": "grammar: a spoken length such as 1 minuta, 4 sekundy is nominative and cannot be the object; it now follows a colon"
+    },
+    {
+     "key": "Cut %@",
+     "id": "audioEdit.actionName.cut",
+     "english": "Cut %@",
+     "before": "Wytnij %@",
+     "after": "Wytnij fragment (%@)",
+     "why": "grammar: an edit name with a length such as 1 minuta cannot take the accusative; fragment carries it, as Wstaw ciszę (%@) already does"
+    },
+    {
+     "key": "Cut %@.",
+     "id": "audioEditor.cut",
+     "english": "Cut %@.",
+     "before": "Wycięto %@.",
+     "after": "Wycięto: %@.",
+     "why": "grammar: a spoken length such as 1 minuta, 4 sekundy is nominative and cannot be the object; it now follows a colon"
+    },
+    {
+     "key": "Download %lld of %lld: “%@” from %@",
+     "id": "feedDownloadProgress.item",
+     "english": "Download %1$lld of %2$lld: “%3$@” from %4$@",
+     "before": "Pobieranie %1$lld z %2$lld: „%3$@” z %4$@",
+     "after": "Pobieranie %1$lld z %2$lld: „%3$@” z kanału %4$@",
+     "why": "grammar: a feed title after z cannot take the genitive the preposition needs; kanału carries the case"
+    },
+    {
+     "key": "Downloading the %@ model: %lld percent.",
+     "id": "transcription.downloading.percent",
+     "english": {
+      "one": "Downloading the %@ model: %lld percent.",
+      "other": "Downloading the %@ model: %lld percent."
+     },
+     "before": {
+      "few": "Pobieranie modelu %1$@: %2$lld procent.",
+      "many": "Pobieranie modelu %1$@: %2$lld procent.",
+      "one": "Pobieranie modelu %1$@: %2$lld procent.",
+      "other": "Pobieranie modelu %1$@: %2$lld procent."
+     },
+     "after": {
+      "one": "Pobieranie modelu: %1$@, %2$lld procent.",
+      "few": "Pobieranie modelu: %1$@, %2$lld procent.",
+      "many": "Pobieranie modelu: %1$@, %2$lld procent.",
+      "other": "Pobieranie modelu: %1$@, %2$lld procent."
+     },
+     "why": "grammar: modelu angielski mixes cases, since the language name comes in the nominative; the name now follows a colon, as the Download button has it"
+    },
+    {
+     "key": "Downloading the %@ model…",
+     "id": "transcription.downloading.model",
+     "english": "Downloading the %@ model…",
+     "before": "Pobieranie modelu %@…",
+     "after": "Pobieranie modelu: %@…",
+     "why": "grammar: modelu angielski mixes cases, since the language name comes in the nominative; the name now follows a colon, as the Download button has it"
+    },
+    {
+     "key": "Edits of its audio or of its manifest are not kept.",
+     "id": "importDecision.audioEditsNotKept",
+     "english": "Edits of its audio or of its manifest are not kept.",
+     "before": "Edycje jej dźwięku lub manifestu nie są zachowywane.",
+     "after": "Zmiany w jej dźwięku lub manifeście nie są zachowywane.",
+     "why": "natural: Edycje is a calque of edits; Polish says Zmiany w"
+    },
+    {
+     "key": "Every article of %@ is already read.",
+     "id": "feed.markedAll.article",
+     "english": "Every article of %@ is already read.",
+     "before": "Wszystkie artykuły z %@ są już przeczytane.",
+     "after": "Wszystkie artykuły kanału %@ są już przeczytane.",
+     "why": "grammar: a feed title after z cannot take the genitive the preposition needs; kanału carries the case"
+    },
+    {
+     "key": "Every episode of %@ is already played.",
+     "id": "feed.markedAll.episode",
+     "english": "Every episode of %@ is already played.",
+     "before": "Wszystkie odcinki z %@ są już odtworzone.",
+     "after": "Wszystkie odcinki kanału %@ są już odtworzone.",
+     "why": "grammar: a feed title after z cannot take the genitive the preposition needs; kanału carries the case"
+    },
+    {
+     "key": "Every item of %@ is already played.",
+     "id": "feed.markedAll.item",
+     "english": "Every item of %@ is already played.",
+     "before": "Wszystkie pozycje z %@ są już odtworzone.",
+     "after": "Wszystkie pozycje kanału %@ są już odtworzone.",
+     "why": "grammar: a feed title after z cannot take the genitive the preposition needs; kanału carries the case"
+    },
+    {
+     "key": "Exported %lld subscriptions to %@.",
+     "id": "feed.exported.subscriptions",
+     "english": {
+      "one": "Exported %lld subscription to %@.",
+      "other": "Exported %lld subscriptions to %@."
+     },
+     "before": {
+      "few": "Wyeksportowano %lld subskrypcje do %@.",
+      "many": "Wyeksportowano %lld subskrypcji do %@.",
+      "one": "Wyeksportowano %lld subskrypcję do %@.",
+      "other": "Wyeksportowano %lld subskrypcji do %@."
+     },
+     "after": {
+      "one": "Wyeksportowano %lld subskrypcję do pliku %@.",
+      "few": "Wyeksportowano %lld subskrypcje do pliku %@.",
+      "many": "Wyeksportowano %lld subskrypcji do pliku %@.",
+      "other": "Wyeksportowano %lld subskrypcji do pliku %@."
+     },
+     "why": "grammar: a file name after do cannot take the genitive; pliku carries the case"
+    },
+    {
+     "key": "Feeds refresh only at launch, if that is on, and when you choose %@ or %@",
+     "id": "feedThreshold.refreshInterval.choose",
+     "english": "Feeds refresh only at launch, if that is on, and when you choose %1$@ or %2$@",
+     "before": "Kanały odświeżają się tylko przy uruchomieniu, jeśli to włączone, i gdy wybierzesz %1$@ lub %2$@.",
+     "after": "Kanały odświeżają się tylko przy uruchomieniu, jeśli ta opcja jest włączona, i gdy wybierzesz %1$@ lub %2$@.",
+     "why": "grammar: jeśli to włączone lacks its verb; Polish says jeśli ta opcja jest włączona"
+    },
+    {
+     "key": "Found at %@. When on, the editor's filters run through ffmpeg, with every filter it has.",
+     "id": "audioEditingSettings.ffmpegHint",
+     "english": "Found at %@. When on, the editor's filters run through ffmpeg, with every filter it has.",
+     "before": "Znaleziono w: %@. Gdy włączone, filtry edytora działają przez ffmpeg, ze wszystkimi jego filtrami.",
+     "after": "Znaleziono w: %@. Gdy ta opcja jest włączona, filtry edytora działają przez ffmpeg, ze wszystkimi jego filtrami.",
+     "why": "grammar: Gdy włączone lacks its subject and verb"
+    },
+    {
+     "key": "Import cancelled after %@.",
+     "id": "zipImportCancellation.sentence.afterBooks",
+     "english": "Import cancelled after %@.",
+     "before": "Import anulowany po: %@.",
+     "after": "Import został anulowany po przetworzeniu %@.",
+     "why": "grammar: a colon after the preposition po is not Polish; the count follows po przetworzeniu"
+    },
+    {
+     "key": "It can be downloaded again.",
+     "id": "keptParts.keptForRedownloadSentence.downloaded",
+     "english": "It can be downloaded again.",
+     "before": "Można ją pobrać ponownie.",
+     "after": "Można go pobrać ponownie.",
+     "why": "grammar: it follows Usunięto pobrany plik, a masculine noun, so ją was the wrong gender"
+    },
+    {
+     "key": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "id": "feed.deletesSentence.deletedPermanentlyRecovered",
+     "english": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "before": "Usuwa %@: jest to usuwane na stałe i nie można tego odzyskać.",
+     "after": "Usuwa %@ na stałe, bez możliwości odzyskania.",
+     "why": "natural: jest to usuwane na stałe is a literal passive; Polish says usuwa na stałe, bez możliwości odzyskania"
+    },
+    {
+     "key": "It deletes %@: it stays in the TextMouth library folder.",
+     "id": "feed.deletesSentence.stays",
+     "english": "It deletes %@: it stays in the TextMouth library folder.",
+     "before": "Usuwa %@: zostaje to w folderze biblioteki TextMouth.",
+     "after": "Usuwa %@: zostaje w folderze biblioteki TextMouth.",
+     "why": "natural: zostaje to copied the English it; Polish drops the pronoun"
+    },
+    {
+     "key": "It holds %@, which TextMouth does not import.",
+     "id": "importProgress.noBooksFound",
+     "english": "It holds %@, which TextMouth does not import.",
+     "before": "Zawiera %@, czego TextMouth nie importuje.",
+     "after": "Zawiera %@; TextMouth nie importuje takich plików.",
+     "why": "grammar: czego referred to the whole clause, not to the files; takich plików fits every count"
+    },
+    {
+     "key": "It lists no audio track with a start that TextMouth can read.",
+     "id": "cueSheet.noTracks",
+     "english": "It lists no audio track with a start that TextMouth can read.",
+     "before": "Nie zawiera żadnej ścieżki audio z początkiem, który TextMouth potrafi odczytać.",
+     "after": "Nie zawiera żadnej ścieżki audio, której początek TextMouth potrafi odczytać.",
+     "why": "natural: z początkiem, który copied the English with a start that; Polish says której początek"
+    },
+    {
+     "key": "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings.",
+     "id": "audioEditError.mp3NeedsFFmpeg",
+     "english": "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings.",
+     "before": "Nie można zapisać MP3: nie udało się uruchomić kodera TextMouth, a ffmpeg nie jest zainstalowany albo jest wyłączony w ustawieniach pamięci.",
+     "after": "Nie można zapisać MP3: nie udało się uruchomić kodera TextMouth, a ffmpeg nie jest zainstalowany albo jest wyłączony w: Ustawienia, Pamięć.",
+     "why": "term: w ustawieniach pamięci reads as memory settings; the pane is named as the glossary path form gives it"
+    },
+    {
+     "key": "Marked %lld articles of %@ read.",
+     "id": "feed.markedAll.articles",
+     "english": {
+      "one": "Marked %lld article of %@ read.",
+      "other": "Marked %lld articles of %@ read."
+     },
+     "before": {
+      "few": "Oznaczono %lld artykuły z %@ jako przeczytane.",
+      "many": "Oznaczono %lld artykułów z %@ jako przeczytane.",
+      "one": "Oznaczono %lld artykuł z %@ jako przeczytany.",
+      "other": "Oznaczono %lld artykułu z %@ jako przeczytane."
+     },
+     "after": {
+      "one": "Oznaczono %lld artykuł kanału %@ jako przeczytany.",
+      "few": "Oznaczono %lld artykuły kanału %@ jako przeczytane.",
+      "many": "Oznaczono %lld artykułów kanału %@ jako przeczytane.",
+      "other": "Oznaczono %lld artykułu kanału %@ jako przeczytane."
+     },
+     "why": "grammar: a feed title cannot take the genitive after z; kanału carries the case"
+    },
+    {
+     "key": "Marked %lld episodes of %@ played.",
+     "id": "feed.markedAll.episodes",
+     "english": {
+      "one": "Marked %lld episode of %@ played.",
+      "other": "Marked %lld episodes of %@ played."
+     },
+     "before": {
+      "few": "Oznaczono %lld odcinki z %@ jako odtworzone.",
+      "many": "Oznaczono %lld odcinków z %@ jako odtworzone.",
+      "one": "Oznaczono %lld odcinek z %@ jako odtworzony.",
+      "other": "Oznaczono %lld odcinka z %@ jako odtworzone."
+     },
+     "after": {
+      "one": "Oznaczono %lld odcinek kanału %@ jako odtworzony.",
+      "few": "Oznaczono %lld odcinki kanału %@ jako odtworzone.",
+      "many": "Oznaczono %lld odcinków kanału %@ jako odtworzone.",
+      "other": "Oznaczono %lld odcinka kanału %@ jako odtworzone."
+     },
+     "why": "grammar: a feed title cannot take the genitive after z; kanału carries the case"
+    },
+    {
+     "key": "Marked %lld items of %@ played.",
+     "id": "feed.markedAll.items",
+     "english": {
+      "one": "Marked %lld item of %@ played.",
+      "other": "Marked %lld items of %@ played."
+     },
+     "before": {
+      "few": "Oznaczono %lld pozycje z %@ jako odtworzone.",
+      "many": "Oznaczono %lld pozycji z %@ jako odtworzone.",
+      "one": "Oznaczono %lld pozycję z %@ jako odtworzoną.",
+      "other": "Oznaczono %lld pozycji z %@ jako odtworzone."
+     },
+     "after": {
+      "one": "Oznaczono %lld pozycję kanału %@ jako odtworzoną.",
+      "few": "Oznaczono %lld pozycje kanału %@ jako odtworzone.",
+      "many": "Oznaczono %lld pozycji kanału %@ jako odtworzone.",
+      "other": "Oznaczono %lld pozycji kanału %@ jako odtworzone."
+     },
+     "why": "grammar: a feed title cannot take the genitive after z; kanału carries the case"
+    },
+    {
+     "key": "Move %@",
+     "id": "audioEdit.actionName.move",
+     "english": "Move %@",
+     "before": "Przenieś %@",
+     "after": "Przenieś fragment (%@)",
+     "why": "grammar: an edit name with a length such as 1 minuta cannot take the accusative; fragment carries it, as Wstaw ciszę (%@) already does"
+    },
+    {
+     "key": "Moved %@ to %@.",
+     "id": "audioEditor.moved",
+     "english": "Moved %1$@ to %2$@.",
+     "before": "Przeniesiono %1$@ do: %2$@.",
+     "after": "Przeniesiono fragment (%1$@) do: %2$@.",
+     "why": "grammar: a spoken length such as 1 minuta is nominative and cannot be the object; fragment carries the case and the length stands in parentheses"
+    },
+    {
+     "key": "No audio files were found in %@.",
+     "id": "audioEditor.noTracks",
+     "english": "No audio files were found in %@.",
+     "before": "Nie znaleziono plików dźwiękowych w: %@.",
+     "after": "Nie znaleziono plików dźwiękowych w książce %@.",
+     "why": "grammar: the colon form is for settings paths; a book title after w needs książce to carry the case"
+    },
+    {
+     "key": "No new books in “%@”: all %lld were already in your library.",
+     "id": "importProgress.noNewBooks.other",
+     "english": {
+      "one": "No new books in “%@”: all %lld was already in your library.",
+      "other": "No new books in “%@”: all %lld were already in your library."
+     },
+     "before": {
+      "few": "Brak nowych książek w „%1$@”: wszystkie %2$lld książki były już w Twojej bibliotece.",
+      "many": "Brak nowych książek w „%1$@”: wszystkie %2$lld książek były już w Twojej bibliotece.",
+      "one": "Brak nowych książek w „%1$@”: %2$lld książka była już w Twojej bibliotece.",
+      "other": "Brak nowych książek w „%1$@”: wszystkie %2$lld książki były już w Twojej bibliotece."
+     },
+     "after": {
+      "one": "Brak nowych książek w „%1$@”: %2$lld książka była już w Twojej bibliotece.",
+      "few": "Brak nowych książek w „%1$@”: wszystkie %2$lld książki były już w Twojej bibliotece.",
+      "many": "Brak nowych książek w „%1$@”: każda z %2$lld książek była już w Twojej bibliotece.",
+      "other": "Brak nowych książek w „%1$@”: wszystkie %2$lld książki były już w Twojej bibliotece."
+     },
+     "why": "grammar: 5 or more books take a singular verb, so wszystkie 5 książek były was wrong; każda z fits"
+    },
+    {
+     "key": "No text was found on any of the %lld pages of this comic book archive.",
+     "id": "pageImage.noText.archive",
+     "english": {
+      "one": "No text was found on any of the %lld page of this comic book archive.",
+      "other": "No text was found on any of the %lld pages of this comic book archive."
+     },
+     "before": {
+      "few": "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu.",
+      "many": "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu.",
+      "one": "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu.",
+      "other": "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu."
+     },
+     "after": {
+      "one": "Nie znaleziono tekstu na jedynej stronie tego archiwum komiksu.",
+      "few": "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu.",
+      "many": "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu.",
+      "other": "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu."
+     },
+     "why": "grammar: the one form read żadnej z 1 stron; one page is the only page"
+    },
+    {
+     "key": "No text was found on any of the %lld pages of this picture.",
+     "id": "pageImage.noText.pages",
+     "english": {
+      "one": "No text was found on any of the %lld page of this picture.",
+      "other": "No text was found on any of the %lld pages of this picture."
+     },
+     "before": {
+      "few": "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu.",
+      "many": "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu.",
+      "one": "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu.",
+      "other": "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu."
+     },
+     "after": {
+      "one": "Nie znaleziono tekstu na jedynej stronie tego obrazu.",
+      "few": "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu.",
+      "many": "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu.",
+      "other": "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu."
+     },
+     "why": "grammar: the one form read żadnej z 1 stron; one page is the only page"
+    },
+    {
+     "key": "Part of %@ could not be decoded and is kept as silence.",
+     "id": "ffmpegImport.partlyDecodedNotice.silence",
+     "english": "Part of %@ could not be decoded and is kept as silence.",
+     "before": "Część pliku %@ nie mogła zostać zdekodowana i jest zachowana jako cisza.",
+     "after": "Część pliku %@ nie mogła zostać zdekodowana i została zastąpiona ciszą.",
+     "why": "natural: zachowana jako cisza copies kept as silence; Polish says zastąpiona ciszą"
+    },
+    {
+     "key": "Part of %lld files, %@, could not be decoded and is kept as silence.",
+     "id": "ffmpegImport.partlyDecodedNotice.files",
+     "english": {
+      "one": "Part of %lld file, %@, could not be decoded and is kept as silence.",
+      "other": "Part of %lld files, %@, could not be decoded and is kept as silence."
+     },
+     "before": {
+      "few": "Część %lld plików, %@, nie mogła zostać zdekodowana i jest zachowana jako cisza.",
+      "many": "Część %lld plików, %@, nie mogła zostać zdekodowana i jest zachowana jako cisza.",
+      "one": "Część %lld pliku, %@, nie mogła zostać zdekodowana i jest zachowana jako cisza.",
+      "other": "Część %lld pliku, %@, nie mogła zostać zdekodowana i jest zachowana jako cisza."
+     },
+     "after": {
+      "one": "Część %lld pliku, %@, nie mogła zostać zdekodowana i została zastąpiona ciszą.",
+      "few": "Część %lld plików, %@, nie mogła zostać zdekodowana i została zastąpiona ciszą.",
+      "many": "Część %lld plików, %@, nie mogła zostać zdekodowana i została zastąpiona ciszą.",
+      "other": "Część %lld pliku, %@, nie mogła zostać zdekodowana i została zastąpiona ciszą."
+     },
+     "why": "natural: zachowana jako cisza copies kept as silence; Polish says zastąpiona ciszą"
+    },
+    {
+     "key": "Pasted %@ back where they were cut.",
+     "id": "audioEditor.pastedBack",
+     "english": "Pasted %@ back where they were cut.",
+     "before": "Wklejono %@ z powrotem w miejsce wycięcia.",
+     "after": "Wklejono z powrotem w miejsce wycięcia: %@.",
+     "why": "grammar: a spoken length such as 1 minuta, 4 sekundy is nominative and cannot be the object; it now follows a colon"
+    },
+    {
+     "key": "Pasted %@ over %@.",
+     "id": "audioEditor.pasted.over",
+     "english": "Pasted %1$@ over %2$@.",
+     "before": "Wklejono %1$@ w miejsce %2$@.",
+     "after": "Wklejono fragment (%1$@) w miejsce zaznaczenia (%2$@).",
+     "why": "grammar: a spoken length such as 1 minuta is nominative and cannot be the object; fragment carries the case and the length stands in parentheses"
+    },
+    {
+     "key": "Pasted %@.",
+     "id": "audioEditor.pasted.alone",
+     "english": "Pasted %@.",
+     "before": "Wklejono %@.",
+     "after": "Wklejono: %@.",
+     "why": "grammar: a spoken length such as 1 minuta, 4 sekundy is nominative and cannot be the object; it now follows a colon"
+    },
+    {
+     "key": "Recording to insert at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "id": "audioEditor.punchInStarting.insert",
+     "english": "Recording to insert at %1$@, from %2$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "Nagrywanie do wstawienia w czasie %1$@, z mikrofonu %2$@, po sygnale dźwiękowym. Nagraj w miejscu zaznaczenia albo Zatrzymaj kończy nagrywanie; Odznacz je odrzuca.",
+     "after": "Nagrywanie do wstawienia, czas: %1$@, z mikrofonu %2$@, po sygnale dźwiękowym. Nagraj w miejscu zaznaczenia albo Zatrzymaj kończy nagrywanie; Odznacz je odrzuca.",
+     "why": "grammar: w czasie 1 minuta mixes cases; the time follows czas:, as the editor says it elsewhere"
+    },
+    {
+     "key": "Redo %@",
+     "id": "audioEditor.redoTitle",
+     "english": "Redo %@",
+     "before": "Ponów %@",
+     "after": "Ponów: %@",
+     "why": "grammar: the edit names are commands (Wytnij…), so Ponów Wytnij put two imperatives side by side; the colon makes the name a label, as Ponowiono: %@ does"
+    },
+    {
+     "key": "Replace %@",
+     "id": "audioEdit.actionName.replace",
+     "english": "Replace %@",
+     "before": "Zastąp %@",
+     "after": "Zastąp fragment (%@)",
+     "why": "grammar: an edit name with a length such as 1 minuta cannot take the accusative; fragment carries it, as Wstaw ciszę (%@) already does"
+    },
+    {
+     "key": "Replaced %@ with %@ of new recording, which is selected.",
+     "id": "audioEditor.punchedIn",
+     "english": "Replaced %1$@ with %2$@ of new recording, which is selected.",
+     "before": "Zastąpiono %1$@ nowym nagraniem (%2$@), które jest zaznaczone.",
+     "after": "Zastąpiono fragment (%1$@) nowym nagraniem (%2$@), które jest zaznaczone.",
+     "why": "grammar: a spoken length such as 1 minuta is nominative and cannot be the object; fragment carries the case and the length stands in parentheses"
+    },
+    {
+     "key": "Resubscribed to %@. Checking it now…",
+     "id": "feed.resubscribed",
+     "english": "Resubscribed to %@. Checking it now…",
+     "before": "Ponownie zasubskrybowano %@. Sprawdzanie teraz…",
+     "after": "Ponownie zasubskrybowano kanał %@. Trwa sprawdzanie…",
+     "why": "grammar: the bare title cannot take the accusative, so kanał carries it; Sprawdzanie teraz becomes Trwa sprawdzanie"
+    },
+    {
+     "key": "Saved %@",
+     "id": "audioFilterPresets.saved",
+     "english": "Saved %@",
+     "before": "Zachowano %@",
+     "after": "Zachowano: %@",
+     "why": "grammar: a preset name the listener types may not take the accusative; it follows a colon, as Dodano: %@ does"
+    },
+    {
+     "key": "Saved. The book's audio is now %@ long.",
+     "id": "audioEditor.saved.book",
+     "english": "Saved. The book's audio is now %@ long.",
+     "before": "Zachowano. Dźwięk książki ma teraz długość %@.",
+     "after": "Zachowano. Nowa długość dźwięku książki: %@.",
+     "why": "grammar: ma długość 1 minuta mixes cases; the length follows a colon, as Nowa długość: %@ does"
+    },
+    {
+     "key": "Saves the edits into the book's audio file, in the format the book keeps.",
+     "id": "audioEditor.explanation.editorSave",
+     "english": "Saves the edits into the book's audio file, in the format the book keeps.",
+     "before": "Zachowuje edycje w pliku dźwiękowym książki, w formacie, który książka ma.",
+     "after": "Zachowuje edycje w pliku dźwiękowym książki, w jej obecnym formacie.",
+     "why": "natural: w formacie, który książka ma copies the format the book keeps; Polish says w jej obecnym formacie"
+    },
+    {
+     "key": "Saving %@ of audio as %@, the format this book keeps.",
+     "id": "audioEditor.savingDetail.format",
+     "english": "Saving %1$@ of audio as %2$@, the format this book keeps.",
+     "before": "Zachowywanie dźwięku (%1$@) jako %2$@, w formacie, który ma ta książka.",
+     "after": "Zachowywanie dźwięku (%1$@) jako %2$@, w obecnym formacie tej książki.",
+     "why": "natural: w formacie, który ma ta książka copies the English; Polish says w obecnym formacie"
+    },
+    {
+     "key": "Selected %@.",
+     "id": "audioEditor.selected",
+     "english": "Selected %@.",
+     "before": "Zaznaczono %@.",
+     "after": "Zaznaczono: %@.",
+     "why": "grammar: a spoken length such as 1 minuta, 4 sekundy is nominative and cannot be the object; it now follows a colon"
+    },
+    {
+     "key": "Selection from %@ to %@; %@ long.",
+     "id": "audioEditor.selectionSentence",
+     "english": "Selection from %1$@ to %2$@; %3$@ long.",
+     "before": "Zaznaczenie od %1$@ do %2$@; długość %3$@.",
+     "after": "Zaznaczenie: początek %1$@, koniec %2$@, długość %3$@.",
+     "why": "grammar: od and do need the genitive, which a spoken time such as 2 minuty is not; each value now follows its own noun"
+    },
+    {
+     "key": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "id": "transcription.languagePickerHint",
+     "english": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "before": "Ustawia język transkrybowania. Język oznaczony jako wymaga pobrania można pobrać tylko w arkuszu Transkrybuj dźwięk.",
+     "after": "Ustawia język transkrybowania. Język oznaczony jako „wymaga pobrania” można pobrać tylko w arkuszu Transkrybuj dźwięk.",
+     "why": "punctuation: the status words need quotation marks, or the sentence reads as broken"
+    },
+    {
+     "key": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "id": "feed.insecureMessage",
+     "english": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "before": "Zasubskrybowano %@. Ten kanał używa zwykłego http, więc inne osoby mogą odczytać lub zmienić to, co wysyła; TextMouth mimo to go wczytuje.",
+     "after": "Zasubskrybowano kanał %@. Ten kanał używa zwykłego http, więc inne osoby mogą odczytać lub zmienić to, co wysyła; TextMouth mimo to go wczytuje.",
+     "why": "grammar: a bare feed title cannot take the case the verb needs; the noun kanał carries it"
+    },
+    {
+     "key": "Subscribed to %@: %@.",
+     "id": "feed.subscribed",
+     "english": "Subscribed to %1$@: %2$@.",
+     "before": "Zasubskrybowano %1$@: %2$@.",
+     "after": "Zasubskrybowano kanał %1$@: %2$@.",
+     "why": "grammar: a bare feed title cannot take the case the verb needs; the noun kanał carries it"
+    },
+    {
+     "key": "Subscribing to %@, %lld of %lld…",
+     "id": "feed.importProgress",
+     "english": "Subscribing to %1$@, %2$lld of %3$lld…",
+     "before": "Subskrybowanie %1$@, %2$lld z %3$lld…",
+     "after": "Subskrybowanie kanału %1$@, %2$lld z %3$lld…",
+     "why": "grammar: a bare feed title cannot take the case the verb needs; the noun kanał carries it"
+    },
+    {
+     "key": "Text recognition could not read any of the %lld pages: %@.",
+     "id": "pageImage.pagesNotRead.recognitionAny",
+     "english": {
+      "one": "Text recognition could not read any of the %lld page: %@.",
+      "other": "Text recognition could not read any of the %lld pages: %@."
+     },
+     "before": {
+      "few": "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@.",
+      "many": "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@.",
+      "one": "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@.",
+      "other": "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@."
+     },
+     "after": {
+      "one": "Rozpoznawanie tekstu nie mogło odczytać %lld strony: %@.",
+      "few": "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@.",
+      "many": "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@.",
+      "other": "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@."
+     },
+     "why": "grammar: the one form read żadnej z 1 stron; it now reads nie mogło odczytać 1 strony"
+    },
+    {
+     "key": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "id": "ffmpegImport.soundNotDecoded",
+     "english": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "before": "TextMouth nie może przekonwertować dźwięku „%@”: jest w rodzaju dźwięku, którego nie odczytuje.",
+     "after": "TextMouth nie może przekonwertować dźwięku „%@”: to rodzaj dźwięku, którego nie odczytuje.",
+     "why": "natural: jest w rodzaju dźwięku copies is in a kind of audio; Polish says to rodzaj dźwięku"
+    },
+    {
+     "key": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "id": "duplicateCopy.answerUnderWay",
+     "english": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "before": "TextMouth wciąż wykonuje Twoją ostatnią odpowiedź. Zaczekaj, aż skończy.",
+     "after": "TextMouth wciąż przetwarza Twoją ostatnią odpowiedź. Zaczekaj, aż skończy.",
+     "why": "natural: wykonywać odpowiedź is not a Polish collocation; przetwarza fits"
+    },
+    {
+     "key": "TextMouth's converter could not make itself safe before reading “%@”, so it did not read the file.",
+     "id": "ffmpegImport.notConfined",
+     "english": "TextMouth's converter could not make itself safe before reading “%@”, so it did not read the file.",
+     "before": "Konwerter TextMouth nie mógł się zabezpieczyć przed odczytaniem „%@”, więc nie odczytał pliku.",
+     "after": "Konwerter TextMouth nie zdołał ograniczyć swoich uprawnień przed odczytaniem „%@”, więc nie odczytał pliku.",
+     "why": "meaning: zabezpieczyć się przed odczytaniem reads as protect itself against reading; the converter confines its own access"
+    },
+    {
+     "key": "The %@ file holds no timed text TextMouth can use.",
+     "id": "timedTextError.noCues",
+     "english": "The %@ file holds no timed text TextMouth can use.",
+     "before": "Plik %@ nie zawiera tekstu z czasem, którego TextMouth mógłby użyć.",
+     "after": "Plik %@ nie zawiera tekstu ze znacznikami czasu, którego TextMouth mógłby użyć.",
+     "why": "meaning: tekst z czasem also reads as text eventually; timed text is tekst ze znacznikami czasu"
+    },
+    {
+     "key": "The %@ model couldn't be downloaded: %@",
+     "id": "transcription.downloadFailed",
+     "english": "The %1$@ model couldn't be downloaded: %2$@",
+     "before": "Nie udało się pobrać modelu %1$@: %2$@",
+     "after": "Nie udało się pobrać modelu (%1$@): %2$@",
+     "why": "grammar: modelu angielski mixes cases, since the language name comes in the nominative; it now stands in parentheses"
+    },
+    {
+     "key": "The %@ model's download was cancelled.",
+     "id": "transcription.downloadCancelled",
+     "english": "The %@ model's download was cancelled.",
+     "before": "Pobieranie modelu %@ zostało anulowane.",
+     "after": "Pobieranie modelu (%@) zostało anulowane.",
+     "why": "grammar: modelu angielski mixes cases, since the language name comes in the nominative; it now stands in parentheses"
+    },
+    {
+     "key": "The address of %@ doesn't hold a feed TextMouth can read.",
+     "id": "feedRefreshError.message.parse.address",
+     "english": "The address of %@ doesn't hold a feed TextMouth can read.",
+     "before": "Adres %@ nie zawiera kanału, który TextMouth może odczytać.",
+     "after": "%@: pod tym adresem nie ma kanału, który TextMouth może odczytać.",
+     "why": "grammar: Adres %@ needs the title or server in the genitive; leading with the name keeps it in the nominative"
+    },
+    {
+     "key": "The audio editor for %@ is already open.",
+     "id": "audioEditor.alreadyOpen",
+     "english": "The audio editor for %@ is already open.",
+     "before": "Edytor dźwięku dla: %@ jest już otwarty.",
+     "after": "Edytor dźwięku książki %@ jest już otwarty.",
+     "why": "grammar: a colon after dla is not Polish; książki carries the case"
+    },
+    {
+     "key": "The bookInfo.json file did not read back as it was written.",
+     "id": "fileImportError.recordNotReadBack",
+     "english": "The bookInfo.json file did not read back as it was written.",
+     "before": "Plik bookInfo.json nie odczytał się tak, jak został zapisany.",
+     "after": "Odczytana zawartość pliku bookInfo.json różni się od zapisanej.",
+     "why": "natural: plik nie odczytał się is an odd reflexive; Polish says the read content differs from what was written"
+    },
+    {
+     "key": "The label file “%@” matches no audio file beside it by name, so its headings were not used.",
+     "id": "cueSheet.sheetUnused.matches",
+     "english": "The label file “%@” matches no audio file beside it by name, so its headings were not used.",
+     "before": "Plik etykiet „%@” nie pasuje z nazwy do żadnego sąsiedniego pliku audio, więc jego nagłówki nie zostały użyte.",
+     "after": "Plik etykiet „%@” nie pasuje nazwą do żadnego sąsiedniego pliku audio, więc jego nagłówki nie zostały użyte.",
+     "why": "grammar: pasować z nazwy is not Polish; it is pasować nazwą"
+    },
+    {
+     "key": "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input.",
+     "id": "audioEditor.microphoneHint",
+     "english": "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input.",
+     "before": "Mikrofon, z którego nagrywa Nagraj w miejscu zaznaczenia. TextMouth go zapamiętuje, niezależnie od wejścia macOS.",
+     "after": "Mikrofon, z którego nagrywa funkcja Nagraj w miejscu zaznaczenia. TextMouth go zapamiętuje, niezależnie od wejścia macOS.",
+     "why": "natural: nagrywa Nagraj put a command name right after its verb; funkcja makes it the subject, as Mikrofon dla funkcji… does"
+    },
+    {
+     "key": "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book.",
+     "id": "audioEditingSettings.policyHint",
+     "english": "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book.",
+     "before": "Oryginał to bezstratne nagranie, z którego zachowano nagranie, albo kopia pliku audiobooka sprzed jego pierwszej edycji. Jego zachowanie pozwala cofnąć każdą edycję bez straty jakości; oryginał nagrania zajmuje około 345 MB na godzinę. Zmiana dotyczy też oryginałów już zachowanych, a w bibliotece w chmurze oryginał synchronizuje się z książką.",
+     "after": "Oryginał to bezstratny zapis, z którego powstaje zachowane nagranie, albo kopia pliku audiobooka sprzed jego pierwszej edycji. Jego zachowanie pozwala cofnąć każdą edycję bez straty jakości; oryginał nagrania zajmuje około 345 MB na godzinę. Zmiana dotyczy też oryginałów już zachowanych, a w bibliotece w chmurze oryginał synchronizuje się z książką.",
+     "why": "natural: nagranie, z którego zachowano nagranie repeated the word; the take is a bezstratny zapis"
+    },
+    {
+     "key": "The recording couldn't be saved: %@ It is kept; choose %@ or %@.",
+     "id": "recording.saveFailed",
+     "english": "The recording couldn't be saved: %1$@ It is kept; choose %2$@ or %3$@.",
+     "before": "Nie udało się zachować nagrania: %1$@ Nagranie zostało zachowane; wybierz %2$@ albo %3$@.",
+     "after": "Nie udało się zachować nagrania: %1$@ Nagranie nie zostało utracone; wybierz %2$@ albo %3$@.",
+     "why": "meaning: zachować is both save and keep, so could not be saved, it is kept contradicted itself; it now says the recording was not lost"
+    },
+    {
+     "key": "The refresh of %@ was stopped.",
+     "id": "feedFetchError.message.cancelled",
+     "english": "The refresh of %@ was stopped.",
+     "before": "Odświeżanie %@ zostało zatrzymane.",
+     "after": "Odświeżanie kanału %@ zostało zatrzymane.",
+     "why": "grammar: a bare feed title cannot take the genitive here; kanału carries the case"
+    },
+    {
+     "key": "The server says the file is gone.",
+     "id": "feedFetchError.downloadMessage.notFound",
+     "english": "The server says the file is gone.",
+     "before": "Serwer mówi, że pliku już nie ma.",
+     "after": "Serwer zgłasza, że pliku już nie ma.",
+     "why": "natural: Serwer mówi copies the server says; Polish interfaces say zgłasza"
+    },
+    {
+     "key": "The transcript runs to %@, past the audio's end at %@, so it is for other audio.",
+     "id": "outsideTranscriptError.runsPastTheEnd",
+     "english": "The transcript runs to %1$@, past the audio's end at %2$@, so it is for other audio.",
+     "before": "Transkrypcja sięga do %1$@, poza koniec dźwięku (%2$@), więc dotyczy innego dźwięku.",
+     "after": "Koniec transkrypcji (%1$@) wypada po końcu dźwięku (%2$@), więc dotyczy ona innego dźwięku.",
+     "why": "grammar: sięga do needs the genitive, which a spoken time such as 1 godzina is not; both times now stand in parentheses"
+    },
+    {
+     "key": "The transcript's text didn't read back as one chapter per chapter of the book.",
+     "id": "transcriptTextError.chaptersNotReadBack",
+     "english": "The transcript's text didn't read back as one chapter per chapter of the book.",
+     "before": "Tekst utworzony z transkrypcji nie odczytał się jako jeden rozdział na każdy rozdział książki.",
+     "after": "Po odczytaniu tekst utworzony z transkrypcji nie miał jednego rozdziału na każdy rozdział książki.",
+     "why": "natural: tekst nie odczytał się is an odd reflexive for did not read back"
+    },
+    {
+     "key": "This Mac is offline, so %@ can't be refreshed. Connect to the internet and try again.",
+     "id": "feedFetchError.message.offline",
+     "english": "This Mac is offline, so %@ can't be refreshed. Connect to the internet and try again.",
+     "before": "Ten komputer Mac jest offline, więc nie można odświeżyć %@. Połącz się z internetem i spróbuj ponownie.",
+     "after": "Ten komputer Mac jest offline, więc nie można odświeżyć kanału %@. Połącz się z internetem i spróbuj ponownie.",
+     "why": "grammar: a bare feed title cannot take the genitive here; kanału carries the case"
+    },
+    {
+     "key": "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it.",
+     "id": "fileImportService.bookNoValid",
+     "english": "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it.",
+     "before": "Ta książka nie ma prawidłowego zarządzanego pakietu. Usuń ją tylko z biblioteki albo napraw jej pamięć przed usunięciem.",
+     "after": "Ta książka nie ma prawidłowego zarządzanego pakietu. Usuń ją tylko z biblioteki albo napraw jej pliki przed usunięciem.",
+     "why": "meaning: napraw jej pamięć reads as repair its memory; the book storage here is its files, not the Storage pane"
+    },
+    {
+     "key": "Too many timed passages: the limit is %lld.",
+     "id": "timedTextError.tooManyCues",
+     "english": {
+      "one": "Too many timed passages: the limit is %lld.",
+      "other": "Too many timed passages: the limit is %lld."
+     },
+     "before": {
+      "few": "Zbyt wiele fragmentów z czasem: limit to %lld.",
+      "many": "Zbyt wiele fragmentów z czasem: limit to %lld.",
+      "one": "Zbyt wiele fragmentów z czasem: limit to %lld.",
+      "other": "Zbyt wiele fragmentów z czasem: limit to %lld."
+     },
+     "after": {
+      "one": "Zbyt wiele fragmentów ze znacznikami czasu: limit to %lld.",
+      "few": "Zbyt wiele fragmentów ze znacznikami czasu: limit to %lld.",
+      "many": "Zbyt wiele fragmentów ze znacznikami czasu: limit to %lld.",
+      "other": "Zbyt wiele fragmentów ze znacznikami czasu: limit to %lld."
+     },
+     "why": "meaning: z czasem also means eventually; a timed passage is a fragment ze znacznikiem czasu"
+    },
+    {
+     "key": "Transcribed %@: %@ in %@.",
+     "id": "transcription.finished",
+     "english": "Transcribed %1$@: %2$@ in %3$@.",
+     "before": "Przetranskrybowano %1$@: %2$@ w czasie %3$@.",
+     "after": "Przetranskrybowano audiobook %1$@: %2$@, czas: %3$@.",
+     "why": "grammar: a bare title cannot take the accusative, and w czasie 1 minuta mixes cases; audiobook carries the case and the time follows czas:"
+    },
+    {
+     "key": "Trimmed to the selection: %@ kept.",
+     "id": "audioEditor.trimmed",
+     "english": "Trimmed to the selection: %@ kept.",
+     "before": "Przycięto do zaznaczenia: zachowano %@.",
+     "after": "Przycięto do zaznaczenia, nowa długość: %@.",
+     "why": "grammar: zachowano 1 minuta makes a nominative length the object; it now follows a colon"
+    },
+    {
+     "key": "Undo %@",
+     "id": "audioEditor.undoTitle",
+     "english": "Undo %@",
+     "before": "Cofnij %@",
+     "after": "Cofnij: %@",
+     "why": "grammar: the edit names are commands (Wytnij…), so Cofnij Wytnij put two imperatives side by side; the colon makes the name a label, as Cofnięto: %@ does"
+    },
+    {
+     "key": "Unknown Length",
+     "id": "audioEdit.duration.unknownLengthTitle",
+     "english": "Unknown Length",
+     "before": "nieznaną długość",
+     "after": "nieznana długość",
+     "why": "grammar: the edit names and announcements now take a length after a colon or in parentheses, so the length is nominative"
+    },
+    {
+     "key": "Unsubscribe from %@?",
+     "id": "feed.unsubscribeQuestion",
+     "english": "Unsubscribe from %@?",
+     "before": "Anulować subskrypcję %@?",
+     "after": "Anulować subskrypcję kanału %@?",
+     "why": "grammar: a bare feed title cannot take the genitive after subskrypcję; kanału carries the case"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new articles%@.",
+     "id": "feed.unsubscribed.articles",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new articles%2$@.",
+     "before": "Anulowano subskrypcję %1$@: TextMouth nie sprawdza już nowych artykułów%2$@.",
+     "after": "Anulowano subskrypcję kanału %1$@: TextMouth nie sprawdza go już pod kątem nowych artykułów%2$@.",
+     "why": "grammar: a bare feed title cannot take the genitive after subskrypcję; kanału carries the case, and go now names what is no longer checked"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new episodes%@.",
+     "id": "feed.unsubscribed.episodes",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new episodes%2$@.",
+     "before": "Anulowano subskrypcję %1$@: TextMouth nie sprawdza już nowych odcinków%2$@.",
+     "after": "Anulowano subskrypcję kanału %1$@: TextMouth nie sprawdza go już pod kątem nowych odcinków%2$@.",
+     "why": "grammar: a bare feed title cannot take the genitive after subskrypcję; kanału carries the case, and go now names what is no longer checked"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new items%@.",
+     "id": "feed.unsubscribed.items",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new items%2$@.",
+     "before": "Anulowano subskrypcję %1$@: TextMouth nie sprawdza już nowych pozycji%2$@.",
+     "after": "Anulowano subskrypcję kanału %1$@: TextMouth nie sprawdza go już pod kątem nowych pozycji%2$@.",
+     "why": "grammar: a bare feed title cannot take the genitive after subskrypcję; kanału carries the case, and go now names what is no longer checked"
+    },
+    {
+     "key": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "id": "feed.useGlobalHint",
+     "english": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "before": "Gdy zaznaczone, ten kanał stosuje ustawienie z Ustawień, %@; odznacz, aby kanał miał własne.",
+     "after": "Po zaznaczeniu ten kanał stosuje ustawienie w: Ustawienia, %@; odznacz, aby kanał miał własne.",
+     "why": "grammar: Gdy zaznaczone lacks its verb; the settings path now follows the glossary form w: Ustawienia"
+    },
+    {
+     "key": "You cleaned it up on %@.",
+     "id": "transcription.bookInfoLine.cleaned",
+     "english": "You cleaned it up on %@.",
+     "before": "Oczyszczone przez Ciebie dnia %@.",
+     "after": "Oczyszczona przez Ciebie dnia %@.",
+     "why": "grammar: it is the transcript, a feminine noun, so the participle is oczyszczona"
+    },
+    {
+     "key": "You edited it on %@.",
+     "id": "transcription.bookInfoLine.edited",
+     "english": "You edited it on %@.",
+     "before": "Edytowane przez Ciebie dnia %@.",
+     "after": "Edytowana przez Ciebie dnia %@.",
+     "why": "grammar: it is the transcript, a feminine noun, so the participle is edytowana"
+    },
+    {
+     "key": "You're already subscribed to %@.",
+     "id": "feedSubscribeError.message.alreadySubscribed",
+     "english": "You're already subscribed to %@.",
+     "before": "Już subskrybujesz %@.",
+     "after": "Już subskrybujesz kanał %@.",
+     "why": "grammar: a bare feed title cannot take the accusative; kanał carries the case"
+    },
+    {
+     "key": "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings.",
+     "id": "audioFilterError.ffmpegMissing",
+     "english": "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings.",
+     "before": "Nie udało się uruchomić ffmpeg. Sprawdź, czy jest zainstalowany, albo wyłącz Używaj ffmpeg do filtrów w ustawieniach pamięci.",
+     "after": "Nie udało się uruchomić ffmpeg. Sprawdź, czy jest zainstalowany, albo wyłącz opcję Używaj ffmpeg do filtrów w: Ustawienia, Pamięć.",
+     "why": "term: w ustawieniach pamięci reads as memory settings; the pane is named as the glossary path form gives it"
+    },
+    {
+     "key": "keeping the place of your feed downloads for next time",
+     "id": "feedQuitHold.work",
+     "english": "keeping the place of your feed downloads for next time",
+     "before": "zachowywanie miejsca pobrań z kanałów na następny raz",
+     "after": "zachowywanie postępu pobrań z kanałów na następny raz",
+     "why": "meaning: miejsca pobrań reads as the downloads disk space; what is kept is how far each got"
+    },
+    {
+     "key": "unknown length",
+     "id": "audioEdit.duration.unknownLengthSentence",
+     "english": "unknown length",
+     "before": "nieznaną długość",
+     "after": "nieznana długość",
+     "why": "grammar: the announcements now take a length after a colon or in parentheses, so the length is nominative"
+    },
+    {
+     "key": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "id": "audioEditor.quitWhileRecording",
+     "english": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "before": "Trwa nagrywanie w: „%@”. Zatrzymaj je albo odrzuć poleceniem Odznacz, a potem zakończ działanie.",
+     "after": "W edytorze książki „%@” trwa nagrywanie. Zatrzymaj je albo odrzuć poleceniem Odznacz, a potem zakończ działanie.",
+     "why": "grammar: a colon after w before a book title is not Polish; the recording is in that book editor"
+    },
+    {
+     "key": "“%@” is still working. Quit once the change is done.",
+     "id": "audioEditor.quitWhileWorking",
+     "english": "“%@” is still working. Quit once the change is done.",
+     "before": "W „%@” wciąż trwa praca. Zakończ działanie po zakończeniu zmiany.",
+     "after": "W edytorze książki „%@” wciąż trwa praca. Zakończ działanie po zakończeniu zmiany.",
+     "why": "natural: W „tytuł” trwa praca put the work inside the book; it is under way in the book editor, as the quit refusal beside it says"
+    },
+    {
+     "key": "“%@” wasn't attached to %@: %@",
+     "id": "transcription.attachFailed",
+     "english": "“%1$@” wasn't attached to %2$@: %3$@",
+     "before": "Nie dołączono „%1$@” do %2$@: %3$@",
+     "after": "Nie dołączono „%1$@” do audiobooka %2$@: %3$@",
+     "why": "grammar: a bare book title cannot take the genitive after do; audiobooka carries the case"
+    }
+   ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ adds a bookmark at the current position.",
+     "id": "bookmarkPanelView.emptyListHelp.position",
+     "english": "%@ adds a bookmark at the current position.",
+     "before": "%@ dodaje zakładkę w bieżącej pozycji.",
+     "after": "%@ dodaje zakładkę w bieżącym miejscu.",
+     "why": "natural: w bieżącej pozycji is said of posture; a place in a book is w bieżącym miejscu"
+    },
+    {
+     "key": "%@ adds one at the current position.",
+     "id": "bookmarkPanelView.emptyListHelp.onePosition",
+     "english": "%@ adds one at the current position.",
+     "before": "%@ dodaje ją w bieżącej pozycji.",
+     "after": "%@ dodaje ją w bieżącym miejscu.",
+     "why": "natural: w bieżącej pozycji is said of posture; a place in a book is w bieżącym miejscu"
+    },
+    {
+     "key": "%@ can't open while its edited text can't be used: %@",
+     "id": "bookTextEdit.held",
+     "english": "%1$@ can't open while its edited text can't be used: %2$@",
+     "before": "%1$@ nie może zostać otwarta, bo nie można użyć jej edytowanego tekstu: %2$@",
+     "after": "Nie można otworzyć książki %1$@, bo nie można użyć jej edytowanego tekstu: %2$@",
+     "why": "grammar: a title cannot agree with otwarta; książki carries the case"
+    },
+    {
+     "key": "%@ has its default, %@",
+     "id": "shortcutsSettings.defaultsHeldElsewhere",
+     "english": "%1$@ has its default, %2$@",
+     "before": "Domyślny skrót, %2$@, ma teraz działanie %1$@",
+     "after": "Domyślny skrót, %2$@, należy teraz do działania %1$@",
+     "why": "natural: ma left unclear which one has the key; należy do says the action now owns it"
+    },
+    {
+     "key": "%@ isn't in the reading list.",
+     "id": "readingList.removeRefusal.isnt",
+     "english": "%@ isn't in the reading list.",
+     "before": "%@ nie ma na liście czytelniczej.",
+     "after": "%@ nie znajduje się na liście czytelniczej.",
+     "why": "grammar: nie ma needs the title in the genitive, which a title cannot take; nie znajduje się keeps it the subject"
+    },
+    {
+     "key": "%@ not recorded for %@: %@",
+     "id": "shortcutsSettings.refused",
+     "english": "%1$@ not recorded for %2$@: %3$@",
+     "before": "%1$@ nie został zapisany dla działania %2$@: %3$@",
+     "after": "Skrót %1$@ nie został zapisany dla działania %2$@: %3$@",
+     "why": "grammar: a key name such as Spacja or Gwiazdka is feminine; skrót carries the agreement"
+    },
+    {
+     "key": "%@ now waits before %@, in case it is pressed twice.",
+     "id": "shortcutsSettings.nowWaits",
+     "english": "%1$@ now waits before %2$@, in case it is pressed twice.",
+     "before": "%1$@ czeka teraz chwilę przed wykonaniem działania %2$@, na wypadek gdyby został naciśnięty dwukrotnie.",
+     "after": "Skrót %1$@ czeka teraz chwilę przed wykonaniem działania %2$@, na wypadek gdyby został naciśnięty dwukrotnie.",
+     "why": "grammar: został naciśnięty could not agree with every key name; skrót carries it"
+    },
+    {
+     "key": "%@ of %lld chapters could not be read",
+     "id": "extractionReport.summary.value",
+     "english": {
+      "one": "%@ of %lld chapter could not be read",
+      "other": "%@ of %lld chapters could not be read"
+     },
+     "before": {
+      "few": "Nie udało się odczytać %1$@ z %2$lld rozdziałów",
+      "many": "Nie udało się odczytać %1$@ z %2$lld rozdziałów",
+      "one": "Nie udało się odczytać %1$@ z %2$lld rozdziałów",
+      "other": "Nie udało się odczytać %1$@ z %2$lld rozdziałów"
+     },
+     "after": {
+      "one": "Nie udało się odczytać %1$@ z %2$lld rozdziału",
+      "few": "Nie udało się odczytać %1$@ z %2$lld rozdziałów",
+      "many": "Nie udało się odczytać %1$@ z %2$lld rozdziałów",
+      "other": "Nie udało się odczytać %1$@ z %2$lld rozdziału"
+     },
+     "why": "grammar: z 1 and a fraction take rozdziału, not rozdziałów"
+    },
+    {
+     "key": "%@ remaining",
+     "id": "common.valueRemaining",
+     "english": "%@ remaining",
+     "before": "Pozostało %@",
+     "after": "Pozostało: %@",
+     "why": "grammar: pozostało cannot agree with 1 godzina or 2 godziny; after a colon every time reads right, as Apple writes Pozostało:"
+    },
+    {
+     "key": "%@ remaining at current speed",
+     "id": "readerTime.timeLeftSpoken",
+     "english": "%@ remaining at current speed",
+     "before": "Pozostało %@ przy bieżącej prędkości",
+     "after": "Pozostało przy bieżącej prędkości: %@",
+     "why": "grammar: Pozostało cannot agree with 1 godzina or 2 minuty; the time in words follows a colon, as in its sibling Łącznie pozostało przy bieżącej prędkości"
+    },
+    {
+     "key": "%@ remaining in this heading",
+     "id": "common.valueRemainingInThisHeading",
+     "english": "%@ remaining in this heading",
+     "before": "Do końca nagłówka pozostało %@",
+     "after": "Do końca nagłówka pozostało: %@",
+     "why": "grammar: pozostało cannot agree with 1 godzina or 2 godziny; after a colon every time reads right, as Apple writes Pozostało:"
+    },
+    {
+     "key": "%@ to %@",
+     "id": "common.valueToValue",
+     "english": "%1$@ to %2$@",
+     "before": "%1$@ do %2$@",
+     "after": "od %1$@ do %2$@",
+     "why": "natural: a page range reads od 3 do 7 in Polish, not 3 do 7"
+    },
+    {
+     "key": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "id": "bookTextEdit.addBackNoCopyKept",
+     "english": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "before": "Nie dodano ponownie %@: nie udało się najpierw zachować kopii tekstu zapisanego w jego pakiecie, więc TextMouth pozostawił tekst bez zmian.",
+     "after": "Nie dodano ponownie książki %@: nie udało się najpierw zachować kopii tekstu zapisanego w jej pakiecie, więc TextMouth pozostawił tekst bez zmian.",
+     "why": "grammar: a title cannot take the genitive after nie dodano; książki carries it, and jej agrees"
+    },
+    {
+     "key": "%@, edited by hand",
+     "id": "metadataEditor.fieldLabel",
+     "english": "%@, edited by hand",
+     "before": "%@, edytowane ręcznie",
+     "after": "%@, edytowano ręcznie",
+     "why": "grammar: edytowane did not agree with field names such as Tytuł książki; the impersonal form fits every field"
+    },
+    {
+     "key": "%@, recorded for %@",
+     "id": "shortcutsSettings.sentences",
+     "english": "%1$@, recorded for %2$@",
+     "before": "%1$@ zapisany dla działania %2$@",
+     "after": "Skrót %1$@ zapisany dla działania %2$@",
+     "why": "grammar: zapisany did not agree with a feminine key name; skrót carries it"
+    },
+    {
+     "key": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "id": "readerTime.settingHint",
+     "english": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "before": "Dodaje prędkość, z jaką liczony jest czas, na przykład 2,0x dla audiobooka niesłuchanego w prędkości 1x lub 500 słów na minutę dla książki tekstowej, w czytniku, w poleceniach Gdzie jestem? i Kopiuj pozycję czytania oraz w czasach trwania na arkuszu Nagłówki.",
+     "after": "Dodaje prędkość, z jaką liczony jest czas, na przykład 2,0x dla audiobooka odtwarzanego z prędkością inną niż 1x lub 500 słów na minutę dla książki tekstowej, w czytniku, w poleceniach Gdzie jestem? i Kopiuj pozycję czytania oraz w czasach trwania na arkuszu Nagłówki.",
+     "why": "grammar: niesłuchanego w prędkości 1x was a wrong preposition and an odd participle; z prędkością inną niż 1x"
+    },
+    {
+     "key": "Afterwards, Play tries the passage again",
+     "id": "speechRefusal.closeHint",
+     "english": "Afterwards, Play tries the passage again",
+     "before": "Potem Odtwórz ponawia próbę dla tego fragmentu.",
+     "after": "Potem Odtwórz ponownie spróbuje odczytać ten fragment.",
+     "why": "natural: ponawia próbę dla copied tries the passage again"
+    },
+    {
+     "key": "Audio speed reset to %@",
+     "id": "voiceAndSpeed.audioSpeedReset",
+     "english": "Audio speed reset to %@",
+     "before": "Zresetowano prędkość dźwięku do: %@",
+     "after": "Zresetowano prędkość dźwięku: %@",
+     "why": "natural: a colon after the preposition do splits it from its object; the speed now follows the noun"
+    },
+    {
+     "key": "Braille file characters",
+     "id": "brailleSettings.fileCodeLabel",
+     "english": "Braille file characters",
+     "before": "Znaki pliku Braille’a",
+     "after": "Znaki pliku brajlowskiego",
+     "why": "natural: a braille file or page is brajlowski; Braille’a reads as belonging to Louis Braille"
+    },
+    {
+     "key": "Braille page numbers",
+     "id": "brailleExport.numbersLabel",
+     "english": "Braille page numbers",
+     "before": "Numery stron Braille’a",
+     "after": "Numery stron brajlowskich",
+     "why": "natural: a braille file or page is brajlowski; Braille’a reads as belonging to Louis Braille"
+    },
+    {
+     "key": "Could not add the bookmark: “%@” is no longer in the library.",
+     "id": "readerViewModel.bookmarkNotAddedAnnouncement",
+     "english": "Could not add the bookmark: “%@” is no longer in the library.",
+     "before": "Nie można dodać zakładki: „%@” nie ma już w bibliotece.",
+     "after": "Nie można dodać zakładki: „%@” nie znajduje się już w bibliotece.",
+     "why": "grammar: nie ma needs the title in the genitive, which a title cannot take; nie znajduje się keeps it the subject, as elsewhere"
+    },
+    {
+     "key": "Could not remove the bookmark: “%@” is no longer in the library.",
+     "id": "readerViewModel.bookmarkNotRemovedAnnouncement",
+     "english": "Could not remove the bookmark: “%@” is no longer in the library.",
+     "before": "Nie można usunąć zakładki: „%@” nie ma już w bibliotece.",
+     "after": "Nie można usunąć zakładki: „%@” nie znajduje się już w bibliotece.",
+     "why": "grammar: nie ma needs the title in the genitive, which a title cannot take; nie znajduje się keeps it the subject, as elsewhere"
+    },
+    {
+     "key": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "id": "bookTextEdit.stoppedBookReplaced.since",
+     "english": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "before": "Edycja tekstu dla %@ została zatrzymana, ponieważ zastąpiła ją nowa kopia.",
+     "after": "Edycja tekstu książki %@ została przerwana, ponieważ książkę zastąpiła nowa kopia.",
+     "why": "meaning: ją pointed at the editing, not the book; the book is now named"
+    },
+    {
+     "key": "Edit Text has stopped for %@, since its file was read again.",
+     "id": "bookTextEdit.stoppedBookReadAgain.since",
+     "english": "Edit Text has stopped for %@, since its file was read again.",
+     "before": "Edycja tekstu dla %@ została zatrzymana, ponieważ plik został odczytany ponownie.",
+     "after": "Edycja tekstu książki %@ została przerwana, ponieważ jej plik został ponownie odczytany.",
+     "why": "natural: dla %@ copied the English; worded like its pair"
+    },
+    {
+     "key": "Exporting %lld of %@…",
+     "id": "bookExport.progress.exportingCount",
+     "english": "Exporting %1$lld of %2$@…",
+     "before": "Eksportowanie: %1$lld z %2$@…",
+     "after": "Eksportowanie: zapisano %1$lld, łącznie %2$@…",
+     "why": "grammar: z needs the genitive, but the count of items is nominative (4 pozycje); łącznie takes it as it is"
+    },
+    {
+     "key": "Hides jump to page controls",
+     "id": "readerPage.hideHint",
+     "english": "Hides jump to page controls",
+     "before": "Ukrywa elementy sterujące przechodzenia do strony.",
+     "after": "Ukrywa panel przechodzenia do strony.",
+     "why": "natural: elementy sterujące przechodzenia is a calque; the comment names the panel, shorter in braille"
+    },
+    {
+     "key": "Hides jump to percent controls",
+     "id": "readerView.hidePercentHint",
+     "english": "Hides jump to percent controls",
+     "before": "Ukrywa elementy sterujące przechodzenia do wartości procentowej.",
+     "after": "Ukrywa panel przechodzenia do wartości procentowej.",
+     "why": "natural: elementy sterujące przechodzenia is a calque; the comment names the panel, shorter in braille"
+    },
+    {
+     "key": "Hides jump to time controls",
+     "id": "readerView.hideTimeHint",
+     "english": "Hides jump to time controls",
+     "before": "Ukrywa elementy sterujące przechodzenia do czasu.",
+     "after": "Ukrywa panel przechodzenia do czasu.",
+     "why": "natural: elementy sterujące przechodzenia is a calque; the comment names the panel, shorter in braille"
+    },
+    {
+     "key": "In the spoken text, whose offsets the speech log gives: speech stopped at character %@; the refused text runs from character %@ to %@.",
+     "id": "speechRefusal.stoppedInSpokenText",
+     "english": "In the spoken text, whose offsets the speech log gives: speech stopped at character %1$@; the refused text runs from character %2$@ to %3$@.",
+     "before": "W czytanym tekście, którego przesunięcia podaje dziennik mowy: mowa zatrzymała się na znaku %1$@; odrzucony tekst biegnie od znaku %2$@ do %3$@.",
+     "after": "W czytanym tekście, którego przesunięcia podaje dziennik mowy: mowa zatrzymała się na znaku %1$@; odrzucony tekst obejmuje znaki od %2$@ do %3$@.",
+     "why": "natural: tekst biegnie copied the English runs from"
+    },
+    {
+     "key": "Its pages run from %@ to %@.",
+     "id": "readerPage.noSuchPage.pages",
+     "english": "Its pages run from %1$@ to %2$@.",
+     "before": "Strony przebiegają od %1$@ do %2$@.",
+     "after": "Strony są numerowane od %1$@ do %2$@.",
+     "why": "natural: strony przebiegają copied the English run from"
+    },
+    {
+     "key": "Jumped to %@ in the recording.",
+     "id": "readerTime.jumped.recording",
+     "english": "Jumped to %@ in the recording.",
+     "before": "Przeskoczono do %@ w nagraniu.",
+     "after": "Przeskoczono w nagraniu do pozycji: %@.",
+     "why": "grammar: the time in words is a nominative phrase (2 godziny), which cannot follow do; a colon introduces it"
+    },
+    {
+     "key": "Jumped to %@.",
+     "id": "readerTime.jumped.words",
+     "english": "Jumped to %@.",
+     "before": "Przeskoczono do %@.",
+     "after": "Przeskoczono do pozycji: %@.",
+     "why": "grammar: the time in words is a nominative phrase (2 godziny), which cannot follow do; a colon introduces it"
+    },
+    {
+     "key": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+     "id": "speechExport.kept.chaptersGo",
+     "english": {
+      "one": "Kept %@ of %lld chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+      "other": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "few": "Zachowano %@ z %lld rozdziałów do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby kontynuować od rozdziału %@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu.",
+      "many": "Zachowano %@ z %lld rozdziałów do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby kontynuować od rozdziału %@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu.",
+      "one": "Zachowano %@ z %lld rozdziału do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby kontynuować od rozdziału %@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu.",
+      "other": "Zachowano %@ z %lld rozdziału do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby kontynuować od rozdziału %@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
+     },
+     "after": {
+      "one": "Zachowano %@ z %lld rozdziału do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby kontynuować od rozdziału %@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu.",
+      "few": "Zachowano %@ z %lld rozdziałów do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby kontynuować od rozdziału %@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu.",
+      "many": "Zachowano %@ z %lld rozdziałów do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby kontynuować od rozdziału %@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu.",
+      "other": "Zachowano %@ z %lld rozdziału do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby kontynuować od rozdziału %@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
+     },
+     "why": "term: the book’s pauses here are the gaps it inserts, which the glossary calls przerwy"
+    },
+    {
+     "key": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch.",
+     "id": "speechExport.kept.them",
+     "english": {
+      "one": "Kept all %lld spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+      "other": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "few": "Zachowano wszystkie odczytane rozdziały (%lld) do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby utworzyć z nich plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu.",
+      "many": "Zachowano wszystkie odczytane rozdziały (%lld) do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby utworzyć z nich plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu.",
+      "one": "Zachowano wszystkie odczytane rozdziały (%lld) do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby utworzyć z nich plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu.",
+      "other": "Zachowano wszystkie odczytane rozdziały (%lld) do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby utworzyć z nich plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
+     },
+     "after": {
+      "one": "Zachowano jedyny odczytany rozdział do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby utworzyć z niego plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu.",
+      "few": "Zachowano wszystkie odczytane rozdziały (%lld) do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby utworzyć z nich plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu.",
+      "many": "Zachowano wszystkie odczytane rozdziały (%lld) do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby utworzyć z nich plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu.",
+      "other": "Zachowano wszystkie odczytane rozdziały (%lld) do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby utworzyć z nich plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
+     },
+     "why": "grammar: one said wszystkie rozdziały and z nich for a single chapter; and the pauses are przerwy, the glossary’s gaps"
+    },
+    {
+     "key": "Kept the spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+     "id": "speechExport.kept.chapter",
+     "english": "Kept the spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+     "before": "Zachowano odczytany rozdział do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby utworzyć z niego plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu.",
+     "after": "Zachowano odczytany rozdział do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby utworzyć z niego plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu.",
+     "why": "term: the book’s pauses here are the gaps it inserts, which the glossary calls przerwy"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "id": "speechExportError.noVoice",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "Nie zainstalowano żadnego głosu. Dodaj go w: Ustawienia systemowe, Dostępność, Treść mówiona. Potem wyeksportuj ponownie.",
+     "after": "Nie zainstalowano żadnego głosu. Dodaj go w: Ustawienia systemowe, Dostępność, Treść mówiona, a potem wyeksportuj ponownie.",
+     "why": "punctuation: the English has two sentences; the translation had added a third"
+    },
+    {
+     "key": "None of the %lld chapters could be read",
+     "id": "extractionReport.summary.none",
+     "english": {
+      "one": "None of the %lld chapter could be read",
+      "other": "None of the %lld chapters could be read"
+     },
+     "before": {
+      "few": "Nie udało się odczytać żadnego z %lld rozdziałów",
+      "many": "Nie udało się odczytać żadnego z %lld rozdziałów",
+      "one": "Nie udało się odczytać żadnego z %lld rozdziałów",
+      "other": "Nie udało się odczytać żadnego z %lld rozdziałów"
+     },
+     "after": {
+      "one": "Nie udało się odczytać jedynego rozdziału",
+      "few": "Nie udało się odczytać żadnego z %lld rozdziałów",
+      "many": "Nie udało się odczytać żadnego z %lld rozdziałów",
+      "other": "Nie udało się odczytać żadnego z %lld rozdziału"
+     },
+     "why": "grammar: z 1 and a fraction take rozdziału, not rozdziałów; one says the only chapter"
+    },
+    {
+     "key": "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@.",
+     "id": "pdfExtractionDiagnostics.problem.pages",
+     "english": {
+      "one": "OCR could not run on %@ of %lld page, so text found only in their images is missing: %@.",
+      "other": "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@."
+     },
+     "before": {
+      "few": "Nie można było uruchomić OCR dla %1$@ z %2$lld stron, więc brakuje tekstu znajdującego się tylko na ich obrazach: %3$@.",
+      "many": "Nie można było uruchomić OCR dla %1$@ z %2$lld stron, więc brakuje tekstu znajdującego się tylko na ich obrazach: %3$@.",
+      "one": "Nie można było uruchomić OCR dla %1$@ z %2$lld stron, więc brakuje tekstu znajdującego się tylko na ich obrazach: %3$@.",
+      "other": "Nie można było uruchomić OCR dla %1$@ z %2$lld stron, więc brakuje tekstu znajdującego się tylko na ich obrazach: %3$@."
+     },
+     "after": {
+      "one": "Nie można było uruchomić OCR dla %1$@ z %2$lld strony, więc brakuje tekstu znajdującego się tylko na ich obrazach: %3$@.",
+      "few": "Nie można było uruchomić OCR dla %1$@ z %2$lld stron, więc brakuje tekstu znajdującego się tylko na ich obrazach: %3$@.",
+      "many": "Nie można było uruchomić OCR dla %1$@ z %2$lld stron, więc brakuje tekstu znajdującego się tylko na ich obrazach: %3$@.",
+      "other": "Nie można było uruchomić OCR dla %1$@ z %2$lld strony, więc brakuje tekstu znajdującego się tylko na ich obrazach: %3$@."
+     },
+     "why": "grammar: z 1 and a fraction take strony, not stron"
+    },
+    {
+     "key": "OCR could not run on all %lld pages, so text found only in their images is missing: %@.",
+     "id": "pdfExtractionDiagnostics.problem.allPages",
+     "english": {
+      "one": "OCR could not run on all %lld page, so text found only in its images is missing: %@.",
+      "other": "OCR could not run on all %lld pages, so text found only in their images is missing: %@."
+     },
+     "before": {
+      "few": "Nie można było uruchomić OCR dla wszystkich %1$lld stron, więc brakuje tekstu znajdującego się tylko na ich obrazach: %2$@.",
+      "many": "Nie można było uruchomić OCR dla wszystkich %1$lld stron, więc brakuje tekstu znajdującego się tylko na ich obrazach: %2$@.",
+      "one": "Nie można było uruchomić OCR dla wszystkich %1$lld stron, więc brakuje tekstu znajdującego się tylko na ich obrazach: %2$@.",
+      "other": "Nie można było uruchomić OCR dla wszystkich %1$lld stron, więc brakuje tekstu znajdującego się tylko na ich obrazach: %2$@."
+     },
+     "after": {
+      "one": "Nie można było uruchomić OCR dla %1$lld strony, więc brakuje tekstu znajdującego się tylko na jej obrazach: %2$@.",
+      "few": "Nie można było uruchomić OCR dla wszystkich %1$lld stron, więc brakuje tekstu znajdującego się tylko na ich obrazach: %2$@.",
+      "many": "Nie można było uruchomić OCR dla wszystkich %1$lld stron, więc brakuje tekstu znajdującego się tylko na ich obrazach: %2$@.",
+      "other": "Nie można było uruchomić OCR dla wszystkich %1$lld stron, więc brakuje tekstu znajdującego się tylko na ich obrazach: %2$@."
+     },
+     "why": "grammar: wszystkich 1 stron cannot be said; one is the page and its images"
+    },
+    {
+     "key": "Open the book once, then try again.",
+     "id": "bookTextEdit.cannotBegin.missing.again",
+     "english": "Open the book once, then try again.",
+     "before": "Otwórz książkę raz, a następnie spróbuj ponownie.",
+     "after": "Najpierw otwórz książkę, a następnie spróbuj ponownie.",
+     "why": "natural: otwórz książkę raz read as open it one time only; najpierw says it must come first"
+    },
+    {
+     "key": "Open the next article in",
+     "id": "nextBookWindow.label.article",
+     "english": "Open the next article in",
+     "before": "Otwórz następny artykuł w",
+     "after": "Gdzie otwierać następny artykuł",
+     "why": "grammar: the label ended in w, but its choices are nominatives (To okno, Nowe okno); a where-question reads right before them"
+    },
+    {
+     "key": "Open the next book in",
+     "id": "nextBookWindow.globalLabel",
+     "english": "Open the next book in",
+     "before": "Otwórz następną książkę w",
+     "after": "Gdzie otwierać następną książkę",
+     "why": "grammar: the label ended in w, but its choices are nominatives (To okno, Nowe okno); a where-question reads right before them"
+    },
+    {
+     "key": "Open the next episode in",
+     "id": "nextBookWindow.label.episode",
+     "english": "Open the next episode in",
+     "before": "Otwórz następny odcinek w",
+     "after": "Gdzie otwierać następny odcinek",
+     "why": "grammar: the label ended in w, but its choices are nominatives (To okno, Nowe okno); a where-question reads right before them"
+    },
+    {
+     "key": "Open the next item in",
+     "id": "nextBookWindow.label.item",
+     "english": "Open the next item in",
+     "before": "Otwórz następną pozycję w",
+     "after": "Gdzie otwierać następną pozycję",
+     "why": "grammar: the label ended in w, but its choices are nominatives (To okno, Nowe okno); a where-question reads right before them"
+    },
+    {
+     "key": "Opens jump to page controls",
+     "id": "readerPage.openHint",
+     "english": "Opens jump to page controls",
+     "before": "Otwiera elementy sterujące przechodzenia do strony.",
+     "after": "Otwiera panel przechodzenia do strony.",
+     "why": "natural: elementy sterujące przechodzenia is a calque; the comment names the panel, shorter in braille"
+    },
+    {
+     "key": "Opens jump to percent controls",
+     "id": "readerView.openPercentHint",
+     "english": "Opens jump to percent controls",
+     "before": "Otwiera elementy sterujące przechodzenia do wartości procentowej.",
+     "after": "Otwiera panel przechodzenia do wartości procentowej.",
+     "why": "natural: elementy sterujące przechodzenia is a calque; the comment names the panel, shorter in braille"
+    },
+    {
+     "key": "Opens jump to time controls",
+     "id": "readerView.openTimeHint",
+     "english": "Opens jump to time controls",
+     "before": "Otwiera elementy sterujące przechodzenia do czasu.",
+     "after": "Otwiera panel przechodzenia do czasu.",
+     "why": "natural: elementy sterujące przechodzenia is a calque; the comment names the panel, shorter in braille"
+    },
+    {
+     "key": "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in macOS's audio.",
+     "id": "readerViewModel.memoryRunawayMessage.macos",
+     "english": "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in macOS's audio.",
+     "before": "Odtwarzanie zatrzymano, ponieważ pamięć TextMouth urosła do %@ GB podczas odtwarzania dźwięku, co jest błędem dźwięku w macOS.",
+     "after": "Odtwarzanie zatrzymano, ponieważ podczas odtwarzania dźwięku pamięć zajmowana przez TextMouth wzrosła do %@ GB, co jest błędem dźwięku w macOS.",
+     "why": "natural: pamięć urosła is said of living things; memory use wzrosła"
+    },
+    {
+     "key": "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in the system's audio.",
+     "id": "readerViewModel.memoryRunawayMessage.system",
+     "english": "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in the system's audio.",
+     "before": "Odtwarzanie zatrzymano, ponieważ pamięć TextMouth urosła do %@ GB podczas odtwarzania dźwięku, co jest błędem dźwięku w systemie.",
+     "after": "Odtwarzanie zatrzymano, ponieważ podczas odtwarzania dźwięku pamięć zajmowana przez TextMouth wzrosła do %@ GB, co jest błędem dźwięku w systemie.",
+     "why": "natural: pamięć urosła is said of living things; memory use wzrosła"
+    },
+    {
+     "key": "Plays the book and pauses before it starts again.",
+     "id": "sleepTimerView.endOfBookHint.loop",
+     "english": "Plays the book and pauses before it starts again.",
+     "before": "Odtwarza książkę i wstrzymuje przed jej ponownym rozpoczęciem.",
+     "after": "Odtwarza książkę i wstrzymuje odtwarzanie przed jej ponownym rozpoczęciem.",
+     "why": "grammar: wstrzymuje had no object; it pauses the playback"
+    },
+    {
+     "key": "Plays the book and pauses before the next book.",
+     "id": "sleepTimerView.endOfBookHint.continueNext",
+     "english": "Plays the book and pauses before the next book.",
+     "before": "Odtwarza książkę i wstrzymuje przed następną książką.",
+     "after": "Odtwarza książkę i wstrzymuje odtwarzanie przed następną książką.",
+     "why": "grammar: wstrzymuje had no object; it pauses the playback"
+    },
+    {
+     "key": "Preview %@ sound",
+     "id": "soundEffectsSettings.previewLabel",
+     "english": "Preview %@ sound",
+     "before": "Podgląd dźwięku: %@",
+     "after": "Odsłuchaj dźwięk: %@",
+     "why": "natural: podgląd is a visual preview; a sound is listened to, as Odsłuchaj głos does"
+    },
+    {
+     "key": "Remove them: an audiobook of tracks is arranged with tracks.",
+     "id": "bookManifestEdit.sectionsGiven.audiobook",
+     "english": "Remove them: an audiobook of tracks is arranged with tracks.",
+     "before": "Usuń je: audiobook ze ścieżek jest zbudowany ze ścieżek.",
+     "after": "Usuń je: w audiobooku złożonym ze ścieżek układ wyznaczają ścieżki.",
+     "why": "natural: audiobook ze ścieżek jest zbudowany ze ścieżek said the same thing twice"
+    },
+    {
+     "key": "Removes this book's own voice, speed, and pitch, so it uses the global defaults.",
+     "id": "bookSettings.resetToDefaultsHint",
+     "english": "Removes this book's own voice, speed, and pitch, so it uses the global defaults.",
+     "before": "Usuwa własny głos, prędkość i wysokość głosu tej książki, więc używa ustawień globalnych.",
+     "after": "Usuwa własny głos, prędkość i wysokość głosu tej książki, aby korzystała z ustawień globalnych.",
+     "why": "grammar: więc używa took the button as its subject; aby korzystała names the book"
+    },
+    {
+     "key": "Resets this book to %@",
+     "id": "bookSettings.resetHint",
+     "english": "Resets this book to %@",
+     "before": "Przywraca tej książce %@.",
+     "after": "Przywraca prędkość tej książki: %@.",
+     "why": "grammar: the speed phrase is a nominative (1,0-krotna prędkość) in an accusative slot; a colon introduces it"
+    },
+    {
+     "key": "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.",
+     "id": "speechExport.licence",
+     "english": "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.",
+     "before": "Mowa głosów komputera Mac jest przeznaczona do użytku osobistego, niekomercyjnego, zgodnie z licencją Apple.",
+     "after": "Mowa generowana przez głosy komputera Mac jest przeznaczona do użytku osobistego i niekomercyjnego, zgodnie z licencją Apple.",
+     "why": "natural: mowa głosów komputera Mac copied the English; it is speech the voices make"
+    },
+    {
+     "key": "Speech log, its last %lld lines, offsets and lengths only:",
+     "id": "speechRefusal.logLines.offsets",
+     "english": {
+      "one": "Speech log, its last %lld line, offsets and lengths only:",
+      "other": "Speech log, its last %lld lines, offsets and lengths only:"
+     },
+     "before": {
+      "few": "Dziennik mowy, ostatnie wiersze (%lld), tylko przesunięcia i długości:",
+      "many": "Dziennik mowy, ostatnie wiersze (%lld), tylko przesunięcia i długości:",
+      "one": "Dziennik mowy, ostatnie wiersze (%lld), tylko przesunięcia i długości:",
+      "other": "Dziennik mowy, ostatnie wiersze (%lld), tylko przesunięcia i długości:"
+     },
+     "after": {
+      "one": "Dziennik mowy, ostatni wiersz, tylko przesunięcia i długości:",
+      "few": "Dziennik mowy, ostatnie wiersze (%lld), tylko przesunięcia i długości:",
+      "many": "Dziennik mowy, ostatnie wiersze (%lld), tylko przesunięcia i długości:",
+      "other": "Dziennik mowy, ostatnie wiersze (%lld), tylko przesunięcia i długości:"
+     },
+     "why": "grammar: one said ostatnie wiersze, plural, for a single line"
+    },
+    {
+     "key": "Stop At",
+     "id": "sleepTimerView.stopAtHeading",
+     "english": "Stop At",
+     "before": "Zatrzymaj w",
+     "after": "Miejsce zatrzymania",
+     "why": "grammar: Zatrzymaj w dangled before its buttons, which are nominatives (Koniec książki); a noun heading reads right"
+    },
+    {
+     "key": "Stops the export and keeps the chapters already spoken until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them.",
+     "id": "speechExport.stopHint",
+     "english": "Stops the export and keeps the chapters already spoken until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them.",
+     "before": "Zatrzymuje eksport i zachowuje już odczytane rozdziały do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Eksport tego samego zakresu z taką samą prędkością i wysokością głosu kontynuuje od nich.",
+     "after": "Zatrzymuje eksport i zachowuje już odczytane rozdziały do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Eksport tego samego zakresu z taką samą prędkością i wysokością głosu kontynuuje od nich.",
+     "why": "term: the book’s pauses here are the gaps it inserts, which the glossary calls przerwy"
+    },
+    {
+     "key": "Switches to jump to page controls",
+     "id": "readerPage.switchHint",
+     "english": "Switches to jump to page controls",
+     "before": "Przełącza na elementy sterujące przechodzenia do strony.",
+     "after": "Przełącza na panel przechodzenia do strony.",
+     "why": "natural: elementy sterujące przechodzenia is a calque; the comment names the panel, shorter in braille"
+    },
+    {
+     "key": "Switches to jump to percent controls",
+     "id": "readerView.switchPercentHint",
+     "english": "Switches to jump to percent controls",
+     "before": "Przełącza na elementy sterujące przechodzenia do wartości procentowej.",
+     "after": "Przełącza na panel przechodzenia do wartości procentowej.",
+     "why": "natural: elementy sterujące przechodzenia is a calque; the comment names the panel, shorter in braille"
+    },
+    {
+     "key": "Switches to jump to time controls",
+     "id": "readerView.switchTimeHint",
+     "english": "Switches to jump to time controls",
+     "before": "Przełącza na elementy sterujące przechodzenia do czasu.",
+     "after": "Przełącza na panel przechodzenia do czasu.",
+     "why": "natural: elementy sterujące przechodzenia is a calque; the comment names the panel, shorter in braille"
+    },
+    {
+     "key": "Taken from %@",
+     "id": "shortcutsSettings.takenFromSentence",
+     "english": "Taken from %@",
+     "before": "Zabrano z: %@",
+     "after": "Skrót należał wcześniej do: %@",
+     "why": "natural: zabrano z is said of a place, not of an action that held a key; the shortcut is now the subject"
+    },
+    {
+     "key": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "id": "bookTextEdit.stoppedBookGone",
+     "english": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "before": "Nie zaktualizowano tekstu: książka %@ została usunięta lub jej pobrany plik został usunięty, więc edycja tekstu dla niej została zatrzymana.",
+     "after": "Nie zaktualizowano tekstu: książka %@ została usunięta lub jej pobrany plik został usunięty, więc edycja jej tekstu została przerwana.",
+     "why": "natural: edycja dla niej copied the English for it; worded like the other Edit Text endings"
+    },
+    {
+     "key": "Text not updated: the edited text of %@ has no chapter with any text. Undo the change and save again; the book keeps its old text until then.",
+     "id": "bookTextEdit.refused.noChapters",
+     "english": "Text not updated: the edited text of %@ has no chapter with any text. Undo the change and save again; the book keeps its old text until then.",
+     "before": "Nie zaktualizowano tekstu: edytowany tekst książki %@ nie ma rozdziału z żadnym tekstem. Cofnij zmianę i zachowaj ponownie; do tego czasu książka zachowuje stary tekst.",
+     "after": "Nie zaktualizowano tekstu: edytowany tekst książki %@ nie zawiera żadnego rozdziału z tekstem. Cofnij zmianę i zachowaj ponownie; do tego czasu książka zachowuje stary tekst.",
+     "why": "natural: rozdziału z żadnym tekstem put the negation on the wrong word"
+    },
+    {
+     "key": "TextMouth closed while opening %@, so it wasn't reopened.",
+     "id": "phoneApp.closedWhileOpening",
+     "english": "TextMouth closed while opening %@, so it wasn't reopened.",
+     "before": "TextMouth zamknął się podczas otwierania %@, więc nie otwarto tego ponownie.",
+     "after": "TextMouth zamknął się podczas otwierania książki %@, więc nie otwarto jej ponownie.",
+     "why": "grammar: tego pointed at nothing and the title could not take the genitive; książki carries it and jej refers back"
+    },
+    {
+     "key": "TextMouth could not make a folder to check it in",
+     "id": "refusal.noWorkingFolder",
+     "english": "TextMouth could not make a folder to check it in",
+     "before": "TextMouth nie mógł utworzyć folderu do sprawdzenia",
+     "after": "TextMouth nie mógł utworzyć folderu, w którym mógłby ją sprawdzić",
+     "why": "meaning: folderu do sprawdzenia read as a folder to be checked; it is the folder to check the table in"
+    },
+    {
+     "key": "TextMouth hasn't read this book's headings yet. Open the book once, then export again.",
+     "id": "bookExport.noHeadingsReason",
+     "english": "TextMouth hasn't read this book's headings yet. Open the book once, then export again.",
+     "before": "TextMouth jeszcze nie odczytał nagłówków tej książki. Otwórz książkę raz, a potem wyeksportuj ponownie.",
+     "after": "TextMouth jeszcze nie odczytał nagłówków tej książki. Najpierw otwórz książkę, a potem wyeksportuj ponownie.",
+     "why": "natural: otwórz książkę raz read as open it one time only; najpierw says it must come first"
+    },
+    {
+     "key": "TextMouth quit on %@: its memory grew to %@ GB while %@ played, because of a fault in macOS's audio. Your place was saved.",
+     "id": "memoryQuitMarker.announcement.because",
+     "english": "TextMouth quit on %1$@: its memory grew to %2$@ GB while %3$@ played, because of a fault in macOS's audio. Your place was saved.",
+     "before": "TextMouth zakończył działanie %1$@: jego pamięć urosła do %2$@ GB podczas odtwarzania %3$@ z powodu usterki w dźwięku macOS. Pozycję zachowano.",
+     "after": "TextMouth zakończył działanie %1$@: użycie pamięci wzrosło do %2$@ GB podczas odtwarzania książki %3$@ z powodu usterki w dźwięku macOS. Pozycję zachowano.",
+     "why": "natural: pamięć urosła is said of living things; memory use wzrosło, and książki carries the case the title cannot"
+    },
+    {
+     "key": "TextMouth quit on %@: its memory grew to %@ GB while a book played, because of a fault in macOS's audio. Your place was saved.",
+     "id": "memoryQuitMarker.announcement.book",
+     "english": "TextMouth quit on %1$@: its memory grew to %2$@ GB while a book played, because of a fault in macOS's audio. Your place was saved.",
+     "before": "TextMouth zakończył działanie %1$@: jego pamięć urosła do %2$@ GB podczas odtwarzania książki z powodu usterki w dźwięku macOS. Pozycję zachowano.",
+     "after": "TextMouth zakończył działanie %1$@: użycie pamięci wzrosło do %2$@ GB podczas odtwarzania książki z powodu usterki w dźwięku macOS. Pozycję zachowano.",
+     "why": "natural: pamięć urosła is said of living things; memory use wzrosło"
+    },
+    {
+     "key": "TextMouth quit on %@: its memory grew to %@ GB while nothing was playing. Your place was saved.",
+     "id": "memoryQuitMarker.announcement.nothing",
+     "english": "TextMouth quit on %1$@: its memory grew to %2$@ GB while nothing was playing. Your place was saved.",
+     "before": "TextMouth zakończył działanie %1$@: jego pamięć urosła do %2$@ GB, gdy nic nie było odtwarzane. Pozycję zachowano.",
+     "after": "TextMouth zakończył działanie %1$@: użycie pamięci wzrosło do %2$@ GB, gdy nic nie było odtwarzane. Pozycję zachowano.",
+     "why": "natural: pamięć urosła is said of living things; memory use wzrosło"
+    },
+    {
+     "key": "The %@ ends %@ into “%@”, which is only %@ long.",
+     "id": "audioParseError.sectionEndsPastEnd",
+     "english": "The %1$@ ends %2$@ into “%3$@”, which is only %4$@ long.",
+     "before": "Sekcja (%1$@) kończy się na pozycji %2$@ pliku „%3$@”, który trwa tylko %4$@.",
+     "after": "Sekcja (%1$@) kończy się na pozycji %2$@ pliku „%3$@”, którego długość to tylko %4$@.",
+     "why": "grammar: the time in words is nominative (1 godzina), which trwa cannot take; długość to takes it"
+    },
+    {
+     "key": "The %@ starts %@ into “%@”, which is only %@ long.",
+     "id": "audioParseError.sectionStartsPastEnd",
+     "english": "The %1$@ starts %2$@ into “%3$@”, which is only %4$@ long.",
+     "before": "Sekcja (%1$@) zaczyna się na pozycji %2$@ pliku „%3$@”, który trwa tylko %4$@.",
+     "after": "Sekcja (%1$@) zaczyna się na pozycji %2$@ pliku „%3$@”, którego długość to tylko %4$@.",
+     "why": "grammar: the time in words is nominative (1 godzina), which trwa cannot take; długość to takes it"
+    },
+    {
+     "key": "The export was stopped before the rest.",
+     "id": "bookExport.finished.before",
+     "english": "The export was stopped before the rest.",
+     "before": "Eksport zatrzymano przed pozostałymi.",
+     "after": "Eksport zatrzymano przed zapisaniem pozostałych.",
+     "why": "natural: przed pozostałymi read as in front of the others; it stopped before writing them"
+    },
+    {
+     "key": "The file %@ failed partway through.",
+     "id": "audioPlaybackFailure.message.failedPartway",
+     "english": "The file %@ failed partway through.",
+     "before": "Plik %@ uległ awarii w trakcie.",
+     "after": "Plik %@ uległ awarii w trakcie odtwarzania.",
+     "why": "natural: w trakcie dangled without what was under way"
+    },
+    {
+     "key": "The file %@ was stopped because TextMouth's memory grew too large.",
+     "id": "audioPlaybackFailure.message.memoryRunaway",
+     "english": "The file %@ was stopped because TextMouth's memory grew too large.",
+     "before": "Plik %@ został zatrzymany, ponieważ pamięć TextMouth urosła zbyt bardzo.",
+     "after": "Plik %@ został zatrzymany, ponieważ TextMouth zajął zbyt dużo pamięci.",
+     "why": "natural: pamięć urosła zbyt bardzo is said of living things; TextMouth zajął zbyt dużo pamięci"
+    },
+    {
+     "key": "The recording lasts %@.",
+     "id": "readerTime.pastTheEnd.recording.lasts",
+     "english": "The recording lasts %@.",
+     "before": "Nagranie trwa %@.",
+     "after": "Długość nagrania: %@.",
+     "why": "grammar: the time in words is nominative (1 godzina), which trwa cannot take; długość to takes it"
+    },
+    {
+     "key": "The refused text goes on past this passage, to character %@.",
+     "id": "speechRefusal.passageLines.goes",
+     "english": "The refused text goes on past this passage, to character %@.",
+     "before": "Odrzucony tekst trwa dalej poza ten fragment, do znaku %@.",
+     "after": "Odrzucony tekst ciągnie się poza ten fragment, do znaku %@.",
+     "why": "natural: trwa dalej is said of time; text ciągnie się"
+    },
+    {
+     "key": "The text content.md held before was kept as %@, in the book's package.",
+     "id": "bookTextEdit.replaced.content",
+     "english": "The text content.md held before was kept as %@, in the book's package.",
+     "before": "Tekst content.md zachowany wcześniej został zapisany jako %@ w pakiecie książki.",
+     "after": "Wcześniejszy tekst pliku content.md zachowano jako %@ w pakiecie książki.",
+     "why": "meaning: zachowany wcześniej moved before onto kept; it is the text the file held before"
+    },
+    {
+     "key": "When %lld minutes or less are left, downloads the next article if it is not on this Mac yet",
+     "id": "listeningOptions.predownloadHint.article",
+     "english": {
+      "one": "When %lld minute or less is left, downloads the next article if it is not on this Mac yet",
+      "other": "When %lld minutes or less are left, downloads the next article if it is not on this Mac yet"
+     },
+     "before": {
+      "few": "Gdy zostały %lld minuty lub mniej, pobiera następny artykuł, jeśli nie ma go jeszcze na tym komputerze Mac.",
+      "many": "Gdy zostało %lld minut lub mniej, pobiera następny artykuł, jeśli nie ma go jeszcze na tym komputerze Mac.",
+      "one": "Gdy zostało %lld minuta lub mniej, pobiera następny artykuł, jeśli nie ma go jeszcze na tym komputerze Mac.",
+      "other": "Gdy zostało %lld minuty lub mniej, pobiera następny artykuł, jeśli nie ma go jeszcze na tym komputerze Mac."
+     },
+     "after": {
+      "one": "Gdy została %lld minuta lub mniej, pobiera następny artykuł, jeśli nie ma go jeszcze na tym komputerze Mac.",
+      "few": "Gdy zostały %lld minuty lub mniej, pobiera następny artykuł, jeśli nie ma go jeszcze na tym komputerze Mac.",
+      "many": "Gdy zostało %lld minut lub mniej, pobiera następny artykuł, jeśli nie ma go jeszcze na tym komputerze Mac.",
+      "other": "Gdy zostało %lld minuty lub mniej, pobiera następny artykuł, jeśli nie ma go jeszcze na tym komputerze Mac."
+     },
+     "why": "grammar: one said zostało 1 minuta; a single minute takes została"
+    },
+    {
+     "key": "When %lld minutes or less are left, downloads the next book if it is not on this Mac yet",
+     "id": "listeningOptions.predownloadHint.book",
+     "english": {
+      "one": "When %lld minute or less is left, downloads the next book if it is not on this Mac yet",
+      "other": "When %lld minutes or less are left, downloads the next book if it is not on this Mac yet"
+     },
+     "before": {
+      "few": "Gdy zostały %lld minuty lub mniej, pobiera następną książkę, jeśli nie ma jej jeszcze na tym komputerze Mac.",
+      "many": "Gdy zostało %lld minut lub mniej, pobiera następną książkę, jeśli nie ma jej jeszcze na tym komputerze Mac.",
+      "one": "Gdy zostało %lld minuta lub mniej, pobiera następną książkę, jeśli nie ma jej jeszcze na tym komputerze Mac.",
+      "other": "Gdy zostało %lld minuty lub mniej, pobiera następną książkę, jeśli nie ma jej jeszcze na tym komputerze Mac."
+     },
+     "after": {
+      "one": "Gdy została %lld minuta lub mniej, pobiera następną książkę, jeśli nie ma jej jeszcze na tym komputerze Mac.",
+      "few": "Gdy zostały %lld minuty lub mniej, pobiera następną książkę, jeśli nie ma jej jeszcze na tym komputerze Mac.",
+      "many": "Gdy zostało %lld minut lub mniej, pobiera następną książkę, jeśli nie ma jej jeszcze na tym komputerze Mac.",
+      "other": "Gdy zostało %lld minuty lub mniej, pobiera następną książkę, jeśli nie ma jej jeszcze na tym komputerze Mac."
+     },
+     "why": "grammar: one said zostało 1 minuta; a single minute takes została"
+    },
+    {
+     "key": "When %lld minutes or less are left, downloads the next episode if it is not on this Mac yet",
+     "id": "listeningOptions.predownloadHint.episode",
+     "english": {
+      "one": "When %lld minute or less is left, downloads the next episode if it is not on this Mac yet",
+      "other": "When %lld minutes or less are left, downloads the next episode if it is not on this Mac yet"
+     },
+     "before": {
+      "few": "Gdy zostały %lld minuty lub mniej, pobiera następny odcinek, jeśli nie ma go jeszcze na tym komputerze Mac.",
+      "many": "Gdy zostało %lld minut lub mniej, pobiera następny odcinek, jeśli nie ma go jeszcze na tym komputerze Mac.",
+      "one": "Gdy zostało %lld minuta lub mniej, pobiera następny odcinek, jeśli nie ma go jeszcze na tym komputerze Mac.",
+      "other": "Gdy zostało %lld minuty lub mniej, pobiera następny odcinek, jeśli nie ma go jeszcze na tym komputerze Mac."
+     },
+     "after": {
+      "one": "Gdy została %lld minuta lub mniej, pobiera następny odcinek, jeśli nie ma go jeszcze na tym komputerze Mac.",
+      "few": "Gdy zostały %lld minuty lub mniej, pobiera następny odcinek, jeśli nie ma go jeszcze na tym komputerze Mac.",
+      "many": "Gdy zostało %lld minut lub mniej, pobiera następny odcinek, jeśli nie ma go jeszcze na tym komputerze Mac.",
+      "other": "Gdy zostało %lld minuty lub mniej, pobiera następny odcinek, jeśli nie ma go jeszcze na tym komputerze Mac."
+     },
+     "why": "grammar: one said zostało 1 minuta; a single minute takes została"
+    },
+    {
+     "key": "When %lld minutes or less are left, downloads the next item if it is not on this Mac yet",
+     "id": "listeningOptions.predownloadHint.item",
+     "english": {
+      "one": "When %lld minute or less is left, downloads the next item if it is not on this Mac yet",
+      "other": "When %lld minutes or less are left, downloads the next item if it is not on this Mac yet"
+     },
+     "before": {
+      "few": "Gdy zostały %lld minuty lub mniej, pobiera następną pozycję, jeśli nie ma jej jeszcze na tym komputerze Mac.",
+      "many": "Gdy zostało %lld minut lub mniej, pobiera następną pozycję, jeśli nie ma jej jeszcze na tym komputerze Mac.",
+      "one": "Gdy zostało %lld minuta lub mniej, pobiera następną pozycję, jeśli nie ma jej jeszcze na tym komputerze Mac.",
+      "other": "Gdy zostało %lld minuty lub mniej, pobiera następną pozycję, jeśli nie ma jej jeszcze na tym komputerze Mac."
+     },
+     "after": {
+      "one": "Gdy została %lld minuta lub mniej, pobiera następną pozycję, jeśli nie ma jej jeszcze na tym komputerze Mac.",
+      "few": "Gdy zostały %lld minuty lub mniej, pobiera następną pozycję, jeśli nie ma jej jeszcze na tym komputerze Mac.",
+      "many": "Gdy zostało %lld minut lub mniej, pobiera następną pozycję, jeśli nie ma jej jeszcze na tym komputerze Mac.",
+      "other": "Gdy zostało %lld minuty lub mniej, pobiera następną pozycję, jeśli nie ma jej jeszcze na tym komputerze Mac."
+     },
+     "why": "grammar: one said zostało 1 minuta; a single minute takes została"
+    },
+    {
+     "key": "about %@",
+     "id": "common.aboutValue",
+     "english": "about %@",
+     "before": "około %@",
+     "after": "mniej więcej %@",
+     "why": "grammar: około needs the genitive, but the time in words is nominative (1 godzina, 2 minuty); mniej więcej takes it as it is"
+    },
+    {
+     "key": "edited by hand",
+     "id": "metadataEditor.editedByHand",
+     "english": "edited by hand",
+     "before": "edytowane ręcznie",
+     "after": "edytowano ręcznie",
+     "why": "grammar: edytowane did not agree with field names such as Tytuł książki; the impersonal form fits every field"
+    },
+    {
+     "key": "it has no chapter with any text. Undo the change and save again, and the book opens.",
+     "id": "bookTextEdit.heldReason.noChapters.opens",
+     "english": "it has no chapter with any text. Undo the change and save again, and the book opens.",
+     "before": "edytowany tekst nie zawiera rozdziału z żadnym tekstem. Cofnij zmianę i zachowaj ponownie, a książka się otworzy.",
+     "after": "edytowany tekst nie zawiera żadnego rozdziału z tekstem. Cofnij zmianę i zachowaj ponownie, a książka się otworzy.",
+     "why": "natural: rozdziału z żadnym tekstem put the negation on the wrong word; worded like the other refusals"
+    },
+    {
+     "key": "it has no chapter with any text. Undo the change and save again, and the text shows.",
+     "id": "bookTextEdit.heldReason.noChapters.shows",
+     "english": "it has no chapter with any text. Undo the change and save again, and the text shows.",
+     "before": "edytowany tekst nie zawiera rozdziału z żadnym tekstem. Cofnij zmianę i zachowaj ponownie, a tekst się pokaże.",
+     "after": "edytowany tekst nie zawiera żadnego rozdziału z tekstem. Cofnij zmianę i zachowaj ponownie, a tekst się pokaże.",
+     "why": "natural: rozdziału z żadnym tekstem put the negation on the wrong word; worded like the other refusals"
+    },
+    {
+     "key": "the file %@ failed partway through",
+     "id": "audioPlaybackFailure.problem.failedPartway",
+     "english": "the file %@ failed partway through",
+     "before": "plik %@ uległ awarii w trakcie",
+     "after": "plik %@ uległ awarii w trakcie odtwarzania",
+     "why": "natural: w trakcie dangled without what was under way"
+    },
+    {
+     "key": "the file %@ was stopped because TextMouth's memory grew too large",
+     "id": "audioPlaybackFailure.problem.memoryRunaway",
+     "english": "the file %@ was stopped because TextMouth's memory grew too large",
+     "before": "plik %@ został zatrzymany, ponieważ pamięć TextMouth urosła zbyt bardzo",
+     "after": "plik %@ został zatrzymany, ponieważ TextMouth zajął zbyt dużo pamięci",
+     "why": "natural: pamięć urosła zbyt bardzo is said of living things; TextMouth zajął zbyt dużo pamięci"
+    },
+    {
+     "key": "“%@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "id": "speechExportError.personalVoice",
+     "english": "“%1$@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %2$@ button in the reader, then export again.",
+     "before": "„%1$@” to Personal Voice, którego macOS nie może nagrać do pliku. Wybierz inny głos przyciskiem %2$@ w czytniku, a potem wyeksportuj ponownie.",
+     "after": "„%1$@” to Głos osobisty, którego macOS nie może nagrać do pliku. Wybierz inny głos przyciskiem %2$@ w czytniku, a potem wyeksportuj ponownie.",
+     "why": "term: Apple’s Polish names the Personal Voice feature Głos osobisty"
+    }
+   ]
+  }
+ ]
+}

@@ -29,24 +29,20 @@ final class ReaderLifecycleAuditTests: XCTestCase {
         XCTAssertEqual(service.stats.bookListeningSeconds[activeBookID.uuidString], 10)
     }
 
-    /// The existing global timer is owner-scoped even during its fade phase.
+    /// A window's timer is owner-scoped even during its fade phase: a reader
+    /// that is not the timer's owner, such as the old reader of a window that
+    /// switched books in place, cannot cancel the owner's fade.
     func testInactiveReaderCannotCancelAnotherBooksFade() {
-        let service = SleepTimerService.shared
-        let savedDuration = service.lastUsedDuration
-        let savedPreference = TextMouthRuntime.current.preferences.object(forKey: "sleepTimer.lastUsedDuration")
-        defer {
-            service._resetForTesting()
-            if let savedDuration {
-                service.start(duration: savedDuration, ownerID: UUID(), onExpire: {})
-                service.stop()
-            }
-            TextMouthRuntime.current.preferences.set(savedPreference, forKey: "sleepTimer.lastUsedDuration")
-        }
+        // Stops every window's timer when the test ends, and puts back the
+        // duration last used, the one preference every window's timer shares.
+        preserveSleepTimers()
+        let reader = makeReader()
+        // The reader's window's timer, owned by a reader that is not this one.
+        let service = reader.sleepTimerService
         let owner = UUID()
         service.start(duration: .minutes(1), ownerID: owner, onExpire: {}, fadeOutDuration: 10)
         service._expireForTesting()
         XCTAssertTrue(service.isFadingOut)
-        let reader = makeReader()
 
         reader.pause()
         reader.close()

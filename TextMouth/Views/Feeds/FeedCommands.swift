@@ -241,45 +241,113 @@ struct FeedItemAction: Identifiable, Equatable, Sendable {
             isArticle: content.isArticle
         )
     }
+
+    /// The Open command of the item row showing `content`, which the row's
+    /// default action (VoiceOver's VO-Space) and Return both run: it opens
+    /// the item's book, downloading the item first when needed. Every item
+    /// row offers it.
+    static func open(for content: FeedItemRowContent) -> FeedItemAction? {
+        actions(for: content).first { $0.command == .open }
+    }
 }
 
 // MARK: - The Commands' Words
 
+extension FeedWording.ItemNoun {
+    /// The text for this noun, which only the case that matches is asked
+    /// for: a sentence that names the feed's items is written whole for each
+    /// noun, so every language agrees its words with the noun.
+    func choose(
+        episode: @autoclosure () -> String,
+        article: @autoclosure () -> String,
+        item: @autoclosure () -> String
+    ) -> String {
+        switch self {
+        case .episode: return episode()
+        case .article: return article()
+        case .item: return item()
+        }
+    }
+}
+
 extension FeedWording {
     /// Check Feed's title.
-    static let checkFeedTitle = "Check Feed"
+    static var checkFeedTitle: String {
+        // Translators: Title of the command that checks a feed for new items now, in a feed's menu and among its VoiceOver actions. Title case.
+        InterfaceText.line("feed.checkFeedTitle", "Check Feed")
+    }
     /// Feed Info's title.
-    static let feedInfoTitle = "Feed Info…"
+    static var feedInfoTitle: String {
+        // Translators: Title of the command that shows a feed's information and its own settings, in a feed's menu and among its VoiceOver actions. The ellipsis says a sheet follows. Title case.
+        InterfaceText.line("feed.feedInfoTitle", "Feed Info…")
+    }
+    /// The name of the Feed Info sheet, as a sentence names it.
+    static var feedInfoName: String {
+        // Translators: The name of the Feed Info command or sheet, without its ellipsis, as a sentence names it. Title case.
+        InterfaceText.line("feed.feedInfoName", "Feed Info")
+    }
 
     /// Unsubscribe's title: "Unsubscribe…" when it asks first, as it would
     /// delete the places the feed kept for removed downloads, and
     /// "Unsubscribe", with no ellipsis, when it acts at once (FR14).
     static func unsubscribeTitle(asksFirst: Bool) -> String {
-        asksFirst ? "Unsubscribe…" : "Unsubscribe"
+        asksFirst
+            // Translators: Title of the command that stops checking a feed, when it asks first because it would delete places and bookmarks kept for removed downloads. The ellipsis says a question follows. Title case.
+            ? InterfaceText.line("feed.unsubscribeTitle", "Unsubscribe…")
+            : unsubscribeButton
     }
     /// Resubscribe's title (FR11, branch D): no ellipsis, since it asks
     /// nothing first.
-    static let resubscribeTitle = "Resubscribe"
+    static var resubscribeTitle: String {
+        // Translators: Title of the command that checks an unsubscribed feed again, in a feed's menu and among its VoiceOver actions. Title case.
+        InterfaceText.line("feed.resubscribeTitle", "Resubscribe")
+    }
 
     /// Mark All Played's title, or Mark All Read's for a feed of articles.
     static func markAllPlayedTitle(_ noun: ItemNoun) -> String {
-        noun == .article ? "Mark All Read" : "Mark All Played"
+        noun == .article
+            // Translators: Title of the command that marks every article of a feed read. Title case.
+            ? InterfaceText.line("feed.markAllPlayedTitle.read", "Mark All Read")
+            // Translators: Title of the command that marks every episode of a feed played. Title case.
+            : InterfaceText.line("feed.markAllPlayedTitle.forPlayback", "Mark All Played")
     }
 
     /// The title of the item command `command`, for an article when
     /// `isArticle`.
     static func title(of command: FeedItemCommand, isArticle: Bool) -> String {
         switch command {
-        case .open: return "Open"
-        case .download: return "Download"
-        case .cancelDownload: return "Cancel Download"
-        case .deleteDownload: return "Delete Download"
-        case .markPlayed: return isArticle ? "Mark Read" : "Mark Played"
-        case .markUnplayed: return isArticle ? "Mark Unread" : "Mark Unplayed"
-        case .showDescription: return "Show Description…"
+        case .open:
+            // Translators: Title of the command that opens a feed item's book, downloading it first when needed. Title case.
+            return InterfaceText.line("common.open", "Open")
+        case .download:
+            // Translators: Title of the command that downloads a feed item, or tries a failed download again. Title case.
+            return InterfaceText.line("common.download", "Download")
+        case .cancelDownload:
+            // Translators: Title of the command that stops a feed item's download. Title case.
+            return InterfaceText.line("common.cancelDownload", "Cancel Download")
+        case .deleteDownload:
+            // Translators: Title of the command that deletes a feed item's downloaded book and keeps the item. Title case.
+            return InterfaceText.line("common.deleteDownload", "Delete Download")
+        case .markPlayed:
+            return isArticle
+                // Translators: Title of the command that marks a feed's article read. Title case.
+                ? InterfaceText.line("feed.title.markPlayed.read", "Mark Read")
+                // Translators: Title of the command that marks a feed's episode played. Title case.
+                : InterfaceText.line("feed.title.markPlayed.episode", "Mark Played")
+        case .markUnplayed:
+            return isArticle
+                // Translators: Title of the command that marks a feed's article unread. Title case.
+                ? InterfaceText.line("feed.title.markUnplayed.unread", "Mark Unread")
+                // Translators: Title of the command that marks a feed's episode unplayed. Title case.
+                : InterfaceText.line("feed.title.markUnplayed.episode", "Mark Unplayed")
+        case .showDescription:
+            // Translators: Title of the command that shows a feed item's text in a sheet. The ellipsis says a sheet follows. Title case.
+            return InterfaceText.line("feed.title.showDescription", "Show Description…")
         case .moveToLibrary: return ShortcutAction.moveToLibrary.title
-        case .showInFinder: return "Show in Finder"
-        case .deleteItem: return deleteItemButton(isArticle: isArticle) + "…"
+        case .showInFinder:
+            // Translators: Title of the command that shows a feed item's book in Finder. Title case.
+            return InterfaceText.line("common.showInFinder", "Show in Finder")
+        case .deleteItem: return deleteItemTitle(isArticle: isArticle)
         }
     }
 
@@ -288,11 +356,25 @@ extension FeedWording {
     /// What VoiceOver hears once Check Feed has checked the feed titled
     /// `title`: how many new items it brought, or why it failed.
     static func checked(_ report: FeedRefreshReport, noun: ItemNoun) -> String {
+        let title = report.feedTitle
         switch report.outcome {
         case .updated(let newItemIDs) where !newItemIDs.isEmpty:
-            return "\(report.feedTitle): \(newItemIDs.count) new \(newItemIDs.count == 1 ? noun.singular : noun.plural)."
+            let count = newItemIDs.count
+            return noun.choose(
+                // Translators: What VoiceOver says once Check Feed found new episodes. %@ is the feed's title; %lld is how many new episodes.
+                episode: InterfaceText.line("feed.newEpisodes", "\(title): \(number: count) new episodes."),
+                // Translators: What VoiceOver says once Check Feed found new articles. %@ is the feed's title; %lld is how many new articles.
+                article: InterfaceText.line("feed.newArticles", "\(title): \(number: count) new articles."),
+                // Translators: What VoiceOver says once Check Feed found new items, in a feed of episodes and articles. %@ is the feed's title; %lld is how many new items.
+                item: InterfaceText.line("feed.newItems", "\(title): \(number: count) new items."))
         case .updated, .unchanged, .skipped:
-            return "\(report.feedTitle): no new \(noun.plural)."
+            return noun.choose(
+                // Translators: What VoiceOver says once Check Feed found no new episodes. %@ is the feed's title.
+                episode: InterfaceText.line("feed.checked.updated.episodes", "\(title): no new episodes."),
+                // Translators: What VoiceOver says once Check Feed found no new articles. %@ is the feed's title.
+                article: InterfaceText.line("feed.checked.updated.articles", "\(title): no new articles."),
+                // Translators: What VoiceOver says once Check Feed found no new items, in a feed of episodes and articles. %@ is the feed's title.
+                item: InterfaceText.line("feed.checked.updated.items", "\(title): no new items."))
         case .failed(let message):
             return message
         }
@@ -300,21 +382,24 @@ extension FeedWording {
 
     /// What VoiceOver hears as Check Feed starts.
     static func checking(title: String) -> String {
-        "Checking \(title)…"
+        // Translators: What VoiceOver says as Check Feed starts. %@ is the feed's title.
+        InterfaceText.line("feed.checking", "Checking \(title)…")
     }
 
     /// What VoiceOver hears when Check Feed is chosen for a feed the
     /// listener unsubscribed from (FR11, branch D), as from a menu drawn
     /// before Unsubscribe: nothing is checked.
     static func notChecked(title: String) -> String {
-        "\(title) is unsubscribed, so TextMouth doesn't check it. Choose Resubscribe to check it again."
+        // Translators: What VoiceOver says when Check Feed is chosen for an unsubscribed feed. The first %@ is the feed's title; the second is the name of the Resubscribe command.
+        InterfaceText.line("feed.notChecked", "\(title) is unsubscribed, so TextMouth doesn't check it. Choose \(resubscribeTitle) to check it again.")
     }
 
     /// What VoiceOver hears as Resubscribe starts the check it makes at once
     /// (FR11, branch D); the check's outcome follows, as Check Feed's does
     /// (`checked(_:noun:)`).
     static func resubscribed(title: String) -> String {
-        "Resubscribed to \(title). Checking it now…"
+        // Translators: What VoiceOver says as Resubscribe starts checking the feed. %@ is the feed's title.
+        InterfaceText.line("feed.resubscribed", "Resubscribed to \(title). Checking it now…")
     }
 
     // MARK: Marking
@@ -322,29 +407,54 @@ extension FeedWording {
     /// What VoiceOver hears once Mark All Played marked `count` items of the
     /// feed titled `title`, or found none to mark.
     static func markedAll(count: Int, title: String, noun: ItemNoun) -> String {
-        let played = noun == .article ? "read" : "played"
-        guard count > 0 else { return "Every \(noun.singular) of \(title) is already \(played)." }
-        return "Marked \(FeedWording.count(count, noun)) of \(title) \(played)."
+        guard count > 0 else {
+            return noun.choose(
+                // Translators: What VoiceOver says when Mark All Played finds no unplayed episode. %@ is the feed's title.
+                episode: InterfaceText.line("feed.markedAll.episode", "Every episode of \(title) is already played."),
+                // Translators: What VoiceOver says when Mark All Read finds no unread article. %@ is the feed's title.
+                article: InterfaceText.line("feed.markedAll.article", "Every article of \(title) is already read."),
+                // Translators: What VoiceOver says when Mark All Played finds no unplayed item, in a feed of episodes and articles. %@ is the feed's title.
+                item: InterfaceText.line("feed.markedAll.item", "Every item of \(title) is already played."))
+        }
+        return noun.choose(
+            // Translators: What VoiceOver says once Mark All Played marked episodes played. %lld is how many; %@ is the feed's title.
+            episode: InterfaceText.line("feed.markedAll.episodes", "Marked \(number: count) episodes of \(title) played."),
+            // Translators: What VoiceOver says once Mark All Read marked articles read. %lld is how many; %@ is the feed's title.
+            article: InterfaceText.line("feed.markedAll.articles", "Marked \(number: count) articles of \(title) read."),
+            // Translators: What VoiceOver says once Mark All Played marked items played, in a feed of episodes and articles. %lld is how many; %@ is the feed's title.
+            item: InterfaceText.line("feed.markedAll.items", "Marked \(number: count) items of \(title) played."))
     }
 
     /// What VoiceOver hears once an item is marked played or unplayed.
     static func marked(title: String, played: Bool, isArticle: Bool) -> String {
-        // "unread" or "unplayed" are spelled once, by the feed counts' wording.
-        let noun: ItemNoun = isArticle ? .article : .episode
-        let word = played ? playedNote(isArticle: isArticle).lowercased() : unplayedNote(noun)
-        return "Marked “\(title)” \(word)."
+        switch (played, isArticle) {
+        case (true, false):
+            // Translators: What VoiceOver says once an episode is marked played. %@ is the episode's title.
+            return InterfaceText.line("feed.marked.played", "Marked “\(title)” played.")
+        case (true, true):
+            // Translators: What VoiceOver says once an article is marked read. %@ is the article's title.
+            return InterfaceText.line("feed.marked.read", "Marked “\(title)” read.")
+        case (false, false):
+            // Translators: What VoiceOver says once an episode is marked unplayed. %@ is the episode's title.
+            return InterfaceText.line("feed.marked.unplayed", "Marked “\(title)” unplayed.")
+        case (false, true):
+            // Translators: What VoiceOver says once an article is marked unread. %@ is the article's title.
+            return InterfaceText.line("feed.marked.unread", "Marked “\(title)” unread.")
+        }
     }
 
     // MARK: Downloads
 
     /// What VoiceOver hears as Download starts.
     static func downloading(title: String) -> String {
-        "Downloading “\(title)”."
+        // Translators: What VoiceOver says as Download starts. %@ is the episode's or article's title.
+        InterfaceText.line("feed.downloading", "Downloading “\(title)”.")
     }
 
     /// What VoiceOver hears once Cancel Download stopped a download.
     static func downloadCancelled(title: String) -> String {
-        "Stopped downloading “\(title)”."
+        // Translators: What VoiceOver says once Cancel Download stopped a download. %@ is the episode's or article's title.
+        InterfaceText.line("feed.downloadCancelled", "Stopped downloading “\(title)”.")
     }
 
     /// What VoiceOver hears when Cancel Download comes too late, the book
@@ -353,14 +463,16 @@ extension FeedWording {
     /// Cancel says it too of such a download
     /// (`FeedDownloadProgressWording.cancelled(stopped:finishing:comingBack:)`).
     static func alreadyBeingAdded(title: String) -> String {
-        "“\(title)” is already being added to the library."
+        // Translators: What VoiceOver says when Cancel Download comes too late: the download's book is already being imported. %@ is the title.
+        InterfaceText.line("feed.alreadyBeingAdded", "“\(title)” is already being added to the library.")
     }
 
     /// What VoiceOver hears once Cancel Download took back a download the
     /// newest-N rule had put off (FR11): it waits no more, and downloads
     /// only when the listener asks.
     static func waitingDownloadCancelled(title: String) -> String {
-        "“\(title)” no longer waits to download; it downloads when you choose Download."
+        // Translators: What VoiceOver says once Cancel Download took back a download that waited. The first %@ is the title; the second is the name of the Download command.
+        InterfaceText.line("feed.waitingDownloadCancelled", "“\(title)” no longer waits to download; it downloads when you choose \(FeedWording.title(of: .download, isArticle: false)).")
     }
 
     /// What VoiceOver hears once Delete Download deleted a download: that it
@@ -369,9 +481,9 @@ extension FeedWording {
     /// it holds (`kept`, feed review item 18): "Its place and bookmarks are
     /// kept for when you download it again."
     static func downloadDeleted(title: String, kept: KeptParts = []) -> String {
-        let deleted = "Deleted the download of “\(title)”."
-        guard let parts = kept.sentenceSubject else { return "\(deleted) It can be downloaded again." }
-        return "\(deleted) \(parts) kept for when you download it again."
+        // Translators: What VoiceOver says once Delete Download deleted a download. %@ is the title. A sentence about what is kept follows.
+        let deleted = InterfaceText.line("feed.downloadDeleted", "Deleted the download of “\(title)”.")
+        return SentenceWording.joined([deleted, kept.keptForRedownloadSentence])
     }
 
     /// What a package kept after its download went holds of the listener's
@@ -403,41 +515,89 @@ extension FeedWording {
             rows.reduce(into: KeptParts()) { $0.formUnion(.of($1, package: $1.tmbDirectory)) }
         }
 
-        /// Each part's noun, in the order said, as one package holds it and
-        /// as several do, and whether the one package's is plural.
-        private static let nouns: [(part: KeptParts, one: String, several: String, isPlural: Bool)] = [
-            (.place, "place", "places", false),
-            (.bookmarks, "bookmarks", "bookmarks", true),
-            (.settings, "own settings", "own settings", true),
-            (.transcript, "transcript", "transcripts", false),
+        /// The parts in the order said, each with whether its noun is plural
+        /// as one package holds it.
+        private static let order: [(part: KeptParts, isPlural: Bool)] = [
+            (.place, false),
+            (.bookmarks, true),
+            (.settings, true),
+            (.transcript, false),
         ]
+
+        /// The noun of `part`, as one package holds it, or as several do.
+        private static func noun(of part: KeptParts, several: Bool) -> String {
+            switch part {
+            case .place:
+                return several
+                    // Translators: The places in books that several deleted downloads kept, a noun inside a list such as "the places and bookmarks kept for 3 removed downloads". Lower case.
+                    ? InterfaceText.line("keptParts.noun.place.places", "places")
+                    // Translators: The place in the book that a deleted download kept, a noun inside a list such as "the place and bookmarks kept for 1 removed download". Lower case.
+                    : InterfaceText.line("keptParts.noun.place.singular", "place")
+            case .bookmarks:
+                // Translators: The bookmarks that a deleted download or several kept, a noun inside a list such as "the place and bookmarks kept for 1 removed download". Lower case.
+                return InterfaceText.line("keptParts.noun.bookmarks", "bookmarks")
+            case .settings:
+                // Translators: The settings of their own that a deleted download or several kept, a noun inside a list such as "the place and own settings kept for 1 removed download". Lower case.
+                return InterfaceText.line("keptParts.noun.settings", "own settings")
+            default:
+                return several
+                    // Translators: The transcripts that several deleted downloads kept, a noun inside a list such as "the places and transcripts kept for 3 removed downloads". Lower case.
+                    ? InterfaceText.line("keptParts.noun.other.transcripts", "transcripts")
+                    // Translators: The transcript that a deleted download kept, a noun inside a list such as "the place and transcript kept for 1 removed download". Lower case.
+                    : InterfaceText.line("keptParts.noun.other.transcript", "transcript")
+            }
+        }
 
         /// The nouns of the parts held, in the order said: as one package
         /// holds them ("place", "bookmarks"), or as several do ("places",
         /// "transcripts").
         func nouns(several: Bool) -> [String] {
-            Self.nouns.filter { contains($0.part) }.map { several ? $0.several : $0.one }
+            Self.order.filter { contains($0.part) }.map { Self.noun(of: $0.part, several: several) }
         }
 
         /// Whether the parts, as one package holds them, take a plural verb:
         /// several of them, or bookmarks or own settings alone.
         var takesPluralVerb: Bool {
-            let named = Self.nouns.filter { contains($0.part) }
+            let named = Self.order.filter { contains($0.part) }
             return named.count > 1 || named.first?.isPlural == true
         }
 
-        /// The parts as a sentence's subject with its verb, as in "Its
-        /// place and bookmarks are", or "Its transcript is"; nil for none.
-        var sentenceSubject: String? {
-            let named = nouns(several: false)
-            guard !named.isEmpty else { return nil }
-            return "Its \(CountWording.list(named)) \(takesPluralVerb ? "are" : "is")"
+        /// What Delete Download says is kept for when the listener downloads
+        /// the item again, in a whole sentence, "Its place and bookmarks are
+        /// kept for when you download it again."; the sentence that says
+        /// the item can be downloaded again when nothing is kept.
+        var keptForRedownloadSentence: String {
+            guard !isEmpty else {
+                // Translators: What VoiceOver says after Delete Download deleted a download that kept nothing of the listener's: the item can be downloaded again.
+                return InterfaceText.line("keptParts.keptForRedownloadSentence.downloaded", "It can be downloaded again.")
+            }
+            let list = CountWording.list(nouns(several: false))
+            return takesPluralVerb
+                // Translators: What VoiceOver says after Delete Download deleted a download whose package kept parts of the listener's. %@ is a list of what is kept, such as "place and bookmarks". The verb agrees with a list of several parts.
+                ? InterfaceText.line("keptParts.keptForRedownloadSentence.valueWhen", "Its \(list) are kept for when you download it again.")
+                // Translators: What VoiceOver says after Delete Download deleted a download whose package kept one part of the listener's. %@ is what is kept, such as "place" or "transcript".
+                : InterfaceText.line("keptParts.keptForRedownloadSentence.value", "Its \(list) is kept for when you download it again.")
+        }
+
+        /// What is kept of one deleted download, as a whole sentence, "Its
+        /// place and bookmarks are kept."; nil when nothing is.
+        var keptSentence: String? {
+            guard !isEmpty else { return nil }
+            let list = CountWording.list(nouns(several: false))
+            return takesPluralVerb
+                // Translators: Sentence that says what is kept of one deleted download. %@ is a list of what is kept, such as "place and bookmarks". The verb agrees with a list of several parts.
+                ? InterfaceText.line("keptParts.keptSentence.plural", "Its \(list) are kept.")
+                // Translators: Sentence that says what is kept of one deleted download. %@ is one part that is kept, such as "place" or "transcript".
+                : InterfaceText.line("keptParts.keptSentence.singular", "Its \(list) is kept.")
         }
     }
 
     /// The title of the alert saying why a download, or an item, could not
     /// be deleted.
-    static let deleteRefusedTitle = "Couldn't Delete"
+    static var deleteRefusedTitle: String {
+        // Translators: Title of the alert that says why a download or a feed item could not be deleted. Title case.
+        InterfaceText.line("feed.deleteRefusedTitle", "Couldn't Delete")
+    }
 
     // MARK: Moving Into the Library (FR11, Branch D)
 
@@ -453,8 +613,19 @@ extension FeedWording {
     /// one item, titled as `titles` names it, or "Move 3 Episodes to
     /// Library" for several, called `noun`.
     static func moveToLibraryHeading(titles: [String], noun: ItemNoun) -> String {
-        guard titles.count != 1, !titles.isEmpty else { return "Move “\(titles.first ?? "")” to Library" }
-        return "Move \(titles.count) \(noun.plural.capitalized) to Library"
+        guard titles.count != 1, !titles.isEmpty else {
+            let title = titles.first ?? ""
+            // Translators: Heading of the sheet that moves one feed item's download into the library. %@ is the item's title. Title case.
+            return InterfaceText.line("feed.moveToLibraryHeading.named", "Move “\(title)” to Library")
+        }
+        let count = titles.count
+        return noun.choose(
+            // Translators: Heading of the sheet that moves several feed episodes into the library. %lld is how many. Title case.
+            episode: InterfaceText.line("feed.moveToLibraryHeading.episodes", "Move \(number: count) Episodes to Library"),
+            // Translators: Heading of the sheet that moves several feed articles into the library. %lld is how many. Title case.
+            article: InterfaceText.line("feed.moveToLibraryHeading.articles", "Move \(number: count) Articles to Library"),
+            // Translators: Heading of the sheet that moves several feed items, episodes and articles, into the library. %lld is how many. Title case.
+            item: InterfaceText.line("feed.moveToLibraryHeading.items", "Move \(number: count) Items to Library"))
     }
 
     /// What Move to Library… does, which its sheet says under its heading,
@@ -465,9 +636,21 @@ extension FeedWording {
     /// article, and a plural's for several.
     static func moveToLibraryHint(count: Int, noun: ItemNoun) -> String {
         guard count != 1 else {
-            return "Moves this \(noun.singular) into a folder of your library, where it becomes a book you can edit; it leaves the feed"
+            return noun.choose(
+                // Translators: What the Move to Library sheet says about one episode: it moves into a library folder as a book and leaves its feed.
+                episode: InterfaceText.line("feed.moveToLibraryHint.episode", "Moves this episode into a library folder as a book you can edit; it leaves the feed"),
+                // Translators: What the Move to Library sheet says about one article: it moves into a library folder as a book and leaves its feed.
+                article: InterfaceText.line("feed.moveToLibraryHint.article", "Moves this article into a library folder as a book you can edit; it leaves the feed"),
+                // Translators: What the Move to Library sheet says about one item, an episode or an article: it moves into a library folder as a book and leaves its feed.
+                item: InterfaceText.line("feed.moveToLibraryHint.item", "Moves this item into a library folder as a book you can edit; it leaves the feed"))
         }
-        return "Moves these \(count) \(noun.plural) into a folder of your library, where they become books you can edit; they leave their feeds"
+        return noun.choose(
+            // Translators: What the Move to Library sheet says about several episodes: they move into a library folder as books and leave their feeds. %lld is how many.
+            episode: InterfaceText.line("feed.moveToLibraryHint.episodes", "Moves these \(number: count) episodes into a library folder as books you can edit; they leave their feeds"),
+            // Translators: What the Move to Library sheet says about several articles: they move into a library folder as books and leave their feeds. %lld is how many.
+            article: InterfaceText.line("feed.moveToLibraryHint.articles", "Moves these \(number: count) articles into a library folder as books you can edit; they leave their feeds"),
+            // Translators: What the Move to Library sheet says about several items, episodes and articles: they move into a library folder as books and leave their feeds. %lld is how many.
+            item: InterfaceText.line("feed.moveToLibraryHint.items", "Moves these \(number: count) items into a library folder as books you can edit; they leave their feeds"))
     }
 
     /// What VoiceOver hears once Move to Library… moved the items titled
@@ -475,11 +658,25 @@ extension FeedWording {
     /// library's top level): "Moved “Ep. 368” into Podcasts/Keepers. It's a
     /// book of your library now, and its feed lists it In Library."
     static func movedToLibrary(titles: [String], noun: ItemNoun, folderPath: String) -> String {
-        let place = folderPath.isEmpty ? "the top of your library" : folderPath
+        let place = folderPath.isEmpty
+            // Translators: Where a book is when it is in no library folder, as in "Moved “Ep. 368” into the top of your library." Lower case.
+            ? InterfaceText.line("feed.movedToLibrary.topLibrary", "the top of your library")
+            : folderPath
+        // The note a moved item's row carries, which the sentence names.
+        let inLibrary = FeedItemState.inLibrary(bookID: UUID()).visibleNote
         guard titles.count != 1, !titles.isEmpty else {
-            return "Moved “\(titles.first ?? "")” into \(place). It's a book of your library now, and its feed lists it In Library."
+            let title = titles.first ?? ""
+            // Translators: What VoiceOver says once Move to Library moved one feed item into the library. The first %@ is the item's title; the second is the library folder, or "the top of your library"; the third is the note its feed's row shows, "In Library".
+            return InterfaceText.line("feed.movedToLibrary.lists", "Moved “\(title)” into \(place). It's a library book now, and its feed lists it \(inLibrary).")
         }
-        return "Moved \(count(titles.count, noun)) into \(place). They're books of your library now, and their feeds list them In Library."
+        let count = titles.count
+        return noun.choose(
+            // Translators: What VoiceOver says once Move to Library moved several episodes into the library. %lld is how many; the first %@ is the library folder, or "the top of your library"; the second is the note their feeds' rows show, "In Library".
+            episode: InterfaceText.line("feed.movedToLibrary.episodes", "Moved \(number: count) episodes into \(place). They're library books now, and their feeds list them \(inLibrary)."),
+            // Translators: What VoiceOver says once Move to Library moved several articles into the library. %lld is how many; the first %@ is the library folder, or "the top of your library"; the second is the note their feeds' rows show, "In Library".
+            article: InterfaceText.line("feed.movedToLibrary.articles", "Moved \(number: count) articles into \(place). They're library books now, and their feeds list them \(inLibrary)."),
+            // Translators: What VoiceOver says once Move to Library moved several items, episodes and articles, into the library. %lld is how many; the first %@ is the library folder, or "the top of your library"; the second is the note their feeds' rows show, "In Library".
+            item: InterfaceText.line("feed.movedToLibrary.items", "Moved \(number: count) items into \(place). They're library books now, and their feeds list them \(inLibrary)."))
     }
 
     /// What Move to Library… says when it moved some of the items asked for
@@ -503,33 +700,55 @@ extension FeedWording {
             if titlesByReason[reason] == nil {
                 reasons.append(reason)
             }
-            titlesByReason[reason, default: []].append("“\(title)”")
+            titlesByReason[reason, default: []].append(RemovalText.quoted(title))
         }
         let stays = reasons.map { reason in
             let titles = titlesByReason[reason] ?? []
-            let stay = titles.count == 1 ? "stays in its feed" : "stay in their feeds"
-            return "\(CountWording.list(titles)) \(stay): \(reason)"
+            let list = CountWording.list(titles)
+            return titles.count == 1
+                // Translators: What the Move to Library sheet says about one item that stayed in its feed. The first %@ is its title in quotation marks; the second is the reason, a sentence or clause.
+                ? InterfaceText.line("feed.stays.inItsFeed", "\(list) stays in its feed: \(reason)")
+                // Translators: What the Move to Library sheet says about several items that stayed in their feeds for one reason. The first %@ is their titles in quotation marks; the second is the reason, a sentence or clause.
+                : InterfaceText.line("feed.stays.inTheirFeeds", "\(list) stay in their feeds: \(reason)")
         }
-        return ([movedToLibrary(titles: moved, noun: noun, folderPath: folderPath)] + stays).joined(separator: " ")
+        return SentenceWording.joined([movedToLibrary(titles: moved, noun: noun, folderPath: folderPath)] + stays)
     }
 
     /// What VoiceOver hears when Move to Library… is chosen with nothing it
     /// can move: no episode or article downloaded in its feed among the books
     /// chosen.
-    static let nothingToMoveToLibrary = "Move to Library… moves an episode or article downloaded in its feed. Select one in its feed's folder."
+    static var nothingToMoveToLibrary: String {
+        // Translators: What VoiceOver says when Move to Library is chosen and no selected book is a feed's download. %@ is the name of the Move to Library command, with its ellipsis.
+        InterfaceText.line("feed.nothingToMoveToLibrary", "\(title(of: .moveToLibrary, isArticle: false)) moves an episode or article downloaded in its feed. Select one in its feed's folder.")
+    }
 
     // MARK: Deleting an Item
 
     /// The confirmation's button, which the menu's command names with an
     /// ellipsis, as it asks first: "Delete Episode", or "Delete Article".
     static func deleteItemButton(isArticle: Bool) -> String {
-        isArticle ? "Delete Article" : "Delete Episode"
+        isArticle
+            // Translators: Title of the button that confirms deleting a feed's article. Title case.
+            ? InterfaceText.line("feed.deleteItemButton.article", "Delete Article")
+            // Translators: Title of the button that confirms deleting a feed's episode. Title case.
+            : InterfaceText.line("feed.deleteItemButton.episode", "Delete Episode")
+    }
+
+    /// The title of the command Delete Episode… or Delete Article…, which
+    /// asks first.
+    static func deleteItemTitle(isArticle: Bool) -> String {
+        isArticle
+            // Translators: Title of the command that deletes a feed's article, after a confirmation. The ellipsis says a question follows. Title case.
+            ? InterfaceText.line("feed.deleteItemTitle.article", "Delete Article…")
+            // Translators: Title of the command that deletes a feed's episode, after a confirmation. The ellipsis says a question follows. Title case.
+            : InterfaceText.line("feed.deleteItemTitle.episode", "Delete Episode…")
     }
 
     /// The title of the confirmation before Delete Episode or Delete
     /// Article.
     static func deleteItemQuestion(title: String) -> String {
-        "Delete “\(title)”?"
+        // Translators: Title of the confirmation before a feed's episode or article is deleted. %@ is its title.
+        InterfaceText.line("feed.deleteItemQuestion", "Delete “\(title)”?")
     }
 
     /// The confirmation's message, saying what deleting does: the item
@@ -539,31 +758,50 @@ extension FeedWording {
     /// moved into the library (`isInLibrary`, FR11, branch D), the item
     /// leaves the list and its book stays.
     static func deleteItemMessage(isArticle: Bool, keepsListenerState: Bool = false, isInLibrary: Bool = false) -> String {
-        let kind = isArticle ? "article" : "episode"
+        // Translators: The last sentence of the confirmation before a feed's episode or article is deleted: a refresh of the feed does not list it again.
+        let comeBack = InterfaceText.line("feed.deleteItemMessage.checking", "Checking the feed won't bring it back.")
         guard !isInLibrary else {
-            return "The \(kind) leaves the list for good; the book it became in your library stays. "
-                + "Checking the feed won't bring it back."
+            let leaves = isArticle
+                // Translators: First sentence of the confirmation before an article that was moved into the library is deleted from its feed.
+                ? InterfaceText.line("feed.deleteItemMessage.article", "The article leaves the list for good; the book it became in your library stays.")
+                // Translators: First sentence of the confirmation before an episode that was moved into the library is deleted from its feed.
+                : InterfaceText.line("feed.deleteItemMessage.episode", "The episode leaves the list for good; the book it became in your library stays.")
+            return SentenceWording.joined([leaves, comeBack])
         }
-        let kept = keepsListenerState ? " The place, bookmarks, and transcript kept for it are deleted too." : ""
-        return "The \(kind) leaves the list for good, and its download, if any, is deleted.\(kept) "
-            + "Checking the feed won't bring it back."
+        let leaves = isArticle
+            // Translators: First sentence of the confirmation before an article is deleted from its feed.
+            ? InterfaceText.line("feed.deleteItemMessage.articleDownload", "The article leaves the list for good, and its download, if any, is deleted.")
+            // Translators: First sentence of the confirmation before an episode is deleted from its feed.
+            : InterfaceText.line("feed.deleteItemMessage.episodeDownload", "The episode leaves the list for good, and its download, if any, is deleted.")
+        guard keepsListenerState else { return SentenceWording.joined([leaves, comeBack]) }
+        // Translators: A sentence of the confirmation before a feed's episode or article is deleted: what TextMouth kept of the listener's for it goes too.
+        let kept = InterfaceText.line("feed.deleteItemMessage.bookmarks", "The place, bookmarks, and transcript kept for it are deleted too.")
+        return SentenceWording.joined([leaves, kept, comeBack])
     }
 
     /// What VoiceOver hears once an item is deleted: for one moved into the
     /// library (`isInLibrary`, FR11, branch D), that its book stays.
     static func itemDeleted(title: String, isInLibrary: Bool = false) -> String {
-        isInLibrary ? "Deleted “\(title)” from its feed; its book stays in your library." : "Deleted “\(title)”."
+        isInLibrary
+            // Translators: What VoiceOver says once an item that was moved into the library is deleted from its feed. %@ is its title.
+            ? InterfaceText.line("feed.itemDeleted.library", "Deleted “\(title)” from its feed; its book stays in your library.")
+            // Translators: What VoiceOver says once a feed's episode or article is deleted. %@ is its title.
+            : InterfaceText.line("feed.itemDeleted.alone", "Deleted “\(title)”.")
     }
 
     // MARK: Unsubscribing
 
     /// The title of the confirmation before Unsubscribe.
     static func unsubscribeQuestion(title: String) -> String {
-        "Unsubscribe from \(title)?"
+        // Translators: Title of the confirmation before Unsubscribe. %@ is the feed's title.
+        InterfaceText.line("feed.unsubscribeQuestion", "Unsubscribe from \(title)?")
     }
 
     /// The Unsubscribe confirmation's button.
-    static let unsubscribeButton = "Unsubscribe"
+    static var unsubscribeButton: String {
+        // Translators: Title of the command that stops checking a feed when it acts at once, and of the confirmation's button. Title case.
+        InterfaceText.line("feed.unsubscribeButton", "Unsubscribe")
+    }
 
     /// The Unsubscribe confirmation's message, saying what unsubscribing
     /// does now (FR11, branch D): TextMouth stops checking the feed for new
@@ -578,11 +816,25 @@ extension FeedWording {
     /// again. It also deletes the places and bookmarks kept for 3 removed
     /// downloads."
     static func unsubscribeMessage(downloadCount: Int, keptCount: Int, keptParts: KeptParts, noun: ItemNoun) -> String {
-        let stops = "TextMouth stops checking this feed for new \(noun.plural)."
-        let downloads = downloadCount > 0 ? " and its \(downloadsPhrase(downloadCount, noun))" : ""
-        let stays = "The feed stays in your library with its settings\(downloads), and Resubscribe checks it again."
-        let deletes = keptCount > 0 ? " It also deletes \(keptPhrase(count: keptCount, parts: keptParts))." : ""
-        return "\(stops) \(stays)\(deletes)"
+        let stops = noun.choose(
+            // Translators: The first sentence of the confirmation before Unsubscribe, for a feed of episodes.
+            episode: InterfaceText.line("feed.unsubscribeMessage.episodes", "TextMouth stops checking this feed for new episodes."),
+            // Translators: The first sentence of the confirmation before Unsubscribe, for a feed of articles.
+            article: InterfaceText.line("feed.unsubscribeMessage.articles", "TextMouth stops checking this feed for new articles."),
+            // Translators: The first sentence of the confirmation before Unsubscribe, for a feed of episodes and articles.
+            item: InterfaceText.line("feed.unsubscribeMessage.items", "TextMouth stops checking this feed for new items."))
+        let resubscribe = resubscribeTitle
+        let stays = downloadCount > 0
+            // Translators: A sentence of the confirmation before Unsubscribe: the feed stays, with its settings and its downloads. The first %@ is the downloads, such as "its 2 downloaded episodes"; the second is the name of the Resubscribe command.
+            ? InterfaceText.line("feed.unsubscribeMessage.staysLibrarySettings", "The feed stays in your library with its settings and \(downloadsPhrase(downloadCount, noun)), and \(resubscribe) checks it again.")
+            // Translators: A sentence of the confirmation before Unsubscribe: the feed stays, with its settings. %@ is the name of the Resubscribe command.
+            : InterfaceText.line("feed.unsubscribeMessage.staysLibrary", "The feed stays in your library with its settings, and \(resubscribe) checks it again.")
+        var sentences = [stops, stays]
+        if keptCount > 0 {
+            // Translators: The last sentence of the confirmation before Unsubscribe: what else it deletes. %@ is what the feed kept for removed downloads, such as "the places and bookmarks kept for 3 removed downloads".
+            sentences.append(InterfaceText.line("feed.unsubscribeMessage.deletes", "It also deletes \(keptPhrase(count: keptCount, parts: keptParts))."))
+        }
+        return SentenceWording.joined(sentences)
     }
 
     /// What VoiceOver hears once the feed titled `title`, whose items are
@@ -594,22 +846,62 @@ extension FeedWording {
     /// episodes; its downloaded episode stays. The places and bookmarks kept
     /// for 3 removed downloads were deleted."
     static func unsubscribed(title: String, outcome: FeedUnsubscribeOutcome, keptParts: KeptParts = [], noun: ItemNoun) -> String {
-        let stays = outcome.downloadCount == 1 ? "stays" : "stay"
-        let downloads = outcome.downloadCount > 0 ? "; its \(downloadsPhrase(outcome.downloadCount, noun)) \(stays)" : ""
-        let stopped = "Unsubscribed from \(title): TextMouth no longer checks it for new \(noun.plural)\(downloads)."
+        // The downloads that stay, as a clause after a semicolon, or nothing.
+        var downloads = ""
+        if outcome.downloadCount > 0 {
+            let phrase = downloadsPhrase(outcome.downloadCount, noun)
+            downloads = outcome.downloadCount == 1
+                // Translators: A clause that ends the announcement of Unsubscribe: the one download the feed kept stays. %@ is the download, such as "its downloaded episode". Starts with a semicolon.
+                ? InterfaceText.line("feed.unsubscribed.stays", "; \(phrase) stays")
+                // Translators: A clause that ends the announcement of Unsubscribe: the feed's downloads stay. %@ is the downloads, such as "its 5 downloaded episodes". Starts with a semicolon.
+                : InterfaceText.line("feed.unsubscribed.stay", "; \(phrase) stay")
+        }
+        let stopped = noun.choose(
+            // Translators: What VoiceOver says once Unsubscribe is done, for a feed of episodes. The first %@ is the feed's title; the second is a clause about the downloads that stay, which may be empty.
+            episode: InterfaceText.line("feed.unsubscribed.episodes", "Unsubscribed from \(title): TextMouth no longer checks it for new episodes\(downloads)."),
+            // Translators: What VoiceOver says once Unsubscribe is done, for a feed of articles. The first %@ is the feed's title; the second is a clause about the downloads that stay, which may be empty.
+            article: InterfaceText.line("feed.unsubscribed.articles", "Unsubscribed from \(title): TextMouth no longer checks it for new articles\(downloads)."),
+            // Translators: What VoiceOver says once Unsubscribe is done, for a feed of episodes and articles. The first %@ is the feed's title; the second is a clause about the downloads that stay, which may be empty.
+            item: InterfaceText.line("feed.unsubscribed.items", "Unsubscribed from \(title): TextMouth no longer checks it for new items\(downloads)."))
         guard outcome.deletedKeptCount > 0 else { return stopped }
-        let kept = keptPhrase(count: outcome.deletedKeptCount, parts: keptParts)
-        let verb = keptPhraseTakesPluralVerb(count: outcome.deletedKeptCount, parts: keptParts) ? "were" : "was"
-        return "\(stopped) \(kept.capitalizingFirstLetter) \(verb) deleted."
+        let count = outcome.deletedKeptCount
+        let list = CountWording.list(keptParts.nouns(several: count > 1))
+        let deleted: String
+        if keptParts.nouns(several: false).isEmpty {
+            // Translators: The last sentence of the announcement of Unsubscribe: what the feed kept for removed downloads whose packages held none of the named parts was deleted. %lld is how many removed downloads.
+            deleted = InterfaceText.line("feed.unsubscribed.what", "What was kept for \(number: count) removed downloads was deleted.")
+        } else if keptPhraseTakesPluralVerb(count: count, parts: keptParts) {
+            // Translators: The last sentence of the announcement of Unsubscribe: what the feed kept for removed downloads was deleted. %@ is a list of what was kept, such as "places and bookmarks"; %lld is how many removed downloads. The verb is plural.
+            deleted = InterfaceText.line("feed.unsubscribed.were", "The \(list) kept for \(number: count) removed downloads were deleted.")
+        } else {
+            // Translators: The last sentence of the announcement of Unsubscribe: what the feed kept for one removed download was deleted. %@ is one part that was kept, such as "transcript"; %lld is how many removed downloads. The verb is singular.
+            deleted = InterfaceText.line("feed.unsubscribed.downloadsWas", "The \(list) kept for \(number: count) removed downloads was deleted.")
+        }
+        return SentenceWording.joined([stopped, deleted])
     }
 
     // MARK: What a Feed Holds (FR14)
 
-    /// A feed's downloads, after "its": "downloaded episode" for one, "5
-    /// downloaded episodes" for more, so "its 1 downloaded episode" is never
-    /// said (REV13 item 5).
+    /// A feed's downloads, after "its": "its downloaded episode" for one,
+    /// "its 5 downloaded episodes" for more, so "its 1 downloaded episode"
+    /// is never said (REV13 item 5).
     static func downloadsPhrase(_ count: Int, _ noun: ItemNoun) -> String {
-        count == 1 ? "downloaded \(noun.singular)" : "\(count) downloaded \(noun.plural)"
+        if count == 1 {
+            return noun.choose(
+                // Translators: The one downloaded episode of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case.
+                episode: InterfaceText.line("feed.downloadsPhrase.episode", "its downloaded episode"),
+                // Translators: The one downloaded article of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case.
+                article: InterfaceText.line("feed.downloadsPhrase.article", "its downloaded article"),
+                // Translators: The one downloaded item, an episode or an article, of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case.
+                item: InterfaceText.line("feed.downloadsPhrase.item", "its downloaded item"))
+        }
+        return noun.choose(
+            // Translators: A feed's downloaded episodes, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many. Lower case.
+            episode: InterfaceText.line("feed.downloadsPhrase.episodes", "its \(number: count) downloaded episodes"),
+            // Translators: A feed's downloaded articles, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many. Lower case.
+            article: InterfaceText.line("feed.downloadsPhrase.articles", "its \(number: count) downloaded articles"),
+            // Translators: A feed's downloaded items, episodes and articles, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many. Lower case.
+            item: InterfaceText.line("feed.downloadsPhrase.items", "its \(number: count) downloaded items"))
     }
 
     /// What a feed kept for `count` downloads removed earlier, naming only
@@ -620,8 +912,13 @@ extension FeedWording {
     /// its edited text, "what was kept for 2 removed downloads".
     static func keptPhrase(count: Int, parts: KeptParts) -> String {
         let nouns = parts.nouns(several: count > 1)
-        let what = nouns.isEmpty ? "what was" : "the \(CountWording.list(nouns))"
-        return "\(what) kept for \(CountWording.phrase(count, singular: "removed download", plural: "removed downloads"))"
+        guard !nouns.isEmpty else {
+            // Translators: What a feed kept for downloads the listener removed, when their packages held none of the parts named, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many removed downloads. Lower case.
+            return InterfaceText.line("feed.keptPhrase.what", "what was kept for \(number: count) removed downloads")
+        }
+        let list = CountWording.list(nouns)
+        // Translators: What a feed kept for downloads the listener removed, inside a sentence about what Unsubscribe or Delete Feed does. %@ is a list of what was kept, such as "places and bookmarks"; %lld is how many removed downloads. Lower case.
+        return InterfaceText.line("feed.keptPhrase.downloads", "the \(list) kept for \(number: count) removed downloads")
     }
 
     /// Whether `keptPhrase(count:parts:)`, as a sentence's subject, takes a
@@ -637,16 +934,26 @@ extension FeedWording {
 
     /// Delete Feed…'s title, in a feed's menu, among its VoiceOver actions,
     /// and in Feed Info: it asks first.
-    static let deleteFeedTitle = "Delete Feed…"
+    static var deleteFeedTitle: String {
+        // Translators: Title of the command that deletes a feed with its downloads, after a confirmation, in a feed's menu, among its VoiceOver actions, and in Feed Info. The ellipsis says a question follows. Title case.
+        InterfaceText.line("feed.deleteFeedTitle", "Delete Feed…")
+    }
     /// The Delete Feed confirmation's button.
-    static let deleteFeedButton = "Delete Feed"
+    static var deleteFeedButton: String {
+        // Translators: Title of the button that confirms deleting a feed. Title case.
+        InterfaceText.line("feed.deleteFeedButton", "Delete Feed")
+    }
     /// Delete Feed…'s spoken hint in Feed Info.
-    static let deleteFeedHint = "Asks first, then deletes this feed, its downloads, and what it kept of downloads you removed"
+    static var deleteFeedHint: String {
+        // Translators: VoiceOver hint of the Delete Feed button in Feed Info.
+        InterfaceText.line("feed.deleteFeedHint", "Asks first, then deletes this feed, its downloads, and what it kept of downloads you removed")
+    }
 
     /// The title of the confirmation before Delete Feed: "Delete the feed
     /// “Finish It!”?"
     static func deleteFeedQuestion(title: String) -> String {
-        "Delete the feed “\(title)”?"
+        // Translators: Title of the confirmation before Delete Feed. %@ is the feed's title.
+        InterfaceText.line("feed.deleteFeedQuestion", "Delete the feed “\(title)”?")
     }
 
     /// The Delete Feed confirmation's message (FR14), saying what goes, as
@@ -661,19 +968,28 @@ extension FeedWording {
     /// downloads: they go to the Trash, where you can recover them until the
     /// Trash is emptied. Its folder “Podcasts/Finish It!” goes too when
     /// nothing else is in it. To keep an episode, choose Move to Library… on
-    /// its row first."
+    /// its row first." On an iPhone (`isPhone`) the last sentence is said
+    /// only once the phone offers Move to Library… (`phoneOffersMoveToLibrary`),
+    /// so it never names a command the phone's rows lack.
     static func deleteFeedMessage(
         downloads: Int,
         kept: Int,
         keptParts: KeptParts,
         noun: ItemNoun,
         folderPath: String?,
-        mode: RemovalMode
+        mode: RemovalMode,
+        isPhone: Bool = ThisDevice.isPhone
     ) -> String {
-        var sentences = ["The feed leaves your library, with its list of \(noun.plural) and its settings."]
+        var sentences = [noun.choose(
+            // Translators: The first sentence of the confirmation before Delete Feed, for a feed of episodes.
+            episode: InterfaceText.line("feed.sentences.episodes", "The feed leaves your library, with its list of episodes and its settings."),
+            // Translators: The first sentence of the confirmation before Delete Feed, for a feed of articles.
+            article: InterfaceText.line("feed.sentences.articles", "The feed leaves your library, with its list of articles and its settings."),
+            // Translators: The first sentence of the confirmation before Delete Feed, for a feed of episodes and articles.
+            item: InterfaceText.line("feed.sentences.items", "The feed leaves your library, with its list of items and its settings."))]
         var deleted: [String] = []
         if downloads > 0 {
-            deleted.append("its \(downloadsPhrase(downloads, noun))")
+            deleted.append(downloadsPhrase(downloads, noun))
         }
         if kept > 0 {
             deleted.append(keptPhrase(count: kept, parts: keptParts))
@@ -682,15 +998,63 @@ extension FeedWording {
             // Several things, or one kept package whose parts are said in
             // the plural, as "the place and bookmarks".
             let several = downloads + kept > 1 || (downloads == 0 && keptPhraseTakesPluralVerb(count: kept, parts: keptParts))
-            sentences.append("It deletes \(CountWording.list(deleted)): \(several ? "they" : "it") \(mode.outcomePhrase(plural: several)).")
+            sentences.append(deletesSentence(CountWording.list(deleted), several: several, mode: mode))
         }
         if let folderPath, !folderPath.isEmpty {
-            sentences.append("Its folder “\(folderPath)” goes too when nothing else is in it.")
+            // Translators: A sentence of the confirmation before Delete Feed: the feed's library folder is deleted too when it holds nothing else. %@ is the folder's path.
+            sentences.append(InterfaceText.line("feed.folderGoesToo", "Its folder “\(folderPath)” goes too when nothing else is in it."))
         }
-        if downloads > 0 {
-            sentences.append("To keep an \(noun.singular), choose \(ShortcutAction.moveToLibrary.title) on its row first.")
+        // The way to keep a download, where the rows offer it.
+        if downloads > 0, !isPhone || phoneOffersMoveToLibrary {
+            let moveName = title(of: .moveToLibrary, isArticle: false)
+            sentences.append(noun.choose(
+                // Translators: The last sentence of the confirmation before Delete Feed, for a feed of episodes. %@ is the name of the Move to Library command.
+                episode: InterfaceText.line("feed.keepEpisodeChoose", "To keep an episode, choose \(moveName) on its row first."),
+                // Translators: The last sentence of the confirmation before Delete Feed, for a feed of articles. %@ is the name of the Move to Library command.
+                article: InterfaceText.line("feed.keepArticleChoose", "To keep an article, choose \(moveName) on its row first."),
+                // Translators: The last sentence of the confirmation before Delete Feed, for a feed of episodes and articles. %@ is the name of the Move to Library command.
+                item: InterfaceText.line("feed.keepItemChoose", "To keep an item, choose \(moveName) on its row first.")))
         }
-        return sentences.joined(separator: " ")
+        return SentenceWording.joined(sentences)
+    }
+
+    /// Whether the iPhone's feed rows offer Move to Library…, which phase F1's
+    /// rows leave out: the iPhone's own answer in its build. The Mac's build
+    /// never reaches the iPhone's types (the boundary `IOSBranchTests` keeps),
+    /// so it answers for the phone of this phase, which a test of the Mac's
+    /// host checks against the iPhone's rows.
+    private static var phoneOffersMoveToLibrary: Bool {
+        #if os(iOS)
+        PhoneFeedRows.offers(.moveToLibrary)
+        #else
+        false
+        #endif
+    }
+
+    /// The sentence of Delete Feed's confirmation that says what it deletes,
+    /// `list`, and what becomes of it in the removal mode `mode`, whether
+    /// `several` things go or one.
+    private static func deletesSentence(_ list: String, several: Bool, mode: RemovalMode) -> String {
+        switch (mode, several) {
+        case (.keepFiles, true):
+            // Translators: A sentence of the confirmation before Delete Feed, when the setting keeps files: what the feed deletes, several things, which stay in the library folder. %@ is a list of what is deleted.
+            return InterfaceText.line("feed.deletesSentence.stay", "It deletes \(list): they stay in the TextMouth library folder.")
+        case (.keepFiles, false):
+            // Translators: A sentence of the confirmation before Delete Feed, when the setting keeps files: what the feed deletes, one thing, which stays in the library folder. %@ is what is deleted.
+            return InterfaceText.line("feed.deletesSentence.stays", "It deletes \(list): it stays in the TextMouth library folder.")
+        case (.moveToTrash, true):
+            // Translators: A sentence of the confirmation before Delete Feed, when files go to the Trash: what the feed deletes, several things. %@ is a list of what is deleted.
+            return InterfaceText.line("feed.deletesSentence.them", "It deletes \(list): they go to the Trash, where you can recover them until the Trash is emptied.")
+        case (.moveToTrash, false):
+            // Translators: A sentence of the confirmation before Delete Feed, when files go to the Trash: what the feed deletes, one thing. %@ is what is deleted.
+            return InterfaceText.line("feed.deletesSentence.goes", "It deletes \(list): it goes to the Trash, where you can recover it until the Trash is emptied.")
+        case (.deletePermanently, true):
+            // Translators: A sentence of the confirmation before Delete Feed, when files are deleted permanently: what the feed deletes, several things. %@ is a list of what is deleted.
+            return InterfaceText.line("feed.deletesSentence.permanentlyRecovered", "It deletes \(list): they are deleted permanently and cannot be recovered.")
+        case (.deletePermanently, false):
+            // Translators: A sentence of the confirmation before Delete Feed, when files are deleted permanently: what the feed deletes, one thing. %@ is what is deleted.
+            return InterfaceText.line("feed.deletesSentence.deletedPermanentlyRecovered", "It deletes \(list): it is deleted permanently and cannot be recovered.")
+        }
     }
 
     /// What VoiceOver hears once Delete Feed… deleted a feed whose items are
@@ -702,24 +1066,31 @@ extension FeedWording {
     /// episodes, and the places and bookmarks kept for 3 removed downloads.
     /// Its folder “Podcasts/Finish It!” is gone too."
     static func deletedFeed(_ outcome: FeedDeleteOutcome, noun: ItemNoun, keptParts: KeptParts) -> String {
-        var deleted = ["the feed “\(outcome.title)”"]
+        // Translators: The feed itself, first in the list of what Delete Feed deleted, inside the announcement "Deleted the feed “Finish It!”, its 5 downloaded episodes, and ...". %@ is the feed's title. Lower case.
+        var deleted = [InterfaceText.line("feed.deletedFeed", "the feed “\(outcome.title)”")]
         if outcome.deletedDownloads > 0 {
-            deleted.append("its \(downloadsPhrase(outcome.deletedDownloads, noun))")
+            deleted.append(downloadsPhrase(outcome.deletedDownloads, noun))
         }
         if outcome.deletedKeptPlaces > 0 {
             deleted.append(keptPhrase(count: outcome.deletedKeptPlaces, parts: keptParts))
         }
-        let sentence = "Deleted \(CountWording.list(deleted))."
+        // Translators: What VoiceOver says once Delete Feed deleted a feed. %@ is a list of what went: the feed, its downloads, and what it kept for removed downloads.
+        let sentence = InterfaceText.line("common.deletedValue", "Deleted \(CountWording.list(deleted)).")
+        let folder: String
         switch outcome.folder {
         case .deleted(let path):
-            return "\(sentence) Its folder “\(path)” is gone too."
+            // Translators: A sentence of the announcement after Delete Feed: the feed's library folder was deleted too. %@ is the folder's path.
+            folder = InterfaceText.line("feed.deletedFeed.folderGone", "Its folder “\(path)” is gone too.")
         case .stays(let path):
-            return "\(sentence) Its folder “\(path)” stays, as something else is in it."
+            // Translators: A sentence of the announcement after Delete Feed: the feed's library folder stays because it holds other things. %@ is the folder's path.
+            folder = InterfaceText.line("feed.deletedFeed.stays", "Its folder “\(path)” stays, as something else is in it.")
         case .notDeleted(let path):
-            return "\(sentence) Its folder “\(path)” is empty, but could not be deleted."
+            // Translators: A sentence of the announcement after Delete Feed: the feed's library folder is empty but could not be deleted. %@ is the folder's path.
+            folder = InterfaceText.line("feed.deletedFeed.notDeleted", "Its folder “\(path)” is empty, but could not be deleted.")
         case .none:
             return sentence
         }
+        return SentenceWording.joined([sentence, folder])
     }
 
     /// Why Delete Feed… left the feed titled `title` as it is (FR14), as the
@@ -731,11 +1102,19 @@ extension FeedWording {
     static func deleteFeedRefused(_ error: FeedDeleteError, title: String, mode: RemovalMode) -> String {
         switch error {
         case let .downloadInUse(download, use):
-            return use.refusal(of: "“\(download)”", retry: "choose \(deleteFeedTitle) again")
+            // Translators: The next step after a refusal to delete a feed whose download is in use: "Close it, then choose Delete Feed… again." %@ is the name of the Delete Feed command. Lower case, without a full stop, to follow "then".
+            let again = InterfaceText.line("feed.deleteFeedRefused.downloadInUse", "choose \(deleteFeedTitle) again")
+            return use.refusal(of: RemovalText.quoted(download), retry: again)
         case .indexNotWritten:
-            return "TextMouth couldn't save the library before deleting the feed “\(title)”, so nothing was deleted."
+            // Translators: Why Delete Feed did nothing: the library could not be saved first. %@ is the feed's title.
+            return InterfaceText.line("feed.deleteFeedRefused.indexNotWritten", "TextMouth couldn't save the library before deleting the feed “\(title)”, so nothing was deleted.")
         case .filesStayed(let stayed):
-            return mode.failureMessage(stayed, noun: "item") + "\nThe feed “\(title)” stays with \(stayed.count == 1 ? "it" : "them")."
+            let stays = stayed.count == 1
+                // Translators: The last line of the alert when Delete Feed could not delete one of the feed's items: the feed stays with it. %@ is the feed's title.
+                ? InterfaceText.line("feed.deleteFeedRefused.filesStayed.stays", "The feed “\(title)” stays with it.")
+                // Translators: The last line of the alert when Delete Feed could not delete several of the feed's items: the feed stays with them. %@ is the feed's title.
+                : InterfaceText.line("feed.deleteFeedRefused.filesStayed.them", "The feed “\(title)” stays with them.")
+            return mode.failureMessage(stayed, noun: .item) + "\n" + stays
         }
     }
 }

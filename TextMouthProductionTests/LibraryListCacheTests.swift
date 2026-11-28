@@ -245,6 +245,44 @@ final class LibraryListCacheTests: XCTestCase {
         XCTAssertEqual(cache.listRevision, revision + 2, "reordering the books did not bump the list revision")
     }
 
+    // MARK: - Finding a Book by ID
+
+    /// `bookByID` finds the book a scan of the library finds, for every
+    /// book, through every kind of change: a new value, a removal, a
+    /// reordering, an addition; an ID the library lacks gives nil; a book
+    /// found twice gives the first (the audit's C17).
+    func testBookByIDAgreesWithAScanThroughEveryChange() throws {
+        let model = LibraryViewModel(initializeServices: false)
+        model.library = try LibraryBenchmarkFixture.library(bookCount: 50)
+
+        func assertAgreesWithAScan(_ step: String, file: StaticString = #filePath, line: UInt = #line) {
+            for book in model.library.books {
+                let scanned = model.library.books.first { $0.id == book.id }
+                XCTAssertEqual(model.bookByID(book.id), scanned, "\(step): \(book.title)", file: file, line: line)
+            }
+            XCTAssertNil(model.bookByID(UUID()), "\(step): an unknown ID", file: file, line: line)
+        }
+
+        assertAgreesWithAScan("at first")
+        model.library.books[3].readingPosition = ReadingPosition(chapterIndex: 2, characterOffset: 9)
+        assertAgreesWithAScan("after a position")
+        model.library.books[4].title = "Renamed Again"
+        assertAgreesWithAScan("after a rename")
+        model.library.books.swapAt(0, 7)
+        assertAgreesWithAScan("after a reordering")
+        let removed = model.library.books.remove(at: 10)
+        assertAgreesWithAScan("after a removal")
+        XCTAssertNil(model.bookByID(removed.id), "the removed book is still found")
+        model.library.books.append(removed)
+        assertAgreesWithAScan("after an addition")
+
+        // The same book twice: the first is the one found, as a scan finds it.
+        var twin = removed
+        twin.title = "The Second One"
+        model.library.books.append(twin)
+        XCTAssertEqual(model.bookByID(removed.id)?.title, removed.title)
+    }
+
     // MARK: - Folder Counts
 
     /// Each folder tree's count is the library's own count, for every folder

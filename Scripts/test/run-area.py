@@ -3,7 +3,10 @@
 
 Usage: Scripts/test/run-area.py [options] NAME [NAME ...]
 
-A NAME is an area (listed in Scripts/test/areas.conf) or a test class. `all`
+A NAME is an area (listed in Scripts/test/areas.conf), a test class, or one test
+method written Class/testMethod (a `func testX()` declared in the class's own file;
+a typo is refused with the closest names; a method whose class is also named runs
+once, with its class). `all`
 is a built-in area: every runnable hosted test class (those no area lists
 yet come last). Order is kept, repeats are
 dropped, and ONE xcodebuild run covers them all (each launch of the test host
@@ -24,7 +27,7 @@ Options:
   --list              with no NAME: one line per area (name, class count,
                       description); with NAMEs: their classes, one per line;
                       with --changed: only the --changed report, no run
-  --classes A,B       more classes, comma separated (repeatable)
+  --classes A,B       more classes (or Class/testMethod), comma separated (repeatable)
   --changed           pick the classes whose file mentions a type declared in a file
                       changed since the merge-base of --base and HEAD (staged,
                       unstaged, committed and untracked, under TextMouth/,
@@ -61,6 +64,9 @@ Options:
   --log FILE          log file;     default <tempdir>/TextMouth-area-<suffix>.log
                       (<suffix> is $BBS_AGENT when set, else "area")
   --jobs N            xcodebuild -jobs (default 4)
+  --xcodebuild-arg=ARG  one more argument for xcodebuild (repeatable; give it with an equals sign,
+                      as --xcodebuild-arg=-test-timeouts-enabled, since it starts with a hyphen);
+                      not used by --repeat
   --no-slot           do not hold a build slot (for a Mac with no agents running)
   --clean             unregister the build folder's app and delete the folder
   -h, --help          this text
@@ -125,6 +131,7 @@ def parse_args(argv):
     parser.add_argument("--derived-data")
     parser.add_argument("--log")
     parser.add_argument("--jobs", type=int, default=4)
+    parser.add_argument("--xcodebuild-arg", action="append", default=[])
     parser.add_argument("--no-slot", action="store_true")
     parser.add_argument("--clean", action="store_true")
     parser.add_argument("--changed", action="store_true")
@@ -165,14 +172,14 @@ def split_classes(values):
 # Listing
 # ---------------------------------------------------------------------------
 
-def list_lines(names, areas, classes):
+def list_lines(names, areas, classes, root=None):
     """Lines for --list: every area when no NAME, else each NAME's classes."""
     if not names:
         everything = testkit.resolve_names([testkit.ALL_AREA], areas, classes)
         lines = [f"{a.name}: {len(a.classes)} classes. {a.description}" for a in areas]
         lines.append(f"{testkit.ALL_AREA}: {len(everything)} classes. Every runnable test class, those no area lists yet last")
         return lines
-    return testkit.resolve_names(names, areas, classes)
+    return testkit.resolve_names(names, areas, classes, root=root)
 
 
 def unassigned_lines(areas, classes):
@@ -370,15 +377,16 @@ def score_test_classes(changed_names, changed_test_paths, classes, words_by_path
     return [(key[0], key[3]) for key in keyed], dropped, matches
 
 
-def changed_files(base: str, root: Path):
-    """The files changed since the merge-base of `base` and HEAD, as {path: text or None}.
+def changed_files(base: str, root: Path, scopes=None):
+    """The files changed since the merge-base of `base` and HEAD, as {path: text or None}. `scopes` are the folders that
+    count (default: the app's, the hosted tests', and TestData's); `l10n.py reach` adds the iPhone tests'.
 
     Tracked changes (staged, unstaged and committed) and untracked files under
     TextMouth/, TextMouthProductionTests/ and TestData/. A deleted file is read
     from the merge-base, so the types it declared still count; a file that
     cannot be read as text maps to None. Raises difflint.GitError.
     """
-    scopes = ["--", CHANGED_APP, CHANGED_TESTS, CHANGED_DATA]
+    scopes = ["--"] + list(scopes or (CHANGED_APP, CHANGED_TESTS, CHANGED_DATA))
     merge_base = difflint.run_git(["merge-base", base, "HEAD"], cwd=str(root)).strip()
     tracked = difflint.run_git(["diff", "--name-only", "--no-color", merge_base] + scopes, cwd=str(root))
     untracked = difflint.run_git(["ls-files", "--others", "--exclude-standard"] + scopes, cwd=str(root))
@@ -416,10 +424,10 @@ def names_of_changes(changes):
     return names, test_paths
 
 
-def test_file_words(root: Path):
-    """{path: words} for every Swift file of the hosted test folder."""
+def test_file_words(root: Path, folder: str = testkit.TESTS_FOLDER):
+    """{path: words} for every Swift file of the hosted test folder (or another test folder, such as the iPhone bundle's)."""
     return {str(source.relative_to(root)): file_words(source.read_text(encoding="utf-8", errors="replace"))
-            for source in sorted((root / testkit.TESTS_FOLDER).glob("*.swift"))}
+            for source in sorted((root / folder).glob("*.swift"))}
 
 
 def changed_report(ranked, dropped, matches, areas, explain=False, limit=None):
@@ -638,15 +646,23 @@ def selftest() -> int:
             check(f"{area.name}: {name} exists and has tests",
                   name in classes and classes[name].runnable)
 
-    # A bad areas file names the line.
+    # A bad areas file names the line. A class listed twice in one area counts
+    # once, since a union merge of areas.conf keeps both branches' copies of a
+    # line (testkit.parse_areas); an area listed twice is still an error.
     with tempfile.TemporaryDirectory() as folder:
         bad = Path(folder) / "bad.conf"
         bad.write_text("[ok] fine\nAThing\nAThing\n")
         try:
-            testkit.parse_areas(bad)
-            check("a class twice in one area is an error", False)
+            repeated = [area.classes for area in testkit.parse_areas(bad)]
+            check("a class twice in one area counts once", repeated == [("AThing",)], repeated)
         except testkit.AreasError as error:
-            check("a duplicate class names its line", ":3:" in str(error), error)
+            check("a class twice in one area counts once", False, error)
+        bad.write_text("[ok] fine\nAThing\n[ok] again\nOther\n")
+        try:
+            testkit.parse_areas(bad)
+            check("an area listed twice is an error", False)
+        except testkit.AreasError as error:
+            check("a repeated area names its line", ":3:" in str(error), error)
         bad.write_text("[Bad_Name] x\n")
         try:
             testkit.parse_areas(bad)
@@ -667,6 +683,52 @@ def selftest() -> int:
     except testkit.UnknownName as error:
         check("an unknown name offers the closest", "no area or class named 'tw'; closest: two" in str(error), error)
 
+    # One test method, written Class/testMethod: it is checked against its class's file.
+    with tempfile.TemporaryDirectory() as folder:
+        scratch = Path(folder)
+        (scratch / "A.swift").write_text(
+            "final class A: XCTestCase {\n    func testOne() {}\n    @MainActor\n    func testTwo() throws {}\n}\n")
+        method_classes = {"A": testkit.HostedClass("A", "A.swift", 1, 2), "H": testkit.HostedClass("H", "A.swift", 1, 0)}
+
+        def methods(names, classes_only=False, root_arg=scratch):
+            """Resolves `names` against the scratch class A (two tests) and the helper H."""
+            return testkit.resolve_names(names, sample, method_classes, classes_only=classes_only, root=root_arg)
+
+        def refusal(names, **more):
+            """The message resolving `names` is refused with, or None when it is accepted."""
+            try:
+                methods(names, **more)
+            except testkit.UnknownName as error:
+                return str(error)
+            return None
+
+        check("a method resolves to itself", methods(["A/testOne"]) == ["A/testOne"])
+        check("a method with an attribute above it is found", methods(["A/testTwo"]) == ["A/testTwo"])
+        check("a method also works in --classes", methods(["A/testOne"], classes_only=True) == ["A/testOne"])
+        check("methods and classes mix in order, repeats dropped",
+              methods(["A/testOne", "A/testOne", "A/testTwo"]) == ["A/testOne", "A/testTwo"])
+        check("a method whose class is also named runs with its class",
+              methods(["A/testOne", "A"]) == ["A"] and methods(["A", "A/testOne"]) == ["A"])
+        check("a method whose class is in an area runs with its class",
+              testkit.resolve_names(["one", "A/testOne"], sample,
+                                    {n: testkit.HostedClass(n, "A.swift", 1, 1) for n in "ABC"}, root=scratch) == ["A", "B"])
+        check("a method of another class stays beside a named class",
+              testkit.drop_covered_methods(["B", "A/testOne"]) == ["B", "A/testOne"])
+        typo = refusal(["A/testOn"])
+        check("a method typo is refused with the closest names", typo is not None and "closest: A/testOne" in typo, typo)
+        check("an unknown class in a method is refused", "no class named 'Z'" in (refusal(["Z/testOne"]) or ""))
+        check("a helper class's method is refused", "helper class" in (refusal(["H/testOne"]) or ""))
+        check("a name that is not a test method is refused", "not a test method name" in (refusal(["A/helper"]) or ""))
+        check("a method is never taken on trust without a root",
+              "no repository root" in (refusal(["A/testOne"], root_arg=None) or ""))
+    # A method reaches xcodebuild as one more -only-testing level, in a --repeat run too.
+    check("a method becomes -only-testing:Target/Class/method",
+          testkit.build_command(Path("/r"), ["A/testOne", "B"], "/tmp/D", use_slot=False)[-2:]
+          == ["-only-testing:TextMouthProductionTests/A/testOne", "-only-testing:TextMouthProductionTests/B"])
+    check("--repeat runs carry methods too",
+          "-only-testing:TextMouthProductionTests/A/testOne" in repeat_plan(
+              Path("/r"), ["A/testOne"], "/tmp/D", 4, 2, "/tmp/log", {"X": "1"}, use_slot=False)[1][1][1])
+
     # The command.
     command = testkit.build_command(Path("/r"), ["A", "B"], "/tmp/D", jobs=3, use_slot=False)
     check("build_command is the documented argv", command == [
@@ -674,6 +736,13 @@ def selftest() -> int:
         "-destination", "platform=macOS", "-parallel-testing-enabled", "NO", "-jobs", "3",
         "CODE_SIGNING_ALLOWED=NO", "COMPILER_INDEX_STORE_ENABLE=NO", "-derivedDataPath", "/tmp/D",
         "-only-testing:TextMouthProductionTests/A", "-only-testing:TextMouthProductionTests/B"], command)
+    extra = testkit.build_command(Path("/r"), ["A"], "/tmp/D", use_slot=False, extra=["-test-timeouts-enabled", "YES"])
+    check("extra arguments go before the classes", extra[-3:] == ["-test-timeouts-enabled", "YES", "-only-testing:TextMouthProductionTests/A"],
+          extra[-3:])
+    parallel = testkit.build_command(Path("/r"), ["A"], "/tmp/D", use_slot=False,
+                                     extra=["-parallel-testing-enabled", "YES", "-parallel-testing-worker-count", "2"])
+    check("an extra -parallel-testing-enabled replaces the default, never repeats it",
+          parallel.count("-parallel-testing-enabled") == 1 and parallel[parallel.index("-parallel-testing-enabled") + 1] == "YES", parallel)
     slotted = testkit.build_command(Path("/r"), ["A"], "/tmp/D")
     check("the wrapper goes first", slotted[0] == "/r/" + testkit.SLOT_WRAPPER and slotted[1] == "xcodebuild", slotted[:2])
 
@@ -703,6 +772,13 @@ def selftest() -> int:
     listed = testkit.format_summary(summary(many))
     check("errors are capped at 20 then 'and N more'",
           sum(l.startswith("ERROR ") for l in listed) == 20 and "and 5 more" in listed, listed)
+
+    # A printed NSError that two processes' interleaved output cut at the front ("... proxy " lost, "error: Error
+    # Domain=..." left at the start of a line) is no compile error: it failed a clean run of 11,849 tests (November 10).
+    noise = summary(_LOG_PASS + "error: Error Domain=NSCocoaErrorDomain Code=4099 \"The connection ... was invalidated\"\n")
+    check("an NSError cut at the front is no error", not noise.errors and noise.passed, noise.errors)
+    real = summary(_LOG_PASS + "error: Unable to find a destination\n")
+    check("a bare error line is still an error", bool(real.errors), real.errors)
 
     warned = testkit.format_summary(summary(_LOG_WARNING))
     check("a repository warning is listed once, a package's not",
@@ -1001,13 +1077,14 @@ def main(argv) -> int:
             return 0
     try:
         if args.list:
-            print_lines(list_lines(names, areas, classes))
+            print_lines(list_lines(names, areas, classes, root))
             return 0
         if not names and not extra and not args.changed:
             return usage_error("no area or class named; try --list, or -h for help")
-        selected = testkit.resolve_names(names, areas, classes)
-        selected = list(dict.fromkeys(changed_picks + selected
-                                      + testkit.resolve_names(extra, areas, classes, classes_only=True)))
+        selected = testkit.resolve_names(names, areas, classes, root=root)
+        # Methods and classes mix in one run; a method whose class is also named runs with its class.
+        selected = testkit.drop_covered_methods(list(dict.fromkeys(
+            changed_picks + selected + testkit.resolve_names(extra, areas, classes, classes_only=True, root=root))))
     except testkit.UnknownName as error:
         return usage_error(str(error))
     if not selected:
@@ -1020,7 +1097,8 @@ def main(argv) -> int:
         command, steps = repeat_plan(root, selected, derived_data, args.jobs, args.repeat, log_path,
                                      env_vars, use_slot=not args.no_slot)
     else:
-        command = testkit.build_command(root, selected, derived_data, jobs=args.jobs, use_slot=not args.no_slot)
+        command = testkit.build_command(root, selected, derived_data, jobs=args.jobs, use_slot=not args.no_slot,
+                                        extra=args.xcodebuild_arg)
 
     if args.dry_run:
         if args.repeat:

@@ -1,11 +1,13 @@
 import AVFoundation
 import Foundation
+import os
 
 // MARK: - Problems
 
-/// Why an audio file cannot be played. Each problem completes the sentence
-/// `PackageDamage` speaks for a damaged file: "The file “03.mp3” in this
-/// audiobook is damaged or incomplete: …".
+/// Why an audio file cannot be played. Each problem but the last completes the
+/// sentence `PackageDamage` speaks for a damaged file: "The file “03.mp3” in
+/// this audiobook is damaged or incomplete: …". The last, a valid file whose
+/// samples no decoder reads, has a sentence of its own (`sentence(file:container:original:)`).
 enum AudioMediaProblem: Error, Equatable, Sendable {
     /// AVFoundation cannot open the file as media at all: it is not audio
     /// (a text file named "03.mp3"), or its header is damaged or describes
@@ -22,15 +24,48 @@ enum AudioMediaProblem: Error, Equatable, Sendable {
     /// as a copy or download that stopped partway leaves an MPEG-4 file:
     /// its index still lists every sample, but the last ones are missing.
     case endsEarly
+    /// The file is valid, and says in its own header that its samples are of
+    /// a form TextMouth cannot decode (B15), a 64-bit integer WAVE file for
+    /// one. It is not damaged, so it is never told as damaged
+    /// (`sentence(file:container:original:)`).
+    case unsupportedSamples(AudioSampleForm)
 
     /// What is wrong, as the end of the sentence "The file … is damaged or
-    /// incomplete: …".
+    /// incomplete: …". The last problem is no damage, and is never told so
+    /// (`sentence(file:container:original:)`); its clause is for a log or a
+    /// failure message that names the problem, not for a listener.
     var reason: String {
         switch self {
-        case .cannotOpen: return "it cannot be opened as audio"
-        case .noAudio: return "it holds no audio that can be played"
-        case .cannotDecode: return "its audio cannot be decoded"
-        case .endsEarly: return "its audio breaks off before the length the file declares"
+        case .cannotOpen: return "it cannot be opened as audio" // l10n: no (a parser's damage reason)
+        case .noAudio: return "it holds no audio that can be played" // l10n: no (a parser's damage reason)
+        case .cannotDecode: return "its audio cannot be decoded" // l10n: no (a parser's damage reason)
+        case .endsEarly: return "its audio breaks off before the length the file declares" // l10n: no (a parser's damage reason)
+        case .unsupportedSamples(let form): return AudioSampleFormWording.clause(for: form)
+        }
+    }
+
+    /// The sentence that tells a listener about the file `file`: the damage
+    /// sentence every damaged file gets, with `container` as
+    /// `PackageDamage.message` takes it, or, for a valid file whose samples
+    /// cannot be decoded, the sentence that names their form and says what to
+    /// do (`AudioSampleFormWording`).
+    func sentence(file: String, container: PackageDamage.Container) -> String {
+        switch self {
+        case .unsupportedSamples(let form):
+            return AudioSampleFormWording.refusal(fileName: file, form: form)
+        case .cannotOpen, .noAudio, .cannotDecode, .endsEarly:
+            return PackageDamage.message(file: file, reason: reason, container: container)
+        }
+    }
+
+    /// `sentence(file:container:)` in English for the debug log, which stays
+    /// English whatever language the interface speaks (FR34).
+    func logSentence(file: String, container: PackageDamage.Container) -> String {
+        switch self {
+        case .unsupportedSamples:
+            return "The file “\(file)” is not damaged, but \(reason). Convert it to 16-bit or 24-bit integer samples, then import it again." // l10n: no (debug log)
+        case .cannotOpen, .noAudio, .cannotDecode, .endsEarly:
+            return PackageDamage.logMessage(file: file, reason: reason, container: container)
         }
     }
 }
@@ -66,6 +101,11 @@ enum AudioMediaProblem: Error, Equatable, Sendable {
 ///    sample; only decoding its end fails. An asset that cannot be read
 ///    this way, as with some protected content that `AVPlayer` may still
 ///    play, skips this check rather than being refused.
+/// 6. A decode that fails at the opening is told as damage, unless the
+///    track's own description names a form of samples the decoders do not
+///    read (`AudioSampleForm.isDecodable`): the file is then valid, and is
+///    refused for that form (`AudioMediaProblem.unsupportedSamples`, B15).
+///    The form is looked at only after the decode has failed.
 ///
 /// The asset asks for precise timing
 /// (`AVURLAssetPreferPreciseDurationAndTimingKey`). Without it, an MP3's
@@ -89,9 +129,28 @@ enum AudioMediaProbe {
     /// file cut short anywhere fails, as its last frames are always lost.
     static let endingCheckDuration: TimeInterval = 1
 
+    /// How many seconds a decoding check may take before the probe stops waiting for it: a few milliseconds on a
+    /// Mac with working audio (a legitimate slow read, as of a file still arriving from the cloud, takes far less
+    /// than a minute). A check that has not answered by then is taken as "not shown to be bad" (see
+    /// `decodingProblemOffThePool`).
+    static let decodeDeadline: TimeInterval = 60
+
+    /// The decoding check: why the track of a job fails to decode, or nil. A test passes its own to hold the check.
+    typealias DecodeCheck = @Sendable (DecodeJob) -> AudioMediaProblem?
+
+    /// The check the app uses.
+    static let defaultDecodeCheck: DecodeCheck = { job in decodingProblem(job: job) }
+
     /// How long the audio file at `url` plays, in seconds, or why it cannot
     /// be played. See the type's documentation for each check.
-    static func duration(of url: URL) async -> Result<TimeInterval, AudioMediaProblem> {
+    /// - Parameters:
+    ///   - decoding: The decoding check, which blocks its thread; a test passes one that waits.
+    ///   - deadline: How long to wait for the decoding check, in seconds.
+    static func duration(
+        of url: URL,
+        decoding: @escaping DecodeCheck = defaultDecodeCheck,
+        deadline: TimeInterval = decodeDeadline
+    ) async -> Result<TimeInterval, AudioMediaProblem> {
         // Never decode a format the import converts (B09, FMT09): Apple's
         // Vorbis decoder once spun forever. Such audio is converted in a
         // child process first.
@@ -122,8 +181,9 @@ enum AudioMediaProbe {
             let start = CMTimeGetSeconds(audio.timeRange.start)
             let end = CMTimeGetSeconds(audio.timeRange.end)
             let span = start.isFinite && end.isFinite && end > start ? start...end : 0...seconds
-            if let problem = decodingProblem(of: audio.track, in: asset, over: span) {
-                return .failure(problem)
+            let job = DecodeJob(track: audio.track, asset: asset, span: span)
+            if let problem = await decodingProblemOffThePool(job, using: decoding, deadline: deadline) {
+                return .failure(await namingTheForm(in: problem, of: audio.track))
             }
         }
         return .success(seconds)
@@ -154,23 +214,119 @@ enum AudioMediaProbe {
         return nil
     }
 
+    /// `problem`, with the form named when the opening's decode failed (`.cannotDecode`) on a track whose own
+    /// description gives a form the decoders do not read (`AudioSampleForm.isDecodable`): a valid file such as a
+    /// 64-bit integer WAVE file is then refused for its form, not called damaged (B15). The form is looked at only
+    /// after the decode has failed, so a Mac that decodes it never refuses it; any other problem, and a track whose
+    /// form is read or unknown, keeps the problem it had.
+    private static func namingTheForm(in problem: AudioMediaProblem, of track: AVAssetTrack) async -> AudioMediaProblem {
+        guard problem == .cannotDecode, let form = await sampleForm(of: track), !form.isDecodable else { return problem }
+        return .unsupportedSamples(form)
+    }
+
+    /// The sample form of linear PCM that `track`'s format description gives, or nil when the track is coded audio
+    /// or its description cannot be read (a damaged file is then left to the decoding check).
+    private static func sampleForm(of track: AVAssetTrack) async -> AudioSampleForm? {
+        guard let descriptions = try? await track.load(.formatDescriptions) else { return nil }
+        for description in descriptions {
+            if let stream = CMAudioFormatDescriptionGetStreamBasicDescription(description)?.pointee,
+               let form = AudioSampleForm(stream) {
+                return form
+            }
+        }
+        return nil
+    }
+
+    /// The queue the decoding checks run on, many at once (the prober runs up to four probes).
+    private static let decodeQueue = DispatchQueue(label: "com.textmouth.AudioMediaProbe.decode", qos: .utility,
+                                                   attributes: .concurrent)
+
+    /// `check` on `job`, run on `decodeQueue` and not in a task of Swift's concurrency pool, and waited for no longer
+    /// than `deadline` seconds.
+    ///
+    /// The check blocks its thread in `AVAssetReaderOutput.copyNextSampleBuffer()`, a few milliseconds on a Mac with
+    /// working audio. On a GitHub runner it sometimes never returned (the spindump of a hung test, run 42856695469,
+    /// shows three probes in it). A task of the pool that blocks takes one of its few threads for good, and the
+    /// tests after the hung one failed with it, so the check runs on a dispatch queue, where a thread held for ever
+    /// costs nothing else.
+    ///
+    /// Past the deadline the readers of the job are told to stop (`AVAssetReader.cancelReading()`, which is meant to
+    /// end a blocked read; whether it does for a read that hangs has not been seen) and the probe answers nil: the
+    /// file is not shown to be undecodable, so it passes on its header's length, as a file whose reader cannot be
+    /// used at all already does. Refusing it instead would turn a slow disk into a "damaged" book. A check that still
+    /// does not return keeps one dispatch thread, and its answer, if it ever comes, is dropped.
+    private static func decodingProblemOffThePool(
+        _ job: DecodeJob,
+        using check: @escaping DecodeCheck,
+        deadline: TimeInterval
+    ) async -> AudioMediaProblem? {
+        await withCheckedContinuation { continuation in
+            let answered = OSAllocatedUnfairLock(initialState: false)
+            let answer: @Sendable (AudioMediaProblem?) -> Void = { problem in
+                let first = answered.withLock { (already: inout Bool) -> Bool in
+                    defer { already = true }
+                    return !already
+                }
+                if first { continuation.resume(returning: problem) }
+            }
+            decodeQueue.async { answer(check(job)) }
+            // The deadline holds the job weakly. A check that answers in time frees the job (the file's asset, its
+            // track, and the readers the check made) as soon as it returns, not a whole deadline later: an import
+            // probes many files a minute, and each job kept until its deadline kept that file's readers open. A
+            // check still running holds the job itself, so at the deadline its readers are still reached.
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + deadline) { [weak job] in
+                job?.cancelReaders()
+                answer(nil)
+            }
+        }
+    }
+
+    /// `@unchecked Sendable`: a track, its asset, and the span to check, on their way to `decodeQueue`, used there by
+    /// one decoding check alone; the readers that check makes are listed under `lock`, so that the probe, when it
+    /// stops waiting, can tell them to stop from another thread.
+    final class DecodeJob: @unchecked Sendable {
+        let track: AVAssetTrack
+        let asset: AVAsset
+        let span: ClosedRange<TimeInterval>
+        private let lock = NSLock()
+        private var readers: [AVAssetReader] = []
+
+        init(track: AVAssetTrack, asset: AVAsset, span: ClosedRange<TimeInterval>) {
+            self.track = track
+            self.asset = asset
+            self.span = span
+        }
+
+        /// Lists `reader`, so that `cancelReaders()` reaches it.
+        func add(_ reader: AVAssetReader) {
+            lock.lock()
+            defer { lock.unlock() }
+            readers.append(reader)
+        }
+
+        /// Tells every reader the check made to stop.
+        func cancelReaders() {
+            lock.lock()
+            let listed = readers
+            lock.unlock()
+            for reader in listed { reader.cancelReading() }
+        }
+    }
+
     /// Why `track` fails to decode, checked at the opening of `span` (the
     /// seconds its samples cover) and over its final second, or nil when
     /// both decode.
     ///
     /// Decoding blocks the calling thread for a few milliseconds (a second
     /// and a half of audio, decoded far faster than real time).
-    private static func decodingProblem(
-        of track: AVAssetTrack,
-        in asset: AVAsset,
-        over span: ClosedRange<TimeInterval>
-    ) -> AudioMediaProblem? {
+    private static func decodingProblem(job: DecodeJob) -> AudioMediaProblem? {
+        let (track, asset, span) = (job.track, job.asset, job.span)
         let length = span.upperBound - span.lowerBound
         let opening = CMTimeRange(
             start: CMTime(seconds: span.lowerBound, preferredTimescale: 600),
             duration: CMTime(seconds: min(openingCheckDuration, length), preferredTimescale: 600)
         )
-        guard decodesSamples(of: track, in: asset, within: opening) else { return .cannotDecode }
+        guard decodesSamples(of: track, in: asset, within: opening, job: job) else { return .cannotDecode }
 
         // From one second before the declared end to whatever end the
         // file really has.
@@ -178,15 +334,21 @@ enum AudioMediaProbe {
             start: CMTime(seconds: max(span.lowerBound, span.upperBound - endingCheckDuration), preferredTimescale: 600),
             duration: .positiveInfinity
         )
-        guard decodesSamples(of: track, in: asset, within: ending) else { return .endsEarly }
+        guard decodesSamples(of: track, in: asset, within: ending, job: job) else { return .endsEarly }
         return nil
     }
 
     /// Whether `track` decodes to at least one sample within `range`, read
     /// to the range's end through `AVAssetReader` as linear PCM, without
     /// the reader failing on the way.
-    private static func decodesSamples(of track: AVAssetTrack, in asset: AVAsset, within range: CMTimeRange) -> Bool {
+    private static func decodesSamples(
+        of track: AVAssetTrack,
+        in asset: AVAsset,
+        within range: CMTimeRange,
+        job: DecodeJob
+    ) -> Bool {
         guard let reader = try? AVAssetReader(asset: asset) else { return false }
+        job.add(reader)
         let output = AVAssetReaderTrackOutput(track: track, outputSettings: [AVFormatIDKey: kAudioFormatLinearPCM])
         // The samples are only counted, never kept, so no copy is needed.
         output.alwaysCopiesSampleData = false
@@ -262,7 +424,7 @@ struct AudioMediaProber: Sendable {
                 finished.append(done)
             }
             // Probes finish in any order; put each outcome back in place.
-            return finished.sorted { $0.index < $1.index }.map(\.outcome)
+            return finished.sortedStably { $0.index < $1.index }.map(\.outcome)
         }
     }
 }

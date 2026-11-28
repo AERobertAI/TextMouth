@@ -62,7 +62,7 @@ struct DOCXNumbering {
         (levelOverrides[numId] ?? [:])
             .filter { $0.value.startOverride != nil || $0.value.level != nil }
             .keys
-            .sorted()
+            .sortedStably()
     }
 }
 
@@ -206,6 +206,34 @@ struct DOCXListCounter {
         let number = Self.number(after: counts[key]?[0], start: 1)
         counts[key] = [0: number]
         return .number(number)
+    }
+
+    /// The number last given at `level` in the list of instance `numId`, or
+    /// nil if that level has not been counted since it started. A level's
+    /// number text can name the number of a more significant level (the
+    /// "1" of "1.2"), which is this.
+    func lastNumber(numId: String, level: Int) -> Int? {
+        counts[numbering.counterKey(numId: numId)]?[level]
+    }
+
+    /// Gives every level more significant than `level` of the list of
+    /// instance `numId` that has no count its start value, as Word does when a
+    /// less significant level comes first: a "1.1" before any "1" has a "1"
+    /// before it, and the next "1" level is the second (Microsoft KB Q197139).
+    /// The DOCX reader does not call this.
+    mutating func startLevels(moreSignificantThan level: Int, numId: String) {
+        let key = numbering.counterKey(numId: numId)
+        var levels = counts[key] ?? [:]
+        for shallower in 0..<max(level, 0) where levels[shallower] == nil {
+            if let format = numbering.levelFormat(numId: numId, level: shallower) { levels[shallower] = format.start }
+        }
+        counts[key] = levels
+    }
+
+    /// Forget the counts of list instance `numId`, so it starts again from its start value.
+    mutating func restart(numId: String) {
+        counts[numbering.counterKey(numId: numId)] = nil
+        startedInstances.remove(numId)
     }
 
     /// Forget every count, so each list starts again from its start value.

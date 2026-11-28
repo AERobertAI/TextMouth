@@ -161,6 +161,9 @@ final class FakeBookCloudStorage: BookCloudStorage, @unchecked Sendable {
     private var cancelledDownloads: [UUID] = []
     /// The books whose downloads were removed, in order.
     private var removedDownloads: [UUID] = []
+    /// How many bytes each book still needs, when a test says; nil (unknown)
+    /// when absent.
+    private var bytesNeeded: [UUID: Int64] = [:]
 
     /// Storage for a library at `location`: a cloud location unless the test
     /// says otherwise.
@@ -171,6 +174,17 @@ final class FakeBookCloudStorage: BookCloudStorage, @unchecked Sendable {
     /// Moves the library to `location`.
     func setLibraryLocation(_ location: StorageLocation) {
         lock.withLock { self.location = location }
+    }
+
+    /// Says the book `bookID` needs `bytes` to download; nil makes its size
+    /// unknown again.
+    func setBytesToDownload(_ bytes: Int64?, of bookID: UUID) {
+        lock.withLock { bytesNeeded[bookID] = bytes }
+    }
+
+    /// The bytes a test scripted for the book, or nil (unknown).
+    func bytesToDownload(of package: BookPackage) -> Int64? {
+        lock.withLock { bytesNeeded[package.bookID] }
     }
 
     /// Sets the state of the book `bookID`.

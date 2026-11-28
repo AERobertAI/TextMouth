@@ -86,7 +86,7 @@ enum PDFPageImageScanner {
             state.concatenate(matrix)
         }
         // Do: draw a named XObject, an image or a form.
-        CGPDFOperatorTableSetCallback(table, "Do") { scanner, info in
+        CGPDFOperatorTableSetCallback(table, "Do") { scanner, info in // l10n: no (a PDF dictionary key, not interface text)
             guard let state = PDFPageImageScanner.state(from: info) else { return }
             PDFPageImageScanner.drawXObject(from: scanner, with: state)
         }
@@ -124,15 +124,15 @@ enum PDFPageImageScanner {
         var namePointer: UnsafePointer<CChar>?
         guard CGPDFScannerPopName(scanner, &namePointer), let namePointer else { return }
         let contentStream = state.resourceStreams.last ?? CGPDFScannerGetContentStream(scanner)
-        guard let object = CGPDFContentStreamGetResource(contentStream, "XObject", namePointer) else { return }
+        guard let object = CGPDFContentStreamGetResource(contentStream, "XObject", namePointer) else { return } // l10n: no (a PDF dictionary key, not interface text)
         var stream: CGPDFStreamRef?
         guard CGPDFObjectGetValue(object, .stream, &stream), let stream,
               let dictionary = CGPDFStreamGetDictionary(stream) else { return }
 
-        switch name(for: "Subtype", in: dictionary) {
-        case "Image":
+        switch name(for: "Subtype", in: dictionary) { // l10n: no (a PDF dictionary key, not interface text)
+        case "Image": // l10n: no (a PDF dictionary key, not interface text)
             state.recordImage()
-        case "Form":
+        case "Form": // l10n: no (a PDF dictionary key, not interface text)
             scanForm(stream, dictionary: dictionary, parent: contentStream, with: state)
         default:
             break
@@ -153,7 +153,7 @@ enum PDFPageImageScanner {
         guard state.formDepth < maximumFormDepth else { return }
 
         var resources: CGPDFDictionaryRef?
-        let hasOwnResources = CGPDFDictionaryGetDictionary(dictionary, "Resources", &resources)
+        let hasOwnResources = CGPDFDictionaryGetDictionary(dictionary, "Resources", &resources) // l10n: no (a PDF dictionary key, not interface text)
         // A stream needs some dictionary as its resources; the form's own
         // dictionary stands in when it has none, and lookups then go to
         // the parent stream instead (see `scan`).
@@ -174,7 +174,7 @@ enum PDFPageImageScanner {
     /// entry is not six numbers.
     private static func formMatrix(in dictionary: CGPDFDictionaryRef) -> CGAffineTransform? {
         var array: CGPDFArrayRef?
-        guard CGPDFDictionaryGetArray(dictionary, "Matrix", &array), let array,
+        guard CGPDFDictionaryGetArray(dictionary, "Matrix", &array), let array, // l10n: no (a PDF dictionary key, not interface text)
               CGPDFArrayGetCount(array) == 6 else { return nil }
         var values = [CGPDFReal](repeating: 0, count: 6)
         for index in 0..<6 {

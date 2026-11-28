@@ -33,18 +33,21 @@ final class MacBrailleTableCheckTests: XCTestCase {
     }
 
     /// A stand-in helper that runs `/bin/sh -c script sh MODE OUTPUT INPUT`,
-    /// with limits that keep a test short: `seconds` for each run.
-    private func shell(_ script: String, seconds: TimeInterval = 5) -> BrailleTranslator.Tool {
+    /// with limits that keep a test short: `seconds` for each run. `modes`, when given, is told each run's mode.
+    private func shell(
+        _ script: String, seconds: TimeInterval = 5, modes: OSAllocatedUnfairLock<[String]>? = nil
+    ) -> BrailleTranslator.Tool {
         let limits = WatchedProcess.Limits(
             maximumSeconds: seconds, maximumResidentBytes: 1 << 30, maximumStalledSeconds: seconds, pollInterval: 0.1
         )
         return BrailleTranslator.Tool(
             command: { mode, _, input, output in
-                (URL(fileURLWithPath: "/bin/sh"), ["-c", script, "sh", mode, output?.path ?? "", input?.path ?? ""])
+                modes?.withLock { $0.append(mode) }
+                return (URL(fileURLWithPath: "/bin/sh"), ["-c", script, "sh", mode, output?.path ?? "", input?.path ?? ""])
             },
             limits: { _, _ in limits },
             residentMemory: { _ in nil },
-            tablesFolder: nil
+            tablesFolder: { _ in nil }
         )
     }
 
@@ -53,9 +56,11 @@ final class MacBrailleTableCheckTests: XCTestCase {
     /// `before` (a shell command, such as a sleep). It writes the helper's
     /// protocol: the input's header line, then for each record the cells
     /// and an empty code line (`TextMouthBrailleProtocol.h`).
-    private func echoing(_ cells: String, before: String = ":", seconds: TimeInterval = 5) -> BrailleTranslator.Tool {
+    private func echoing(
+        _ cells: String, before: String = ":", seconds: TimeInterval = 5, modes: OSAllocatedUnfairLock<[String]>? = nil
+    ) -> BrailleTranslator.Tool {
         let records = #"NR == 1 { print; next } NR % 2 == 0 { print "\#(cells)"; next } { print "" }"#
-        return shell(#"[ "$1" = check ] && exit 0; "# + before + #"; awk '\#(records)' "$3" > "$2""#, seconds: seconds)
+        return shell(#"[ "$1" = check ] && exit 0; "# + before + #"; awk '\#(records)' "$3" > "$2""#, seconds: seconds, modes: modes)
     }
 
     /// Asserts that the working folder holds nothing, hidden files included.
@@ -212,6 +217,22 @@ final class MacBrailleTableCheckTests: XCTestCase {
         }
     }
 
+    /// The check runs a table that writes braille only twice, loading it and printing the sample, and never reads the braille
+    /// back (FR40): the way it is used, so a table that cannot read back is not refused for it. A table that reads runs a third
+    /// time, back to print.
+    func testTheCheckNeverReadsAPrintOnlyTableBack() throws {
+        let twoWay = try anyOfferedMacTable()
+        let printOnly = "mac:cs.tbl"
+        try XCTSkipIf(BrailleTableCatalog.table(withID: printOnly)?.isPrintOnly != true, "This Mac has no print-only VoiceOver table cs.tbl")
+        for (table, expected) in [(twoWay, ["check", "forward", "back"]), (printOnly, ["check", "forward"])] {
+            let modes = OSAllocatedUnfairLock<[String]>(initialState: [])
+            try isolated(tool: echoing("\u{2801}", modes: modes)) {
+                XCTAssertTrue(try MacBrailleTableCheck.check(table, workingIn: work).isUsable, table)
+            }
+            XCTAssertEqual(modes.withLock { $0 }, expected, table)
+        }
+    }
+
     // MARK: - Needs and Limits (review R1)
 
     /// A table's measured needs raise the limits of its runs to at least
@@ -270,7 +291,7 @@ final class MacBrailleTableCheckTests: XCTestCase {
             },
             limits: { _, _ in WatchedProcess.Limits(maximumSeconds: 5, maximumResidentBytes: 1 << 30, maximumStalledSeconds: 5) },
             residentMemory: { WatchedProcess.residentMemory(of: $0) },
-            tablesFolder: nil
+            tablesFolder: { _ in nil }
         )
         try XCTSkipUnless(FileManager.default.isExecutableFile(atPath: "/usr/bin/perl"), "This Mac has no /usr/bin/perl")
         try isolated(tool: hog) {
@@ -289,7 +310,7 @@ final class MacBrailleTableCheckTests: XCTestCase {
         // the print, and the reading back, then the same again.
         let times = OSAllocatedUnfairLock(initialState: [0, 0.01, 1, 1.02, 2, 3, 10, 10.01, 11, 11.02, 12, 13])
         var tool = echoing("\u{2801}")
-        tool.uptime = { times.withLock { $0.isEmpty ? 0 : $0.removeFirst() } }
+        tool.clock = RunningClock(countingWhole: { times.withLock { $0.isEmpty ? 0 : $0.removeFirst() } })
         let verdicts = MacBrailleTableCheck.Verdicts()
         try MacBrailleTableCheck.$verdicts.withValue(verdicts) {
             try BrailleTranslator.$tool.withValue(tool) {
@@ -299,6 +320,44 @@ final class MacBrailleTableCheckTests: XCTestCase {
         }
         XCTAssertNil(verdicts.verdict(for: table), "a table found too slow was kept for the session")
         assertWorkFolderEmpty()
+    }
+
+    /// A measured run of a helper that ends at once is still read once (Q15):
+    /// the stand-in exits within a few milliseconds, long before the
+    /// watchdog's first look (a tenth of a second), and the one reading
+    /// taken as the child starts is kept. Before the fix the peak was 0, and
+    /// `testFrenchGermanAndSpanishPassAndRoundTrip` failed on a Mac that
+    /// started the reaper slower than a small table loaded.
+    func testAHelperThatEndsAtOnceIsStillMeasuredOnce() throws {
+        let table = try anyOfferedMacTable()
+        let readings = OSAllocatedUnfairLock(initialState: 0)
+        var tool = shell("exit 0")
+        // A stand-in reading, so the test does not depend on the child
+        // being alive when the reading is taken.
+        tool.residentMemory = { _ in
+            readings.withLock { $0 += 1 }
+            return 4_096
+        }
+        // The measure asks to be read every 10 seconds: the stand-in's own
+        // limits (a tenth of a second) are the shorter, and stay.
+        let measure = BrailleTranslator.RunMeasure(memoryCeiling: MacBrailleTableCheck.memoryCeilingBytes, pollInterval: 10)
+        try isolated(tool: tool) {
+            try BrailleTranslator.check(table: table, workingIn: work, measure: measure)
+        }
+        XCTAssertGreaterThanOrEqual(readings.withLock { $0 }, 1, "a child that ended at once was never read")
+        XCTAssertEqual(measure.peakResidentBytes, 4_096)
+        assertWorkFolderEmpty()
+    }
+
+    /// A need measured as 0 bytes (no reading came) never sets a limit: a
+    /// run's memory limit stays what the tool gives, and a measured need
+    /// raises it to twice the need and no further.
+    func testAMeasuredNeedOfZeroBytesNeverSetsTheMemoryLimit() {
+        let today = WatchedProcess.Limits(maximumSeconds: 5, maximumResidentBytes: 16 << 20, maximumStalledSeconds: 5)
+        let unmeasured = MacBrailleTableCheck.TableNeeds(loadSeconds: 0, forwardSecondsPerMB: 0, backSecondsPerMB: 0, peakResidentBytes: 0)
+        XCTAssertEqual(unmeasured.limits(raising: today, direction: nil, bytes: 0).maximumResidentBytes, 16 << 20)
+        let measured = MacBrailleTableCheck.TableNeeds(loadSeconds: 0, forwardSecondsPerMB: 0, backSecondsPerMB: 0, peakResidentBytes: 20 << 20)
+        XCTAssertEqual(measured.limits(raising: today, direction: nil, bytes: 0).maximumResidentBytes, 40 << 20)
     }
 
     /// A run of a table found usable gets the limits its needs call for: a
@@ -425,7 +484,7 @@ final class MacBrailleTableCheckTests: XCTestCase {
     /// name, and a bundled one from the bundle's, as before.
     func testTheRealToolRunsEachTableFromItsOwnFolder() throws {
         let tool = BrailleTranslator.Tool.helper
-        let bundled = try XCTUnwrap(tool.tablesFolder)
+        let bundled = try XCTUnwrap(try tool.tablesFolder("en-ueb-g2.ctb"))
         XCTAssertEqual(
             try XCTUnwrap(tool.command("check", "mac:fr-bfu-g2.ctb", nil, nil)).arguments,
             ["check", BrailleTableCatalog.macTablesFolder.path, "fr-bfu-g2.ctb"]

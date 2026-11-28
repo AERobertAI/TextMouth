@@ -34,9 +34,9 @@ One commit. Its message ends with `Co-Authored-By: Claude Sonnet 5.5 <noreply@an
 ## Build and test
 - Run `TranscriptCleanupSheetTests`, and nothing else.
 - Start each build in the background, and check on it no more often than every 4 minutes, with one short command.
-- Scratch files go in `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/d79ccbfe-f907-4768-bef3-66390cef7d23/scratchpad/`, each named `polish3-cleanupfeed-…`.
+- Scratch files go in `<session folder>/scratchpad/`, each named `polish3-cleanupfeed-…`.
 
-      BBS_AGENT=polish3-cleanupfeed .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath /var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-polish3-cleanupfeed -only-testing:TextMouthProductionTests/TranscriptCleanupSheetTests > /private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/d79ccbfe-f907-4768-bef3-66390cef7d23/scratchpad/polish3-cleanupfeed-build-1.log 2>&1
+      BBS_AGENT=polish3-cleanupfeed .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath $TMPDIR/TextMouth-DerivedData-polish3-cleanupfeed -only-testing:TextMouthProductionTests/TranscriptCleanupSheetTests > <session folder>/scratchpad/polish3-cleanupfeed-build-1.log 2>&1
 
 - Read a result with `grep -E "Executed [0-9]+ tests|error:|failed \(" <log> | tail -20`.
 

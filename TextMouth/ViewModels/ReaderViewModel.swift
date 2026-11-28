@@ -1,6 +1,10 @@
 import SwiftUI
 import Combine
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import AVFoundation
 import os.log
 
@@ -145,6 +149,12 @@ final class ReaderViewModel: ObservableObject {
     let libraryViewModel: LibraryViewModel
     let settingsViewModel: SettingsViewModel
     var soundEffectService: SoundEffectService?
+    #if os(iOS)
+    /// The iPhone's hooks into this reader (`ReaderPhoneHooks`), which the
+    /// phone's session fills as it makes the reader. The defaults do what the
+    /// Mac does.
+    var phoneHooks = ReaderPhoneHooks()
+    #endif
 
     @Published var content: DocumentContent? {
         // Derive the published heading list from whatever content the reader
@@ -160,28 +170,50 @@ final class ReaderViewModel: ObservableObject {
         }
     }
     /// Raw reading cursor used for playback, seeking, and persistence.
-    /// UI surfaces observe throttled display mirrors instead of this value
-    /// directly so word-level callbacks do not rebuild the reader view on
-    /// every spoken word.
+    /// UI surfaces read the display mirrors instead of this value, and the
+    /// reader tells them of a change only when what the window shows has
+    /// changed (`ReaderShownState`), so word-level callbacks do not rebuild
+    /// the reader view on every spoken word.
     var currentCharacterOffset = 0 {
         didSet {
             letGoOfOpenedPlaceAnchorIfLeft()
             schedulePlaybackUIRefresh()
             scheduleLivePositionPublish()
+            // A cursor that speech or a seek carries within the lead of its
+            // chapter's end starts the next chapter's render (audit C11);
+            // nothing is asked while no render waits.
+            startLookAheadRenderIfDue()
         }
     }
     /// Throttled mirror of the current chapter index for SwiftUI/VoiceOver.
-    @Published private(set) var displayChapterIndex = 0
+    ///
+    /// The three display mirrors are plain properties, not `@Published`
+    /// ones: each refresh brings them up to date, then announces one change
+    /// to the views only if something the window shows has changed
+    /// (`announceShownStateIfChanged()`, `ReaderShownState`). Published, each
+    /// mirror's change drew the whole window eight times a second while a
+    /// book played (audit C3).
+    private(set) var displayChapterIndex = 0
     /// Throttled mirror of the current character offset for SwiftUI/VoiceOver.
-    @Published private(set) var displayCharacterOffset = 0
+    private(set) var displayCharacterOffset = 0
     /// Cached visible text window for the reader surface.
-    @Published private(set) var displayVisibleTextWindow = ""
+    private(set) var displayVisibleTextWindow = ""
+    /// What the window showed as of the last change announced to its views:
+    /// nil until the first refresh.
+    private var announcedShownState: ReaderShownState?
     @Published var isLoading = true
     /// What the reader shows in place of its book while it gets the book
     /// from the cloud (FR02): a download, or why the book isn't ready. Nil
     /// while it shows the book, or Loading.
     @Published var cloudPhase: ReaderCloudPhase?
     @Published var errorMessage: String?
+    /// The panel that asks for the password of a protected book, shown in
+    /// place of the book while it is locked (FR41); nil when the book needs
+    /// none, or has been unlocked.
+    @Published var unlockPrompt: UnlockPromptState?
+    /// Whether this reader holds one hold on its book's plain form
+    /// (`UnlockedSources`), which it lets go of when it closes.
+    var holdsUnlockedBook = false
     /// The audio failure `errorMessage` reports, kept while the message is
     /// shown so its alert can offer Retry. Nil for every other error.
     @Published var audioPlaybackFailure: AudioPlaybackFailure?
@@ -224,10 +256,16 @@ final class ReaderViewModel: ObservableObject {
     /// its Now Playing session, so that a timer, or a media command, belongs
     /// to the window it came from (TODO P01).
     let readerID = UUID()
-    /// Shared singleton — there is exactly one sleep timer in the app.
-    /// Owner-scoped calls pass `readerID`, so another window's playback, even
-    /// of the same book, never affects the timer this reader set.
-    let sleepTimerService = SleepTimerService.shared
+    /// The sleep timer of this reader's window (November 13, 2026: each
+    /// reader window has its own), given as the reader is made, which stays
+    /// with the window when it goes on to another book in place, so the
+    /// reader that takes the window over drives the same timer. Owner-scoped
+    /// calls pass `readerID`, so a reader the window showed before, still
+    /// closing, never affects the timer once the next one has taken it.
+    let sleepTimerService: SleepTimerService
+    /// The registry of every window's timer, where a timer on its way to
+    /// this reader's book from another window is found.
+    var sleepTimers: SleepTimerRegistry { sleepTimerService.registry }
     /// Where the heading this reader's End of heading sleep timer waits for
     /// ends: the next heading after the cursor as the timer was set, whose
     /// start stops playback (finding #787). Nil when no heading follows, so
@@ -259,12 +297,67 @@ final class ReaderViewModel: ObservableObject {
     /// read it from the list (FR09): the shared store, unless the reader
     /// was created with its own.
     let readingListRequests: ReadingListOpenRequests
+    /// Where the Search Library window asks this reader to move to a match
+    /// it found in this book (`claimLibrarySearchJump()`): the shared
+    /// store, unless the reader was created with its own.
+    let libraryJumpRequests: LibrarySearchJumpRequests
+    /// How many requests to move to a library search's match this reader
+    /// has claimed: a search for a match's new place that runs in the
+    /// background moves the cursor only if no later request was claimed
+    /// meanwhile (`claimLibrarySearchJump()`).
+    var libraryJumpGeneration = 0
+    /// The search of the whole book for a match that moved, while one runs
+    /// for the latest request claimed; cancelled when a later request is
+    /// claimed and when the reader closes (`cancelLibraryJumpSearch()`), so
+    /// it never runs on for a request or a reader that is gone.
+    var libraryJumpSearch: Task<BookSearchOutcome?, Never>?
+    /// Where a reader that switched its window to this book asks this reader
+    /// to see to the window's focus once it has found it (0.2.5): the shared
+    /// store, unless the reader was created with its own.
+    let windowSwitchRequests: WindowSwitchRequests
+    /// Whether a move to another book that this reader announced carries a
+    /// running sleep timer (`carriesSleepTimerOnAMove`): set as the move is
+    /// announced, read as the book is asked for, so a timer that began to fade
+    /// out in between ends listening, and the book is not started
+    /// (`showNextBook`). Accessed from the NextBookWindow and
+    /// SleepTimerHandOver extensions.
+    var moveCarriesSleepTimer = false
+    /// The hold the move announced last made for its book, while the move has
+    /// not asked yet: a cancelling move undoes it, so a cancelled move leaves
+    /// no trace (`cancelPendingMoves()`).
+    var pendingMoveHold: PendingMoveHold?
+    /// The move this reader asked for last, until its book's reader claims
+    /// the request to play it: a later move from this reader cancels it
+    /// within that span, as the last move wins (`cancelPendingMoves()`).
+    var askedMove: AskedMove?
+    /// The sleep timer's expiry count as a move that carries a timer was
+    /// announced (`SleepTimerService.expiryCount`), nil for a move that carries
+    /// none: the ask drops the move if the timer ran out since.
+    var moveExpiryMark: Int?
+    /// Counts the moves this reader announces, so the half second's pending
+    /// ask of an earlier move does nothing once a later one is announced:
+    /// Next then Previous asks once (`announceMove`).
+    var pendingMoveGeneration = 0
+    /// Whether the move announced last, and not yet asked for, was to play
+    /// its book: a second move before the ask counts the book as playing,
+    /// though the first move paused it.
+    var pendingMovePlays = false
+    /// The window of a reader a switch made, found before its book has
+    /// loaded: its focus is seen to once the book has loaded
+    /// (`attach(to:)`, `placeFocusAfterSwitchIfDue()`).
+    weak var windowAwaitingFocusAfterLoad: PlatformWindow?
     /// Where this reader's book stands in the reading list while the reader
     /// reads it from the list (FR09): opened from the Reading List, or
     /// reached through the list by a book that continued to it. Nil while it
     /// does not, as for a book opened any other way, even one in the list.
     /// Set only by ReaderViewModel+ReadingList.
     @Published var readingListPlace: ReadingListPlace?
+    /// Whether this reader has told the library that it rests on its finished
+    /// book, read from the reading list, so a finished book the list is to
+    /// drop stays on it until this reader moves on or closes
+    /// (`holdFinishedBookOnReadingList()`). Set only by
+    /// ReaderViewModel+ReadingList.
+    var holdsFinishedBookOnReadingList = false
     /// The center this reader listens on for commands and for Continue to
     /// Next Book, and posts its own Continue to Next Book to: the default
     /// center, unless the reader was created with its own, as tests do to
@@ -340,7 +433,7 @@ final class ReaderViewModel: ObservableObject {
     /// The NSWindow hosting this reader. Used to check if this is the focused window
     /// before responding to keyboard shortcut notifications (prevents K from activating
     /// playback in ALL open book windows at once).
-    weak var hostWindow: NSWindow?
+    weak var hostWindow: PlatformWindow?
 
     /// Separate synthesizer for "Where Am I?" announcements (not the book reader).
     /// Replaced with a fresh one when the system cancels an announcement on
@@ -466,7 +559,15 @@ final class ReaderViewModel: ObservableObject {
     /// when no wait is under way; a new wait replaces an earlier one, and
     /// closing the reader ends it. Held here because an extension cannot
     /// hold a stored property; used by `ReaderViewModel+EpisodeDownload`.
-    var nextEpisodeWait: AnyCancellable?
+    var nextEpisodeWait: AnyCancellable? {
+        didSet {
+            if nextEpisodeWait == nil { episodeWaitPlays = false }
+        }
+    }
+    /// Whether the wait for a next episode under way is to play the episode
+    /// when it arrives: a later move that ends the wait counts the book as
+    /// playing then (`beginMoveToAnotherBook()`). False with no wait.
+    var episodeWaitPlays = false
     /// Whether the play under way replays a finished book's end, as a
     /// backward skip after the end starts it (`performSkip(unit:forward:)`):
     /// the end it plays on to is no new finish (TODO P07; the user,
@@ -485,6 +586,25 @@ final class ReaderViewModel: ObservableObject {
     /// book hands over, and again once a Play finds the hand-over done.
     /// Accessed from the Playback extension.
     var nextBookHandOver: NextBookHandOver?
+    /// Shows the book with the given ID in this reader's own window, in
+    /// place of this reader's book: the reader window's scene sets the
+    /// window's book (`BookReaderWindowView`). Nil for a reader that cannot
+    /// switch its window, as in a test, which then opens a new window as
+    /// before 0.2.5. Accessed from the NextBookWindow extension.
+    var nextBookWindowSwitcher: ((UUID) -> Void)?
+    /// Whether this reader's window now shows another book: set just
+    /// before the switch, so the closing view leaves the window registered
+    /// (the new view registers the same window) and closes this reader.
+    /// Accessed from the NextBookWindow extension and the window's view.
+    var hasSwitchedWindow = false
+    /// What this reader's window is doing, as far as a switch is concerned;
+    /// nil reads it from `hostWindow` and the app. A test that has no
+    /// window sets it (`windowStanding`).
+    var windowStandingOverride: NextBookWindowStanding?
+    /// Places keyboard and VoiceOver focus in the window of a reader that a
+    /// switch made, once its window is found (`attach(to:)`); a test
+    /// replaces it with a recorder.
+    var placeFocusAfterSwitch: (PlatformWindow) -> Void = { SwitchedWindowFocus.place(in: $0) }
     /// The revision of the latest library update this reader has applied to
     /// its copy of the book (see `LibraryBookUpdates`); an update that is
     /// not newer is ignored. Written only by `applyLibraryUpdate(_:)` and
@@ -573,6 +693,21 @@ final class ReaderViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     /// Coalesces rapid playback cursor changes into a single UI refresh.
     private var playbackUIRefreshWorkItem: DispatchWorkItem?
+    /// When the playback UI mirrors were last refreshed: what a change's
+    /// refresh counts its interval from (`schedulePlaybackUIRefresh()`).
+    private var lastPlaybackUIRefresh = Date.distantPast
+    /// The time the refreshes are counted by; the clock, unless a test gives
+    /// its own, so that it can move cursors a quarter second apart without
+    /// waiting for them.
+    var playbackUIRefreshNow: () -> Date = { Date() }
+    /// How many refreshes had to wait out part of an interval (a delayed
+    /// work item scheduled); one that came on the leading edge did not.
+    /// Tests read it.
+    private(set) var delayedPlaybackUIRefreshCount = 0
+    /// How many refreshes of the display mirrors the main queue has run
+    /// for cursor changes (`drainPlaybackUIRefresh()`). Tests read it, since
+    /// the mirrors no longer publish each refresh.
+    private(set) var drainedPlaybackUIRefreshCount = 0
     /// Coalesces word-level cursor changes before publishing to library rows.
     private var livePositionWorkItem: DispatchWorkItem?
     private var lastLivePositionPublish = Date.distantPast
@@ -582,9 +717,28 @@ final class ReaderViewModel: ObservableObject {
     /// `savePositionIfMoved()` compares the cursor with, so a quit writes
     /// only the places that changed.
     private var lastSavedPlace: TextPlace?
+    /// The date `lastSavedPlace` was saved with: its last durable save's,
+    /// or, from the load until the first save, the date of the place the
+    /// book opened at (`noteOpenedPlace()`); nil for a book never saved at
+    /// a place. A save of the same place, the cursor unmoved, keeps it
+    /// (`durablePosition()`, risk 2 of the local-first research).
+    private var lastSavedPlaceDate: Date?
+    /// The clock a moved place is dated by: the system's, unless a test
+    /// sets its own (to set the clock back, as a user can).
+    var positionClock: () -> Date = { Date() }
+    /// Whether the book's text has been shown once in this reader
+    /// (`showLoadedContent`). The first load is the book's opening: it weighs
+    /// the place, bookmarks, and settings the book's record holds against the
+    /// row's (`LoadedContent.recordedState`) and notes the place opened at
+    /// (`noteOpenedPlace()`), risk 2. A later load, as after an edit of the
+    /// text, a move of the package, or a download, does neither: this
+    /// reader's own saves are the newest it knows, while its copy of the book
+    /// keeps the place it opened with.
+    private(set) var hasOpened = false
     /// Whether the cursor was published live (playback moving it) since the
     /// last durable save. It counts as a move even should the cursor have
-    /// come back to the saved place.
+    /// come back to the saved place. A publish while nothing plays and the
+    /// cursor rests at the saved place does not set it (risk 2).
     private var hasPlayedSinceSave = false
     /// The measure of the text this reader shows, which every anchor it
     /// captures records (T06; `noteLoadedTextForAnchors(cacheFormatVersion:)`):
@@ -619,6 +773,24 @@ final class ReaderViewModel: ObservableObject {
     /// the current chapter ends; nil when nothing is looked ahead to.
     /// Accessed from Navigation and Playback extensions.
     var lookAhead: LookAhead?
+    /// What the look-ahead's render waits for, while the next chapter's
+    /// speech is prepared and its audio is not asked for yet: the current
+    /// chapter's end coming within the lead (audit C11). Nil once the render
+    /// is asked for, and when nothing is looked ahead to.
+    /// Accessed from the Playback extension.
+    var lookAheadWait: LookAheadWait?
+    /// How many times the look-ahead's chapter was chosen
+    /// (`preRenderNextChapter()`), so a test can show that a change which
+    /// leaves the next chapter's audio alone chose nothing again.
+    var _lookAheadChoiceCountForTesting = 0
+    /// Whether a look-ahead render may start now, asked as each render
+    /// falls due: the system's answer (`systemMayRenderAhead()`), or a
+    /// test's. Accessed from the Playback extension.
+    var mayRenderAhead: () -> Bool = ReaderViewModel.systemMayRenderAhead
+    /// Watches a text book's pause for growing long, when the reader lets go
+    /// of the look-ahead's audio (audit C11). Accessed from the Playback
+    /// extension.
+    let longPause = LongPauseWatch()
     /// The speech prepared for recent chapters, and the look-ahead's, each
     /// used again while everything it was prepared from stays the same
     /// (PERF02). Accessed from the Playback extension.
@@ -668,6 +840,9 @@ final class ReaderViewModel: ObservableObject {
     ///   - readingListRequests: Where this book is asked to be read from
     ///     the reading list (FR09). Nil uses the shared store; tests pass
     ///     their own.
+    ///   - libraryJumpRequests: Where the Search Library window asks this
+    ///     reader to move to a match. Nil uses the shared store; tests pass
+    ///     their own.
     ///   - notificationCenter: Where the reader listens for commands and for
     ///     Continue to Next Book, and posts its own Continue to Next Book.
     ///     Tests pass their own, so their notifications never reach the
@@ -683,6 +858,11 @@ final class ReaderViewModel: ObservableObject {
     ///   - loadQueue: The queue each load reads the book's files on. Nil uses
     ///     a global queue; tests pass a queue of their own that holds the
     ///     reads until they let them begin.
+    ///   - sleepTimer: The sleep timer of the reader's window, which a window
+    ///     gives each reader it shows (`ReaderWindowContent`), so that a
+    ///     window going on to another book in place keeps its timer. Nil
+    ///     gives the reader a timer of its own on the Mac, as a window of its
+    ///     own would have, and the iPhone's one timer on the iPhone.
     init(
         book: Book,
         libraryViewModel: LibraryViewModel,
@@ -690,27 +870,40 @@ final class ReaderViewModel: ObservableObject {
         substitutionService: TextSubstitutionService? = nil,
         autoplayRequests: ReaderAutoplayRequests? = nil,
         readingListRequests: ReadingListOpenRequests? = nil,
+        libraryJumpRequests: LibrarySearchJumpRequests? = nil,
+        windowSwitchRequests: WindowSwitchRequests? = nil,
         notificationCenter: NotificationCenter = .default,
         renderScheduler: (any SpeechRenderScheduling)? = nil,
         cloud: ReaderCloudServices? = nil,
         nowPlaying: NowPlayingService? = nil,
-        loadQueue: DispatchQueue? = nil
+        loadQueue: DispatchQueue? = nil,
+        sleepTimer: SleepTimerService? = nil
     ) {
         self.book = book
         self.libraryViewModel = libraryViewModel
         self.settingsViewModel = settingsViewModel
+        #if os(iOS)
+        self.sleepTimerService = sleepTimer ?? .shared
+        #else
+        self.sleepTimerService = sleepTimer ?? SleepTimerService()
+        #endif
         // Resolved here rather than as default arguments, so the shared
         // main-actor services are read inside this main-actor initializer.
         self.substitutionService = substitutionService ?? .shared
         self.autoplayRequests = autoplayRequests ?? .shared
         self.readingListRequests = readingListRequests ?? .shared
+        self.windowSwitchRequests = windowSwitchRequests ?? .shared
         self.notificationCenter = notificationCenter
         self.renderScheduler = renderScheduler ?? SpeechRenderCoordinator.shared
         self.cloudServices = cloud ?? .app
         self.nowPlayingCoordinator = nowPlaying ?? .shared
         self.loadQueue = loadQueue ?? .global(qos: .userInitiated)
+        self.libraryJumpRequests = libraryJumpRequests ?? .shared
         self.bookmarks = book.bookmarks
 
+        // A timer held for this book is this reader's to take, or to release
+        // on every way it can fail, for as long as it is open: the library's
+        // registry says so (`bookIsOpenCheck`).
         libraryViewModel.registerOpenBook(book.id)
 
         // Restore reading position
@@ -727,6 +920,9 @@ final class ReaderViewModel: ObservableObject {
         observeSpokenAudioSettings()
         observeLibraryUpdates()
         observeReadingList()
+        observeSyncedReadingStates()
+        observeLibrarySearchJumps()
+        observeSleepTimerHandOvers()
         forwardSpeechState()
         // TextMouth's memory is watched while this reader plays (B07).
         followPlaybackForMemoryGuard().store(in: &cancellables)
@@ -783,6 +979,29 @@ final class ReaderViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
+    /// Listens for a sync merge giving this book another reading state, and
+    /// weighs it (`takeSyncedReadingState(_:)`, FR43).
+    private func observeSyncedReadingStates() {
+        let bookID = book.id
+        libraryViewModel.syncedReadingStates
+            .filter { $0.bookID == bookID }
+            .sink { [weak self] synced in self?.takeSyncedReadingState(synced) }
+            .store(in: &cancellables)
+    }
+
+    /// Listens for the Search Library window asking this reader to move to a
+    /// match while it is open already, as the book's window comes forward
+    /// for it, and claims the request at once (`claimLibrarySearchJump()`);
+    /// one made before this reader existed is claimed as its load ends.
+    /// Requests for other books are left for their own readers.
+    private func observeLibrarySearchJumps() {
+        let bookID = book.id
+        libraryJumpRequests.requestsMade
+            .filter { $0 == bookID }
+            .sink { [weak self] _ in self?.claimLibrarySearchJump() }
+            .store(in: &cancellables)
+    }
+
     /// Read this book from the reading list when asked to (FR09). A request
     /// made before this reader existed, as a Library window opened the book
     /// from the Reading List or a book continued to it through the list, is
@@ -803,7 +1022,26 @@ final class ReaderViewModel: ObservableObject {
         libraryViewModel.$library
             .sink { [weak self] library in self?.followReadingList(in: library) }
             .store(in: &cancellables)
+        // The book marked played by hand (a feed item) while it is read from
+        // the list: this reader rests on it, so it stays until this reader
+        // moves on or closes (`restOnBookMarkedPlayedByHand()`).
+        libraryViewModel.bookMarkedPlayedByHand
+            .filter { $0 == bookID }
+            .sink { [weak self] _ in self?.restOnBookMarkedPlayedByHand() }
+            .store(in: &cancellables)
         claimReadingListRequest()
+    }
+
+    /// Listens for a sleep timer, from any window, being asked for this book
+    /// while this reader is open already, as the book's window comes forward
+    /// for it, and takes it at once (`claimSleepTimerHandOver()`); one asked
+    /// for before this reader existed is taken as its load ends.
+    private func observeSleepTimerHandOvers() {
+        let bookID = book.id
+        sleepTimers.asksMade
+            .filter { $0 == bookID }
+            .sink { [weak self] _ in self?.claimSleepTimerHandOver() }
+            .store(in: &cancellables)
     }
 
     /// Forward speechService @Published state to our own @Published properties
@@ -893,7 +1131,7 @@ final class ReaderViewModel: ObservableObject {
     /// Time estimate for a specific heading (time from heading start to next heading or end of doc)
     func timeEstimateForHeading(_ heading: Heading) -> TimeInterval {
         guard let content = content else { return 0 }
-        let allHeadings = content.allHeadings
+        let allHeadings = headings
         let headingGlobalOffset = content.globalOffset(chapterIndex: heading.chapterIndex, localOffset: heading.characterOffset)
 
         // Find the next heading's global offset
@@ -972,8 +1210,26 @@ final class ReaderViewModel: ObservableObject {
             },
             onAudioRouteChangePause: { [weak self] in self?.pauseForAudioRouteChange() },
             onTogglePlayPause: { [weak self] in self?.togglePlayPause() },
-            onSkipForward: { [weak self] in self?.skipForward() },
-            onSkipBackward: { [weak self] in self?.skipBackward() },
+            onSkipForward: { [weak self] in
+                #if os(iOS)
+                // The iPhone's moves take one path of their own, which says
+                // what a move says on a phone (`ReaderPhoneHooks`).
+                if let move = self?.phoneHooks.moveForward {
+                    move()
+                    return
+                }
+                #endif
+                self?.skipForward()
+            },
+            onSkipBackward: { [weak self] in
+                #if os(iOS)
+                if let move = self?.phoneHooks.moveBackward {
+                    move()
+                    return
+                }
+                #endif
+                self?.skipBackward()
+            },
             // NowPlayingService needs to know whether playback is currently
             // running so it can correctly handle the Bluetooth-disconnect
             // suppress window: during that window, a spurious toggle command
@@ -1023,12 +1279,52 @@ final class ReaderViewModel: ObservableObject {
     /// - Menu commands have no source window: follow the current key window,
     ///   including a sheet attached to this reader.
     private func isTargetedNotification(_ notification: Notification) -> Bool {
-        let sourceWindow = notification.userInfo?["sourceWindow"] as? NSWindow
+        let sourceWindow = notification.userInfo?["sourceWindow"] as? PlatformWindow
         return WindowCommandRouting.shouldAccept(
             sourceWindow: sourceWindow,
             hostWindow: hostWindow,
-            keyWindow: NSApp.keyWindow
+            keyWindow: PlatformApplication.keyWindow
         )
+    }
+
+    /// Whether a Restart Sleep Timer is this reader's to act on, on its own
+    /// window's timer (November 13, 2026: each reader window has a timer of
+    /// its own), which it writes to the timer's log as it decides:
+    /// - its key carries the window it was pressed in (`sourceWindow`): this
+    ///   reader's window, or a sheet over it;
+    /// - the media gesture, which belongs to no window and often comes while
+    ///   no window is key, names the reader that owns Now Playing
+    ///   (`NowPlayingService.restartGestureOwnerKey`), whose book the
+    ///   AirPods and the media keys reach: that reader, the one being heard;
+    /// - with neither, as for the gesture while no reader owns Now Playing:
+    ///   the focused reader, in the key or main window, or a reader with no
+    ///   window.
+    private func acceptsSleepTimerRestart(_ notification: Notification) -> Bool {
+        let bookToken = String(book.id.uuidString.prefix(8))
+        let readerToken = String(readerID.uuidString.prefix(8))
+        let hasSourceWindow = notification.userInfo?["sourceWindow"] != nil
+        let mediaOwner = notification.userInfo?[NowPlayingService.restartGestureOwnerKey] as? UUID
+        let mediaOwnerToken = mediaOwner.map { String($0.uuidString.prefix(8)) } ?? "none"
+        SleepTimerService.log(
+            .event,
+            "RESTART_ROUTE_RECEIVED book=\(bookToken) reader=\(readerToken) "
+                + "sourceWindow=\(hasSourceWindow) mediaOwner=\(mediaOwnerToken)"
+        )
+        let refusal: String?
+        if hasSourceWindow {
+            refusal = isTargetedNotification(notification) ? nil : "source-window-mismatch"
+        } else if let mediaOwner {
+            refusal = mediaOwner == readerID ? nil : "media-owner-mismatch"
+        } else {
+            let isFocused = hostWindow == nil || hostWindow?.isKeyWindow == true || hostWindow?.isMainWindow == true
+            refusal = isFocused ? nil : "no-focused-window"
+        }
+        if let refusal {
+            SleepTimerService.log(.event, "RESTART_ROUTE_REJECTED book=\(bookToken) reason=\(refusal)")
+            return false
+        }
+        SleepTimerService.log(.event, "RESTART_ROUTE_ACCEPTED book=\(bookToken) timerActive=\(sleepTimerService.isActive)")
+        return true
     }
 
     private func setupNotifications() {
@@ -1036,7 +1332,7 @@ final class ReaderViewModel: ObservableObject {
 
         // TextMouth becoming active looks for an edit of an open
         // audiobook's manifest made meanwhile outside Edit Manifest (FR18).
-        nc.publisher(for: NSApplication.didBecomeActiveNotification)
+        nc.publisher(for: PlatformApplication.didBecomeActiveNotification)
             .sink { [weak self] _ in self?.lookForOutsideManifestEdit() }
             .store(in: &cancellables)
 
@@ -1112,21 +1408,7 @@ final class ReaderViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Next Page, Previous Page, and Go to Page… (PG02, PG03).
-        nc.publisher(for: .nextPage)
-            .sink { [weak self] notification in
-                guard let self = self, self.isTargetedNotification(notification) else { return }
-                self.nextPage()
-            }
-            .store(in: &cancellables)
-
-        nc.publisher(for: .previousPage)
-            .sink { [weak self] notification in
-                guard let self = self, self.isTargetedNotification(notification) else { return }
-                self.previousPage()
-            }
-            .store(in: &cancellables)
-
+        // Go to Page… (PG03).
         nc.publisher(for: .goToPage)
             .sink { [weak self] notification in
                 guard let self = self, self.isTargetedNotification(notification) else { return }
@@ -1146,6 +1428,21 @@ final class ReaderViewModel: ObservableObject {
             .sink { [weak self] notification in
                 guard let self = self, self.isTargetedNotification(notification) else { return }
                 self.goThroughReadingList(.up)
+            }
+            .store(in: &cancellables)
+
+        // Next in Folder and Previous in Folder (0.2.5).
+        nc.publisher(for: .nextInFolder)
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.goThroughFolder(.down)
+            }
+            .store(in: &cancellables)
+
+        nc.publisher(for: .previousInFolder)
+            .sink { [weak self] notification in
+                guard let self = self, self.isTargetedNotification(notification) else { return }
+                self.goThroughFolder(.up)
             }
             .store(in: &cancellables)
 
@@ -1201,65 +1498,12 @@ final class ReaderViewModel: ObservableObject {
             .store(in: &cancellables)
 
         // Restart-sleep-timer notification — fires from either the
-        // keyboard shortcut or the experimental media-gesture detector.
-        // The two paths target different windows:
-        // - Keyboard path always carries `sourceWindow`, so the usual
-        //   focused-window gate applies.
-        // - Gesture path carries no sourceWindow because media keys
-        //   don't belong to a window. AirPods presses also commonly
-        //   arrive when the app is backgrounded (no key window). The
-        //   right reader to respond is whichever one most recently
-        //   owned a timer — the user is restarting THAT timer. Only
-        //   that reader responds, not another window of the same book.
-        //   Falls back to the focused window when no prior timer
-        //   exists yet (first-ever press), or its reader has closed.
+        // keyboard shortcut or the experimental media-gesture detector, and
+        // restarts the timer of the window it is for
+        // (`acceptsSleepTimerRestart(_:)`).
         nc.publisher(for: .restartSleepTimer)
             .sink { [weak self] notification in
-                guard let self = self else { return }
-                let bookToken = String(self.book.id.uuidString.prefix(8))
-                let readerToken = String(self.readerID.uuidString.prefix(8))
-                let hasSourceWindow = notification.userInfo?["sourceWindow"] != nil
-                let lastOwnerToken = self.sleepTimerService.lastOwnerID
-                    .map { String($0.uuidString.prefix(8)) } ?? "none"
-                SleepTimerService.log(
-                    .event,
-                    "RESTART_ROUTE_RECEIVED book=\(bookToken) reader=\(readerToken) "
-                        + "sourceWindow=\(hasSourceWindow) lastOwner=\(lastOwnerToken)"
-                )
-                if notification.userInfo?["sourceWindow"] != nil {
-                    guard self.isTargetedNotification(notification) else {
-                        SleepTimerService.log(
-                            .event,
-                            "RESTART_ROUTE_REJECTED book=\(bookToken) reason=source-window-mismatch"
-                        )
-                        return
-                    }
-                } else if let lastOwner = self.sleepTimerService.lastOwnerID {
-                    guard lastOwner == self.readerID else {
-                        SleepTimerService.log(
-                            .event,
-                            "RESTART_ROUTE_REJECTED book=\(bookToken) reason=last-owner-mismatch"
-                        )
-                        return
-                    }
-                } else {
-                    // No prior timer history — only the focused or
-                    // sole window should respond.
-                    guard self.hostWindow == nil
-                          || self.hostWindow?.isKeyWindow == true
-                          || self.hostWindow?.isMainWindow == true
-                    else {
-                        SleepTimerService.log(
-                            .event,
-                            "RESTART_ROUTE_REJECTED book=\(bookToken) reason=no-focused-window"
-                        )
-                        return
-                    }
-                }
-                SleepTimerService.log(
-                    .event,
-                    "RESTART_ROUTE_ACCEPTED book=\(bookToken) timerActive=\(self.sleepTimerService.isActive)"
-                )
+                guard let self, self.acceptsSleepTimerRestart(notification) else { return }
                 self.restartOrStartLastSleepTimer()
             }
             .store(in: &cancellables)
@@ -1355,6 +1599,13 @@ final class ReaderViewModel: ObservableObject {
         /// taken or refused, for the manifest editor once the book shows;
         /// nil for every other book.
         var manifestLook: BookManifestEditCheck? = nil
+        /// The reading state that stood between the reader's copy of the
+        /// book and its record, when the record held the later place, as
+        /// another Mac sharing the library writes one while this Mac's row
+        /// lags behind (risk 2; `Book.readingState(standingAgainst:)`): the
+        /// load read the book from it, and the reader takes it first of all
+        /// (`takeNewerRecordedState(_:)`). Nil when the row's stood.
+        var recordedState: Book.ReadingState? = nil
     }
 
     /// Start getting the book ready to read, showing Loading meanwhile.
@@ -1370,19 +1621,32 @@ final class ReaderViewModel: ObservableObject {
     func loadContent() {
         isLoading = true
         guard beginReadingForLoad() else { return }
+        // A protected book is read only once it is unlocked: remembered
+        // passwords are tried, and then the person is asked (FR41).
+        if book.isLocked {
+            beginUnlocking()
+            return
+        }
         let bookCopy = book
         let storage = cloudServices.storage
         let package = BookPackage(bookCopy)
+        // Only the opening load weighs the book's record (risk 2).
+        let opening = !hasOpened
+        // While sync is on, a book another device has may not be fetched yet
+        // (FR43): its files are missing, which takes the download path
+        // whatever the library's location, as a cloud book's do. Only then
+        // is a pointer looked for, so a library without sync reads nothing.
+        let syncIsOn = cloudServices.states.syncIsOn
         loadQueue.async { [weak self] in
             let location = storage.libraryLocation()
-            if location.isCloud {
+            if location.isCloud || (syncIsOn && package.isPackage && StoreFetch.isMissingFiles(package.url)) {
                 let state = storage.state(of: package)
                 DispatchQueue.main.async { [weak self] in
                     self?.continueOpening(in: location, found: state, at: bookCopy.filePath)
                 }
                 return
             }
-            let result = Result { try ReaderViewModel.readContent(of: bookCopy) }
+            let result = Result { try ReaderViewModel.readContent(of: bookCopy, weighingRecordedState: opening) }
             DispatchQueue.main.async { [weak self] in
                 self?.finishLoading(result, readFrom: bookCopy.filePath)
             }
@@ -1404,14 +1668,31 @@ final class ReaderViewModel: ObservableObject {
     /// cache of the reading text of the large books opened lately (PERF22,
     /// `ReadingTextCache`): it is read from there when kept for the book's
     /// content.md as it is, and kept there after a parse otherwise.
+    ///
+    /// `weighingRecordedState`, for the load that opens the book, weighs the
+    /// reading state the book's record holds against `book`'s first
+    /// (`LoadedContent.recordedState`, risk 2); a later load of the same
+    /// reader passes false, its copy of the book keeping the place it opened
+    /// with while its own saves went on.
     nonisolated static func readContent(
         of book: Book,
         audioTagsFrom tagsURL: URL? = nil,
-        readingTexts: ReadingTextCache? = .shared
+        readingTexts: ReadingTextCache? = .shared,
+        weighingRecordedState: Bool = false
     ) throws -> LoadedContent {
         var book = book
         let url = book.bookFileURL
         let format = book.format
+        // The book's record, written by another Mac sharing the library
+        // since this Mac's row was, may hold the later place (risk 2): the
+        // place, bookmarks, and settings that stand between the two are
+        // read before anything else, so every step below (an edit's moves,
+        // a rebuild's, the check at load) starts from them, as the reader
+        // takes them before those moves. Read without downloading anything.
+        var recordedState: Book.ReadingState?
+        if weighingRecordedState, let record = book.ownStoredRecord(), book.takeStandingReadingState(of: record) {
+            recordedState = book.readingState
+        }
         // A text being edited in the user's editor has a saved edit checked
         // first (FR05), so the read never finds an edit that would look like
         // a stale cache and be rebuilt from the source (TODO T07). An edit
@@ -1494,7 +1775,9 @@ final class ReaderViewModel: ObservableObject {
         // the reader takes the move into the row, which saves the row and
         // the record as any change is. All of it runs off the main thread,
         // where a large book's places are found.
-        if !format.isAudio {
+        // (Not for a protected book: finding a place by its words would copy
+        // them into its record, FR41.)
+        if !format.isAudio, !book.isPasswordProtected {
             if let moved = analysis.movedPlaces {
                 book.takeMovedPlaces(original: moved.original, moved: moved.moved)
             }
@@ -1538,18 +1821,20 @@ final class ReaderViewModel: ObservableObject {
             audioFiles: analysis.audioFilePaths,
             audioSegments: analysis.audioSegments,
             audioTags: audioTags,
-            shouldPersistContentIndex: !analysis.usedPersistedIndex
+            // Never for a protected book, whose headings stay out of its record (FR41).
+            shouldPersistContentIndex: !book.isPasswordProtected && (!analysis.usedPersistedIndex
                 || transcriptIndexChanged
                 || book.contentIndexVersion != BookContentIndex.currentVersion
                 || (!format.isAudio
-                    && book.cacheFormatVersion != MarkdownCacheService.currentCacheVersion),
+                    && book.cacheFormatVersion != MarkdownCacheService.currentCacheVersion)),
             cacheFormatVersion: analysis.cacheFormatVersion,
             movedPlaces: movedPlaces,
             // The manifest is read afresh, so a load from the saved index
             // keeps the pauses a fresh analysis would find.
             chapterPauses: format.isAudio ? ChapterPauses.betweenTracks(of: analysis.index, inAudioFolder: url) : .none,
             transcriptWithheld: transcriptWithheld,
-            manifestLook: manifestLook
+            manifestLook: manifestLook,
+            recordedState: recordedState
         )
     }
 
@@ -1561,6 +1846,13 @@ final class ReaderViewModel: ObservableObject {
         case .success(let loaded):
             showLoadedContent(loaded, readFrom: filePath)
         case .failure(let error):
+            // A protected book that arrived from the cloud locked (its file
+            // could not be looked at before it was here) asks for its
+            // password, as any other locked book does (FR41).
+            if error is BookLockedError {
+                beginUnlocking()
+                return
+            }
             showLoadFailure(error, readFrom: filePath)
         }
     }
@@ -1591,6 +1883,11 @@ final class ReaderViewModel: ObservableObject {
         showEPUBMetadata()
         audioMetadata = loaded.audioTags.map { book.mergingEditableAudioMetadata($0) }
 
+        // The record's later reading state, when the load found one (risk
+        // 2), comes before every move, as the load took it before them.
+        if let recorded = loaded.recordedState {
+            takeNewerRecordedState(recorded)
+        }
         // The places the load moved come first, in order (a rebuild's, then
         // the check at load's), so that the opening place, the opened
         // place's anchor (`noteLoadedTextForAnchors`), the anchor capture,
@@ -1619,6 +1916,13 @@ final class ReaderViewModel: ObservableObject {
             currentChapterIndex = opening.chapter
             currentCharacterOffset = opening.offset
         }
+        // The place the book opened at keeps its date until the cursor
+        // moves, the load's own save below included (risk 2). A later load
+        // keeps the place and date of this reader's last save.
+        if !hasOpened {
+            noteOpenedPlace()
+            hasOpened = true
+        }
         // Every place saved from now on takes its words from this text, but
         // the place the book opened at keeps the words it was saved with
         // while the cursor stays there; the bookmarks and skipped headings
@@ -1633,9 +1937,7 @@ final class ReaderViewModel: ObservableObject {
         // This reader's sleep timer for the end of the heading waits for the
         // end of the heading the cursor is in, as the headings are now: one
         // set while the book loaded found no headings yet (finding #787).
-        if sleepTimerService.waitsForHeadingEnd(ownedBy: readerID) {
-            sleepTimerNextHeading = headingAfterCursor
-        }
+        refreshSleepTimerHeading()
 
         isLoading = false
 
@@ -1650,6 +1952,17 @@ final class ReaderViewModel: ObservableObject {
         // Save position with global offset now that we have chapter data
         savePosition()
         refreshPlaybackUI()
+        // A sleep timer the previous book handed over is taken before
+        // anything plays: a timer that ran out meanwhile ends listening, so
+        // the book is not started for it (0.2.5).
+        claimSleepTimerHandOver()
+        // A window a switch made this reader's has its focus seen to now that
+        // the book has loaded (`attach(to:)`).
+        placeFocusAfterSwitchIfDue()
+        // A match Search Library opened this book at is moved to now that
+        // the text is loaded, before any playback that is due starts from
+        // the cursor it leaves.
+        claimLibrarySearchJump()
         // A finished book may have continued to this one while
         // it loaded: start playing for it now.
         claimAutoplayRequest()
@@ -1683,8 +1996,11 @@ final class ReaderViewModel: ObservableObject {
         isLoading = false
         loadHeldByTextEdit = error is BookTextEditPending
         // A book that cannot load cannot play for a finished
-        // book that continued to it; its error shows instead.
+        // book that continued to it; its error shows instead. Nor can it
+        // take over a sleep timer, which would count toward pausing nothing.
         discardAutoplayRequest()
+        // Said once the error view's own focus has read the reason.
+        releaseSleepTimerHeld(forBook: book.id, afterTheReason: true)
     }
 
     // MARK: - EPUB Metadata
@@ -1742,7 +2058,14 @@ final class ReaderViewModel: ObservableObject {
     /// not written; the library index alone takes the fields then, as for
     /// any save (`LibraryPersistenceService`). The reader's own copy of the
     /// book takes the same fields.
-    private func keepEPUBMetadataReadFromFile(_ metadata: EPUBMetadata) {
+    ///
+    /// A book with a password keeps none of it (FR41): its package document
+    /// is one of the entries its password encrypts, so the publisher, the
+    /// identifier, and the rest are shown while the book is open, and never
+    /// written to its row, its record, or the sync folder in plain text.
+    /// Internal, not private, so a test can hand it metadata.
+    func keepEPUBMetadataReadFromFile(_ metadata: EPUBMetadata) {
+        guard !book.isPasswordProtected else { return }
         book.keepEPUBMetadata(readFromFile: metadata)
         guard let row = libraryViewModel.bookByID(book.id), row.format == .epub,
               row.keptEPUBMetadata == nil else { return }
@@ -1800,18 +2123,34 @@ final class ReaderViewModel: ObservableObject {
             self?.drainPlaybackUIRefresh()
         }
         playbackUIRefreshWorkItem = workItem
-        DispatchQueue.main.asyncAfter(
-            deadline: .now() + Self.playbackUIRefreshInterval,
-            execute: workItem
-        )
+        // Refresh on the leading edge (the audit's C6): a change that comes
+        // a whole interval or more after the last refresh is shown on the
+        // main queue's next turn, where a chapter index and an offset set
+        // together are shown together, and not after an interval of waiting
+        // that a lone change, such as an audiobook's each quarter second,
+        // never needed. A change inside the interval waits out what is left
+        // of it, so refreshes still come at most once an interval, and never
+        // later than an interval after their change.
+        let sinceLast = playbackUIRefreshNow().timeIntervalSince(lastPlaybackUIRefresh)
+        if sinceLast >= Self.playbackUIRefreshInterval {
+            DispatchQueue.main.async(execute: workItem)
+        } else {
+            // A clock set back leaves more than an interval to wait: the
+            // wait is never longer than the interval.
+            let remainder = min(Self.playbackUIRefreshInterval, Self.playbackUIRefreshInterval - sinceLast)
+            delayedPlaybackUIRefreshCount += 1
+            DispatchQueue.main.asyncAfter(deadline: .now() + remainder, execute: workItem)
+        }
     }
 
     /// Apply the latest pending snapshot, then reschedule if more updates
     /// arrived while the refresh was running.
     private func drainPlaybackUIRefresh() {
         playbackUIRefreshWorkItem = nil
+        lastPlaybackUIRefresh = playbackUIRefreshNow()
         guard let snapshot = pendingPlaybackUIRefresh else { return }
         pendingPlaybackUIRefresh = nil
+        drainedPlaybackUIRefreshCount += 1
         refreshPlaybackUI(
             chapterIndex: snapshot.chapterIndex,
             offset: snapshot.offset
@@ -1836,6 +2175,9 @@ final class ReaderViewModel: ObservableObject {
         offset: Int? = nil,
         forceVisibleTextRefresh: Bool = false
     ) {
+        // However the refresh ends, the views hear of a change in what they
+        // show, once, with every mirror in place.
+        defer { announceShownStateIfChanged() }
         guard let content = content,
               !content.chapters.isEmpty else {
             if displayChapterIndex != 0 { displayChapterIndex = 0 }
@@ -1899,6 +2241,20 @@ final class ReaderViewModel: ObservableObject {
         }
     }
 
+    /// Tells the window's views that the reader changed, when what they show
+    /// of the place differs from what they showed the last time they were
+    /// told (`ReaderShownState`). The mirrors are brought up to date before
+    /// this is called, and a view reads them when SwiftUI next draws it, so
+    /// announcing after the change is as good as before it. A refresh that
+    /// moved the place within what the window shows, as most do while a book
+    /// plays, announces nothing.
+    private func announceShownStateIfChanged() {
+        let latest = ReaderShownState(of: self)
+        guard latest != announcedShownState else { return }
+        announcedShownState = latest
+        objectWillChange.send()
+    }
+
     /// The text the reader shows for chapter `chapterIndex` of `content`,
     /// and where in it the cursor, at `cursorOffset` in the chapter, falls:
     /// the chapter's own text and the cursor itself; or, for an audiobook
@@ -1954,7 +2310,39 @@ final class ReaderViewModel: ObservableObject {
         /// The retry button's title: "Retry" for audio that could not be
         /// played, and "Try Again" for a chapter that could not be got from
         /// the cloud (FR02), as the download view words it.
-        var retryTitle = "Retry"
+        var retryTitle = ErrorAlert.retryWording
+
+        // MARK: What the alert says
+
+        /// The retry button's title for audio that could not be played.
+        static var retryWording: String {
+            // Translators: Button of the reader's error alert that tries to play the audio again.
+            InterfaceText.line("common.retry", "Retry")
+        }
+
+        /// The retry button's title for a chapter that could not be fetched from the cloud.
+        static var tryAgainWording: String {
+            // Translators: Button of the reader's alert about a chapter that could not be downloaded; it tries the download again.
+            InterfaceText.line("common.tryAgain", "Try Again")
+        }
+
+        /// The title of the alert about a chapter that could not be fetched from the cloud.
+        static var chapterNotDownloadedTitle: String {
+            // Translators: Title of the reader's alert shown when a chapter of an audiobook could not be downloaded from the cloud.
+            InterfaceText.line("errorAlert.chapterNotDownloadedTitle", "Chapter Not Downloaded")
+        }
+
+        /// The title of the alert about an error that is not an audio failure.
+        static var errorTitle: String {
+            // Translators: Title of the reader's alert about a problem that is not an audio failure.
+            InterfaceText.line("common.error", "Error")
+        }
+
+        /// The title of the alert about audio that could not be played.
+        static var playbackProblemTitle: String {
+            // Translators: Title of the reader's alert shown when the audio could not be played.
+            InterfaceText.line("errorAlert.playbackProblemTitle", "Playback Problem")
+        }
     }
 
     /// `errorMessage` while no content has loaded: the book itself could
@@ -1971,14 +2359,14 @@ final class ReaderViewModel: ObservableObject {
         // reader at that chapter, which may play once they are here (FR02).
         if cloudSession.chapterFailure != nil {
             return ErrorAlert(
-                title: "Chapter Not Downloaded",
+                title: ErrorAlert.chapterNotDownloadedTitle,
                 message: errorMessage,
                 offersRetry: true,
-                retryTitle: "Try Again"
+                retryTitle: ErrorAlert.tryAgainWording
             )
         }
         return ErrorAlert(
-            title: audioPlaybackFailure == nil ? "Error" : "Playback Problem",
+            title: audioPlaybackFailure == nil ? ErrorAlert.errorTitle : ErrorAlert.playbackProblemTitle,
             message: errorMessage,
             offersRetry: audioPlaybackFailure != nil
         )
@@ -2054,12 +2442,14 @@ final class ReaderViewModel: ObservableObject {
 
     // MARK: - Position Saving
 
-    /// Persist the current reading position to the library
+    /// Persist the current reading position to the library. A place saved
+    /// without moving keeps the date it was saved with (`durablePosition()`).
     func savePosition() {
         guard content != nil else { return }
-        let position = makeCurrentReadingPosition()
+        let position = durablePosition()
         libraryViewModel.persistReadingPosition(bookID: book.id, position: position)
-        lastPersistedCheckpoint = position.lastUpdated
+        // When the checkpoint was made, whatever date the place keeps.
+        lastPersistedCheckpoint = Date()
         notePlaceSaved(position)
     }
 
@@ -2078,22 +2468,71 @@ final class ReaderViewModel: ObservableObject {
     }
 
     /// Record that `position` was just saved durably: the place the next
-    /// `savePositionIfMoved()` compares with, and no live move is waiting.
+    /// `savePositionIfMoved()` compares with, with its date, and no live
+    /// move is waiting.
     private func notePlaceSaved(_ position: ReadingPosition) {
         lastSavedPlace = TextPlace(chapter: position.chapterIndex, offset: position.characterOffset)
+        lastSavedPlaceDate = position.lastUpdated
         hasPlayedSinceSave = false
+    }
+
+    /// Record that the book opened at the cursor, as its text loaded: the
+    /// place last saved, with the date of the place saved for it, until the
+    /// cursor moves (risk 2). The load's own save (`showLoadedContent`) then
+    /// writes it, with the words and the offset in the whole book it can
+    /// now take, under that date, and so do a close and a quit that find
+    /// the cursor where it was.
+    func noteOpenedPlace() {
+        lastSavedPlace = TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset)
+        lastSavedPlaceDate = book.readingPosition?.lastUpdated
+        hasPlayedSinceSave = false
+    }
+
+    /// The cursor's place, to save durably: dated now, unless the cursor
+    /// has not moved since the place was last saved, or since the book
+    /// opened at it, with no playback since, when it keeps that save's date
+    /// (risk 2 of LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md; section 5: "A
+    /// place saved without moving keeps the clock it had"). So opening or
+    /// closing a book, or a quit, never makes an old place the later one,
+    /// which would put it over a place another Mac sharing the library
+    /// saved since (`Book.readingState(standingAgainst:)`). A place never
+    /// saved before is dated now.
+    private func durablePosition() -> ReadingPosition {
+        var position = makeCurrentReadingPosition()
+        if !hasPlayedSinceSave,
+           let savedDate = lastSavedPlaceDate,
+           lastSavedPlace == TextPlace(chapter: position.chapterIndex, offset: position.characterOffset) {
+            position.lastUpdated = savedDate
+        } else {
+            // A moved place is dated by the clock, but never earlier than a
+            // second after the place it moves on from: the files keep dates
+            // to the second, and a clock set back would otherwise date this
+            // move before the last save, so that the record's older state
+            // would stand over it at the next opening
+            // (`Book.readingState(standingAgainst:)`).
+            let now = positionClock()
+            position.lastUpdated = lastSavedPlaceDate.map { max(now, $0.addingTimeInterval(1)) } ?? now
+        }
+        return position
     }
 
     /// Builds the one canonical snapshot used by reader persistence and live
     /// library estimates, preventing formula inputs from drifting apart. A
     /// text book's place carries the words around it (T06), by which a
     /// later text of the book can find it again (`anchorToSave(at:)`).
-    private func makeCurrentReadingPosition() -> ReadingPosition {
+    ///
+    /// - Parameter withAnchor: Whether to take the words around the place.
+    ///   A live position only moves a row's time estimate and nothing reads
+    ///   its words, so it asks for none (`publishLivePosition(now:)`): taking
+    ///   them cuts two strings out of the chapter each second.
+    private func makeCurrentReadingPosition(withAnchor: Bool = true) -> ReadingPosition {
         ReadingPosition(
             chapterIndex: currentChapterIndex,
             characterOffset: currentCharacterOffset,
             globalCharacterOffset: currentGlobalOffset,
-            anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset))
+            anchor: withAnchor
+                ? anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset))
+                : nil
         )
     }
 
@@ -2115,7 +2554,6 @@ final class ReaderViewModel: ObservableObject {
     /// Applies the latest cursor to the shared library and persists every
     /// thirty seconds during active playback to bound crash-related data loss.
     private func publishLivePosition(now: Date) {
-        let position = makeCurrentReadingPosition()
         let isActivelyPlaying: Bool
         if isAudioBook {
             isActivelyPlaying = audioPlaybackService.isPlaying && !audioPlaybackService.isPaused
@@ -2127,12 +2565,22 @@ final class ReaderViewModel: ObservableObject {
             lastCheckpoint: lastPersistedCheckpoint,
             now: now
         ) {
+            // A durable checkpoint carries the words around the place, and
+            // the date of its last save when the cursor has not moved.
+            let position = durablePosition()
             libraryViewModel.persistReadingPosition(bookID: book.id, position: position)
             lastPersistedCheckpoint = now
             notePlaceSaved(position)
         } else {
-            libraryViewModel.updateLiveReadingPosition(bookID: book.id, position: position)
-            hasPlayedSinceSave = true
+            // A live position carries none: only its cursor is read.
+            libraryViewModel.updateLiveReadingPosition(bookID: book.id, position: makeCurrentReadingPosition(withAnchor: false))
+            // Playing, or a cursor that left its saved place, is a move; a
+            // publish while nothing plays and the cursor rests where it was
+            // saved, as setting the cursor to the same place asks for, is
+            // not, so it never dates that place anew (risk 2).
+            if isActivelyPlaying || lastSavedPlace != TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset) {
+                hasPlayedSinceSave = true
+            }
         }
         lastLivePositionPublish = now
         // With the position published, see whether the next episode of a
@@ -2146,8 +2594,12 @@ final class ReaderViewModel: ObservableObject {
     func close() {
         guard !hasClosed else { return }
         hasClosed = true
+        // The last window to close lets go of a protected book's plain form.
+        releaseUnlockedBook()
         // A closed reader hands nothing over when the next episode arrives.
         nextEpisodeWait = nil
+        // Nor does it look any further for a Search Library match that moved.
+        cancelLibraryJumpSearch()
         // A download the reader waits for is stopped, and the book's state
         // found afterwards recorded for the library list (FR02).
         endCloudWorkForClose()
@@ -2155,30 +2607,47 @@ final class ReaderViewModel: ObservableObject {
         livePositionWorkItem?.cancel()
         livePositionWorkItem = nil
         // stop() records the stopped timestamp and persists when playback was
-        // active or paused. The explicit save also captures navigation made
+        // active or paused. The save below also captures navigation made
         // while stopped, and is a no-op until content has loaded.
         stop()
-        savePosition()
+        // Only a place that moved is saved, as a quit saves it: a reader
+        // that never moved, closing, would put the place it opened at over
+        // a later place another reader of the same book has saved since.
+        savePositionIfMoved()
         stopWhereAmISynthesizer()
         nowPlayingService.clearNowPlaying()
         nowPlayingService.close()
-        // Stop the shared sleep timer iff this reader owned it. With the
-        // singleton service, the timer would otherwise keep ticking
-        // after our window closed — its callbacks captured `self`
-        // weakly so they'd no-op, but the wall-clock countdown would
-        // still run pointlessly until expiration. Owner check keeps us
-        // from cancelling a timer another window started, even one of
-        // the same book. A media gesture restarting the timer then goes
-        // to the focused reader rather than to this closed one.
-        if sleepTimerService.ownerID == readerID {
+        // Stop this window's sleep timer iff this reader owns it: closing the
+        // window a timer belongs to stops it, whose callbacks, capturing this
+        // reader weakly, would otherwise pause nothing when it ran out. The
+        // owner check leaves the timer alone when the reader that took this
+        // window over owns it already, after a switch to the next book in
+        // place.
+        //
+        // A timer held for the next book (0.2.5), by a move announced before
+        // this window closed, goes on: the reader that takes the book adopts
+        // it, and stopping it here would end a timer the listener means to
+        // keep.
+        if sleepTimerService.ownerID == readerID, !sleepTimerService.isHeld(from: readerID) {
             sleepTimerService.stop()
         }
-        sleepTimerService.forgetLastOwner(readerID)
         // Playback has stopped, so nothing reads the working copy any more
         // (FR02).
         removeWorkingCopy()
         libraryViewModel.bookUpdates.unwatch(book.id)
         libraryViewModel.unregisterOpenBook(book.id)
+        // A finished book the reading list is to drop, which this reader held
+        // on the list, leaves it now.
+        releaseFinishedBookOnReadingList()
+        // A timer held for this reader's book, in this window or the one it
+        // was coming from, which it never took because its window closed
+        // while the book loaded, is stopped without a word, as closing the
+        // window a timer belongs to stops it: nothing will play it. Only when
+        // no reader of the book is left: another window of the same book takes
+        // the timer (W6).
+        if !bookIsOpenCheck(book.id) {
+            sleepTimers.cancelHeld(forBook: book.id)
+        }
         // Last, once nothing above needs the book's text.
         releaseWhatGrowsWithTheBook()
     }
@@ -2207,6 +2676,9 @@ final class ReaderViewModel: ObservableObject {
         pendingPlaybackUIRefresh = nil
         visibleTextWindowState = nil
         displayVisibleTextWindow = ""
+        // The last announced state holds a copy of the text window and the
+        // headings' positions; the closed reader keeps none of it.
+        announcedShownState = nil
         audioChapterFiles = []
         audioSegments = []
         chapterPauses = .none

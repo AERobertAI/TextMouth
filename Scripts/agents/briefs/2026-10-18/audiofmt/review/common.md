@@ -18,7 +18,7 @@ The orchestrator asks for a test that fails without each fix. In your turn:
 Keep the failing run's `Executed` line and the names of the tests that failed, for your report. Never use `git stash`: the stash is shared with every worktree.
 
 ## Literal paths, always
-Never `rm` with a shell variable anywhere in its path: not in a loop, not in a script you run. Claude Code stops such an `rm` for the user's approval, and on October 18 one waited five hours while the team stood still. For an experiment, make a new folder with a literal name in the scratchpad (`/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/8d971e15-7103-46cf-b45e-5c4d099f2f74/scratchpad/<slug>-<what>`), give each output its own name, and delete nothing during the run. When you must delete, write the literal path.
+Never `rm` with a shell variable anywhere in its path: not in a loop, not in a script you run. Claude Code stops such an `rm` for the user's approval, and on October 18 one waited five hours while the team stood still. For an experiment, make a new folder with a literal name in the scratchpad (`<session folder>/scratchpad/<slug>-<what>`), give each output its own name, and delete nothing during the run. When you must delete, write the literal path.
 
 ## Commits
 One small commit for each review item (more when your brief says so). Each message's subject says what changed; its body ends with `(review item N)` before the `Co-Authored-By` line.

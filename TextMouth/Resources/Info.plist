@@ -2,6 +2,46 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- The app's source language, English: the String Catalog's source language
+	     (TextMouth/Localization/Localizable.xcstrings), and the language an
+	     unlisted preference falls back to. project.yml's developmentLanguage
+	     sets it. -->
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<!-- The languages of the interface (FR39): the String Catalog's 25, English first,
+	     then the rest in code-point order. With no Apple table in the bundle, this
+	     list and the *.lproj folders (each holds an InfoPlist.strings, which
+	     Scripts/l10n/pack.py writes) are what make the system's per-app language
+	     list and Bundle.main.preferredLocalizations offer them. `l10n.py check`
+	     fails when the list differs from the catalog's languages. -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>ar</string>
+		<string>bn</string>
+		<string>de</string>
+		<string>es</string>
+		<string>fa</string>
+		<string>fr</string>
+		<string>he</string>
+		<string>hi</string>
+		<string>id</string>
+		<string>it</string>
+		<string>ja</string>
+		<string>ko</string>
+		<string>nl</string>
+		<string>pl</string>
+		<string>pt-BR</string>
+		<string>ru</string>
+		<string>sv</string>
+		<string>th</string>
+		<string>tr</string>
+		<string>uk</string>
+		<string>ur</string>
+		<string>vi</string>
+		<string>zh-Hans</string>
+		<string>zh-Hant</string>
+	</array>
 	<key>CFBundleName</key>
 	<string>TextMouth</string>
 	<key>CFBundleDisplayName</key>
@@ -294,6 +334,68 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
+			<string>Audio and Video Converted with ffmpeg</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>wma</string>
+				<string>asf</string>
+				<string>wmv</string>
+				<string>spx</string>
+				<string>mpc</string>
+				<string>mp+</string>
+				<string>mka</string>
+				<string>mkv</string>
+				<string>webm</string>
+				<string>weba</string>
+				<string>avi</string>
+				<string>flv</string>
+				<string>ra</string>
+				<string>rm</string>
+				<string>rmvb</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.microsoft.windows-media-wma</string>
+				<string>com.microsoft.advanced-systems-format</string>
+				<string>com.microsoft.windows-media-wmv</string>
+				<string>com.textmouth.musepack</string>
+				<string>com.textmouth.matroska-audio</string>
+				<string>com.textmouth.matroska-video</string>
+				<string>org.webmproject.webm</string>
+				<string>com.textmouth.webm-audio</string>
+				<string>public.avi</string>
+				<string>com.adobe.flash.video</string>
+				<string>com.real.realaudio</string>
+				<string>com.real.realmedia</string>
+				<string>com.real.realmedia-vbr</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Lossless Audio Read by TextMouth</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>tta</string>
+				<string>wv</string>
+				<string>ape</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.textmouth.true-audio</string>
+				<string>com.textmouth.wavpack</string>
+				<string>com.textmouth.monkeys-audio</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
 			<string>ALAC Audio</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>
@@ -302,6 +404,26 @@
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>com.apple.coreaudio-format</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>MP4 / QuickTime Video</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>mp4</string>
+				<string>m4v</string>
+				<string>mov</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.mpeg-4</string>
+				<string>com.apple.m4v-video</string>
+				<string>com.apple.quicktime-movie</string>
 			</array>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
@@ -357,6 +479,48 @@
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>com.adobe.pdf</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Picture (PNG, JPEG, HEIC, or TIFF)</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>png</string>
+				<string>jpg</string>
+				<string>jpeg</string>
+				<string>heic</string>
+				<string>heif</string>
+				<string>tif</string>
+				<string>tiff</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.png</string>
+				<string>public.jpeg</string>
+				<string>public.heic</string>
+				<string>public.heif</string>
+				<string>public.tiff</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Comic Book Archive (CBZ)</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>cbz</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.textmouth.cbz</string>
 			</array>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
@@ -467,6 +631,44 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
+			<string>Kindle Book (MOBI)</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>mobi</string>
+				<string>prc</string>
+				<string>azw</string>
+				<string>azw3</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.textmouth.mobi</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Kindle Book (KFX)</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>kfx</string>
+				<string>kfx-zip</string>
+				<string>azw8</string>
+				<string>kpf</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.textmouth.kfx</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
 			<string>SSML Document</string>
 			<key>CFBundleTypeExtensions</key>
 			<array>
@@ -555,6 +757,38 @@
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>com.textmouth.opf-package</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>NLS BARD Braille Package</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>bopf</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.textmouth.bopf-package</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>CUE Sheet</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>cue</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.textmouth.cue-sheet</string>
 			</array>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
@@ -669,6 +903,72 @@
 		</dict>
 		<dict>
 			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.mobi</string>
+			<key>UTTypeDescription</key>
+			<string>Kindle Book (MOBI)</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>mobi</string>
+					<string>prc</string>
+					<string>azw</string>
+					<string>azw3</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/x-mobipocket-ebook</string>
+					<string>application/vnd.amazon.ebook</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.kfx</string>
+			<key>UTTypeDescription</key>
+			<string>Kindle Book (KFX)</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>kfx</string>
+					<string>kfx-zip</string>
+					<string>azw8</string>
+					<string>kpf</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.cbz</string>
+			<key>UTTypeDescription</key>
+			<string>Comic Book Archive (CBZ)</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>cbz</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/vnd.comicbook+zip</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
 			<string>com.textmouth.brf</string>
 			<key>UTTypeDescription</key>
 			<string>BRF Braille File</string>
@@ -757,6 +1057,176 @@
 				<key>public.mime-type</key>
 				<array>
 					<string>application/oebps-package+xml</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.bopf-package</string>
+			<key>UTTypeDescription</key>
+			<string>NLS BARD Braille Package Document</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.xml</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>bopf</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.cue-sheet</string>
+			<key>UTTypeDescription</key>
+			<string>CUE Sheet</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.plain-text</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>cue</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.musepack</string>
+			<key>UTTypeDescription</key>
+			<string>Musepack Audio</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.audio</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>mpc</string>
+					<string>mp+</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>audio/x-musepack</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.matroska-audio</string>
+			<key>UTTypeDescription</key>
+			<string>Matroska Audio</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.audio</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>mka</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>audio/x-matroska</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.matroska-video</string>
+			<key>UTTypeDescription</key>
+			<string>Matroska Video</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.movie</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>mkv</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>video/x-matroska</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.webm-audio</string>
+			<key>UTTypeDescription</key>
+			<string>WebM Audio</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.audio</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>weba</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>audio/webm</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.true-audio</string>
+			<key>UTTypeDescription</key>
+			<string>True Audio</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.audio</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>tta</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.wavpack</string>
+			<key>UTTypeDescription</key>
+			<string>WavPack Audio</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.audio</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>wv</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.textmouth.monkeys-audio</string>
+			<key>UTTypeDescription</key>
+			<string>Monkey's Audio</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.audio</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>ape</string>
 				</array>
 			</dict>
 		</dict>

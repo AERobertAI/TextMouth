@@ -1,4 +1,5 @@
 import XCTest
+import os
 @testable import TextMouth
 
 /// The setting that keeps the original of audio an import converts (FMT14):
@@ -72,12 +73,12 @@ final class ConvertedOriginalTests: XCTestCase {
         XCTAssertEqual(ConvertedOriginalWording.label, "Keep originals of converted audio")
         XCTAssertEqual(
             ConvertedOriginalWording.hint,
-            "Also keeps each audio file that an import converts, such as Ogg or AC-3, inside the book's package."
+            "Keeps each audio file an import converts, such as Ogg or AC-3, inside the book's package."
         )
         XCTAssertEqual(
             ConvertedOriginalWording.caption(keeping: true),
-            "When TextMouth converts audio at import, it keeps the original file too. An original takes about as "
-                + "much disk space as its converted file, or about twice as much when it is uncompressed. Export "
+            "TextMouth keeps the original file of audio it converts at import. An original takes about as "
+                + "much disk space as its converted file, or twice as much when uncompressed. Export "
                 + "offers it as the Original file. A feed episode's original is not kept: it can be downloaded again."
         )
         XCTAssertEqual(
@@ -169,16 +170,18 @@ final class ConvertedOriginalTests: XCTestCase {
         // the other thread's hop to the main thread through.
         let read = expectation(description: "read from another thread")
         read.assertForOverFulfill = false
-        var fromOtherThread: Bool?
+        // A lock holds the answer, since it crosses threads: Xcode 27 refuses a captured var
+        // here as a data race.
+        let fromOtherThread = OSAllocatedUnfairLock<Bool?>(initialState: nil)
         DispatchQueue.global().async {
             let value = FileImportService.keepsOriginalsOfConvertedAudio(feedLink: nil)
             Task { @MainActor in
-                fromOtherThread = value
+                fromOtherThread.withLock { $0 = value }
                 read.fulfill()
             }
         }
         wait(for: [read], timeout: 10)
-        XCTAssertEqual(fromOtherThread, true)
+        XCTAssertEqual(fromOtherThread.withLock { $0 }, true)
 
         setKeepsOriginals(false)
         XCTAssertFalse(FileImportService.keepsOriginalsOfConvertedAudio(feedLink: nil))
@@ -387,8 +390,7 @@ final class ConvertedOriginalTests: XCTestCase {
     func testTheOriginalFileHintMentionsConvertedAudio() {
         XCTAssertEqual(
             BookExportWording.hint(for: .originalFile),
-            "The book's own file, as it was imported; for an audiobook, its audio files as they were before "
-                + "TextMouth converted them."
+            "The book's file as imported; for an audiobook, its audio files before TextMouth converted them."
         )
     }
 
@@ -432,7 +434,8 @@ final class ConvertedOriginalTests: XCTestCase {
         let offer = BookExportService.offer(for: book)
         let outcome = BookExportService.export([offer], kinds: [.originalFile], to: destination)
 
-        XCTAssertEqual(offer.items.map(\.kind), [.audio, .originalFile])
+        // A book of two tracks offers its headings too (FMT24).
+        XCTAssertEqual(offer.items.map(\.kind), [.audio, .headings, .originalFile])
         XCTAssertEqual(offer.item(.originalFile)?.folderName, "\(stem) - Original Files")
         XCTAssertEqual(offer.item(.originalFile)?.files.map(\.path), ["01.ogg"])
         XCTAssertEqual(offer.item(.audio)?.files.count, 2)

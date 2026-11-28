@@ -55,6 +55,87 @@ final class BookmarkKeyboardAccessTests: XCTestCase {
         XCTAssertNil(added)
     }
 
+    /// The announcement names the number of the bookmark added, not how
+    /// many bookmarks there are: with bookmarks numbered 1 and 4, the new
+    /// one is 5, though the book then holds three (the bookmark work's
+    /// follow-up). The toggle and the panel's Add say it the same way.
+    func testAddingABookmarkAnnouncesItsOwnNumber() {
+        let gapped = [
+            Bookmark(number: 1, chapterIndex: 0, characterOffset: 10),
+            Bookmark(number: 4, chapterIndex: 1, characterOffset: 10),
+        ]
+        let reader = makeReader(bookmarks: gapped)
+        defer { reader.close() }
+
+        let panelAdd = recordingAnnouncements {
+            reader.addBookmarkAtCurrentPosition()
+        }
+        XCTAssertEqual(panelAdd.announcements.map(\.message), ["Bookmark 5 added"])
+
+        // A position well away from the others toggles a new one in.
+        reader.currentChapterIndex = 3
+        reader.currentCharacterOffset = 900
+        let toggled = recordingAnnouncements {
+            reader.toggleBookmarkAtCurrentPosition()
+        }
+        XCTAssertEqual(toggled.announcements.map(\.message), ["Bookmark 6 added"])
+    }
+
+    /// A command that adds nothing, because the library holds no record of
+    /// the book, says so in a full sentence rather than claiming a bookmark,
+    /// and says it after the panel's focus move has settled, which would
+    /// otherwise cut it off (REV11 F6): nothing is said at once.
+    func testAddingABookmarkForAnUnknownBookSaysNothingWasAdded() {
+        let reader = makeReader(isInLibrary: false)
+        defer { reader.close() }
+        var messages: [String] = []
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = { announcement, _ in messages.append(announcement.message) }
+        defer { VoiceOverAnnouncer.poster = previousPoster }
+
+        reader.addBookmarkAtCurrentPosition()
+        reader.toggleBookmarkAtCurrentPosition()
+        XCTAssertEqual(messages, [], "the sentence waits for the focus to settle")
+
+        // A later wait of the same length runs after the two before it.
+        let settled = expectation(description: "the focus has settled")
+        VoiceOverAnnouncer.afterSheetCloses { settled.fulfill() }
+        wait(for: [settled], timeout: 5)
+
+        let expected = ReaderViewModel.bookmarkNotAddedAnnouncement(bookTitle: "Bookmark Focus")
+        XCTAssertEqual(messages, [expected, expected])
+        XCTAssertTrue(expected.contains("no longer in the library"))
+        XCTAssertFalse(expected.contains("Nothing was changed"), "the reader's own list is emptied too")
+    }
+
+    /// Toggling a bookmark that is near the reading position, after the book
+    /// left the library, removes nothing: it says the book is gone, after
+    /// the focus has settled, as the add paths do, and never that a
+    /// bookmark was removed.
+    func testTogglingABookmarkForAnUnknownBookSaysItCouldNotBeRemoved() {
+        let nearby = [Bookmark(number: 7, chapterIndex: 0, characterOffset: 0)]
+        let reader = makeReader(bookmarks: nearby, isInLibrary: false)
+        defer { reader.close() }
+        var messages: [String] = []
+        let previousPoster = VoiceOverAnnouncer.poster
+        VoiceOverAnnouncer.poster = { announcement, _ in messages.append(announcement.message) }
+        defer { VoiceOverAnnouncer.poster = previousPoster }
+
+        reader.toggleBookmarkAtCurrentPosition()
+        XCTAssertEqual(messages, [], "the sentence waits for the focus to settle")
+
+        let settled = expectation(description: "the focus has settled")
+        VoiceOverAnnouncer.afterSheetCloses { settled.fulfill() }
+        wait(for: [settled], timeout: 5)
+
+        XCTAssertEqual(messages, [ReaderViewModel.bookmarkNotRemovedAnnouncement(bookTitle: "Bookmark Focus")])
+        XCTAssertEqual(
+            ReaderViewModel.bookmarkNotRemovedAnnouncement(bookTitle: "Bookmark Focus"),
+            "Could not remove the bookmark: \u{201C}Bookmark Focus\u{201D} is no longer in the library."
+        )
+        XCTAssertFalse(messages.contains { $0.contains("removed") && $0.hasPrefix("Bookmark") })
+    }
+
     // MARK: - Where focus goes
 
     /// The panel lists bookmarks by number, the order they were added in.

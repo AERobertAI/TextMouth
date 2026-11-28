@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 
 /// What the Record window shows and does (FR04): the microphones and the
@@ -58,6 +62,10 @@ final class RecordingWindowModel: ObservableObject {
     @Published private(set) var phase: Phase = .recordingControls
     /// The sentence under the controls saying what is happening.
     @Published private(set) var status: String = ""
+    /// How `status` is worded, kept so that a switch of the interface language words it again (`setStatus`).
+    private var statusWording: (() -> String)?
+    /// Listens for a switch of the interface language, which words the status again.
+    private var languageSubscription: AnyCancellable?
     /// The time recorded, read once a second while recording.
     @Published private(set) var elapsed: TimeInterval = 0
     /// The levels, read once a second while recording or paused.
@@ -196,6 +204,11 @@ final class RecordingWindowModel: ObservableObject {
                 // Published before the change: let it land, then respond.
                 Task { @MainActor in self?.recorderChanged(to: state) }
             }
+        // The status sentence stays on screen, so it is worded again in the new language after a switch (FR39).
+        languageSubscription = NotificationCenter.default.publisher(for: InterfaceLanguage.didChange)
+            .sink { [weak self] _ in
+                Task { @MainActor in self?.rewordStatus() }
+            }
         // Takes a crash or a forced quit left behind are found as the
         // window opens, off the main thread.
         Task { [weak self] in await self?.refreshRecoveredTakes() }
@@ -214,7 +227,8 @@ final class RecordingWindowModel: ObservableObject {
         guard devices.contains(where: { $0.id == id }), id != selectedDeviceID else { return }
         selectedDeviceID = id
         RecordingInputChoice.preference.write(id, to: store)
-        status = RecordingWording.ready(device: selectedDevice?.name)
+        let device = selectedDevice?.name
+        setStatus { RecordingWording.ready(device: device) }
     }
 
     /// Reads the microphones again, so the Microphone pop-up lists those
@@ -250,12 +264,12 @@ final class RecordingWindowModel: ObservableObject {
             } else if !connected.isEmpty {
                 tell(RecordingWording.microphonesConnected(connected.map(\.name)))
             } else if phase == .recordingControls, service.canStart {
-                status = RecordingWording.ready(device: fallback)
+                setStatus { RecordingWording.ready(device: fallback) }
             }
         } else if resolution.rememberedIsMissing, let fallback {
             tell(RecordingWording.rememberedMicrophoneMissing(fallback: fallback))
         } else {
-            status = RecordingWording.ready(device: fallback)
+            setStatus { RecordingWording.ready(device: fallback) }
         }
     }
 
@@ -352,7 +366,13 @@ final class RecordingWindowModel: ObservableObject {
     /// Opens System Settings at the Microphone privacy list.
     func openPrivacySettings() {
         guard let url = AudioInputPermission.privacySettingsURL else { return }
+        #if os(macOS)
         NSWorkspace.shared.open(url)
+        #else
+        // Phase 1 opens this app's page in iOS Settings; until then there
+        // is nothing to open.
+        _ = url
+        #endif
     }
 
     /// Tries again to save the take that could not be saved, under the
@@ -448,9 +468,10 @@ final class RecordingWindowModel: ObservableObject {
             tell(failure.errorDescription ?? "")
             service.reset()
         case .paused:
-            status = RecordingWording.paused
+            setStatus { RecordingWording.paused }
         case .recording:
-            status = RecordingWording.recording(device: selectedDevice?.name ?? "")
+            let device = selectedDevice?.name ?? ""
+            setStatus { RecordingWording.recording(device: device) }
         case .idle, .starting, .stopping, .finished:
             break
         }
@@ -464,7 +485,7 @@ final class RecordingWindowModel: ObservableObject {
     /// for Save Again or Discard Recording.
     private func save(_ take: RecordedTake, recoveredTitle: String? = nil) async {
         phase = .saving
-        status = RecordingWording.saving
+        setStatus { RecordingWording.saving }
         takeBeingSaved = take.url
         let bookTitle = recoveredTitle ?? TextImportPolicy.resolvedTitle(title.trimmingCharacters(in: .whitespacesAndNewlines))
         let policy = AudioOriginalPolicy.global(in: store)
@@ -482,7 +503,8 @@ final class RecordingWindowModel: ObservableObject {
             let book = try await saver(take, bookTitle, folderPath, policy)
             recoveredTitles[take.url] = nil
             phase = .saved(book)
-            status = RecordingWording.saved(title: book.title)
+            let savedTitle = book.title
+            setStatus { RecordingWording.saved(title: savedTitle) }
             announce(RecordingWording.savedAnnouncement(title: book.title))
             service.reset()
             elapsed = 0
@@ -568,9 +590,7 @@ final class RecordingWindowModel: ObservableObject {
         RecordingTakeFiles.remove(recovered.url)
         RecordingTakeFiles.remove(RecordingTakeFiles.encodingURL(for: recovered.url))
         recoveredTakes.removeAll { $0.id == recovered.id }
-        tell(RecordingWording.recoveredDiscarded(
-            RecordingWording.recoveredTake(startedAt: recovered.startedAt, duration: recovered.duration)
-        ))
+        tell(RecordingWording.recoveredDiscarded(startedAt: recovered.startedAt, duration: recovered.duration))
     }
 
     // MARK: Once a Second
@@ -651,16 +671,31 @@ final class RecordingWindowModel: ObservableObject {
 
     // MARK: Helpers
 
-    /// Shows `sentence` as the status and announces it.
+    /// Shows `sentence` as the status and announces it. The sentence is a finished text (some are made from what a
+    /// call just did, as pausing the readers), so it stays as it is if the interface language changes while it is on
+    /// screen; it replaces any wording `setStatus` kept, which would otherwise bring back an older sentence.
     private func tell(_ sentence: String) {
-        status = sentence
+        setStatus { sentence }
         announce(sentence)
+    }
+
+    /// Shows the sentence `wording` makes as the status, and keeps `wording` so a switch of the interface language words
+    /// it again (FR39).
+    private func setStatus(_ wording: @escaping () -> String) {
+        statusWording = wording
+        status = wording()
+    }
+
+    /// Words the status again in the language now in use.
+    private func rewordStatus() {
+        guard let statusWording else { return }
+        status = statusWording()
     }
 
     /// The folder choices: the top of the library, then each folder's path
     /// in order.
     private static func folderChoices(_ paths: [String]) -> [String] {
-        [""] + paths.filter { !$0.isEmpty }.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        [""] + paths.filter { !$0.isEmpty }.sortedStably { $0.localizedStandardCompare($1) == .orderedAscending }
     }
 
     // MARK: The App's

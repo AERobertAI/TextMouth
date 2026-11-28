@@ -60,71 +60,71 @@ enum AudioManifestProblem: LocalizedError, Equatable {
 
     /// What an entry of tracks is, said after each problem with an entry's
     /// file and heading.
-    private static let entryKinds = "An entry is a track, with file, or a group heading, with heading."
+    private static let entryKinds = "An entry is a track, with file, or a group heading, with heading." // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
 
     /// How names are spelled, said after names that match no audio file.
     private static let spelling =
-        "Names are written as seen from the manifest's own folder, exactly, with the letters' case and the extension."
+        "Names are written as seen from the manifest's own folder, exactly, with the letters' case and the extension." // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
 
     var errorDescription: String? {
         switch self {
         case .unreadable(let reason):
-            return "manifest.json could not be read: \(Self.sentence(reason))"
+            return "manifest.json could not be read: \(Self.sentence(reason))" // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         case .richText:
-            return "manifest.json is saved as rich text, and must be plain text. "
-                + "In TextEdit, choose Format, Make Plain Text, then save it."
+            return "manifest.json is saved as rich text, and must be plain text. " // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
+                + "In TextEdit, choose Format, Make Plain Text, then save it." // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         case .invalidJSON(let reason, let hasCurlyQuotes):
             let quotes = hasCurlyQuotes
-                ? " It holds curly quotation marks, which TextEdit's Smart Quotes make as you type; "
-                    + "JSON needs straight ones. Turn off Smart Quotes under Edit, Substitutions, "
-                    + "and type the quotation marks again."
+                ? " It holds curly quotation marks, which TextEdit's Smart Quotes make as you type; " // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
+                    + "JSON needs straight ones. Turn off Smart Quotes under Edit, Substitutions, " // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
+                    + "and type the quotation marks again." // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
                 : ""
-            return "manifest.json is not valid JSON: \(Self.sentence(reason))\(quotes)"
+            return "manifest.json is not valid JSON: \(Self.sentence(reason))\(quotes)" // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         case .notAnObject(let found):
-            return "manifest.json must hold one object, in curly braces, but it holds \(found)."
+            return "manifest.json must hold one object, in curly braces, but it holds \(found)." // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         case .unknownKeys(let keys, nil):
-            let known = CountWording.list(AudioManifest.CodingKeys.allCases.map(\.rawValue))
-            return "manifest.json has \(Self.keys(keys)) TextMouth doesn't know: \(Self.quotedList(keys)). "
-                + "The keys it knows are \(known)."
+            let known = Self.englishList(AudioManifest.CodingKeys.allCases.map(\.rawValue))
+            return "manifest.json has \(Self.keys(keys)) TextMouth doesn't know: \(Self.quotedList(keys)). " // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
+                + "The keys it knows are \(known)." // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         case .unknownKeys(let keys, let entry?):
-            return "manifest.json has \(Self.keys(keys)) TextMouth doesn't know in entry \(entry) of tracks: "
+            return "manifest.json has \(Self.keys(keys)) TextMouth doesn't know in entry \(entry) of tracks: " // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
                 + "\(Self.quotedList(keys)). \(Self.entryKeys)"
         case .wrongKind(let place, let expected, let found):
-            return "manifest.json: \(place) must be \(expected), not \(found)."
+            return "manifest.json: \(place) must be \(expected), not \(found)." // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         case .pauseOutOfRange(let place, let value):
             let range = AudioManifest.pauseRangeMs
-            return "manifest.json: \(place) is \(Self.number(value)), but a pause is from "
-                + "\(Self.number(range.lowerBound)) to \(Self.number(range.upperBound)) milliseconds."
+            return "manifest.json: \(place) is \(Self.number(value)), but a pause is from " // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
+                + "\(Self.number(range.lowerBound)) to \(Self.number(range.upperBound)) milliseconds." // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         case .fileAndHeading(let entry):
-            return "manifest.json: entry \(entry) of tracks has both file and heading. \(Self.entryKinds)"
+            return "manifest.json: entry \(entry) of tracks has both file and heading. \(Self.entryKinds)" // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         case .neitherFileNorHeading(let entry):
-            return "manifest.json: entry \(entry) of tracks has neither file nor heading. \(Self.entryKinds)"
+            return "manifest.json: entry \(entry) of tracks has neither file nor heading. \(Self.entryKinds)" // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         case .trackKeysOnHeading(let keys, let entry):
-            return "manifest.json: entry \(entry) of tracks is a group heading, which takes heading alone, "
-                + "not \(CountWording.list(keys))."
+            return "manifest.json: entry \(entry) of tracks is a group heading, which takes heading alone, " // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
+                + "not \(Self.englishList(keys))." // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         case .empty(let key, let entry):
             let need = key == AudioManifestEntry.CodingKeys.heading.rawValue
-                ? "A group heading needs words."
-                : "A track needs its file's name."
-            return "manifest.json: the \(key) in entry \(entry) of tracks is empty. \(need)"
+                ? "A group heading needs words." // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
+                : "A track needs its file's name." // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
+            return "manifest.json: the \(key) in entry \(entry) of tracks is empty. \(need)" // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         case .tracksWithOlderKeys(let keys):
-            return "manifest.json has tracks together with \(CountWording.list(keys)). "
-                + "Use tracks alone: it gives the book's order and titles itself."
+            return "manifest.json has tracks together with \(Self.englishList(keys)). " // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
+                + "Use tracks alone: it gives the book's order and titles itself." // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         case .missingFiles(let files, let key):
             let named = files.count == 1
-                ? "a file in \(key) that isn't"
-                : "\(files.count) files in \(key) that aren't"
-            return "manifest.json names \(named) among the archive's audio files: \(Self.quotedList(files)). "
+                ? "a file in \(key) that isn't" // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
+                : "\(files.count) files in \(key) that aren't" // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
+            return "manifest.json names \(named) among the archive's audio files: \(Self.quotedList(files)). " // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
                 + Self.spelling
         case .repeatedFiles(let files):
-            let listed = files.count == 1 ? "a file" : "\(files.count) files"
-            return "manifest.json lists \(listed) more than once in tracks: \(Self.quotedList(files))."
+            let listed = files.count == 1 ? "a file" : "\(files.count) files" // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
+            return "manifest.json lists \(listed) more than once in tracks: \(Self.quotedList(files))." // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         case .headingWithoutTrack(let heading, let entry, let atEnd):
-            let before = atEnd ? "the end of tracks" : "the next heading"
-            return "manifest.json: the group heading “\(heading)”, entry \(entry) of tracks, "
-                + "has no track after it before \(before)."
+            let before = atEnd ? "the end of tracks" : "the next heading" // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
+            return "manifest.json: the group heading “\(heading)”, entry \(entry) of tracks, " // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
+                + "has no track after it before \(before)." // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         case .unreadableValue(let description):
-            return "manifest.json: \(description)."
+            return "manifest.json: \(description)." // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         }
     }
 
@@ -132,13 +132,13 @@ enum AudioManifestProblem: LocalizedError, Equatable {
     /// in one.
     private static var entryKeys: String {
         let track = AudioManifestEntry.CodingKeys.allCases.filter { $0 != .heading }.map(\.rawValue)
-        return "A track's keys are \(CountWording.list(track)); a group heading's is "
+        return "A track's keys are \(Self.englishList(track)); a group heading's is " // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
             + "\(AudioManifestEntry.CodingKeys.heading.rawValue)."
     }
 
     /// "a key" or "keys", as many as `keys` holds.
     private static func keys(_ keys: [String]) -> String {
-        keys.count == 1 ? "a key" : "keys"
+        keys.count == 1 ? "a key" : "keys" // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
     }
 
     /// `names` in quotation marks, as a sentence lists them, the first five
@@ -146,7 +146,14 @@ enum AudioManifestProblem: LocalizedError, Equatable {
     static func quotedList(_ names: [String]) -> String {
         let shown = names.prefix(5).map { "“\($0)”" }
         let more = names.count - shown.count
-        return CountWording.list(more > 0 ? shown + ["\(more) more"] : Array(shown))
+        return Self.englishList(more > 0 ? shown + ["\(more) more"] : Array(shown))
+    }
+
+    /// `items` as an English list, "a, b, and c", whatever region the Mac is
+    /// set to, since these sentences are a parser's English (question 3) and
+    /// a localized list's "y" would put another language inside one.
+    private static func englishList(_ items: [String]) -> String {
+        CountWording.list(items, locale: Locale(identifier: "en_US"))
     }
 
     /// `value` as a person writes it: a whole number without a decimal
@@ -253,7 +260,7 @@ enum AudioManifestCheck {
         // carriage return before a line feed ends a line too.
         let lines = String(decoding: data.prefix(index), as: UTF8.self).components(separatedBy: "\n")
         let column = (lines.last ?? "").count + 1
-        return "\(words[..<place.lowerBound]) around line \(lines.count), column \(column)."
+        return "\(words[..<place.lowerBound]) around line \(lines.count), column \(column)." // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
     }
 
     // MARK: The Keys and Their Values
@@ -287,7 +294,7 @@ enum AudioManifestCheck {
     ///   `.tracksWithOlderKeys`.
     private static func checkTopLevel(_ object: [String: Any]) throws {
         let known = Set(AudioManifest.CodingKeys.allCases.map(\.rawValue))
-        let unknown = object.keys.filter { !known.contains($0) }.sorted()
+        let unknown = object.keys.filter { !known.contains($0) }.sortedStably()
         guard unknown.isEmpty else {
             throw AudioManifestProblem.unknownKeys(unknown, entry: nil)
         }
@@ -309,7 +316,7 @@ enum AudioManifestCheck {
             case .chapters:
                 try require(value, .object, at: name)
                 let titles = (value as? [String: Any]) ?? [:]
-                for file in titles.keys.sorted() {
+                for file in titles.keys.sortedStably() {
                     try require(titles[file] ?? NSNull(), .text, at: "the title for “\(file)” in chapters")
                 }
             }
@@ -334,7 +341,7 @@ enum AudioManifestCheck {
         let known = Set(Key.allCases.map(\.rawValue))
         for (offset, entry) in entries.enumerated() {
             let number = offset + 1
-            let place = "entry \(number) of tracks"
+            let place = "entry \(number) of tracks" // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
             try require(entry, .entry, at: place)
             guard let fields = entry as? [String: Any] else {
                 // A track given by its file's name alone.
@@ -343,7 +350,7 @@ enum AudioManifestCheck {
                 }
                 continue
             }
-            let unknown = fields.keys.filter { !known.contains($0) }.sorted()
+            let unknown = fields.keys.filter { !known.contains($0) }.sortedStably()
             guard unknown.isEmpty else {
                 throw AudioManifestProblem.unknownKeys(unknown, entry: number)
             }
@@ -419,13 +426,13 @@ enum AudioManifestCheck {
         }
         if let number = value as? NSNumber {
             guard isNumber(number) else { return number.boolValue ? "true" : "false" }
-            return "a number"
+            return "a number" // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         }
         if value is [Any] {
-            return "a list"
+            return "a list" // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         }
         if value is [String: Any] {
-            return "an object"
+            return "an object" // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         }
         return "null"
     }
@@ -442,13 +449,13 @@ enum AudioManifestCheck {
         do {
             return try AudioManifest.decoded(from: data)
         } catch let DecodingError.keyNotFound(key, context) {
-            throw AudioManifestProblem.unreadableValue("\(place(of: context.codingPath)) has no \(key.stringValue)")
+            throw AudioManifestProblem.unreadableValue("\(place(of: context.codingPath)) has no \(key.stringValue)") // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         } catch let DecodingError.typeMismatch(_, context), let DecodingError.valueNotFound(_, context) {
-            throw AudioManifestProblem.unreadableValue("\(place(of: context.codingPath)) holds a value of the wrong kind")
+            throw AudioManifestProblem.unreadableValue("\(place(of: context.codingPath)) holds a value of the wrong kind") // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         } catch let DecodingError.dataCorrupted(context) {
-            throw AudioManifestProblem.unreadableValue("\(place(of: context.codingPath)) can't be read")
+            throw AudioManifestProblem.unreadableValue("\(place(of: context.codingPath)) can't be read") // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         } catch {
-            throw AudioManifestProblem.unreadableValue("its contents can't be read (\(error.localizedDescription))")
+            throw AudioManifestProblem.unreadableValue("its contents can't be read (\(error.localizedDescription))") // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
         }
     }
 
@@ -461,14 +468,14 @@ enum AudioManifestCheck {
         while position < path.count {
             let key = path[position]
             if position + 1 < path.count, let index = path[position + 1].intValue {
-                places.append("entry \(index + 1) of \(key.stringValue)")
+                places.append("entry \(index + 1) of \(key.stringValue)") // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
                 position += 2
             } else {
                 places.append(key.stringValue)
                 position += 1
             }
         }
-        return places.isEmpty ? "its top level" : places.reversed().joined(separator: " in ")
+        return places.isEmpty ? "its top level" : places.reversed().joined(separator: " in ") // l10n: no (a parser's damage reason: the faults of a hand-written manifest.json stay English inside the import's translated failure, question 3)
     }
 
     // MARK: The Files and the Headings
@@ -497,7 +504,7 @@ enum AudioManifestCheck {
         let named: [(key: AudioManifest.CodingKeys, files: [String])] = [
             (.tracks, listed),
             (.order, manifest.order ?? []),
-            (.chapters, (manifest.chapters ?? [:]).keys.sorted())
+            (.chapters, (manifest.chapters ?? [:]).keys.sortedStably())
         ]
         for (key, files) in named {
             let missing = uniqued(files.filter { !available.contains($0) })

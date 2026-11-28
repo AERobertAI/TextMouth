@@ -9,7 +9,7 @@ The full hosted suite is about 6300 tests and takes 4 to 5 minutes; the orchestr
 ## Ground truth
 
 - XCTest prints, per test: `Test Case '-[TextMouthProductionTests.FooTests testBar]' started.` and then `Test Case '-[TextMouthProductionTests.FooTests testBar]' passed (0.123 seconds).`; a failing test prints `... failed (0.5 seconds).`; a skipped test prints `... skipped (0.001 seconds).` (check this in a real log); per suite `Test Suite 'FooTests' passed at ...` and `Executed 12 tests, with 1 test skipped and 0 failures (0 unexpected) in 1.2 (1.3) seconds`.
-- Real logs to learn the format from sit in the shared scratchpad folder `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/8d971e15-7103-46cf-b45e-5c4d099f2f74/scratchpad/` (`ls -t` it; names like `feedopts-*-build*.log`, `fixes-*-build*.log`, `testkit-*-build*.log`; they are other agents' working logs, so READ ONLY, and read them with `grep -E "Test Case '.*(passed|failed|skipped)" file | head`, never whole). Copy a few real lines into your selftest as canned text.
+- Real logs to learn the format from sit in the shared scratchpad folder `<session folder>/scratchpad/` (`ls -t` it; names like `feedopts-*-build*.log`, `fixes-*-build*.log`, `testkit-*-build*.log`; they are other agents' working logs, so READ ONLY, and read them with `grep -E "Test Case '.*(passed|failed|skipped)" file | head`, never whole). Copy a few real lines into your selftest as canned text.
 - A test may run twice in one log (a retry or a repeated class); keep the last result per test, and count the runs.
 
 ## The command

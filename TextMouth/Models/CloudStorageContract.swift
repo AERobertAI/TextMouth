@@ -28,11 +28,25 @@ enum CloudProvider: Equatable, Sendable {
     /// The service's name as TextMouth shows and speaks it.
     var displayName: String {
         switch self {
-        case .iCloudDrive: return "iCloud Drive"
-        case .googleDrive: return "Google Drive"
-        case .dropbox: return "Dropbox"
+        case .iCloudDrive: return "iCloud Drive" // l10n: no (a product name)
+        case .googleDrive: return "Google Drive" // l10n: no (a product name)
+        case .dropbox: return "Dropbox" // l10n: no (a product name)
         case .other(let name): return name
         }
+    }
+
+    /// `provider`'s name inside a sentence, or "the cloud service" when the
+    /// service is unknown.
+    static func nameInSentence(_ provider: CloudProvider?) -> String {
+        // Translators: How a sentence names the cloud service when it is unknown, in the middle of the sentence, so it has no capital letter.
+        provider?.displayName ?? InterfaceText.line("common.theCloudService", "the cloud service")
+    }
+
+    /// `provider`'s name where a sentence begins, or "The cloud service" when
+    /// the service is unknown, capitalized as a braille display shows it.
+    static func nameStartingSentence(_ provider: CloudProvider?) -> String {
+        // Translators: How a sentence names the cloud service when it is unknown, at the start of the sentence, so it has a capital letter.
+        provider?.displayName ?? InterfaceText.line("cloudProvider.nameStartingSentence", "The cloud service")
     }
 }
 
@@ -77,6 +91,26 @@ enum CloudItemState: Equatable, Sendable {
     case missing
 }
 
+/// Why a file's copy in the cloud can't be taken as proven, so Remove
+/// Download refuses to remove the copy on this Mac (Phase 0 of the
+/// local-first design: the cloud copy is the only one once the download is
+/// gone, so the sync service's silence is not enough).
+enum CloudCopyDoubt: Equatable, Sendable {
+    /// The sync service gave no upload state for the file, which counts as
+    /// not uploaded.
+    case uploadNotReported
+    /// The sync service reported an error uploading the file, in its words.
+    case uploadFailed(String)
+    /// The sync service holds conflicting versions of the file.
+    case inConflict
+    /// The sync service reported that the copy on this Mac is not the
+    /// current version (a newer one exists): waiting can change that.
+    case notCurrent
+    /// The sync service reports no downloading status for the file at all,
+    /// so it never says the copy here is current: waiting changes nothing.
+    case currentNotReported
+}
+
 /// One file's cloud state, with the sync details the commands need.
 struct CloudItemStatus: Equatable, Sendable {
     /// Where the file's content is.
@@ -90,6 +124,39 @@ struct CloudItemStatus: Equatable, Sendable {
     var hasUnresolvedConflicts: Bool
     /// The sync service's last download error in words, when it reported one.
     var downloadError: String?
+    /// Whether the sync service said anything at all about the file's
+    /// upload. False when it gave no upload flag for a file whose content is
+    /// on this Mac: `isUploaded` is then false too, since an unknown upload
+    /// state counts as not uploaded (Phase 0 of the local-first design), and
+    /// this tells that apart from changes that really wait to upload.
+    var isUploadReported: Bool = true
+    /// The sync service's last upload error in words, when it reported one.
+    var uploadError: String?
+    /// Whether the content on this Mac is the sync service's current
+    /// version, by its downloading status. False when the status is any
+    /// other, or none, for a file whose content is on this Mac.
+    var isCurrent: Bool = true
+    /// Whether the sync service reported any downloading status for the
+    /// file. False when it gave none, which no wait changes, and which
+    /// `isCurrent` then counts as not current.
+    var isCurrentReported: Bool = true
+
+    /// Why the cloud's copy of this file can't be taken as proven, or nil
+    /// when the sync service says it is uploaded, free of error and
+    /// conflict, and that the copy on this Mac is the current one. Only a
+    /// file whose content is on this Mac is asked: a download is never
+    /// removed on less (`BookCloudStorageService.removeDownload(of:)`).
+    ///
+    /// A file with changes still to upload is not a doubt but a plain
+    /// "not uploaded yet" (`BookCloudError.notUploaded`), which the caller
+    /// asks `isUploaded` and `isUploadReported` for first.
+    var cloudCopyDoubt: CloudCopyDoubt? {
+        if let uploadError { return .uploadFailed(uploadError) }
+        if hasUnresolvedConflicts { return .inConflict }
+        if !isUploadReported { return .uploadNotReported }
+        if !isCurrent { return isCurrentReported ? .notCurrent : .currentNotReported }
+        return nil
+    }
 
     /// The status of a file that no sync service manages.
     static func local(byteCount: Int64?) -> CloudItemStatus {
@@ -250,18 +317,30 @@ enum BookCloudState: Equatable, Sendable {
     var visibleNote: String? {
         switch self {
         case .local: return nil
-        case .downloaded: return "Downloaded"
-        case .inCloud: return "In Cloud"
-        case .downloading(let progress): return "Downloading \(progress.percent)%"
-        case .downloadFailed: return "Download Failed"
-        case .waitingForSync: return "Waiting for Sync"
+        case .downloaded:
+            // Translators: Note in the library list: every file of the book is on this Mac.
+            return InterfaceText.line("common.downloaded", "Downloaded")
+        case .inCloud:
+            // Translators: Note in the library list: some of the book's files are only in the cloud.
+            return InterfaceText.line("bookCloudState.visibleNote.inCloud", "In Cloud")
+        case .downloading(let progress):
+            // Translators: Note in the library list while a book downloads. %lld is the percent done, from 0 to 100; the percent sign follows it.
+            return InterfaceText.line("bookCloudState.visibleNote.downloading", "Downloading \(number: progress.percent)%")
+        case .downloadFailed:
+            // Translators: Note in the library list: the book's last download failed.
+            return InterfaceText.line("common.downloadFailed", "Download Failed")
+        case .waitingForSync:
+            // Translators: Note in the library list: the book's files have not arrived on this Mac from the sync service yet.
+            return InterfaceText.line("bookCloudState.visibleNote.waitingForSync", "Waiting for Sync")
         }
     }
 
     /// The same note as VoiceOver speaks it, or nil for none.
     var spokenNote: String? {
         switch self {
-        case .downloading(let progress): return "Downloading, \(progress.percent) percent"
+        case .downloading(let progress):
+            // Translators: What VoiceOver says of a book that is downloading, in the library list. %lld is the percent done, from 0 to 100.
+            return InterfaceText.line("bookCloudState.spokenNote.downloading", "Downloading, \(number: progress.percent) percent")
         default: return visibleNote
         }
     }
@@ -277,44 +356,251 @@ enum BookCloudError: Error, Equatable, Sendable {
     case provider(String)
     /// Remove Download refused: some of the book's changes are not uploaded yet.
     case notUploaded
+    /// Remove Download refused: the sync service's own word doesn't prove that
+    /// the cloud holds the book's current files, for this reason (no upload
+    /// state given, an upload error, a conflict, or a copy here that isn't
+    /// said to be current).
+    case cloudCopyNotProven(CloudCopyDoubt)
     /// Remove Download refused: the book is open in a reader.
     case bookIsOpen
     /// Remove Download refused: the book is kept on this Mac (Keep on This
     /// Mac, `KeptBooks`).
     case keptOnThisMac
+    /// Remove Download refused: the book is on the reading list, which this
+    /// Mac keeps downloaded in a cloud library (`KeptBooks`), and the
+    /// listener did not keep the book themselves.
+    case keptForReadingList
+    /// Remove Download refused: the listener keeps the book themselves, and
+    /// it is on the reading list too, so both must be let go.
+    case keptOnThisMacAndForReadingList
     /// Remove Download failed: the sync service refused or failed to remove
     /// the local copy of one of the book's files, with its message.
     case removalFailed(String)
     /// The book's package is not on this Mac.
     case packageMissing
+    /// Remove Download refused: the book is kept on all devices that sync
+    /// (Keep on All Devices, FR43).
+    case keptOnAllDevices
+    /// Remove Download refused: the book is in use, being exported,
+    /// transcribed, edited, or played (FR46).
+    case bookInUse
+    /// Remove Download refused in a synced library: the sync folder is not
+    /// proven to hold every file of the book, or the files could not be
+    /// taken off this device (FR46).
+    case syncRemoval(SyncRemovalRefusal)
+
+    /// Why the operation did not happen, in a few English words for a debug
+    /// log line, which stays English whatever language the interface speaks.
+    var logReason: String {
+        switch self {
+        case .offline:
+            return "offline" // l10n: no (debug log text)
+        case .stalled(let seconds):
+            return "stalled for \(seconds) seconds" // l10n: no (debug log text)
+        case .provider(let message), .removalFailed(let message):
+            return "the sync service said: \(message)" // l10n: no (debug log text)
+        case .notUploaded:
+            return "changes not uploaded" // l10n: no (debug log text)
+        case .cloudCopyNotProven(let doubt):
+            return BookCloudWording.logReason(doubt)
+        case .bookIsOpen:
+            return "the book is open" // l10n: no (debug log text)
+        case .keptOnThisMac:
+            return "the book is kept on this Mac" // l10n: no (debug log text)
+        case .keptForReadingList:
+            return "the book is kept on this Mac for the reading list" // l10n: no (debug log text)
+        case .keptOnThisMacAndForReadingList:
+            return "the book is kept on this Mac and for the reading list" // l10n: no (debug log text)
+        case .packageMissing:
+            return "the package is not on this Mac" // l10n: no (debug log text)
+        case .keptOnAllDevices:
+            return "the book is kept on all devices" // l10n: no (debug log text)
+        case .bookInUse:
+            return "the book is in use" // l10n: no (debug log text)
+        case .syncRemoval(let refusal):
+            return refusal.logReason
+        }
+    }
+
+    /// The sentence that sends the listener to Stop Keeping on This Mac.
+    private static var stopKeepingFirst: String {
+        stopKeepingFirst(LibraryCloudWording.stopKeepingName)
+    }
+
+    /// The sentence that sends the listener to the command `command` first (Stop Keeping on This Mac, or Stop
+    /// Keeping on All Devices).
+    private static func stopKeepingFirst(_ command: String) -> String {
+        // Translators: Sentence of why Remove Download was refused: the listener must first choose a command. %@ is the command's name, Stop Keeping on This Mac, as the Library menu shows it.
+        InterfaceText.line("bookCloudError.stopKeepingFirst", "Choose \(command) first.")
+    }
 
     /// A sentence the interface shows and VoiceOver speaks, naming `provider`
     /// (or "the cloud service" when it is unknown, capitalized where it
     /// begins a sentence, as a braille display shows).
-    func explanation(in provider: CloudProvider?) -> String {
-        let service = provider?.displayName ?? "the cloud service"
-        let serviceStartingSentence = provider?.displayName ?? "The cloud service"
+    func explanation(in provider: CloudProvider?, isPhone: Bool = ThisDevice.isPhone) -> String {
+        let service = CloudProvider.nameInSentence(provider)
+        let serviceStartingSentence = CloudProvider.nameStartingSentence(provider)
         switch self {
         case .offline:
-            return "This Mac is offline, so the book can't be downloaded from \(service). "
-                + "Connect to the internet and try again."
+            return SentenceWording.joined([
+                isPhone
+                    // Translators: First sentence of why a book can't be downloaded on an iPhone: the iPhone is offline. %@ is the cloud service's name, or "the cloud service" when it is unknown.
+                    ? InterfaceText.line("bookCloudError.offline.downloadedPhone", "This iPhone is offline, so the book can't be downloaded from \(service).")
+                    // Translators: First sentence of why a book can't be downloaded: the Mac is offline. %@ is the cloud service's name, or "the cloud service" when it is unknown.
+                    : InterfaceText.line("bookCloudError.offline.downloaded", "This Mac is offline, so the book can't be downloaded from \(service)."),
+                // Translators: Second sentence of why a book can't be downloaded: what to do about being offline.
+                InterfaceText.line("bookCloudError.offline.internet", "Connect to the internet and try again."),
+            ])
         case .stalled(let seconds):
-            return "\(serviceStartingSentence) hasn't downloaded anything for \(seconds) seconds. "
-                + "It may be paused, signed out, or not running."
+            return SentenceWording.joined([
+                // Translators: First sentence of why a book download stopped: the cloud service made no progress. %1$@ is the cloud service's name, or "The cloud service" when it is unknown; %2$lld is the number of seconds.
+                InterfaceText.line("bookCloudError.stalled.downloaded", "\(serviceStartingSentence) hasn't downloaded anything for \(number: seconds) seconds."),
+                // Translators: Second sentence of why a book download stopped: the likely causes. "It" is the cloud service.
+                InterfaceText.line("bookCloudError.stalled.running", "It may be paused, signed out, or not running."),
+            ])
         case .provider(let message):
-            return "\(serviceStartingSentence) couldn't download the book: \(message)"
+            // Translators: Why a book download failed. %1$@ is the cloud service's name, or "The cloud service" when it is unknown; %2$@ is the service's own message.
+            return InterfaceText.line("bookCloudError.provider", "\(serviceStartingSentence) couldn't download the book: \(message)")
         case .notUploaded:
-            return "Some changes to this book haven't been uploaded to \(service) yet, "
-                + "so its download can't be removed. Try again in a moment."
+            return SentenceWording.joined([
+                // Translators: First sentence of why Remove Download was refused: some changes are not uploaded. %@ is the cloud service's name, or "the cloud service" when it is unknown.
+                InterfaceText.line("bookCloudError.notUploaded", "Some changes to this book haven't been uploaded to \(service) yet, so its download can't be removed."),
+                // Translators: Last sentence of why a cloud operation was refused for now: wait and try again.
+                InterfaceText.line("common.tryAgainInAMoment", "Try again in a moment."),
+            ])
+        case .cloudCopyNotProven(let doubt):
+            return BookCloudWording.removalRefusal(
+                doubt,
+                service: service,
+                serviceStartingSentence: serviceStartingSentence,
+                provider: provider
+            )
         case .bookIsOpen:
-            return "The book is open, so its download can't be removed. Close it first."
+            // Translators: Why Remove Download was refused: the book is open in a reader.
+            return InterfaceText.line("bookCloudError.bookIsOpen", "The book is open, so its download can't be removed. Close it first.")
         case .keptOnThisMac:
-            return "The book is kept on this Mac, so its download can't be removed. "
-                + "Choose Stop Keeping on This Mac first."
+            return SentenceWording.joined([
+                // Translators: First sentence of why Remove Download was refused: the listener chose Keep on This Mac for the book.
+                InterfaceText.line("bookCloudError.keptOnThisMac", "The book is kept on this Mac, so its download can't be removed."),
+                Self.stopKeepingFirst,
+            ])
+        case .keptForReadingList:
+            return SentenceWording.joined([
+                // Translators: First sentence of why Remove Download was refused: the reading list keeps the book downloaded.
+                InterfaceText.line("bookCloudError.keptForReadingList", "The book is on the reading list, which this Mac keeps downloaded, so its download can't be removed."),
+                LibraryCloudWording.letGoOfOneBookFirst,
+            ])
+        case .keptOnThisMacAndForReadingList:
+            return SentenceWording.joined([
+                // Translators: First sentence of why Remove Download was refused: the listener keeps the book and the reading list keeps it too.
+                InterfaceText.line("bookCloudError.keptOnThisMacAndForReadingList", "The book is kept on this Mac, and is on the reading list, which this Mac keeps downloaded, so its download can't be removed."),
+                Self.stopKeepingFirst,
+                LibraryCloudWording.thenLetGoOfOneBook,
+            ])
         case .removalFailed(let message):
-            return "\(serviceStartingSentence) couldn't remove the book's download: \(message)"
+            // Translators: Why Remove Download failed. %1$@ is the cloud service's name, or "The cloud service" when it is unknown; %2$@ is the service's own message.
+            return InterfaceText.line("bookCloudError.removalFailed", "\(serviceStartingSentence) couldn't remove the book's download: \(message)")
         case .packageMissing:
-            return "The book's files aren't on this Mac yet. \(serviceStartingSentence) may still be syncing them."
+            if isPhone {
+                // Translators: Why a book can't be used yet on an iPhone: its files have not arrived. %@ is the cloud service's name, or "The cloud service" when it is unknown.
+                return InterfaceText.line("bookCloudError.packageMissingPhone", "The book's files aren't on this iPhone yet. \(serviceStartingSentence) may still be syncing them.")
+            }
+            // Translators: Why a book can't be used yet: its files have not arrived. %@ is the cloud service's name, or "The cloud service" when it is unknown.
+            return InterfaceText.line("bookCloudError.packageMissing", "The book's files aren't on this Mac yet. \(serviceStartingSentence) may still be syncing them.")
+        case .keptOnAllDevices:
+            return SentenceWording.joined([SyncWording.removeKeptOnAllDevices, Self.stopKeepingFirst(SyncWording.stopKeepingTitle)])
+        case .bookInUse:
+            return SyncWording.removeBookInUse
+        case .syncRemoval(let refusal):
+            return SyncWording.removalRefusal(refusal, isPhone: isPhone)
+        }
+    }
+}
+
+/// The words of a Remove Download that the cloud's copy doesn't prove safe,
+/// built in one place for the alert, VoiceOver, and a braille display alike.
+enum BookCloudWording {
+    /// Why a download can't be removed, for `doubt`, naming the service
+    /// (`service`, and `serviceStartingSentence` where it begins a
+    /// sentence). Each says what to do next, since the only copy of the
+    /// book may be the one on this Mac.
+    static func removalRefusal(
+        _ doubt: CloudCopyDoubt,
+        service: String,
+        serviceStartingSentence: String,
+        provider: CloudProvider? = nil
+    ) -> String {
+        switch doubt {
+        case .uploadNotReported:
+            return SentenceWording.joined([
+                // Translators: First sentence of why Remove Download was refused: the cloud service gave no upload state. %@ is the cloud service's name, or "The cloud service" when it is unknown.
+                InterfaceText.line("bookCloud.hasntSaidEvery", "\(serviceStartingSentence) hasn't said that every file of this book is uploaded, so its download can't be removed: the only copy might be on this Mac."),
+                // Translators: Last sentence of why a cloud operation was refused for now: wait and try again.
+                InterfaceText.line("common.tryAgainInAMoment", "Try again in a moment."),
+            ])
+        case .uploadFailed(let message):
+            // The drive's own words end a sentence, whether or not they end in a period.
+            let reason = message.hasSuffix(".") || message.hasSuffix("!") || message.hasSuffix("?") ? message : message + "."
+            return SentenceWording.joined([
+                // Translators: First sentence of why Remove Download was refused: the upload failed. %1$@ is the cloud service's name, or "The cloud service" when it is unknown; %2$@ is the service's own message, which ends with a full stop.
+                InterfaceText.line("bookCloud.couldntUpload", "\(serviceStartingSentence) couldn't upload this book: \(reason)"),
+                // Translators: Last sentence of why Remove Download was refused after a failed upload.
+                InterfaceText.line("bookCloud.downloadCantRemoved", "Its download can't be removed until it has uploaded."),
+            ])
+        case .inConflict:
+            return SentenceWording.joined([
+                // Translators: First sentence of why Remove Download was refused: the cloud service holds conflicting versions. %@ is the cloud service's name, or "The cloud service" when it is unknown.
+                InterfaceText.line("bookCloud.holdsTwoVersions", "\(serviceStartingSentence) holds two versions of a file of this book, so its download can't be removed."),
+                // Translators: Last sentence of why Remove Download was refused over a conflict. %@ is the cloud service's name, or "the cloud service" when it is unknown.
+                InterfaceText.line("bookCloud.settleConflictFirst", "Settle the conflict in \(service) first."),
+            ])
+        case .notCurrent:
+            return SentenceWording.joined([
+                // Translators: First sentence of why Remove Download was refused: the cloud service has not said the copy here is current. %@ is the cloud service's name, or "The cloud service" when it is unknown.
+                InterfaceText.line("bookCloud.hasntSaidCopy", "\(serviceStartingSentence) hasn't said that the copy of this book on this Mac is the latest, so its download can't be removed."),
+                // Translators: Last sentence of why a cloud operation was refused for now: wait and try again.
+                InterfaceText.line("common.tryAgainInAMoment", "Try again in a moment."),
+            ])
+        case .currentNotReported:
+            return SentenceWording.joined([
+                // Translators: First sentence of why Remove Download was refused: the cloud service never says whether the copy here is current. %@ is the cloud service's name, or "The cloud service" when it is unknown.
+                InterfaceText.line("bookCloud.doesntSayWhether", "\(serviceStartingSentence) doesn't say whether the copy of this book on this Mac is the latest, so its download can't be removed, and waiting won't change that."),
+                // Translators: Second sentence of why Remove Download was refused: how to free the space by hand. Show in Finder is a command's name. %@ is a clause that tells what to do in the cloud service's own app, such as "choose Remove Download".
+                InterfaceText.line("bookCloud.freeSpaceAnyway", "To free the space anyway, choose Show in Finder, then \(onlineOnlyCommand(of: provider))."),
+                // Translators: Last sentence of why Remove Download was refused: what the service's own command does.
+                InterfaceText.line("bookCloud.keepsCopy", "That keeps the book's copy in the cloud."),
+            ])
+        }
+    }
+
+    /// The drive's own command that keeps a book only online, in a clause
+    /// that follows "then": each drive names it differently, and one that
+    /// is not known is told in general words. It never deletes anything.
+    static func onlineOnlyCommand(of provider: CloudProvider?) -> String {
+        switch provider {
+        case .googleDrive:
+            // Translators: A clause that follows "then" in a sentence that tells how to free a book's space: what to do in Google Drive. Offline Access is Google Drive's own menu name.
+            return InterfaceText.line("bookCloud.onlineOnlyCommand.googleDrive", "use Google Drive's Offline Access menu")
+        case .dropbox:
+            // Translators: A clause that follows "then" in a sentence that tells how to free a book's space: what to do in Dropbox. Make online-only is Dropbox's own command name.
+            return InterfaceText.line("bookCloud.onlineOnlyCommand.dropbox", "choose Make online-only")
+        case .iCloudDrive:
+            // Translators: A clause that follows "then" in a sentence that tells how to free a book's space: what to do in the Finder for iCloud Drive. Remove Download is the Finder's own command name.
+            return InterfaceText.line("bookCloud.onlineOnlyCommand.iCloudDrive", "choose Remove Download")
+        case .other, nil:
+            // Translators: A clause that follows "then" in a sentence that tells how to free a book's space: what to do when the cloud drive is not known.
+            return InterfaceText.line("bookCloud.onlineOnlyCommand.other", "use the drive's own command to keep the book only online")
+        }
+    }
+
+    /// The same reason in a log line's words.
+    static func logReason(_ doubt: CloudCopyDoubt) -> String {
+        switch doubt {
+        case .uploadNotReported: return "the sync service gave no upload state" // l10n: no (debug log text)
+        case .uploadFailed(let message): return "the upload failed: \(message)" // l10n: no (debug log text)
+        case .inConflict: return "the sync service holds conflicting versions" // l10n: no (debug log text)
+        case .notCurrent: return "the copy here is not said to be current" // l10n: no (debug log text)
+        case .currentNotReported: return "the sync service reports no downloading status at all" // l10n: no (debug log text)
         }
     }
 }
@@ -345,9 +631,31 @@ protocol BookCloudStorage: AnyObject, Sendable {
     /// book waits to upload, and `.removalFailed` when the sync service
     /// refuses or fails to remove a file's local copy.
     func removeDownload(of package: BookPackage) throws
+    /// `removeDownload(of:)` for storage that has to read a copy back first
+    /// (a synced library's, FR46), which waits on the network. `mayDownload`
+    /// says whether files of the copy that are away may be downloaded to prove
+    /// it; a person's own command says yes. The default does the synchronous
+    /// removal, so only the synced storage need say more.
+    func removeDownloadAsync(of package: BookPackage, mayDownload: Bool) async throws
+    /// The bytes of `package` not on this Mac yet, as its files report their
+    /// sizes, read without downloading anything: what a download of it needs
+    /// room for. Nil when they cannot be told, such as a package that syncs
+    /// as one item and is only in the cloud, whose files are not listed, or
+    /// a file that reports no size.
+    func bytesToDownload(of package: BookPackage) -> Int64?
 }
 
 extension BookCloudStorage {
+    /// Storage with nothing to read back removes as `removeDownload(of:)` does.
+    func removeDownloadAsync(of package: BookPackage, mayDownload: Bool) async throws {
+        try removeDownload(of: package)
+    }
+
+    /// Storage that cannot tell a package's size says so.
+    func bytesToDownload(of package: BookPackage) -> Int64? {
+        nil
+    }
+
     /// `state(of:)`, for storage that works out nothing from the location:
     /// the local placeholder below, and the test doubles.
     func state(of package: BookPackage, in location: StorageLocation) -> BookCloudState {
@@ -423,9 +731,28 @@ final class BookCloudStates: ObservableObject {
     /// their own.
     init() {}
 
-    /// Whether the library list says each book's cloud state.
+    /// Whether sync between devices is on (FR43): a book another device has
+    /// shows as In Cloud until it is fetched, though the library itself is on
+    /// this device's disk.
+    @Published private(set) var syncIsOn = false
+
+    /// Whether the library list says each book's cloud state: in a cloud
+    /// library, and while sync is on.
     var showsCloudNotes: Bool {
+        libraryLocation.isCloud || syncIsOn
+    }
+
+    /// Whether the library itself is in a cloud folder, which Keep on This Mac
+    /// and Remove Download are for; a library synced between devices is on
+    /// this device's disk and has neither.
+    var isCloudLibrary: Bool {
         libraryLocation.isCloud
+    }
+
+    /// Records whether sync is on, publishing only a change.
+    func setSyncIsOn(_ isOn: Bool) {
+        guard isOn != syncIsOn else { return }
+        syncIsOn = isOn
     }
 
     /// The latest known state of the book `bookID`, or nil when it has not
@@ -636,6 +963,21 @@ enum MachineLocalPaths {
         root.appendingPathComponent("Kept Books.json", isDirectory: false)
     }
 
+    /// Whether this Mac keeps the reading list's books downloaded in a cloud
+    /// library (`KeptBooks.keepsReadingListBooks`): a choice of this Mac's
+    /// own, beside `keptBooks`, since another Mac sharing the library
+    /// decides for itself.
+    static var keepReadingListBooks: URL {
+        root.appendingPathComponent("Keep Reading List Books.json", isDirectory: false)
+    }
+
+    /// The conflict copies this Mac has told the listener about
+    /// (`ConflictCopyMemory`), each once: a choice of this Mac's own, since
+    /// another Mac sharing the library reports for itself.
+    static var conflictCopiesReported: URL {
+        root.appendingPathComponent("Conflict Copies Reported.json", isDirectory: false)
+    }
+
     /// The hidden staging folders data-directory moves have begun and not yet
     /// cleaned up (`MigrationStagingLeftovers`): a journal of this Mac's own,
     /// since the folders are on a volume that may be away, and a sweep at
@@ -652,9 +994,23 @@ enum MachineLocalPaths {
             .appendingPathComponent("Library/Caches/com.textmouth.TextMouth", isDirectory: true)
     }
 
+    /// The braille tables unpacked from `BrailleTables.pack` at first use (`BrailleTableUnpacker`), one folder for each liblouis
+    /// release: made again from the pack whenever a file is missing, so macOS or iOS may empty the Caches folder.
+    static var brailleTables: URL {
+        caches.appendingPathComponent("BrailleTables", isDirectory: true)
+    }
+
     /// The reading text of the large books this Mac opened lately
     /// (`ReadingTextCache`), each kept for a day after it was last used.
     static var readingTextCache: URL {
         caches.appendingPathComponent("Reading Text", isDirectory: true)
+    }
+
+    /// Each book's reading text, kept for Search Library
+    /// (`LibrarySearchTextStore`): made again by a search whenever a book's
+    /// content.md changes, and by the next search when macOS empties the
+    /// Caches folder.
+    static var librarySearchText: URL {
+        caches.appendingPathComponent("Search Text", isDirectory: true)
     }
 }

@@ -14,7 +14,8 @@ final class StorageDestinationSettingsTests: XCTestCase {
     // MARK: - The Folder Chooser
 
     /// The chooser picks one folder, never a file, shows hidden folders,
-    /// can make a new one, and its button names the action.
+    /// can make a new one, and its button names the action. Only its
+    /// settings are read: a test never builds a real panel.
     func testTheChooserShowsHiddenFoldersMakesNewOnesAndNamesItsAction() {
         let panel = StorageSettingsView.makeLibraryFolderPanel(isLibraryAvailable: true)
 
@@ -129,6 +130,24 @@ final class StorageDestinationSettingsTests: XCTestCase {
             XCTAssertTrue(labels.contains(DataDirectoryMoveWording.cancelLabel), "\(labels)")
             XCTAssertTrue(labels.contains(StorageLocationWording.chooserLabel(isLibraryAvailable: true)), "\(labels)")
         }
+    }
+
+    /// Compare Libraries is among Storage settings' labelled buttons beside
+    /// Change Location, where SwiftUI exposes them, with the words that say
+    /// what it does and that it changes nothing.
+    func testStorageSettingsOfferCompareLibraries() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
+        let view = makeStorageSettingsShowingAMove(copiedPercent: 60)
+
+        try withHostedControls(view) { controls in
+            let buttons = controls.filter { $0.role == .button && !$0.label.isEmpty }
+            guard !buttons.isEmpty else {
+                throw XCTSkip("SwiftUI exposed no AppKit button to accessibility in this run")
+            }
+            XCTAssertTrue(buttons.map(\.label).contains(LibraryComparisonWording.title), "\(buttons.map(\.label))")
+        }
+        XCTAssertEqual(LibraryComparisonWording.buttonTitle, "Compare Libraries…")
+        XCTAssertTrue(LibraryComparisonWording.buttonHint.hasSuffix("Nothing in either copy is changed."))
     }
 
     // MARK: - Fixtures

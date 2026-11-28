@@ -44,6 +44,15 @@ struct BrailleFilePages: Equatable, Sendable {
     /// braille page numbers mark them (`BrailleBookReader.marksItsPages(_:_:)`).
     /// A BRL marks none.
     var marksItsPages = false
+    /// For a book of several volumes (an NLS BARD braille book, FMT56), the
+    /// index of the page each volume begins at, in reading order; empty for
+    /// every other file, and for a book with one volume. The analyzer lays
+    /// each volume out on its own (`BraillePageAnalyzer.structure(of:)`), so
+    /// a paragraph never runs from one volume into the next.
+    private(set) var volumeStarts: [Int] = []
+    /// The number of each volume in its book, as its place in the package's
+    /// spine says (1 for the first), parallel to `volumeStarts`.
+    private(set) var volumeNumbers: [Int] = []
 
     /// Every cell of the file, a byte each, page after page and row after
     /// row: the cell's dots (dot 1 is 1, dot 8 is 128), so the byte is the
@@ -140,6 +149,68 @@ struct BrailleFilePages: Equatable, Sendable {
     /// that is not a braille pattern.
     private static func dots(of scalar: Unicode.Scalar) -> UInt8 {
         BrailleCells.isPattern(scalar) ? UInt8(truncatingIfNeeded: scalar.value) : 0xFF
+    }
+
+    // MARK: Volumes
+
+    /// Whether the last page holds no cell at all: the empty page a form
+    /// feed at a file's end leaves, which no embosser counts. False for a
+    /// file with no page.
+    var endsWithAnEmptyPage: Bool {
+        guard pageCount > 0 else { return false }
+        return rows(ofPage: pageCount - 1).allSatisfy { cellRange(ofRow: $0).isEmpty }
+    }
+
+    /// Adds `volume`, a file of its own, after the pages so far, as one more
+    /// volume of this book (FMT56). The book's line width is the first
+    /// volume's, and its pages are marked only when every volume's are. A
+    /// volume with no page adds nothing. `number` is the volume's number in
+    /// its book, its place in the package's spine; the count of volumes so
+    /// far and one when nil.
+    /// - Throws: `BrailleFileError.tooManyPages`, `.tooManyRows`, or
+    ///   `DocumentTooLargeError` for a book past the limits of one file.
+    mutating func append(volume: BrailleFilePages, number: Int? = nil) throws {
+        guard volume.pageCount > 0 else { return }
+        guard pageCount + volume.pageCount <= Self.maxPages else { throw BrailleFileError.tooManyPages }
+        guard rowCount + volume.rowCount <= Self.maxRows else { throw BrailleFileError.tooManyRows }
+        guard cells.count + volume.cells.count <= Self.maxCells else {
+            throw DocumentTooLargeError(limit: Int64(Self.maxCells))
+        }
+        let isFirst = volumeStarts.isEmpty
+        volumeStarts.append(pageCount)
+        volumeNumbers.append(number ?? volumeStarts.count)
+        // The volume's offsets are its own: move them past what is here.
+        let cellBase = Int32(cells.count)
+        let rowBase = Int32(rowEnds.count)
+        cells += volume.cells
+        rowEnds += volume.rowEnds.map { $0 + cellBase }
+        pageEnds += volume.pageEnds.map { $0 + rowBase }
+        if isFirst {
+            lineWidth = volume.lineWidth
+            marksItsPages = volume.marksItsPages
+        } else {
+            marksItsPages = marksItsPages && volume.marksItsPages
+        }
+    }
+
+    /// Volume `index` as a file of its own, its pages renumbered from the
+    /// first; the whole book for a book that has no volumes marked.
+    func volume(at index: Int) -> BrailleFilePages {
+        guard volumeStarts.indices.contains(index) else { return self }
+        let firstPage = volumeStarts[index]
+        let endPage = index + 1 < volumeStarts.count ? volumeStarts[index + 1] : pageCount
+        // The volume's rows are those of its pages, its cells those of its rows.
+        let firstRow = firstPage == 0 ? 0 : Int(pageEnds[firstPage - 1])
+        let endRow = endPage == 0 ? 0 : Int(pageEnds[endPage - 1])
+        let firstCell = firstRow == 0 ? 0 : Int(rowEnds[firstRow - 1])
+        let endCell = endRow == 0 ? 0 : Int(rowEnds[endRow - 1])
+        var part = BrailleFilePages(kind: kind)
+        part.lineWidth = lineWidth
+        part.marksItsPages = marksItsPages
+        part.cells = Array(cells[firstCell..<endCell])
+        part.rowEnds = rowEnds[firstRow..<endRow].map { $0 - Int32(firstCell) }
+        part.pageEnds = pageEnds[firstPage..<endPage].map { $0 - Int32(firstRow) }
+        return part
     }
 
     // MARK: Building the pages
@@ -252,22 +323,22 @@ enum BrailleFileError: LocalizedError, Equatable {
         case let .notInFileCode(found, line, characters):
             return Self.sentence(found, line: line, isNot: characters)
         case let .eightBitBraille(byte, line):
-            return "Line \(line) holds \(Self.words(for: .byte(byte))). "
-                + "This file may be eight-bit computer braille, which TextMouth does not read."
+            return "Line \(line) holds \(Self.words(for: .byte(byte))). " // l10n: no (parser damage reason, English by question 3)
+                + "This file may be eight-bit computer braille, which TextMouth does not read." // l10n: no (parser damage reason, English by question 3)
         case .utf16Text:
-            return "This file is in UTF-16, which TextMouth does not read as braille. Save it in UTF-8 to read it."
+            return "This file is in UTF-16, which TextMouth does not read as braille. Save it in UTF-8 to read it." // l10n: no (parser damage reason, English by question 3)
         case let .unknownFileCode(id):
-            return "TextMouth has no braille file characters named “\(id)”."
+            return "TextMouth has no braille file characters named “\(id)”." // l10n: no (parser damage reason, English by question 3)
         case .damagedPEF:
-            return "This file could not be read as a PEF braille file. It may be damaged, or another kind of file."
+            return "This file could not be read as a PEF braille file. It may be damaged, or another kind of file." // l10n: no (parser damage reason, English by question 3)
         case .eightDotBraille:
-            return "This file is eight-dot braille, which TextMouth does not read."
+            return "This file is eight-dot braille, which TextMouth does not read." // l10n: no (parser damage reason, English by question 3)
         case .tooManyPages:
-            return "This file has more than 100,000 braille pages, the most TextMouth reads."
+            return "This file has more than 100,000 braille pages, the most TextMouth reads." // l10n: no (parser damage reason, English by question 3)
         case .tooManyRows:
-            return "This file has more than 4,000,000 lines of braille, the most TextMouth reads."
+            return "This file has more than 4,000,000 lines of braille, the most TextMouth reads." // l10n: no (parser damage reason, English by question 3)
         case .fileTooLarge:
-            return "This braille file holds more than 32 MB, the most TextMouth reads from one braille file."
+            return "This braille file holds more than 32 MB, the most TextMouth reads from one braille file." // l10n: no (parser damage reason, English by question 3)
         }
     }
 
@@ -277,16 +348,16 @@ enum BrailleFileError: LocalizedError, Equatable {
     /// American Braille ASCII's and the others' alike, so the words are
     /// written once.
     private static func sentence(_ found: Found, line: Int, isNot characters: String) -> String {
-        "Line \(line) holds \(words(for: found)), which is not \(characters)."
+        "Line \(line) holds \(words(for: found)), which is not \(characters)." // l10n: no (parser damage reason, English by question 3)
     }
 
     /// How the sentence names what was found, made in this one place.
     private static func words(for found: Found) -> String {
         switch found {
-        case let .character(character): return "“\(character)”"
-        case let .controlCharacter(code): return "the control character \(hex("U+", code, minimumDigits: 4))"
-        case let .unseenCharacter(code): return "the character \(hex("U+", code, minimumDigits: 4))"
-        case let .byte(byte): return "the byte \(hex("0x", UInt32(byte), minimumDigits: 2))"
+        case let .character(character): return "“\(character)”" // l10n: no (parser damage reason, English by question 3)
+        case let .controlCharacter(code): return "the control character \(hex("U+", code, minimumDigits: 4))" // l10n: no (parser damage reason, English by question 3)
+        case let .unseenCharacter(code): return "the character \(hex("U+", code, minimumDigits: 4))" // l10n: no (parser damage reason, English by question 3)
+        case let .byte(byte): return "the byte \(hex("0x", UInt32(byte), minimumDigits: 2))" // l10n: no (parser damage reason, English by question 3)
         }
     }
 
@@ -336,6 +407,11 @@ enum BrailleFileReader {
     ///   file system's error for one that cannot be read.
     static func read(_ url: URL, as kind: BrailleFileKind,
                      code: BrailleFileCode = .northAmerican) throws -> BrailleFilePages {
+        // An NLS BARD braille book (a .bopf, its folder, or its ZIP) is the
+        // pages of all its volumes, in the package's order (FMT56).
+        if kind == .brf, BardBraillePackage.isPackage(at: url) {
+            return try BardBraillePackage.open(at: url).readPages(code: code)
+        }
         let data = try DocumentByteLimit.contents(of: url)
         switch kind {
         case .brf, .brl: return try pages(fromText: data, kind: kind, code: code)
@@ -681,6 +757,8 @@ enum BrailleFileReader {
     /// bytes only, or nil. It never throws: a file that cannot be read, or
     /// is empty, gives nil.
     static func certainCode(ofFileAt url: URL) -> BrailleFileCode? {
+        // A BARD braille book's volumes are BRF files, in no code for certain.
+        guard !BardBraillePackage.isPackage(at: url) else { return nil }
         guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
         defer { try? handle.close() }
         guard let prefix = try? handle.read(upToCount: detectionByteCount) else { return nil }
@@ -695,6 +773,9 @@ enum BrailleFileReader {
     ///   data too large for the pages' offsets.
     static func pages(fromPEF data: Data) throws -> BrailleFilePages {
         try requireOffsetsFit(data)
+        // A tag the parser would take too long over is a damaged PEF
+        // (`XMLInputGuard`).
+        guard XMLInputGuard.problem(with: data) == nil else { throw BrailleFileError.damagedPEF }
         let collector = PEFCollector()
         let parser = XMLParser(data: data)
         parser.delegate = collector
@@ -724,6 +805,7 @@ enum BrailleFileReader {
         guard let prefix = try? handle.read(upToCount: metadataByteCount), !prefix.isEmpty else {
             return (nil, nil, nil)
         }
+        guard XMLInputGuard.problem(with: prefix) == nil else { return (nil, nil, nil) }
         let collector = PEFCollector(stopsAfterHead: true)
         let parser = XMLParser(data: prefix)
         parser.delegate = collector

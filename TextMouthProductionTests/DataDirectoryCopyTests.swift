@@ -54,6 +54,112 @@ final class DataDirectoryCopyTests: XCTestCase {
         XCTAssertEqual(paths, ["Library", "Library/.DS_Store", ".hidden-note"])
     }
 
+    /// A save's temporary file is no item of the plan, at any depth, while
+    /// the names that only look like one are (B14).
+    func testThePlanLeavesOutSavesTemporaryFilesAndKeepsLookAlikes() throws {
+        let root = try makeSandboxDirectory("CopyPlanTemporary").appendingPathComponent("Data", isDirectory: true)
+        let staged = SaveTemporaryNames.stagedName(for: TranscriptCleanupRuleFile.fileName)
+        // A UUID after two dots has no target's name between them.
+        let dotDotName = UUID().uuidString
+        // Names made as no writer makes them: a target no save stages, and a
+        // UUID in lower case.
+        let unknownTarget = ".substitutions.json.\(UUID().uuidString)"
+        let lowerCase = ".\(TranscriptCleanupRuleFile.fileName).\(UUID().uuidString.lowercased())"
+        try write("a", to: root.appendingPathComponent(".dat.nosync8247.BvENvv"))
+        try write("b", to: root.appendingPathComponent(staged))
+        try write("c", to: root.appendingPathComponent("Feeds/.dat.nosync1f4c.Zz09aB"))
+        // The other name Foundation gives an atomic write's file.
+        try write("n", to: root.appendingPathComponent("config.json.sb-42f471cf-2CWLTV"))
+        try write("o", to: root.appendingPathComponent("Feeds/index.json.sb-9ABCDEF0-x5R94h"))
+        try write("d", to: root.appendingPathComponent("substitutions.json"))
+        // Look-alikes the user or another program could have made.
+        try write("e", to: root.appendingPathComponent(".dat.nosync"))
+        try write("f", to: root.appendingPathComponent(".dat.nosync-notes"))
+        try write("g", to: root.appendingPathComponent(".dat.nosyncXYZ.BvENvv"))
+        try write("h", to: root.appendingPathComponent(".dat.nosync8247.short"))
+        try write("i", to: root.appendingPathComponent(".notes.not-a-uuid"))
+        try write("j", to: root.appendingPathComponent("..\(dotDotName)"))
+        try write("k", to: root.appendingPathComponent(".DS_Store"))
+        try write("l", to: root.appendingPathComponent(unknownTarget))
+        try write("m", to: root.appendingPathComponent(lowerCase))
+        try write("p", to: root.appendingPathComponent("notes.sb-42f471c-2CWLTV"))
+        try write("q", to: root.appendingPathComponent("notes.sb-42f471cf-2CWLT"))
+        try write("r", to: root.appendingPathComponent("notes.sb-42f471cg-2CWLTV"))
+        try write("s", to: root.appendingPathComponent(".sb-42f471cf-2CWLTV"))
+        try write("t", to: root.appendingPathComponent("notes.sb-42f471cf-2CWLTV-2"))
+
+        let paths = try DataDirectoryCopyPlan(of: root).items.map(\.relativePath)
+
+        // The folder first, which now holds nothing; then the files, whose
+        // order within the folder is the plan's own and not this test's.
+        XCTAssertEqual(paths.first, "Feeds")
+        XCTAssertEqual(Set(paths.dropFirst()), [
+            "substitutions.json", ".dat.nosync", ".dat.nosync-notes", ".dat.nosyncXYZ.BvENvv",
+            ".dat.nosync8247.short", ".notes.not-a-uuid", "..\(dotDotName)", ".DS_Store",
+            unknownTarget, lowerCase,
+            "notes.sb-42f471c-2CWLTV", "notes.sb-42f471cf-2CWLT", "notes.sb-42f471cg-2CWLTV",
+            ".sb-42f471cf-2CWLTV", "notes.sb-42f471cf-2CWLTV-2",
+        ])
+        XCTAssertEqual(paths.count, 16, "a name was listed twice or a temporary file was kept")
+    }
+
+    /// A folder is never a temporary file, however it is named: a library
+    /// folder may begin with a dot, and a name of a staged file or a
+    /// temporary file of an atomic write leaves out nothing inside it.
+    func testAFolderNamedLikeATemporaryFileIsCopiedWithEverythingInIt() throws {
+        let root = try makeSandboxDirectory("CopyPlanTemporaryFolders").appendingPathComponent("Data", isDirectory: true)
+        let staged = SaveTemporaryNames.stagedName(for: TranscriptCleanupRuleFile.fileName)
+        let foundation = ".dat.nosync8247.BvENvv"
+        let unknownTarget = ".Old Books.\(UUID().uuidString)"
+        try write("book", to: root.appendingPathComponent("\(staged)/Fiction/Tide.tmb/book.txt"))
+        try write("book", to: root.appendingPathComponent("\(foundation)/Atlas.tmb/book.txt"))
+        try write("book", to: root.appendingPathComponent("\(unknownTarget)/Atlas.tmb/book.txt"))
+
+        let paths = try DataDirectoryCopyPlan(of: root).items.map(\.relativePath)
+
+        XCTAssertEqual(Set(paths), [
+            staged, "\(staged)/Fiction", "\(staged)/Fiction/Tide.tmb",
+            foundation, "\(foundation)/Atlas.tmb",
+            unknownTarget, "\(unknownTarget)/Atlas.tmb",
+        ])
+    }
+
+    /// The canary for `SaveTemporaryNames`: an atomic write's temporary file
+    /// has a name the matcher knows. Foundation documents none (it was
+    /// measured on one macOS), so a version that names it otherwise fails
+    /// here, and the copy's plan would meet a file that vanishes. Skipped when
+    /// the write left no file to see, which says nothing either way.
+    func testAnAtomicWritesTemporaryFileHasANameTheCopyKnows() throws {
+        let folder = try makeSandboxDirectory("CopyTemporaryCanary")
+        let target = folder.appendingPathComponent("target.bin")
+        // Large enough that the temporary file is on disk for a few
+        // milliseconds, which a listing in a loop catches.
+        let bytes = Data(count: 16 * 1024 * 1024)
+        let finished = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            for _ in 0..<8 { try? bytes.write(to: target, options: .atomic) }
+            finished.signal()
+        }
+
+        // Every name the folder held, listed until the writes end (with a
+        // limit of 30 seconds, which a hung disk would reach).
+        var seen = Set<String>()
+        let deadline = Date().addingTimeInterval(30)
+        var done = false
+        while !done, Date() < deadline {
+            done = finished.wait(timeout: .now()) == .success
+            seen.formUnion((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [])
+        }
+        XCTAssertTrue(done, "the writes did not end in 30 seconds")
+
+        let others = seen.subtracting([target.lastPathComponent])
+        try XCTSkipIf(others.isEmpty, "no temporary file was seen beside the target")
+        XCTAssertEqual(
+            others.filter { !SaveTemporaryNames.isTemporary($0) }.sorted(), [],
+            "an atomic write left a file under a name the copy plan does not know: the plan would meet it vanish"
+        )
+    }
+
     // MARK: - Copying
 
     /// Each package is copied with one copy of the whole package, and each

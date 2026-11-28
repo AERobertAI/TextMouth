@@ -1,0 +1,103 @@
+import SwiftUI
+
+@main
+struct TextMouthApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @StateObject private var libraryViewModel = LibraryViewModel()
+    @StateObject private var settingsViewModel = SettingsViewModel()
+    @StateObject private var shortcutManager = KeyboardShortcutManager()
+    @StateObject private var soundEffectService = SoundEffectService()
+    @StateObject private var libraryWindowRouter = LibraryWindowRouter.shared
+
+    /// Installs the real cloud services (FR02) before anything else runs.
+    /// The app's initializer is the earliest point: SwiftUI creates the
+    /// library model above before `applicationWillFinishLaunching`, and the
+    /// library's launch checks use the services.
+    init() {
+        // The interface-text engine's problems (a missing or damaged pack, an unknown ID) go to the debug log.
+        InterfaceText.reportProblemsToDiagnosticLog()
+        CloudServices.installSystemServices()
+        // A book another device has and this Mac has not fetched answers as a
+        // cloud book: In Cloud, Download Now (FR43).
+        CloudServices.bookStorage = StoreBookStorage(wrapping: CloudServices.bookStorage)
+    }
+
+    var body: some Scene {
+        // Library window — only one opens on launch; Cmd+N can still create additional ones.
+        WindowGroup {
+            LibraryWindowView()
+                .environmentObject(libraryViewModel)
+                .environmentObject(settingsViewModel)
+                .environmentObject(shortcutManager)
+                .environmentObject(soundEffectService)
+                .environmentObject(libraryWindowRouter)
+                // The window follows the interface language: formatters, and layout direction (FR39).
+                .followsInterfaceLanguage()
+                .onAppear {
+                    // Lists the installed voices once the first window shows,
+                    // off the main thread, rather than before it (TODO PERF07).
+                    VoiceCatalog.shared.loadIfNeeded()
+                    // Recordings are saved into this library, whichever menu
+                    // opens the Record window (FR04).
+                    RecordingWindowController.shared.attach(libraryViewModel)
+                    // Search Library… searches this library, whichever window
+                    // its menu command is chosen in.
+                    LibrarySearchWindowController.shared.attach(libraryViewModel)
+                }
+        }
+        .commands {
+            // Open Book…, New from Text…, and New Recording… beside the
+            // standard New Window (Command-N), each with its key in force.
+            FileCommands(shortcuts: shortcutManager, library: libraryViewModel)
+            // Edit > Find > Search Library…, with its key in force.
+            EditCommands(shortcuts: shortcutManager)
+            PlaybackCommands(shortcuts: shortcutManager)
+            NavigationCommands()
+            LibraryCommands(shortcuts: shortcutManager)
+            BookmarkCommands()
+            BookCommands()
+        }
+
+        // Book reader windows — opened programmatically via openWindow(id:value:)
+        // Restoration disabled so old reader windows don't reopen on launch.
+        WindowGroup(SceneWording.bookReaderTitle, id: BookReaderWindowView.windowID, for: UUID.self) { $bookID in
+            // Each window keeps its own sleep timer above the book it shows,
+            // so the timer stays with the window when listening goes on to
+            // another book in it (0.2.5, November 13, 2026).
+            ReaderWindowContent(
+                bookID: $bookID,
+                libraryViewModel: libraryViewModel,
+                settingsViewModel: settingsViewModel
+            )
+            .environmentObject(libraryViewModel)
+            .environmentObject(settingsViewModel)
+            .environmentObject(shortcutManager)
+            .environmentObject(soundEffectService)
+            .followsInterfaceLanguage()
+        }
+        // Without this, SwiftUI adds File > New > New Book Reader Window,
+        // which opens a reader with no book: an empty window whose Playback
+        // and Navigate menus can do nothing (TODO A05). A reader opens only
+        // for a book, from the Library or through the router.
+        .commandsRemoved()
+
+        Settings {
+            SettingsView()
+                .environmentObject(libraryViewModel)
+                .environmentObject(settingsViewModel)
+                .environmentObject(shortcutManager)
+                .environmentObject(soundEffectService)
+                .followsInterfaceLanguage()
+        }
+    }
+}
+
+/// The titles of the app's scenes, in the interface language.
+enum SceneWording {
+    /// The title of a book reader's window group, before the window names its
+    /// own book.
+    static var bookReaderTitle: String {
+        // Translators: Title of a window in which a book is read, before the window shows its own book's title. Also the name of the window group.
+        InterfaceText.line("scene.bookReaderTitle", "Book Reader")
+    }
+}

@@ -28,19 +28,26 @@ enum RecordingFailure: Error, Equatable, Sendable, LocalizedError {
         case .permission(let refusal):
             return refusal.errorDescription
         case .deviceUnavailable(let name):
-            return "\(name) isn't available, so TextMouth can't record from it. Choose another microphone."
+            // Translators: Error in the Record window when the chosen microphone is not available. %@ is the microphone's name.
+            return InterfaceText.line("recordingFailure.deviceUnavailable", "\(name) isn't available, so TextMouth can't record from it. Choose another microphone.")
         case .couldNotStart(let name):
-            return "TextMouth couldn't start recording from \(name)."
+            // Translators: Error in the Record window when recording from the chosen microphone failed to start. %@ is the microphone's name.
+            return InterfaceText.line("recordingFailure.couldNotStart", "TextMouth couldn't start recording from \(name).")
         case .deviceDisconnected(let name):
-            return "\(name) was disconnected, so recording stopped. What was recorded until then is kept."
+            // Translators: Error in the Record window when the microphone was unplugged while recording. %@ is the microphone's name.
+            return InterfaceText.line("recordingFailure.deviceDisconnected", "\(name) was disconnected, so recording stopped. What was recorded is kept.")
         case .diskFull:
-            return "The disk is almost full, so recording stopped. What was recorded until then is kept."
+            // Translators: Error in the Record window when the disk filled up while recording.
+            return InterfaceText.line("recordingFailure.diskFull", "The disk is almost full, so recording stopped. What was recorded is kept.")
         case .stoppedUnexpectedly:
-            return "Recording stopped because the microphone reported a problem. What was recorded until then is kept."
+            // Translators: Error in the Record window when recording stopped by itself because capture failed.
+            return InterfaceText.line("recordingFailure.stoppedUnexpectedly", "Recording stopped because the microphone reported a problem. What was recorded is kept.")
         case .couldNotFinish:
-            return "The recording couldn't be finished properly. What was recorded is kept."
+            // Translators: Error in the Record window when stopping could not finish the recording's file properly.
+            return InterfaceText.line("recordingFailure.couldNotFinish", "The recording couldn't be finished properly. What was recorded is kept.")
         case .nothingRecorded:
-            return "Nothing was recorded, so there is nothing to save."
+            // Translators: Error in the Record window when the recording was stopped before any audio was captured.
+            return InterfaceText.line("recordingFailure.nothingRecorded", "Nothing was recorded, so there is nothing to save.")
         }
     }
 }

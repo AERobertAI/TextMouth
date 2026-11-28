@@ -1,5 +1,9 @@
 import SwiftUI
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 // MARK: - Navigation (skip, heading, word/character seeking)
 
@@ -55,8 +59,9 @@ extension ReaderViewModel {
         let currentUnit = direction == .forward
             ? playbackSkipForwardUnit
             : playbackSkipBackwardUnit
-        // A book without pages has no Page unit to stop at (PG02).
-        let nextUnit = Self.unit(after: currentUnit, bookHasPages: hasPages)
+        // A book without pages, or of only one page, has no Page unit to
+        // stop at (PG02).
+        let nextUnit = Self.unit(after: currentUnit, bookHasPages: hasSeveralPages)
 
         switch settingsViewModel.playbackNavigationUnitControlMode {
         case .none:
@@ -289,8 +294,10 @@ extension ReaderViewModel {
     /// saying every heading that begins there
     /// (`headingAnnouncement(arrivingAt:in:)`).
     func nextSubheading() {
-        guard let content = content else { return }
-        let allHeadings = content.allHeadings
+        guard content != nil else { return }
+        // `headings` is the book's headings (`content`'s didSet), kept as an
+        // array, so the book's index need not rebuild them for each jump.
+        let allHeadings = headings
         if let nextIndex = allHeadings.firstIndex(where: {
             $0.level >= 2 && (
                 $0.chapterIndex > currentChapterIndex ||
@@ -307,8 +314,8 @@ extension ReaderViewModel {
     /// position, saying every heading that begins there
     /// (`headingAnnouncement(arrivingAt:in:)`).
     func previousSubheading() {
-        guard let content = content else { return }
-        let allHeadings = content.allHeadings
+        guard content != nil else { return }
+        let allHeadings = headings
         if let prevIndex = allHeadings.lastIndex(where: {
             $0.level >= 2 && (
                 $0.chapterIndex < currentChapterIndex ||
@@ -330,7 +337,47 @@ extension ReaderViewModel {
     /// left out of a place they share; one alone is said as before.
     nonisolated static func headingAnnouncement(arrivingAt heading: Heading, in headings: [Heading]) -> String {
         let words = headingsSharingPlace(with: heading, in: headings).compactMap(\.text.nonBlank)
-        return "Heading: " + (words.isEmpty ? heading.text : words.joined(separator: ", "))
+        let shown = words.isEmpty ? heading.text : words.joined(separator: ", ")
+        // Translators: Announcement on arriving at a heading while reading. %@ is the heading's text; where several headings begin at the same place, their texts joined with commas.
+        return InterfaceText.line("readerViewModel.headingAnnouncement", "Heading: \(shown)")
+    }
+
+    /// What VoiceOver hears after a move to the next sentence.
+    nonisolated static var nextSentenceAnnouncement: String {
+        // Translators: Announcement after the reader moved to the next sentence.
+        InterfaceText.line("readerViewModel.nextSentenceAnnouncement", "Next sentence")
+    }
+
+    /// What VoiceOver hears after a move to the previous sentence.
+    nonisolated static var previousSentenceAnnouncement: String {
+        // Translators: Announcement after the reader moved to the previous sentence.
+        InterfaceText.line("readerViewModel.previousSentenceAnnouncement", "Previous sentence")
+    }
+
+    /// What VoiceOver hears after a move to the next paragraph.
+    nonisolated static var nextParagraphAnnouncement: String {
+        // Translators: Announcement after the reader moved to the next paragraph.
+        InterfaceText.line("readerViewModel.nextParagraphAnnouncement", "Next paragraph")
+    }
+
+    /// What VoiceOver hears after a move to the previous paragraph.
+    nonisolated static var previousParagraphAnnouncement: String {
+        // Translators: Announcement after the reader moved to the previous paragraph.
+        InterfaceText.line("readerViewModel.previousParagraphAnnouncement", "Previous paragraph")
+    }
+
+    /// What VoiceOver hears after a move into the next section, when no
+    /// heading names it.
+    nonisolated static var nextSectionAnnouncement: String {
+        // Translators: Announcement after a sentence or paragraph move crossed into the next section of the book, when no heading names it.
+        InterfaceText.line("readerViewModel.nextSectionAnnouncement", "Next section")
+    }
+
+    /// What VoiceOver hears after a move into the previous section, when no
+    /// heading names it.
+    nonisolated static var previousSectionAnnouncement: String {
+        // Translators: Announcement after a sentence or paragraph move crossed into the previous section of the book, when no heading names it.
+        InterfaceText.line("readerViewModel.previousSectionAnnouncement", "Previous section")
     }
 
     /// The headings of `headings` that begin where `heading` begins, itself
@@ -339,7 +386,7 @@ extension ReaderViewModel {
     nonisolated static func headingsSharingPlace(with heading: Heading, in headings: [Heading]) -> [Heading] {
         headings.enumerated()
             .filter { $0.element.chapterIndex == heading.chapterIndex && $0.element.characterOffset == heading.characterOffset }
-            .sorted { ($0.element.level, $0.offset) < ($1.element.level, $1.offset) }
+            .sortedStably { ($0.element.level, $0.offset) < ($1.element.level, $1.offset) }
             .map(\.element)
     }
 
@@ -355,7 +402,7 @@ extension ReaderViewModel {
         let text = content.chapters[currentChapterIndex].text
         if let newOffset = Self.nextSentenceStart(in: text, after: currentCharacterOffset) {
             navigateTo(chapterIndex: currentChapterIndex, characterOffset: newOffset)
-            announceToVoiceOver("Next sentence")
+            announceToVoiceOver(Self.nextSentenceAnnouncement)
             return
         }
 
@@ -386,7 +433,7 @@ extension ReaderViewModel {
 
         if sentenceStart < offset {
             navigateTo(chapterIndex: currentChapterIndex, characterOffset: sentenceStart)
-            announceToVoiceOver("Previous sentence")
+            announceToVoiceOver(Self.previousSentenceAnnouncement)
             return
         }
 
@@ -417,7 +464,7 @@ extension ReaderViewModel {
         let text = content.chapters[currentChapterIndex].text
         if let newOffset = Self.nextParagraphStart(in: text, after: currentCharacterOffset) {
             navigateTo(chapterIndex: currentChapterIndex, characterOffset: newOffset)
-            announceToVoiceOver("Next paragraph")
+            announceToVoiceOver(Self.nextParagraphAnnouncement)
             return
         }
 
@@ -447,7 +494,7 @@ extension ReaderViewModel {
 
         if paragraphStart < offset {
             navigateTo(chapterIndex: currentChapterIndex, characterOffset: paragraphStart)
-            announceToVoiceOver("Previous paragraph")
+            announceToVoiceOver(Self.previousParagraphAnnouncement)
             return
         }
 
@@ -492,7 +539,7 @@ extension ReaderViewModel {
         forward: Bool
     ) -> String {
         HeadingPosition(in: headings, chapterIndex: chapterIndex, characterOffset: characterOffset).headingText
-            ?? (forward ? "Next section" : "Previous section")
+            ?? (forward ? nextSectionAnnouncement : previousSectionAnnouncement)
     }
 
     /// Find the next sentence start using the reader's persisted UTF-16 offsets.
@@ -826,8 +873,8 @@ extension ReaderViewModel {
     /// (`headingAnnouncement(arrivingAt:in:)`). Headings that share a place
     /// are one stop: the next jump goes on to the next place.
     func nextHeading() {
-        guard let content = content else { return }
-        let allHeadings = content.allHeadings
+        guard content != nil else { return }
+        let allHeadings = headings
         if let heading = Self.nextHeading(
             in: allHeadings,
             chapterIndex: currentChapterIndex,
@@ -845,8 +892,8 @@ extension ReaderViewModel {
     /// level, saying every heading that begins there
     /// (`headingAnnouncement(arrivingAt:in:)`).
     func previousHeading() {
-        guard let content = content else { return }
-        let allHeadings = content.allHeadings
+        guard content != nil else { return }
+        let allHeadings = headings
         if let heading = Self.previousHeading(
             in: allHeadings,
             chapterIndex: currentChapterIndex,

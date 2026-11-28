@@ -359,7 +359,7 @@ struct AddFeedSheet: View {
                     Text(FeedWording.linkTitle(link)).tag(index)
                 }
             }
-            .pickerStyle(.radioGroup)
+            .radioGroupPickerStyle()
             .disabled(model.isWorking)
             .accessibilityLabel(FeedWording.chooseLabel)
             .modifier(InitialVoiceOverFocusModifier(isTarget: true))
@@ -451,7 +451,7 @@ struct AddFeedSheet: View {
     /// are shown.
     private var buttons: some View {
         HStack {
-            Button("Cancel") {
+            Button(FeedWording.cancelTitle) {
                 model.cancel()
                 onCancel()
             }

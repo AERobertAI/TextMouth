@@ -1,5 +1,9 @@
 import SwiftUI
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 // MARK: - Bookmarks, Search Results, Saved Position, and Metadata Editing
 
@@ -64,10 +68,16 @@ extension ReaderViewModel {
     /// the offset it is saved at, the adjusted one (T06, `anchorToSave(at:)`).
     func toggleBookmarkAtCurrentPosition() {
         if let existing = nearbyBookmark(chapterIndex: currentChapterIndex, characterOffset: currentCharacterOffset) {
+            // A book the library no longer holds has no bookmark to remove:
+            // say so, as the add paths do, not that one was removed.
+            guard libraryViewModel.bookByID(book.id) != nil else {
+                announceBookmarkNotDone(Self.bookmarkNotRemovedAnnouncement(bookTitle: book.title))
+                return
+            }
             // Remove the nearby bookmark
             let number = existing.number
             removeBookmark(existing)
-            announceToVoiceOver("Bookmark \(number) removed")
+            announceToVoiceOver(Self.bookmarkRemovedAnnouncement(number: number))
         } else {
             // Add a new bookmark, adjusting position if it would overlap with an existing one
             let chapterLength = content?.chapters.indices.contains(currentChapterIndex) == true
@@ -80,15 +90,7 @@ extension ReaderViewModel {
                 threshold: bookmarkProximityThreshold,
                 chapterLength: chapterLength
             )
-            libraryViewModel.addBookmark(
-                bookID: book.id,
-                chapterIndex: currentChapterIndex,
-                characterOffset: adjustedOffset,
-                label: "",
-                anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: adjustedOffset))
-            )
-            bookmarks = libraryViewModel.bookmarksForBook(book.id)
-            announceToVoiceOver("Bookmark \(bookmarks.count) added")
+            addBookmark(atOffset: adjustedOffset, label: "")
         }
     }
 
@@ -106,7 +108,7 @@ extension ReaderViewModel {
     ) -> Int {
         let sameChapter = bookmarks
             .filter { $0.chapterIndex == chapterIndex }
-            .sorted(by: { $0.characterOffset < $1.characterOffset })
+            .sortedStably(by: { $0.characterOffset < $1.characterOffset })
 
         func clamped(_ offset: Int) -> Int {
             guard let chapterLength else { return max(0, offset) }
@@ -145,19 +147,88 @@ extension ReaderViewModel {
     ///   so added nothing.
     @discardableResult
     func addBookmarkAtCurrentPosition(label: String = "") -> Bookmark? {
+        addBookmark(atOffset: currentCharacterOffset, label: label)
+    }
+
+    /// Adds a bookmark at `offset` in the current chapter, keeping the words
+    /// around it (T06, `anchorToSave(at:)`), tells VoiceOver which bookmark
+    /// it made or that it made none, and returns it. The toggle and the
+    /// panel's Add share it.
+    ///
+    /// - Returns: The bookmark added; nil when the library holds no record
+    ///   of this book and so added nothing.
+    @discardableResult
+    private func addBookmark(atOffset offset: Int, label: String) -> Bookmark? {
         // The bookmarks saved before this one. Whichever bookmark is new
         // afterwards is the one added here, wherever the library placed it.
         let existingIDs = Set(libraryViewModel.bookmarksForBook(book.id).map(\.id))
         libraryViewModel.addBookmark(
             bookID: book.id,
             chapterIndex: currentChapterIndex,
-            characterOffset: currentCharacterOffset,
+            characterOffset: offset,
             label: label,
-            anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: currentCharacterOffset))
+            anchor: anchorToSave(at: TextPlace(chapter: currentChapterIndex, offset: offset))
         )
         bookmarks = libraryViewModel.bookmarksForBook(book.id)
-        announceToVoiceOver("Bookmark \(bookmarks.count) added")
-        return bookmarks.first { !existingIDs.contains($0.id) }
+        let added = bookmarks.first { !existingIDs.contains($0.id) }
+        announceBookmarkAdded(added)
+        return added
+    }
+
+    /// What VoiceOver says when no bookmark could be added because the
+    /// library holds no record of the book, as when the book was removed
+    /// while its reader was open. It does not say that nothing was changed:
+    /// the reader's own list of bookmarks is emptied too.
+    nonisolated static func bookmarkNotAddedAnnouncement(bookTitle: String) -> String {
+        // Translators: VoiceOver announcement when a bookmark could not be added because the book left the library while its reader was open. %@ is the book's title, in quotation marks.
+        InterfaceText.line("readerViewModel.bookmarkNotAddedAnnouncement", "Could not add the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library.")
+    }
+
+    /// What VoiceOver says when a bookmark could not be removed because the
+    /// library holds no record of the book.
+    nonisolated static func bookmarkNotRemovedAnnouncement(bookTitle: String) -> String {
+        // Translators: VoiceOver announcement when a bookmark could not be removed because the book left the library while its reader was open. %@ is the book's title, in quotation marks.
+        InterfaceText.line("readerViewModel.bookmarkNotRemovedAnnouncement", "Could not remove the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library.")
+    }
+
+    /// What VoiceOver says once a bookmark was added, by the number it was
+    /// given: "Bookmark 3 added". The Mac's toggle and Add, and the phone's
+    /// Add, say it alike.
+    nonisolated static func bookmarkAddedAnnouncement(number: Int) -> String {
+        // Translators: VoiceOver announcement after a bookmark was added at the reading position. %@ is the new bookmark's number, an identifier written without digit grouping.
+        InterfaceText.line("readerViewModel.bookmarkAddedAnnouncement", "Bookmark \(String(number)) added")
+    }
+
+    /// What VoiceOver says once the toggle removed the bookmark near the
+    /// reading position: "Bookmark 3 removed".
+    nonisolated static func bookmarkRemovedAnnouncement(number: Int) -> String {
+        // Translators: VoiceOver announcement after the bookmark command removed the bookmark at the reading position. %@ is that bookmark's number, an identifier written without digit grouping.
+        InterfaceText.line("readerViewModel.bookmarkRemovedAnnouncement", "Bookmark \(String(number)) removed")
+    }
+
+    /// Says `sentence`, which tells that a bookmark command did nothing, a
+    /// moment late: the bookmarks panel moves VoiceOver's focus a moment
+    /// after an add, which cuts off words posted with the move, so the long
+    /// sentence waits until the focus has settled (REV11 F6,
+    /// `VoiceOverAnnouncer.afterSheetCloses`).
+    private func announceBookmarkNotDone(_ sentence: String) {
+        VoiceOverAnnouncer.afterSheetCloses { [weak self] in
+            self?.announceToVoiceOver(sentence)
+        }
+    }
+
+    /// Says which bookmark was added, by the number it was given, or that
+    /// none was when `added` is nil. The number is the new bookmark's own,
+    /// never a count of the bookmarks, so it names the bookmark that was
+    /// made, and a command that added nothing never claims a bookmark. The
+    /// sentence for none waits for the focus to settle
+    /// (`announceBookmarkNotDone`).
+    private func announceBookmarkAdded(_ added: Bookmark?) {
+        if let added {
+            announceToVoiceOver(Self.bookmarkAddedAnnouncement(number: added.number))
+        } else {
+            announceBookmarkNotDone(Self.bookmarkNotAddedAnnouncement(bookTitle: book.title))
+        }
     }
 
     /// Update the user-facing label on an existing bookmark
@@ -172,7 +243,7 @@ extension ReaderViewModel {
     /// the order the bookmarks were made, so going by them passed over a
     /// bookmark made later at an earlier place.
     private var bookmarksInBookOrder: [Bookmark] {
-        bookmarks.sorted { first, second in
+        bookmarks.sortedStably { first, second in
             (first.chapterIndex, first.characterOffset, first.number)
                 < (second.chapterIndex, second.characterOffset, second.number)
         }
@@ -186,7 +257,7 @@ extension ReaderViewModel {
             return
         }
         navigatePreservingReturnPosition(chapterIndex: next.chapterIndex, characterOffset: next.characterOffset)
-        announceToVoiceOver("Bookmark \(next.number)")
+        announceToVoiceOver(next.name)
     }
 
     /// Navigate to the nearest bookmark before the current position in the
@@ -197,7 +268,7 @@ extension ReaderViewModel {
             return
         }
         navigatePreservingReturnPosition(chapterIndex: previous.chapterIndex, characterOffset: previous.characterOffset)
-        announceToVoiceOver("Bookmark \(previous.number)")
+        announceToVoiceOver(previous.name)
     }
 
     /// Delete a bookmark
@@ -224,6 +295,24 @@ extension ReaderViewModel {
         autoPlayIfEnabled()
     }
 
+    /// Moves the reader to a Search in Book result, saving the current
+    /// position for Return and Go Back: the result of a transcript search to
+    /// the start of the sentence holding the match, any other to the match.
+    /// The one place that decides which move a result makes, for the Mac's
+    /// sheet and the phone's.
+    /// - Parameters:
+    ///   - chapterIndex: The content unit (chapter) holding the match.
+    ///   - characterOffset: The UTF-16 offset of the match in that unit's text.
+    ///   - inTranscript: Whether the book searched is a transcript
+    ///     (`BookSearchCorpus.timing` is not nil).
+    func goToSearchResult(chapterIndex: Int, characterOffset: Int, inTranscript: Bool) {
+        if inTranscript {
+            navigateToTranscriptSearchResult(chapterIndex: chapterIndex, textOffset: characterOffset)
+        } else {
+            navigateToSearchResult(chapterIndex: chapterIndex, characterOffset: characterOffset)
+        }
+    }
+
     /// Whether Search in Book has a text to search: a text book that has
     /// loaded, or an audiobook with a transcript, whose text it searches.
     /// An audiobook without one has only spacing that counts time.
@@ -239,12 +328,16 @@ extension ReaderViewModel {
     /// command it names, if any, is the one the menu offers. A reason the
     /// load found for the text not being shown means the book has a
     /// transcript whatever the rows have noted of it yet.
-    func announceNoTextToSearch(hasTranscript: Bool) {
+    ///
+    /// `offersTranscription` is false on the iPhone, which cannot transcribe:
+    /// the words then name no command and tell no one to transcribe.
+    func announceNoTextToSearch(hasTranscript: Bool, offersTranscription: Bool = true) {
         announceToVoiceOver(BookSearchWording.noTextToSearch(
             bookTitle: book.title,
             canTranscribe: LibraryAudioCommand.isTranscribable(book),
             hasTranscript: hasTranscript || transcriptWithheld != nil,
-            withheld: transcriptWithheld
+            withheld: transcriptWithheld,
+            offersTranscription: offersTranscription
         ))
     }
 
@@ -356,7 +449,8 @@ extension ReaderViewModel {
         guard hasSavedPosition else { return }
         hasSavedPosition = false
         navigateTo(chapterIndex: savedChapterIndex, characterOffset: savedCharacterOffset)
-        announceToVoiceOver("Returned to previous position")
+        // Translators: VoiceOver announcement after the Return command moved the book back to where it was before the last jump to a heading, bookmark, or search result.
+        announceToVoiceOver(InterfaceText.line("readerViewModel.returnToSavedPosition", "Returned to previous position"))
     }
 
     // MARK: - Metadata Editing
@@ -432,8 +526,16 @@ extension ReaderViewModel {
         book.applyEditableMetadata(from: saved)
         // The row's fields, over the edit for the rest, as for an EPUB.
         audioMetadata = saved.mergingEditableAudioMetadata(metadata)
-        announceToVoiceOver("Metadata updated")
+        announceToVoiceOver(Self.metadataUpdatedAnnouncement)
         showSavedMetadataInNowPlaying()
+    }
+
+    /// What VoiceOver says once a book's edited details are saved: here for an
+    /// audiobook, and in the iPhone's Book Info (`PhoneLibraryVocabulary`), which
+    /// says the same words through this.
+    nonisolated static var metadataUpdatedAnnouncement: String {
+        // Translators: VoiceOver announcement after a book's edited details were saved: an audiobook's title, artist, album, genre, or year on the Mac, or a book's title and author in the iPhone's Book Info.
+        InterfaceText.line("readerViewModel.metadataUpdatedAnnouncement", "Metadata updated")
     }
 
     /// Shows the book's title and author, as a metadata save left them, in

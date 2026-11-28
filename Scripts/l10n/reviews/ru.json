@@ -1,0 +1,2233 @@
+{
+ "language": "ru",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ is the newer. It has %@.",
+     "id": "libraryComparison.isNewer",
+     "english": "%1$@ is the newer. It has %2$@.",
+     "before": "Новее: %1$@. Только в ней есть %2$@.",
+     "after": "%1$@ новее. Только в ней есть %2$@.",
+     "why": "natural: «Новее: Эта копия.» set the capitalized copy name after a colon; the copy now opens its own sentence, as the English does"
+    },
+    {
+     "key": "%@ may be signed out or not running.",
+     "id": "dataDirectoryUnavailability.likelyCause.running",
+     "english": "%@ may be signed out or not running.",
+     "before": "Возможно, вход в %@ не выполнен или программа не запущена.",
+     "after": "Возможно, вход в %@ не выполнен или приложение не запущено.",
+     "why": "term: this catalog mostly says «приложение» for an app, as newer Apple Russian does (older AppKit strings say «программа»); this part had one of each"
+    },
+    {
+     "key": "%lld books in this library need a newer version of TextMouth. They are kept as they are, but not shown.",
+     "id": "storageLocation.booksNeedingNewerTextMouth.need",
+     "english": "%lld books in this library need a newer version of TextMouth. They are kept as they are, but not shown.",
+     "before": "Книги этой библиотеки (%lld) требуют более новой версии TextMouth. Они хранятся как есть, но не показываются.",
+     "after": "Книг в этой библиотеке, которым нужна более новая версия TextMouth: %lld. Они хранятся как есть, но не показываются.",
+     "why": "meaning: «Книги этой библиотеки (%lld) требуют» reads as all of the library books, with the count as an aside"
+    },
+    {
+     "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "id": "textEncoding.keptTextNote",
+     "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "before": "Правка его текста сохраняется рядом с новым чтением как копия в пакете книги.",
+     "after": "Правка текста сохраняется как копия в пакете книги, рядом с результатом повторного чтения.",
+     "why": "meaning: «новое чтение» is the act of reading, not the text a re-read makes; and «его» had no masculine noun to point to"
+    },
+    {
+     "key": "Choose another in Book Information.",
+     "id": "textEncoding.unknownChoice.information",
+     "english": "Choose another in Book Information.",
+     "before": "Выберите другую в разделе «Сведения о книге».",
+     "after": "Выберите другую в окне «Сведения о книге».",
+     "why": "term: Book Information is a window, as the other strings say («в окне «Сведения о книге»»), not a section"
+    },
+    {
+     "key": "Conditions about books test books, episodes, and articles; conditions about feeds test feeds. A condition never hides a row it does not test.",
+     "id": "libraryViewEditor.listsCaption",
+     "english": "Conditions about books test books, episodes, and articles; conditions about feeds test feeds. A condition never hides a row it does not test.",
+     "before": "Условия о книгах проверяют книги, выпуски и статьи; условия о лентах проверяют ленты. Условие никогда не скрывает строку, которую не проверяет.",
+     "after": "Условия для книг проверяют книги, выпуски и статьи; условия для лент проверяют ленты. Условие никогда не скрывает строку, которую не проверяет.",
+     "why": "natural: «условия о книгах» is a calque (a contract clause about something); a condition is «для» the rows it tests"
+    },
+    {
+     "key": "Could not discard duplicate import",
+     "id": "libraryViewModel.couldNotDiscardDuplicateImport",
+     "english": "Could not discard duplicate import",
+     "before": "Не удалось отклонить дубликат импорта",
+     "after": "Не удалось удалить импортированный дубликат",
+     "why": "meaning: «отклонить дубликат импорта» (reject the import duplicate) misreads discarding the newly imported copy"
+    },
+    {
+     "key": "Delete After Import",
+     "id": "importDeleteBehavior.title.deleteAfterImport",
+     "english": "Delete After Import",
+     "before": "Удалить после импорта",
+     "after": "Удалять после импорта",
+     "why": "natural: a standing setting takes the imperfective, as its sibling «Спрашивать каждый раз» does"
+    },
+    {
+     "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "id": "textEncoding.stopsEditingNote",
+     "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "before": "Изменение текста для этой книги останавливается; чтобы изменить новое чтение, снова выберите «Изменить текст».",
+     "after": "Изменение текста этой книги прекращается; чтобы изменить новый текст, снова выберите «Изменить текст».",
+     "why": "meaning: «новое чтение» is the act of reading, not the text a re-read makes; an editing session «прекращается» rather than halts"
+    },
+    {
+     "key": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "id": "miscellaneousSettings.restartGestureExplanation",
+     "english": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "before": "Экспериментально. Последовательность клавиш мультимедиа или жестов AirPods за короткое время заново включает последний таймер сна — удобно, когда он только что сработал.",
+     "after": "Экспериментальная функция. Последовательность клавиш мультимедиа или жестов AirPods за короткое время заново включает последний таймер сна — удобно, когда он только что сработал.",
+     "why": "natural: «Экспериментально.» alone is an adverb, not a label for an experimental feature"
+    },
+    {
+     "key": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "id": "libraryIndexRecovery.rebuild.placement",
+     "english": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "before": "Расположение в папках и ручной порядок, хранившиеся только в нечитаемом индексе, будут потеряны из библиотеки.",
+     "after": "Расположение в папках и ручной порядок, хранившиеся только в нечитаемом индексе, пропадут из библиотеки.",
+     "why": "natural: «будут потеряны из библиотеки» is a calque; Russian loses nothing «из»"
+    },
+    {
+     "key": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "id": "libraryViewEditor.editDisabledHint",
+     "english": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "before": "Папки и «Список для чтения» всегда показывают то, что показывают. Их можно перемещать, а «Список для чтения» можно скрыть.",
+     "after": "«Папки» и «Список для чтения» всегда показывают одно и то же. Их можно перемещать, а «Список для чтения» можно и скрыть.",
+     "why": "natural: «всегда показывают то, что показывают» was a tautology; and Папки lacked the quotes the other view name had"
+    },
+    {
+     "key": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "id": "brailleCode.guessedRecovery",
+     "english": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "before": "Определено по Брайлю книги. Если книга читается неверно, выберите Unified English Braille в разделе «Код Брайля».",
+     "after": "Код определён предположительно, по Брайлю книги. Если книга читается неверно, выберите Unified English Braille в меню «Код Брайля».",
+     "why": "meaning: «guessed» lost its doubt, as in its siblings; and Braille Code is a pop-up menu, not a section"
+    },
+    {
+     "key": "If the library's own %@ arrives from %@ later, %@ may keep two copies of it, and this Mac and the other would disagree about which library this is.",
+     "id": "libraryFileWait.identityNotKnown.disagree",
+     "english": "If the library's own %1$@ arrives from %2$@ later, %3$@ may keep two copies of it, and this Mac and the other would disagree about which library this is.",
+     "before": "Если собственный файл %1$@ библиотеки позже поступит через %2$@, %3$@ может сохранить две копии, и этот Mac и другой не смогут договориться, какая это библиотека.",
+     "after": "Если собственный файл %1$@ библиотеки позже поступит через %2$@, %3$@ может сохранить две копии, и этот Mac и другой будут по-разному определять, какая это библиотека.",
+     "why": "meaning: «не смогут договориться» says the Macs fail to negotiate; they would identify the library differently"
+    },
+    {
+     "key": "In this Mac's Logs folder",
+     "id": "logsSettings.machineChoice",
+     "english": "In this Mac's Logs folder",
+     "before": "В папке Logs этого Mac.",
+     "after": "В папке Logs этого Mac",
+     "why": "punctuation: a pop-up choice takes no period, as its sibling «Внутри каталога данных» shows"
+    },
+    {
+     "key": "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again.",
+     "id": "feedDownloadRemoval.keptSentence.transcript",
+     "english": "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again.",
+     "before": "Позиция чтения, закладки и расшифровка, если она есть, сохраняются, и книгу можно загрузить снова.",
+     "after": "Позиция чтения, закладки и расшифровка, если она есть, сохраняются, а загрузку можно повторить.",
+     "why": "meaning: the deleted download is a feed item, an episode or article, not a book («книгу»)"
+    },
+    {
+     "key": "Its text is replaced by the new reading.",
+     "id": "textEncoding.replacedNote",
+     "english": "Its text is replaced by the new reading.",
+     "before": "Его текст заменяется новым чтением.",
+     "after": "Текст книги заменяется результатом повторного чтения.",
+     "why": "meaning: «новое чтение» is the act of reading, not the text a re-read makes; and «его» had no masculine noun to point to"
+    },
+    {
+     "key": "Keep Original",
+     "id": "importDeleteBehavior.title.keepOriginal",
+     "english": "Keep Original",
+     "before": "Оставить оригинал",
+     "after": "Оставлять исходный файл",
+     "why": "natural: a standing setting takes the imperfective, as «Спрашивать каждый раз» does; and the pop-up label calls it «исходный файл»"
+    },
+    {
+     "key": "Kept on this Mac for the reading list",
+     "id": "keptOnThisMacNote.forReadingListText",
+     "english": "Kept on this Mac for the reading list",
+     "before": "Хранится на этом Mac для списка для чтения",
+     "after": "Хранится на этом Mac, потому что книга в списке для чтения",
+     "why": "natural: «для списка для чтения» stacks two «для»; said as «Книга хранится на этом Mac, потому что она в списке для чтения» elsewhere"
+    },
+    {
+     "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.episodes",
+     "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "Оставлено на месте: %1$@. Выпуски и статьи остаются в своих лентах; «%2$@» делает выпуск книгой вашей библиотеки.",
+     "after": "Оставлено на месте: %1$@. Выпуски и статьи остаются в своих лентах; «%2$@» делает выпуск или статью книгой вашей библиотеки.",
+     "why": "meaning: «one» is an episode or an article; «делает выпуск книгой» left the article out"
+    },
+    {
+     "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "id": "libraryTransition.feedItemsLeft.they",
+     "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "Оставлены на месте: %1$@. Выпуски и статьи остаются в своих лентах; «%2$@» делает выпуск книгой вашей библиотеки.",
+     "after": "Оставлены на месте: %1$@. Выпуски и статьи остаются в своих лентах; «%2$@» делает выпуск или статью книгой вашей библиотеки.",
+     "why": "meaning: «one» is an episode or an article; «делает выпуск книгой» left the article out"
+    },
+    {
+     "key": "Match",
+     "id": "libraryViewEditor.matchLabel",
+     "english": "Match",
+     "before": "Совпадение",
+     "after": "Соответствие",
+     "why": "meaning: the label of the All Conditions / Any Condition pop-up; «Совпадение» is a search hit, not matching a rule"
+    },
+    {
+     "key": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+     "id": "libraryCloud.noneSelectedBooksKeptMacChoice",
+     "english": {
+      "one": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+      "other": "None of the %@ selected books is kept on this Mac by your choice, and %lld are kept for the reading list."
+     },
+     "before": {
+      "few": "Из выбранных книг (%@) ни одна не хранится на этом Mac по вашему выбору; для списка для чтения хранится: %lld.",
+      "many": "Из выбранных книг (%@) ни одна не хранится на этом Mac по вашему выбору; для списка для чтения хранится: %lld.",
+      "one": "Из выбранных книг (%@) ни одна не хранится на этом Mac по вашему выбору; для списка для чтения хранится: %lld.",
+      "other": "Из выбранных книг (%@) ни одна не хранится на этом Mac по вашему выбору; для списка для чтения хранится: %lld."
+     },
+     "after": {
+      "one": "Из выбранных книг (%@) ни одна не хранится на этом Mac по вашему выбору; хранится ради списка для чтения: %lld.",
+      "few": "Из выбранных книг (%@) ни одна не хранится на этом Mac по вашему выбору; хранится ради списка для чтения: %lld.",
+      "many": "Из выбранных книг (%@) ни одна не хранится на этом Mac по вашему выбору; хранится ради списка для чтения: %lld.",
+      "other": "Из выбранных книг (%@) ни одна не хранится на этом Mac по вашему выбору; хранится ради списка для чтения: %lld."
+     },
+     "why": "natural: «для списка для чтения» stacks two «для»"
+    },
+    {
+     "key": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "id": "brailleFileCode.uncheckedNote",
+     "english": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "before": "Ничто не подтверждает, что выбор верный. Если цифры и знаки препинания звучат неправильно, выберите другое.",
+     "after": "Ничто не подтверждает, что выбор верный. Если цифры и знаки препинания звучат неправильно, выберите другой вариант.",
+     "why": "grammar: neuter «другое» had no noun to agree with"
+    },
+    {
+     "key": "Opens a file picker to import books in any format TextMouth reads.",
+     "id": "libraryList.importBookHint",
+     "english": "Opens a file picker to import books in any format TextMouth reads.",
+     "before": "Открывает выбор файлов, чтобы импортировать книги в любом формате, который читает TextMouth.",
+     "after": "Открывает окно выбора файлов, чтобы импортировать книги в любом формате, который читает TextMouth.",
+     "why": "natural: «открывает выбор файлов» opens a choice; the picker is a window"
+    },
+    {
+     "key": "Opens the last book you were reading",
+     "id": "libraryList.continueHint",
+     "english": "Opens the last book you were reading",
+     "before": "Открывает последнюю читаемую вами книгу.",
+     "after": "Открывает книгу, которую вы читали последней.",
+     "why": "natural: «последнюю читаемую вами книгу» is a stiff participle phrase"
+    },
+    {
+     "key": "Plain Text",
+     "id": "bookFormat.displayName.txt",
+     "english": "Plain Text",
+     "before": "Обычный текст",
+     "after": "Простой текст",
+     "why": "term: Apple TextEdit Russian calls plain text «простой текст» (Конвертировать в простой текст)"
+    },
+    {
+     "key": "Position in %@: differs, and both were saved at the same time.",
+     "id": "libraryComparison.sentence.positionDiffersAtOnce",
+     "english": "Position in %@: differs, and both were saved at the same time.",
+     "before": "Позиция в %@: различается, оба сохранены одновременно.",
+     "after": "Позиция в %@: различается, обе сохранены одновременно.",
+     "why": "grammar: «оба» does not agree with the feminine позиции"
+    },
+    {
+     "key": "Reading the audio took longer than %@ seconds; TextMouth stopped waiting.",
+     "id": "timeLimitExceeded.sentence.readingAudioTook",
+     "english": "Reading the audio took longer than %@ seconds; TextMouth stopped waiting.",
+     "before": "Чтение аудио заняло больше %@ с; TextMouth перестал ждать.",
+     "after": "Чтение аудио заняло больше %@ секунды; TextMouth перестал ждать.",
+     "why": "grammar: the limit always has a fraction, which takes «секунды»; the bare «с» is read aloud as a letter"
+    },
+    {
+     "key": "Reset all rules to factory defaults",
+     "id": "substitutions.resetLabel",
+     "english": "Reset all rules to factory defaults",
+     "before": "Восстановить все правила до заводских значений",
+     "after": "Восстановить заводские значения всех правил",
+     "why": "natural: «восстановить до заводских значений» copies «reset to»; one restores the values"
+    },
+    {
+     "key": "Restore Default",
+     "id": "libraryViewsSettings.restoreButton",
+     "english": "Restore Default",
+     "before": "Восстановить по умолчанию",
+     "after": "Восстановить настройки по умолчанию",
+     "why": "grammar: «восстановить по умолчанию» has no object; the glossary «по умолчанию» needs a noun to restore"
+    },
+    {
+     "key": "Restore Default…",
+     "id": "libraryViewsSettings.restoreAction",
+     "english": "Restore Default…",
+     "before": "Восстановить по умолчанию…",
+     "after": "Восстановить настройки по умолчанию…",
+     "why": "grammar: «восстановить по умолчанию» has no object; the glossary «по умолчанию» needs a noun to restore"
+    },
+    {
+     "key": "Restore “%@” to its default?",
+     "id": "libraryViewsSettings.restoreTitle",
+     "english": "Restore “%@” to its default?",
+     "before": "Восстановить «%@» по умолчанию?",
+     "after": "Восстановить настройки по умолчанию для «%@»?",
+     "why": "grammar: «восстановить «%@» по умолчанию» reads as restoring the view by default"
+    },
+    {
+     "key": "Retry did not succeed.",
+     "id": "persistenceFailureCenter.announceRetryOutcome",
+     "english": "Retry did not succeed.",
+     "before": "Повторить не удалось.",
+     "after": "Повторная попытка не удалась.",
+     "why": "meaning: «Повторить не удалось» says the retry could not be made, not that it failed"
+    },
+    {
+     "key": "Same Author",
+     "id": "duplicateFilter.title.author",
+     "english": "Same Author",
+     "before": "Один автор",
+     "after": "Одинаковый автор",
+     "why": "natural: «Один автор» reads as a single author; matches its sibling «Одинаковый файл (MD5)»"
+    },
+    {
+     "key": "Same ISBN",
+     "id": "duplicateFilter.title.isbn",
+     "english": "Same ISBN",
+     "before": "Один ISBN",
+     "after": "Одинаковый ISBN",
+     "why": "natural: «Один ISBN» reads as a single ISBN; matches its sibling «Одинаковый файл (MD5)»"
+    },
+    {
+     "key": "Same Title",
+     "id": "duplicateFilter.title.sameName",
+     "english": "Same Title",
+     "before": "Одно название",
+     "after": "Одинаковое название",
+     "why": "natural: «Одно название» reads as a single title; matches its sibling «Одинаковый файл (MD5)»"
+    },
+    {
+     "key": "Set its shortcut with %@ in the %@ tab; the default is %@.",
+     "id": "miscellaneousSettings.restartShortcutNote",
+     "english": "Set its shortcut with %1$@ in the %2$@ tab; the default is %3$@.",
+     "before": "Задайте сочетание клавиш для действия «%1$@» во вкладке «%2$@»; по умолчанию: %3$@.",
+     "after": "Задайте сочетание клавиш для действия «%1$@» на вкладке «%2$@»; по умолчанию: %3$@.",
+     "why": "term: Apple Russian says «на вкладке», not «во вкладке»"
+    },
+    {
+     "key": "Show bookmark button in playback controls",
+     "id": "settings.showBookmarkLabel",
+     "english": "Show bookmark button in playback controls",
+     "before": "Показывать кнопку закладки в элементах управления воспроизведением",
+     "after": "Показывать кнопку закладки на панели воспроизведения",
+     "why": "natural: «в элементах управления воспроизведением» is a long calque; the button goes on the playback bar, as «на панели воспроизведения» says elsewhere"
+    },
+    {
+     "key": "Show speed controls in playback controls",
+     "id": "settings.showSpeedLabel",
+     "english": "Show speed controls in playback controls",
+     "before": "Показывать элементы управления скоростью в элементах управления воспроизведением",
+     "after": "Показывать управление скоростью на панели воспроизведения",
+     "why": "natural: «элементы управления скоростью в элементах управления воспроизведением» repeated itself"
+    },
+    {
+     "key": "Showing the first %lld matches; refine your search",
+     "id": "bookSearch.statusTruncated",
+     "english": {
+      "one": "Showing the first %lld matches; refine your search",
+      "other": "Showing the first %lld matches; refine your search"
+     },
+     "before": {
+      "few": "Показано %lld совпадения; уточните поиск",
+      "many": "Показано %lld совпадений; уточните поиск",
+      "one": "Показано %lld совпадение; уточните поиск",
+      "other": "Показано %lld совпадения; уточните поиск"
+     },
+     "after": {
+      "one": "Показаны первые совпадения: %lld; уточните поиск",
+      "few": "Показаны первые совпадения: %lld; уточните поиск",
+      "many": "Показаны первые совпадения: %lld; уточните поиск",
+      "other": "Показаны первые совпадения: %lld; уточните поиск"
+     },
+     "why": "meaning: «first» was lost, so the list sounded complete; the colon form also avoids agreeing «первые» with the number"
+    },
+    {
+     "key": "Some files of “%@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %@ again.",
+     "id": "refusal.sentence.filesInCloud",
+     "english": "Some files of “%1$@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %2$@ again.",
+     "before": "Некоторые файлы книги «%1$@» есть только в облаке, и при замене сейчас они остались бы позади. Загрузите книгу и снова выберите «%2$@».",
+     "after": "Некоторые файлы книги «%1$@» есть только в облаке, и при замене сейчас они остались бы на старом месте. Загрузите книгу и снова выберите «%2$@».",
+     "why": "natural: «остались бы позади» reads as «would be in the past»; the files would stay where they are"
+    },
+    {
+     "key": "Stops saying the code was guessed. The book is not read again.",
+     "id": "brailleCode.keepGuessHint",
+     "english": "Stops saying the code was guessed. The book is not read again.",
+     "before": "Больше не сообщает, что код определён автоматически. Книга не читается заново.",
+     "after": "Больше не сообщает, что код определён предположительно. Книга не читается заново.",
+     "why": "meaning: «guessed» says the code may be wrong; «автоматически» drops that, and «определено по байтам» is automatic too"
+    },
+    {
+     "key": "Test input",
+     "id": "substitutions.testInputPrompt",
+     "english": "Test input",
+     "before": "Тестовый ввод",
+     "after": "Текст для проверки",
+     "why": "natural: «Тестовый ввод» is programmer jargon; its VoiceOver label already says «Текст для проверки»"
+    },
+    {
+     "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "id": "textEncoding.editNotKeptRefusal",
+     "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "before": "TextMouth не удалось сохранить изменённый вами текст в «%@» рядом с новым чтением, поэтому книга оставлена как была.",
+     "after": "TextMouth не удалось сохранить изменённый вами текст в «%@» рядом с результатом повторного чтения, поэтому книга оставлена как была.",
+     "why": "meaning: «новое чтение» is the act of reading, not the text a re-read makes"
+    },
+    {
+     "key": "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again.",
+     "id": "refusal.sentence.storageBusy.rebuilding",
+     "english": "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again.",
+     "before": "TextMouth перестраивает свою папку данных. Дождитесь окончания и снова выберите «%@».",
+     "after": "TextMouth перестраивает свой каталог данных. Дождитесь окончания и снова выберите «%@».",
+     "why": "term: every other string of this part calls the data directory «каталог данных»; this one alone said «папку данных»"
+    },
+    {
+     "key": "TextMouth writes %@ with the identity this Mac knows for the library, and opens it.",
+     "id": "libraryFileWait.confirmation.identity.writes",
+     "english": "TextMouth writes %@ with the identity this Mac knows for the library, and opens it.",
+     "before": "TextMouth запишет %@ с идентификатором, который этот Mac знает для библиотеки, и откроет её.",
+     "after": "TextMouth запишет %@ с идентификатором библиотеки, известным этому Mac, и откроет её.",
+     "why": "natural: «который этот Mac знает для библиотеки» is a calque; its twin hint says «идентификатор библиотеки, известный этому Mac»"
+    },
+    {
+     "key": "The %@ of %lld of them are kept.",
+     "id": "feedDownloadRemoval.completionMessage.them",
+     "english": {
+      "one": "The %@ of %lld of them are kept.",
+      "other": "The %@ of %lld of them are kept."
+     },
+     "before": {
+      "few": "%@ — сохраняются у %lld из них.",
+      "many": "%@ — сохраняются у %lld из них.",
+      "one": "%@ — сохраняются у %lld из них.",
+      "other": "%@ — сохраняются у %lld из них."
+     },
+     "after": {
+      "one": "У %2$lld из них сохраняются: %1$@.",
+      "few": "У %2$lld из них сохраняются: %1$@.",
+      "many": "У %2$lld из них сохраняются: %1$@.",
+      "other": "У %2$lld из них сохраняются: %1$@."
+     },
+     "why": "punctuation: a dash between a subject and its verb is not Russian, and the list began the sentence in lower case; now built as «У каждой сохраняются: %@.»"
+    },
+    {
+     "key": "The %lld selected books are kept on this Mac for the reading list.",
+     "id": "libraryCloud.selectedBooksKept",
+     "english": {
+      "one": "The %lld selected book is kept on this Mac for the reading list.",
+      "other": "The %lld selected books are kept on this Mac for the reading list."
+     },
+     "before": {
+      "few": "Выбранные книги (%lld) хранятся на этом Mac для списка для чтения.",
+      "many": "Выбранные книги (%lld) хранятся на этом Mac для списка для чтения.",
+      "one": "Выбранная книга (%lld) хранится на этом Mac для списка для чтения.",
+      "other": "Выбранные книги (%lld) хранятся на этом Mac для списка для чтения."
+     },
+     "after": {
+      "one": "Выбранная книга (%lld) хранится на этом Mac, потому что она в списке для чтения.",
+      "few": "Выбранные книги (%lld) хранятся на этом Mac, потому что они в списке для чтения.",
+      "many": "Выбранные книги (%lld) хранятся на этом Mac, потому что они в списке для чтения.",
+      "other": "Выбранные книги (%lld) хранятся на этом Mac, потому что они в списке для чтения."
+     },
+     "why": "natural: «для списка для чтения» stacks two «для»"
+    },
+    {
+     "key": "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written.",
+     "id": "leadingArticle.description.ignoredWhenTyping",
+     "english": "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written.",
+     "before": "The Hobbit при вводе считается буквой H. Список сохраняет порядок и показывает каждое название так, как оно написано.",
+     "after": "При вводе The Hobbit находится по букве H. Список сохраняет порядок и показывает каждое название так, как оно написано.",
+     "why": "meaning: «считается буквой H» says the title is the letter H; typing H finds it"
+    },
+    {
+     "key": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "id": "leadingArticle.description.ignoredForBoth",
+     "english": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "before": "The Hobbit сортируется среди H и показывается как Hobbit, The. Ввод H находит его среди H.",
+     "after": "The Hobbit сортируется среди названий на H и показывается как Hobbit, The. Ввод буквы H находит его среди них.",
+     "why": "natural: «среди H» copies «among the H-s»; Russian sorts among titles on a letter"
+    },
+    {
+     "key": "The book %@ is stored at %@, outside the data directory, so the move cannot carry it.",
+     "id": "dataDirectoryMigrationError.bookOutside",
+     "english": "The book %1$@ is stored at %2$@, outside the data directory, so the move cannot carry it.",
+     "before": "Книга «%1$@» хранится здесь: %2$@, вне каталога данных, поэтому перемещение не может её захватить.",
+     "after": "Книга «%1$@» хранится здесь: %2$@, вне каталога данных, поэтому её нельзя переместить вместе с ним.",
+     "why": "natural: «перемещение не может её захватить» says the move cannot capture it"
+    },
+    {
+     "key": "The library index is already readable.",
+     "id": "libraryIndexRecoveryOutcome.notRecovering",
+     "english": "The library index is already readable.",
+     "before": "Индекс библиотеки уже читается.",
+     "after": "Индекс библиотеки уже читается без ошибок.",
+     "why": "meaning: «уже читается» also means is being read right now; the index is readable"
+    },
+    {
+     "key": "The new location, %@, is a link to %@, which cannot be found.",
+     "id": "dataDirectoryMigrationError.unreachableLink",
+     "english": "The new location, %1$@, is a link to %2$@, which cannot be found.",
+     "before": "Новое расположение, %1$@, — ссылка на %2$@, которое не найдено.",
+     "after": "Новое расположение, %1$@, — ссылка на %2$@, который не найден.",
+     "why": "grammar: neuter «которое» had no noun; the sibling sentences take the path as masculine («который»)"
+    },
+    {
+     "key": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "id": "brailleCode.suggestsAmericanEdition",
+     "english": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "before": "Этот Брайль похож на английский Брайль, американское издание. Выберите его код в разделе «Сведения о книге».",
+     "after": "Этот Брайль похож на English Braille, American Edition. Выберите этот код Брайля в окне «Сведения о книге».",
+     "why": "term: the code name stays English, as the Braille Code pop-up lists it; Book Information is a window, not a section"
+    },
+    {
+     "key": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "id": "leadingArticle.description.partOfTitle",
+     "english": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "before": "Названия сортируются и находятся при вводе так, как написаны: The Hobbit среди T.",
+     "after": "Названия сортируются и находятся при вводе так, как написаны: The Hobbit — среди названий на T.",
+     "why": "natural: «среди T» copies «among the T-s»; Russian sorts among titles on a letter"
+    },
+    {
+     "key": "Try again in a moment.",
+     "id": "common.tryAgainInAMoment",
+     "english": "Try again in a moment.",
+     "before": "Повторите попытку через мгновение.",
+     "after": "Повторите попытку чуть позже.",
+     "why": "natural: «через мгновение» is literary; Apple says «позже»"
+    },
+    {
+     "key": "Type to search the book's transcript",
+     "id": "bookSearch.transcriptFieldHint",
+     "english": "Type to search the book's transcript",
+     "before": "Принимает текст для поиска по расшифровке книги.",
+     "after": "Ищет введённый текст в расшифровке книги.",
+     "why": "natural: «Принимает текст для поиска» describes a machine taking input; a hint says the result"
+    },
+    {
+     "key": "Type to search the text of every book in the library",
+     "id": "librarySearch.fieldHint",
+     "english": "Type to search the text of every book in the library",
+     "before": "Принимает текст для поиска по тексту каждой книги в библиотеке.",
+     "after": "Ищет введённый текст во всех книгах библиотеки.",
+     "why": "natural: «Принимает текст для поиска» describes a machine taking input; a hint says the result"
+    },
+    {
+     "key": "Type to search within the book",
+     "id": "bookSearch.fieldHint",
+     "english": "Type to search within the book",
+     "before": "Принимает текст для поиска в книге.",
+     "after": "Ищет введённый текст в книге.",
+     "why": "natural: «Принимает текст для поиска» describes a machine taking input; a hint says the result"
+    },
+    {
+     "key": "What to do with the original file after importing a book",
+     "id": "storageSettings.originalFileHint",
+     "english": "What to do with the original file after importing a book",
+     "before": "Что сделать с исходным файлом после импорта книги.",
+     "after": "Что делать с исходным файлом после импорта книги.",
+     "why": "natural: a standing setting takes the imperfective «делать», as its choices now do"
+    },
+    {
+     "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "id": "textEncoding.placesSentence.whereNoneTheirWords",
+     "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Если слов, к которым они привязаны, не осталось, %@, каждое из них переходит примерно в ту же точку своей главы или в ближайший фрагмент, общий для двух прочтений.",
+     "after": "Если слов, к которым они привязаны, не осталось, %@, каждая из них переходит примерно в ту же точку своей главы или в ближайший фрагмент, общий для двух прочтений.",
+     "why": "grammar: «каждое» does not agree with позиция and закладки, both feminine"
+    },
+    {
+     "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "id": "textEncoding.placesSentence.whereNoneTheir",
+     "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Если слов, к которым они привязаны, не осталось, каждое из них переходит примерно в ту же точку своей главы или в ближайший фрагмент, общий для двух прочтений.",
+     "after": "Если слов, к которым они привязаны, не осталось, каждая из них переходит примерно в ту же точку своей главы или в ближайший фрагмент, общий для двух прочтений.",
+     "why": "grammar: «каждое» does not agree with позиция and закладки, both feminine"
+    },
+    {
+     "key": "at the top of the library",
+     "id": "libraryComparison.folderPhrase.top",
+     "english": "at the top of the library",
+     "before": "в начале библиотеки",
+     "after": "на верхнем уровне библиотеки",
+     "why": "meaning: the book is in no folder, at the top level; «в начале библиотеки» says at its beginning"
+    },
+    {
+     "key": "guessed",
+     "id": "textEncoding.guessNote",
+     "english": "guessed",
+     "before": "определено автоматически",
+     "after": "определено предположительно",
+     "why": "meaning: «guessed» says the encoding may be wrong; «автоматически» drops that, and «определено по байтам» is automatic too"
+    },
+    {
+     "key": "“%@” could not be moved back after a failed move, so its files are at %@ instead of %@: %@",
+     "id": "subject.sentence.strandedPackage",
+     "english": "“%1$@” could not be moved back after a failed move, so its files are at %2$@ instead of %3$@: %4$@",
+     "before": "«%1$@» не удалось вернуть после неудачного перемещения, поэтому его файлы находятся в %2$@, а не в %3$@: %4$@",
+     "after": "Книгу «%1$@» не удалось вернуть после неудачного перемещения, поэтому её файлы находятся в %2$@, а не в %3$@: %4$@",
+     "why": "grammar: «его файлы» cannot point to a book title; the book is named and its files are «её»"
+    }
+   ]
+  },
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ are in your library, unsubscribed. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "id": "feed.importFoundUnsubscribed",
+     "english": "%1$@ are in your library, unsubscribed. Choose %2$@ on a feed's row, or in its %3$@, to check it again.",
+     "before": "%1$@ уже в вашей библиотеке, но вы от них отписались. Выберите %2$@ в строке ленты или в листе %3$@, чтобы снова проверять их.",
+     "after": "%1$@ уже в вашей библиотеке, но вы от них отписались. Выберите %2$@ в строке ленты или в её листе %3$@, чтобы снова проверять эту ленту.",
+     "why": "meaning: it is the one feed whose row is chosen that is checked again; проверять их said one row checks them all"
+    },
+    {
+     "key": "%@ lists %lld feeds. Each gets its own folder, named after it.",
+     "id": "feed.importLists",
+     "english": {
+      "one": "%@ lists %lld feed. Each gets its own folder, named after it.",
+      "other": "%@ lists %lld feeds. Each gets its own folder, named after it."
+     },
+     "before": {
+      "few": "В %@ указаны %lld ленты. Для каждой создаётся отдельная папка с её названием.",
+      "many": "В %@ указано %lld лент. Для каждой создаётся отдельная папка с её названием.",
+      "one": "В %@ указана %lld лента. Для неё создаётся отдельная папка с её названием.",
+      "other": "В %@ указано %lld ленты. Для каждой создаётся отдельная папка с её названием."
+     },
+     "after": {
+      "one": "В %@ указана %lld лента. Для каждой создаётся отдельная папка с её названием.",
+      "few": "В %@ указаны %lld ленты. Для каждой создаётся отдельная папка с её названием.",
+      "many": "В %@ указано %lld лент. Для каждой создаётся отдельная папка с её названием.",
+      "other": "В %@ указано %lld ленты. Для каждой создаётся отдельная папка с её названием."
+     },
+     "why": "grammar: the one form also serves 21 and 31 feeds, where Для неё (for it) is wrong; Для каждой reads right for every count, as the English Each does"
+    },
+    {
+     "key": "%@ of %@ transcribed",
+     "id": "transcription.secondsLine",
+     "english": "%1$@ of %2$@ transcribed",
+     "before": "%1$@ из %2$@ расшифровано",
+     "after": "Расшифровано: %1$@ (всего %2$@)",
+     "why": "grammar: из needs the genitive and расшифровано a neuter subject, but the lengths come in the nominative (из 1 час, 1 минута расшифровано); всего takes them as they are"
+    },
+    {
+     "key": "About %@ left",
+     "id": "importProgress.timeLeft.about",
+     "english": "About %@ left",
+     "before": "Осталось около %@",
+     "after": "Осталось: примерно %@",
+     "why": "grammar: около needs the genitive, but the time comes in the nominative (около 4 минуты, около 1 минута); the colon and примерно read right for every value"
+    },
+    {
+     "key": "Also write the markers as Audacity labels",
+     "id": "audioEditor.exportLabelsToggle",
+     "english": "Also write the markers as Audacity labels",
+     "before": "Также записать метки в виде меток Audacity",
+     "after": "Также записать метки в файл меток Audacity",
+     "why": "natural: записать метки в виде меток repeats the word; the export writes the markers into an Audacity label file"
+    },
+    {
+     "key": "Attached on %@.",
+     "id": "transcription.cameFrom.nil",
+     "english": "Attached on %@.",
+     "before": "Прикреплена, %@.",
+     "after": "Прикреплена %@.",
+     "why": "punctuation: Russian puts no comma between Прикреплена and the date that follows it"
+    },
+    {
+     "key": "Checking the feed won't bring it back.",
+     "id": "feed.deleteItemMessage.checking",
+     "english": "Checking the feed won't bring it back.",
+     "before": "Проверка ленты его не вернёт.",
+     "after": "Проверка ленты не вернёт удалённое.",
+     "why": "grammar: the sentence serves an article (feminine) as well as an episode, so the masculine его was wrong for articles"
+    },
+    {
+     "key": "Downloads it again, then opens it where you left off",
+     "id": "feed.itemRowHint.again",
+     "english": "Downloads it again, then opens it where you left off",
+     "before": "Загружает снова, затем открывает на месте, где вы остановились.",
+     "after": "Загружает снова, затем открывает там, где вы остановились.",
+     "why": "natural: open where you left off is там, где вы остановились; на месте, где is a calque"
+    },
+    {
+     "key": "Every item of %@ is already played.",
+     "id": "feed.markedAll.item",
+     "english": "Every item of %@ is already played.",
+     "before": "Все элементы ленты %@ уже воспроизведены.",
+     "after": "Все элементы ленты %@ уже прослушаны.",
+     "why": "term: played is прослушан everywhere else (Mark All Played, unplayed, every episode already played); воспроизведены stood alone"
+    },
+    {
+     "key": "It also deletes %@.",
+     "id": "feed.unsubscribeMessage.deletes",
+     "english": "It also deletes %@.",
+     "before": "Также удаляется %@.",
+     "after": "Также будет удалено: %@.",
+     "why": "grammar: the singular удаляется cannot agree with the plural lists it takes, such as the places and bookmarks kept for 3 removed downloads"
+    },
+    {
+     "key": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "id": "feed.deletesSentence.goes",
+     "english": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "before": "Удаляется %@: это перемещается в Корзину, откуда это можно восстановить, пока Корзина не очищена.",
+     "after": "Удаляется %@: удалённое перемещается в Корзину, откуда его можно восстановить, пока Корзина не очищена.",
+     "why": "natural: это перемещается ... откуда это можно восстановить is stilted; удалённое ... его avoids guessing the gender of the placeholder and reads naturally"
+    },
+    {
+     "key": "It holds %@, which TextMouth does not import.",
+     "id": "importProgress.noBooksFound",
+     "english": "It holds %@, which TextMouth does not import.",
+     "before": "В нём есть: %@. TextMouth их не импортирует.",
+     "after": "В нём есть: %@. TextMouth не импортирует такие файлы.",
+     "why": "grammar: их (them) is wrong when the archive holds a single file, such as 1 .txt file; такие файлы fits every count"
+    },
+    {
+     "key": "It holds no files.",
+     "id": "importProgress.holdsNoFiles",
+     "english": "It holds no files.",
+     "before": "В нём нет файлов.",
+     "after": "Внутри нет файлов.",
+     "why": "grammar: the sentence serves a folder (папка, feminine) as well as an archive, so the masculine В нём was wrong for folders"
+    },
+    {
+     "key": "Its cleanup is replaced too.",
+     "id": "transcription.replaceConfirmationMessage.cleanup",
+     "english": "Its cleanup is replaced too.",
+     "before": "Его исправление тоже заменяется.",
+     "after": "Её исправление тоже заменяется.",
+     "why": "grammar: its is the transcript (расшифровка) of the book (книга), both feminine, so Его did not agree"
+    },
+    {
+     "key": "Its file is now “%@”, since TextMouth can't write its old format.",
+     "id": "audioEditor.saved.format",
+     "english": "Its file is now “%@”, since TextMouth can't write its old format.",
+     "before": "Теперь его файл называется «%@», так как TextMouth не может записывать в прежнем формате.",
+     "after": "Теперь файл книги называется «%@», так как TextMouth не может записывать в прежнем формате.",
+     "why": "grammar: it is the book (книга, feminine) whose file was renamed, so его did not agree; файл книги names it"
+    },
+    {
+     "key": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "id": "cueSheet.timesPastAudio",
+     "english": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "before": "Её дорожки выходят за конец указанного в ней аудио, поэтому она создана для другой копии этого аудио.",
+     "after": "Его дорожки выходят за конец указанного в нём аудио, поэтому он создан для другой копии этого аудио.",
+     "why": "grammar: the cue sheet is файл CUE (masculine) in every other string, so Её, в ней, and она создана did not agree"
+    },
+    {
+     "key": "Lists markers, chapter markers, and pauses, to go to, name, select, or delete.",
+     "id": "audioEditor.explanation.editorShowMarkers",
+     "english": "Lists markers, chapter markers, and pauses, to go to, name, select, or delete.",
+     "before": "Показывает список меток, меток глав и пауз, к которым можно перейти, дать им имя, выделить или удалить их.",
+     "after": "Показывает метки, метки глав и паузы, чтобы переходить к ним, называть, выделять или удалять их.",
+     "why": "grammar: к которым governs only перейти, so дать им имя, выделить или удалить их hung loose; чтобы переходить к ним ... удалять их reads as one sentence"
+    },
+    {
+     "key": "Marked %lld items of %@ played.",
+     "id": "feed.markedAll.items",
+     "english": {
+      "one": "Marked %lld item of %@ played.",
+      "other": "Marked %lld items of %@ played."
+     },
+     "before": {
+      "few": "Отмечены воспроизведёнными %lld элемента ленты %@.",
+      "many": "Отмечено воспроизведёнными %lld элементов ленты %@.",
+      "one": "Отмечен воспроизведённым %lld элемент ленты %@.",
+      "other": "Отмечено воспроизведёнными %lld элемента ленты %@."
+     },
+     "after": {
+      "one": "Отмечен прослушанным %lld элемент ленты %@.",
+      "few": "Отмечены прослушанными %lld элемента ленты %@.",
+      "many": "Отмечено прослушанными %lld элементов ленты %@.",
+      "other": "Отмечено прослушанными %lld элемента ленты %@."
+     },
+     "why": "term: played is прослушан in every other feed string (Mark All Played, Marked episodes played); воспроизведёнными stood alone"
+    },
+    {
+     "key": "Moved %lld articles into %@. They're library books now, and their feeds list them %@.",
+     "id": "feed.movedToLibrary.articles",
+     "english": {
+      "one": "Moved %lld article into %@. It's a library book now, and its feed lists it %@.",
+      "other": "Moved %lld articles into %@. They're library books now, and their feeds list them %@."
+     },
+     "before": {
+      "few": "Перемещены %lld статьи в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "many": "Перемещено %lld статей в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "one": "Перемещена %lld статья в %@. Теперь это книга библиотеки, и её лента показывает её с пометкой «%@».",
+      "other": "Перемещено %lld статьи в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@»."
+     },
+     "after": {
+      "one": "Перемещена %lld статья в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "few": "Перемещены %lld статьи в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "many": "Перемещено %lld статей в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "other": "Перемещено %lld статьи в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@»."
+     },
+     "why": "grammar: the code uses this string only for two or more (one item has its own sentence), so the one form shows only 21, 31 and the like, where книга and её лента were wrong"
+    },
+    {
+     "key": "Moved %lld episodes into %@. They're library books now, and their feeds list them %@.",
+     "id": "feed.movedToLibrary.episodes",
+     "english": {
+      "one": "Moved %lld episode into %@. It's a library book now, and its feed lists it %@.",
+      "other": "Moved %lld episodes into %@. They're library books now, and their feeds list them %@."
+     },
+     "before": {
+      "few": "Перемещены %lld выпуска в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "many": "Перемещено %lld выпусков в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "one": "Перемещён %lld выпуск в %@. Теперь это книга библиотеки, и его лента показывает его с пометкой «%@».",
+      "other": "Перемещено %lld выпуска в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@»."
+     },
+     "after": {
+      "one": "Перемещён %lld выпуск в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "few": "Перемещены %lld выпуска в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "many": "Перемещено %lld выпусков в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "other": "Перемещено %lld выпуска в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@»."
+     },
+     "why": "grammar: the code uses this string only for two or more (one item has its own sentence), so the one form shows only 21, 31 and the like, where книга and его лента were wrong"
+    },
+    {
+     "key": "Moved %lld items into %@. They're library books now, and their feeds list them %@.",
+     "id": "feed.movedToLibrary.items",
+     "english": {
+      "one": "Moved %lld item into %@. It's a library book now, and its feed lists it %@.",
+      "other": "Moved %lld items into %@. They're library books now, and their feeds list them %@."
+     },
+     "before": {
+      "few": "Перемещены %lld элемента в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "many": "Перемещено %lld элементов в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "one": "Перемещён %lld элемент в %@. Теперь это книга библиотеки, и его лента показывает его с пометкой «%@».",
+      "other": "Перемещено %lld элемента в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@»."
+     },
+     "after": {
+      "one": "Перемещён %lld элемент в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "few": "Перемещены %lld элемента в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "many": "Перемещено %lld элементов в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "other": "Перемещено %lld элемента в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@»."
+     },
+     "why": "grammar: the code uses this string only for two or more (one item has its own sentence), so the one form shows only 21, 31 and the like, where книга and его лента were wrong"
+    },
+    {
+     "key": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds",
+     "id": "feed.moveToLibraryHint.articles",
+     "english": {
+      "one": "Moves this %lld article into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "few": "Перемещает %lld статьи в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "many": "Перемещает %lld статей в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "one": "Перемещает %lld статью в папку библиотеки как книгу, которую можно изменять; она покидает свою ленту",
+      "other": "Перемещает %lld статьи в папку библиотеки как книги, которые можно изменять; они покидают свои ленты"
+     },
+     "after": {
+      "one": "Перемещает %lld статью в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "few": "Перемещает %lld статьи в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "many": "Перемещает %lld статей в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "other": "Перемещает %lld статьи в папку библиотеки как книги, которые можно изменять; они покидают свои ленты"
+     },
+     "why": "grammar: the code uses this string only for counts other than one, so the one form shows only 21, 31 and the like, where как книгу and она покидает were wrong"
+    },
+    {
+     "key": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds",
+     "id": "feed.moveToLibraryHint.episodes",
+     "english": {
+      "one": "Moves this %lld episode into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "few": "Перемещает %lld выпуска в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "many": "Перемещает %lld выпусков в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "one": "Перемещает %lld выпуск в папку библиотеки как книгу, которую можно изменять; он покидает свою ленту",
+      "other": "Перемещает %lld выпуска в папку библиотеки как книги, которые можно изменять; они покидают свои ленты"
+     },
+     "after": {
+      "one": "Перемещает %lld выпуск в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "few": "Перемещает %lld выпуска в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "many": "Перемещает %lld выпусков в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "other": "Перемещает %lld выпуска в папку библиотеки как книги, которые можно изменять; они покидают свои ленты"
+     },
+     "why": "grammar: the code uses this string only for counts other than one, so the one form shows only 21, 31 and the like, where как книгу and он покидает were wrong"
+    },
+    {
+     "key": "Moves these %lld items into a library folder as books you can edit; they leave their feeds",
+     "id": "feed.moveToLibraryHint.items",
+     "english": {
+      "one": "Moves this %lld item into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld items into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "few": "Перемещает %lld элемента в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "many": "Перемещает %lld элементов в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "one": "Перемещает %lld элемент в папку библиотеки как книгу, которую можно изменять; он покидает свою ленту",
+      "other": "Перемещает %lld элемента в папку библиотеки как книги, которые можно изменять; они покидают свои ленты"
+     },
+     "after": {
+      "one": "Перемещает %lld элемент в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "few": "Перемещает %lld элемента в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "many": "Перемещает %lld элементов в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "other": "Перемещает %lld элемента в папку библиотеки как книги, которые можно изменять; они покидают свои ленты"
+     },
+     "why": "grammar: the code uses this string only for counts other than one, so the one form shows only 21, 31 and the like, where как книгу and он покидает were wrong"
+    },
+    {
+     "key": "Opens it",
+     "id": "feed.itemRowHint.opens",
+     "english": "Opens it",
+     "before": "Открывает его.",
+     "after": "Открывает.",
+     "why": "grammar: the hint serves an article (feminine) as well as an episode, so его was wrong for articles; the bare verb matches Загружает, затем открывает"
+    },
+    {
+     "key": "Opens its book in your library",
+     "id": "feed.itemRowHint.library",
+     "english": "Opens its book in your library",
+     "before": "Открывает его книгу в вашей библиотеке.",
+     "after": "Открывает книгу в вашей библиотеке.",
+     "why": "grammar: the hint serves an article (feminine) as well as an episode, so его книгу was wrong for articles"
+    },
+    {
+     "key": "Part of %@ could not be decoded and is kept as silence.",
+     "id": "ffmpegImport.partlyDecodedNotice.silence",
+     "english": "Part of %@ could not be decoded and is kept as silence.",
+     "before": "Часть %@ не удалось декодировать, она сохранена как тишина.",
+     "after": "Часть %@ не удалось декодировать, и она заменена тишиной.",
+     "why": "natural: kept as silence means the part is replaced by silence; сохранена как тишина (saved as silence) is a calque"
+    },
+    {
+     "key": "Part of %lld files, %@, could not be decoded and is kept as silence.",
+     "id": "ffmpegImport.partlyDecodedNotice.files",
+     "english": {
+      "one": "Part of %lld file, %@, could not be decoded and is kept as silence.",
+      "other": "Part of %lld files, %@, could not be decoded and is kept as silence."
+     },
+     "before": {
+      "few": "Часть %lld файлов, %@, не удалось декодировать, она сохранена как тишина.",
+      "many": "Часть %lld файлов, %@, не удалось декодировать, она сохранена как тишина.",
+      "one": "Часть %lld файла, %@, не удалось декодировать, она сохранена как тишина.",
+      "other": "Часть %lld файла, %@, не удалось декодировать, она сохранена как тишина."
+     },
+     "after": {
+      "one": "Часть %lld файла, %@, не удалось декодировать, и она заменена тишиной.",
+      "few": "Части %lld файлов, %@, не удалось декодировать, и они заменены тишиной.",
+      "many": "Части %lld файлов, %@, не удалось декодировать, и они заменены тишиной.",
+      "other": "Части %lld файла, %@, не удалось декодировать, и они заменены тишиной."
+     },
+     "why": "meaning: Часть 3 файлов reads as some of the 3 files; Части says parts of each file failed, as the English means, and заменены тишиной replaces the calque"
+    },
+    {
+     "key": "Pasted %@ back where they were cut.",
+     "id": "audioEditor.pastedBack",
+     "english": "Pasted %@ back where they were cut.",
+     "before": "Вставлено %@ обратно на место вырезания.",
+     "after": "Вставлено обратно на место вырезания: %@.",
+     "why": "grammar: Вставлено cannot agree with lengths such as 1 минута; the colon form matches Скопировано: and Вырезано:"
+    },
+    {
+     "key": "Pasted %@ over %@.",
+     "id": "audioEditor.pasted.over",
+     "english": "Pasted %1$@ over %2$@.",
+     "before": "Вставлено %1$@ поверх %2$@.",
+     "after": "Вставлено: %1$@ поверх фрагмента длиной %2$@.",
+     "why": "grammar: поверх needs the genitive, but the length comes in the nominative (поверх 3 секунды), and Вставлено cannot agree with 1 минута; длиной takes the length as it is"
+    },
+    {
+     "key": "Paused at %@.",
+     "id": "audioEditor.paused",
+     "english": "Paused at %@.",
+     "before": "Пауза на %@.",
+     "after": "Пауза на отметке %@.",
+     "why": "grammar: на cannot take a time in words in the nominative (на 12 минут, 4 секунды); на отметке is how every other editor line places a time"
+    },
+    {
+     "key": "Presets from another Mac just arrived and replaced these. Make the change again.",
+     "id": "audioFilterPresetError.fileArrived",
+     "english": "Presets from another Mac just arrived and replaced these. Make the change again.",
+     "before": "Пресеты с другого Mac только что пришли и заменили эти. Повторите изменение.",
+     "after": "Только что пришли пресеты с другого Mac и заменили текущие. Повторите изменение.",
+     "why": "natural: заменили эти leaves эти without its noun; текущие (the current ones) is how Russian says it"
+    },
+    {
+     "key": "Recording over %@ at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "id": "audioEditor.punchInStarting.over",
+     "english": "Recording over %1$@ at %2$@, from %3$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "Запись поверх %1$@ с отметки %2$@, с микрофона «%3$@», после сигнала. «Записать поверх» или «Остановить» завершает её; «Снять выделение» отбрасывает.",
+     "after": "Запись поверх фрагмента длиной %1$@ с отметки %2$@, с микрофона «%3$@», после сигнала. «Записать поверх» или «Остановить» завершает её; «Снять выделение» отбрасывает.",
+     "why": "grammar: поверх needs the genitive, but the length comes in the nominative (поверх 2 секунды, поверх 1 минута); поверх фрагмента длиной takes it as it is"
+    },
+    {
+     "key": "Replaced %@ with %@ of new recording, which is selected.",
+     "id": "audioEditor.punchedIn",
+     "english": "Replaced %1$@ with %2$@ of new recording, which is selected.",
+     "before": "Заменено %1$@ новой записью длительностью %2$@, она выделена.",
+     "after": "Фрагмент длиной %1$@ заменён новой записью длительностью %2$@, она выделена.",
+     "why": "grammar: Заменено cannot agree with lengths such as 1 минута; Фрагмент длиной ... заменён reads right for every length"
+    },
+    {
+     "key": "Reset All to Defaults",
+     "id": "audioFilterPresets.resetAllButton",
+     "english": "Reset All to Defaults",
+     "before": "Сбросить всё по умолчанию",
+     "after": "Восстановить стандартные пресеты",
+     "why": "natural: Сбросить всё по умолчанию reads as reset by default; the button puts back the premade presets"
+    },
+    {
+     "key": "Resuming.",
+     "id": "recording.resuming",
+     "english": "Resuming.",
+     "before": "Продолжение.",
+     "after": "Запись продолжается.",
+     "why": "natural: Продолжение alone reads as a sequel (to be continued); the recording is what resumes"
+    },
+    {
+     "key": "Reverted to the original audio. Redo brings back the %lld edits.",
+     "id": "audioEditor.reverted.original",
+     "english": {
+      "one": "Reverted to the original audio. Redo brings back the %lld edit.",
+      "other": "Reverted to the original audio. Redo brings back the %lld edits."
+     },
+     "before": {
+      "few": "Возвращено исходное аудио. «Повторить» вернёт правок: %lld.",
+      "many": "Возвращено исходное аудио. «Повторить» вернёт правок: %lld.",
+      "one": "Возвращено исходное аудио. «Повторить» вернёт правок: %lld.",
+      "other": "Возвращено исходное аудио. «Повторить» вернёт правок: %lld."
+     },
+     "after": {
+      "one": "Возвращено исходное аудио. «Повторить» вернёт %lld правку.",
+      "few": "Возвращено исходное аудио. «Повторить» вернёт %lld правки.",
+      "many": "Возвращено исходное аудио. «Повторить» вернёт %lld правок.",
+      "other": "Возвращено исходное аудио. «Повторить» вернёт %lld правки."
+     },
+     "why": "natural: вернёт правок: %lld is a broken count after a verb; the four forms read as Russian counts"
+    },
+    {
+     "key": "Selection from %@ to %@; %@ long.",
+     "id": "audioEditor.selectionSentence",
+     "english": "Selection from %1$@ to %2$@; %3$@ long.",
+     "before": "Выделение от %1$@ до %2$@, длительность %3$@.",
+     "after": "Выделение с отметки %1$@ до отметки %2$@, длительность %3$@.",
+     "why": "grammar: от and до need the genitive, but the times come in the nominative (от 1 минута, 5 секунд); с отметки ... до отметки takes them as they are"
+    },
+    {
+     "key": "Still finding the pauses. Try again in a moment.",
+     "id": "audioEditor.findingPauses",
+     "english": "Still finding the pauses. Try again in a moment.",
+     "before": "Паузы ещё ищутся. Повторите попытку через мгновение.",
+     "after": "Поиск пауз ещё идёт. Повторите попытку чуть позже.",
+     "why": "natural: Паузы ещё ищутся and через мгновение are calques; Поиск пауз ещё идёт and чуть позже are the plain wording"
+    },
+    {
+     "key": "Stopped. Back at %@.",
+     "id": "audioEditor.stopped",
+     "english": "Stopped. Back at %@.",
+     "before": "Остановлено. Возврат на %@.",
+     "after": "Остановлено. Возврат к отметке %@.",
+     "why": "grammar: на cannot take a time in words in the nominative (на 1 минута, 5 секунд); к отметке takes it as it is, as the other editor lines do"
+    },
+    {
+     "key": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "id": "duplicateCopy.answerUnderWay",
+     "english": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "before": "TextMouth всё ещё выполняет ваш последний ответ. Дождитесь окончания.",
+     "after": "TextMouth всё ещё обрабатывает ваш последний ответ. Дождитесь окончания.",
+     "why": "natural: an answer is not executed (выполняет ответ); обрабатывает says it is still being carried out"
+    },
+    {
+     "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "id": "duplicateCopy.unansweredTrashed.other",
+     "english": {
+      "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+      "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
+     },
+     "before": {
+      "few": "TextMouth переместил в Корзину %lld новые копии дубликатов книг, потому что вопросы, оставлять ли их как дубликаты, остались без ответа до закрытия TextMouth. Чтобы вернуть их, откройте Корзину и выберите «Вернуть на место».",
+      "many": "TextMouth переместил в Корзину %lld новых копий дубликатов книг, потому что вопросы, оставлять ли их как дубликаты, остались без ответа до закрытия TextMouth. Чтобы вернуть их, откройте Корзину и выберите «Вернуть на место».",
+      "one": "TextMouth переместил в Корзину %lld новую копию дубликата книги, потому что вопрос, оставлять ли её как дубликат, остался без ответа до закрытия TextMouth. Чтобы вернуть её, откройте Корзину и выберите «Вернуть на место».",
+      "other": "TextMouth переместил в Корзину %lld новой копии дубликатов книг, потому что вопросы, оставлять ли их как дубликаты, остались без ответа до закрытия TextMouth. Чтобы вернуть их, откройте Корзину и выберите «Вернуть на место»."
+     },
+     "after": {
+      "one": "TextMouth переместил в Корзину %lld новую копию дубликатов книг, потому что вопросы, оставлять ли их как дубликаты, остались без ответа до закрытия TextMouth. Чтобы вернуть их, откройте Корзину и выберите «Вернуть на место».",
+      "few": "TextMouth переместил в Корзину %lld новые копии дубликатов книг, потому что вопросы, оставлять ли их как дубликаты, остались без ответа до закрытия TextMouth. Чтобы вернуть их, откройте Корзину и выберите «Вернуть на место».",
+      "many": "TextMouth переместил в Корзину %lld новых копий дубликатов книг, потому что вопросы, оставлять ли их как дубликаты, остались без ответа до закрытия TextMouth. Чтобы вернуть их, откройте Корзину и выберите «Вернуть на место».",
+      "other": "TextMouth переместил в Корзину %lld новой копии дубликатов книг, потому что вопросы, оставлять ли их как дубликаты, остались без ответа до закрытия TextMouth. Чтобы вернуть их, откройте Корзину и выберите «Вернуть на место»."
+     },
+     "why": "grammar: the code uses this string only for four books or more, so the one form shows only 21, 31 and the like, where the singular question, её and вернуть её were wrong"
+    },
+    {
+     "key": "That page names %lld feeds. Choose one, then Subscribe.",
+     "id": "feed.choosePrompt",
+     "english": {
+      "one": "That page names %lld feed. Choose one, then Subscribe.",
+      "other": "That page names %lld feeds. Choose one, then Subscribe."
+     },
+     "before": {
+      "few": "На этой странице указаны %lld ленты. Выберите одну, затем «Подписаться».",
+      "many": "На этой странице указано %lld лент. Выберите одну, затем «Подписаться».",
+      "one": "На этой странице указана %lld лента. Выберите её, затем «Подписаться».",
+      "other": "На этой странице указано %lld ленты. Выберите одну, затем «Подписаться»."
+     },
+     "after": {
+      "one": "На этой странице указана %lld лента. Выберите одну, затем «Подписаться».",
+      "few": "На этой странице указаны %lld ленты. Выберите одну, затем «Подписаться».",
+      "many": "На этой странице указано %lld лент. Выберите одну, затем «Подписаться».",
+      "other": "На этой странице указано %lld ленты. Выберите одну, затем «Подписаться»."
+     },
+     "why": "grammar: the one form also serves 21 feeds, where Выберите её (choose it) is wrong; Выберите одну reads right for every count, as the English Choose one does"
+    },
+    {
+     "key": "The bookInfo.json file did not read back as it was written.",
+     "id": "fileImportError.recordNotReadBack",
+     "english": "The bookInfo.json file did not read back as it was written.",
+     "before": "Файл bookInfo.json не прочитался обратно в том виде, в каком был записан.",
+     "after": "Файл bookInfo.json при повторном чтении не совпал с записанным.",
+     "why": "natural: не прочитался обратно is a colloquial calque of read back; при повторном чтении не совпал с записанным says what failed"
+    },
+    {
+     "key": "The feed stays in your library with its settings and %@, and %@ checks it again.",
+     "id": "feed.unsubscribeMessage.staysLibrarySettings",
+     "english": "The feed stays in your library with its settings and %1$@, and %2$@ checks it again.",
+     "before": "Лента остаётся в вашей библиотеке с настройками и %1$@; чтобы снова проверять её, выберите %2$@.",
+     "after": "Лента остаётся в вашей библиотеке с настройками, как и %1$@; чтобы снова проверять её, выберите %2$@.",
+     "why": "grammar: с настройками и %1$@ needs the instrumental, but the downloads come in the nominative (её 2 загруженных выпуска); как и takes the nominative"
+    },
+    {
+     "key": "The feed “%@” stays with it.",
+     "id": "feed.deleteFeedRefused.filesStayed.stays",
+     "english": "The feed “%@” stays with it.",
+     "before": "Лента «%@» остаётся вместе с ним.",
+     "after": "Лента «%@» тоже остаётся.",
+     "why": "grammar: it is the one item that could not be deleted, an episode or an article, so the masculine с ним was wrong for articles"
+    },
+    {
+     "key": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "id": "feed.itemPolicyQuietNote",
+     "english": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "before": "Список сразу следует за изменением параметра %@; то, что загружается или удаляется, ждёт, пока изменение не продержится десять секунд, и тогда VoiceOver объявляет об этом.",
+     "after": "Список меняется сразу при изменении параметра %@; загрузка и удаление ждут, пока изменение не продержится десять секунд, и тогда VoiceOver объявляет о них.",
+     "why": "natural: Список сразу следует за изменением reads as the list comes after the change; the list changes at once, and downloading and removing wait"
+    },
+    {
+     "key": "The place, bookmarks, and transcript kept for it are deleted too.",
+     "id": "feed.deleteItemMessage.bookmarks",
+     "english": "The place, bookmarks, and transcript kept for it are deleted too.",
+     "before": "Позиция чтения, закладки и расшифровка, сохранённые для него, тоже удаляются.",
+     "after": "Сохранённые позиция чтения, закладки и расшифровка тоже удаляются.",
+     "why": "grammar: the sentence serves an article (feminine) as well as an episode, so для него was wrong for articles"
+    },
+    {
+     "key": "The podcast directory at %@ couldn't answer the search (error %@). Try again later.",
+     "id": "feedFetchError.searchMessage.serverError",
+     "english": "The podcast directory at %1$@ couldn't answer the search (error %2$@). Try again later.",
+     "before": "Каталог подкастов %1$@ не смог ответить на поиск (ошибка %2$@). Повторите попытку позже.",
+     "after": "Каталог подкастов %1$@ не смог выполнить поиск (ошибка %2$@). Повторите попытку позже.",
+     "why": "natural: a directory answers or refuses a request, not a search (ответить на поиск); выполнить поиск is the plain wording"
+    },
+    {
+     "key": "The podcast directory couldn't answer the search. Try again later.",
+     "id": "feedFetchError.searchMessage.notFound",
+     "english": "The podcast directory couldn't answer the search. Try again later.",
+     "before": "Каталог подкастов не смог ответить на поиск. Повторите попытку позже.",
+     "after": "Каталог подкастов не смог выполнить поиск. Повторите попытку позже.",
+     "why": "natural: a directory answers a request, not a search (ответить на поиск); выполнить поиск is the plain wording"
+    },
+    {
+     "key": "The podcast directory refused the search; it allows about 20 a minute. Wait a minute and try again.",
+     "id": "feedFetchError.searchMessage.needsPassword",
+     "english": "The podcast directory refused the search; it allows about 20 a minute. Wait a minute and try again.",
+     "before": "Каталог подкастов отклонил поиск: он допускает около 20 запросов в минуту. Подождите минуту и повторите попытку.",
+     "after": "Каталог подкастов отклонил поисковый запрос: он допускает около 20 запросов в минуту. Подождите минуту и повторите попытку.",
+     "why": "natural: what the directory refused is the search request (поисковый запрос), not the search"
+    },
+    {
+     "key": "The podcast's own transcript, downloaded with the episode on %@.",
+     "id": "transcription.cameFrom.podcast",
+     "english": "The podcast's own transcript, downloaded with the episode on %@.",
+     "before": "Собственная расшифровка подкаста, загруженная вместе с выпуском, %@.",
+     "after": "Собственная расшифровка подкаста, загруженная вместе с выпуском %@.",
+     "why": "punctuation: Russian puts no comma between загруженная вместе с выпуском and the date it was downloaded"
+    },
+    {
+     "key": "The search couldn't be sent, because the directory's address isn't a web address.",
+     "id": "feedFetchError.searchMessage.notAWebAddress",
+     "english": "The search couldn't be sent, because the directory's address isn't a web address.",
+     "before": "Не удалось отправить поиск, потому что адрес каталога не является веб-адресом.",
+     "after": "Не удалось отправить поисковый запрос, потому что адрес каталога не является веб-адресом.",
+     "why": "natural: what could not be sent is the search request (поисковый запрос), not the search"
+    },
+    {
+     "key": "The transcript runs to %@, past the audio's end at %@, so it is for other audio.",
+     "id": "outsideTranscriptError.runsPastTheEnd",
+     "english": "The transcript runs to %1$@, past the audio's end at %2$@, so it is for other audio.",
+     "before": "Расшифровка идёт до %1$@, за концом аудио (%2$@), поэтому она относится к другому аудио.",
+     "after": "Расшифровка идёт до отметки %1$@, за концом аудио (%2$@), поэтому она относится к другому аудио.",
+     "why": "grammar: до needs the genitive, but the time comes in words in the nominative (до 1 час, 2 минуты); до отметки takes it as it is"
+    },
+    {
+     "key": "The transcript's text didn't read back as one chapter per chapter of the book.",
+     "id": "transcriptTextError.chaptersNotReadBack",
+     "english": "The transcript's text didn't read back as one chapter per chapter of the book.",
+     "before": "Текст расшифровки не прочитался как одна глава на каждую главу книги.",
+     "after": "Текст расшифровки при повторном чтении не совпал с главами книги.",
+     "why": "natural: не прочитался как is a colloquial calque of read back as; при повторном чтении не совпал с главами книги says what failed"
+    },
+    {
+     "key": "The transcript's times don't fit together, so TextMouth can't use it.",
+     "id": "outsideTranscriptError.unusable",
+     "english": "The transcript's times don't fit together, so TextMouth can't use it.",
+     "before": "Времена в расшифровке не согласуются между собой, поэтому TextMouth не может её использовать.",
+     "after": "Временные метки в расшифровке не согласуются между собой, поэтому TextMouth не может её использовать.",
+     "why": "meaning: Времена reads as eras or grammatical tenses; the times in a transcript are its временные метки"
+    },
+    {
+     "key": "This picture is %@, larger than the %lld megapixels TextMouth reads.",
+     "id": "pageImage.tooLarge",
+     "english": {
+      "one": "This picture is %@, larger than the %lld megapixel TextMouth reads.",
+      "other": "This picture is %@, larger than the %lld megapixels TextMouth reads."
+     },
+     "before": {
+      "few": "Размер этого изображения — %@, больше предела в %lld мегапикселя, который читает TextMouth.",
+      "many": "Размер этого изображения — %@, больше предела в %lld мегапикселей, который читает TextMouth.",
+      "one": "Размер этого изображения — %@, больше предела в %lld мегапиксель, который читает TextMouth.",
+      "other": "Размер этого изображения — %@, больше предела в %lld мегапикселя, который читает TextMouth."
+     },
+     "after": {
+      "one": "Размер этого изображения — %@, а TextMouth читает не больше %lld мегапикселя.",
+      "few": "Размер этого изображения — %@, а TextMouth читает не больше %lld мегапикселей.",
+      "many": "Размер этого изображения — %@, а TextMouth читает не больше %lld мегапикселей.",
+      "other": "Размер этого изображения — %@, а TextMouth читает не больше %lld мегапикселя."
+     },
+     "why": "natural: предела ..., который читает TextMouth says TextMouth reads a limit; the a TextMouth читает не больше form matches the page-count sentence beside it"
+    },
+    {
+     "key": "To download it again, choose %@ on its row.",
+     "id": "feedDownloadProgress.comingBack.chooseRow",
+     "english": "To download it again, choose %@ on its row.",
+     "before": "Чтобы загрузить его снова, выберите %@ в его строке.",
+     "after": "Чтобы начать загрузку заново, выберите %@ в её строке.",
+     "why": "grammar: it follows Загрузка «…» остановлена (feminine), and the item may be an article, so the masculine его did not agree"
+    },
+    {
+     "key": "To download the other %lld again, choose %@ on their rows.",
+     "id": "feedDownloadProgress.comingBack.other",
+     "english": {
+      "one": "To download the other %lld again, choose %@ on its row.",
+      "other": "To download the other %lld again, choose %@ on their rows."
+     },
+     "before": {
+      "few": "Чтобы снова загрузить остальные (%lld), выберите %@ в их строках.",
+      "many": "Чтобы снова загрузить остальные (%lld), выберите %@ в их строках.",
+      "one": "Чтобы снова загрузить оставшийся (%lld), выберите %@ в его строке.",
+      "other": "Чтобы снова загрузить остальные (%lld), выберите %@ в их строках."
+     },
+     "after": {
+      "one": "Чтобы снова загрузить остальные (%lld), выберите %@ в их строках.",
+      "few": "Чтобы снова загрузить остальные (%lld), выберите %@ в их строках.",
+      "many": "Чтобы снова загрузить остальные (%lld), выберите %@ в их строках.",
+      "other": "Чтобы снова загрузить остальные (%lld), выберите %@ в их строках."
+     },
+     "why": "grammar: the code uses this string only for two or more (one other has its own), so the one form shows only 21, 31 and the like, where the singular оставшийся was wrong"
+    },
+    {
+     "key": "To download the other one again, choose %@ on its row.",
+     "id": "feedDownloadProgress.comingBack.otherOne",
+     "english": "To download the other one again, choose %@ on its row.",
+     "before": "Чтобы снова загрузить оставшийся, выберите %@ в его строке.",
+     "after": "Чтобы снова загрузить оставшуюся, выберите %@ в её строке.",
+     "why": "grammar: the one left is one of the stopped загрузки (feminine), so the masculine оставшийся did not agree"
+    },
+    {
+     "key": "Too long to keep for pasting. To move it, paste right after cutting.",
+     "id": "audioEditor.cutTooLongToPaste",
+     "english": "Too long to keep for pasting. To move it, paste right after cutting.",
+     "before": "Слишком длинное, чтобы хранить для вставки. Чтобы переместить его, вставьте сразу после вырезания.",
+     "after": "Фрагмент слишком длинный, чтобы хранить его для вставки. Чтобы переместить его, вставьте сразу после вырезания.",
+     "why": "natural: Слишком длинное has no subject; the stretch (фрагмент) is what is too long"
+    },
+    {
+     "key": "Transcribed %@: %@ in %@.",
+     "id": "transcription.finished",
+     "english": "Transcribed %1$@: %2$@ in %3$@.",
+     "before": "Расшифровано «%1$@»: %2$@ за %3$@.",
+     "after": "Расшифровано «%1$@»: %2$@, время: %3$@.",
+     "why": "grammar: за needs the accusative, but the time comes in the nominative (за 51 секунда, за 1 минута); время: takes it as it is"
+    },
+    {
+     "key": "Trimmed to the selection: %@ kept.",
+     "id": "audioEditor.trimmed",
+     "english": "Trimmed to the selection: %@ kept.",
+     "before": "Обрезано до выделенного: сохранено %@.",
+     "after": "Обрезано до выделенного. Осталось: %@.",
+     "why": "grammar: сохранено cannot agree with lengths such as 1 минута; the colon form reads right for every length"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new articles%@.",
+     "id": "feed.unsubscribed.articles",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new articles%2$@.",
+     "before": "Отписка от %1$@: TextMouth больше не проверяет новые статьи%2$@.",
+     "after": "Вы отписались от %1$@: TextMouth больше не проверяет её на новые статьи%2$@.",
+     "why": "natural: Отписка от reads as a heading (and отписка also means a brush-off reply); Вы отписались is how Russian says it, and проверять её на matches the other unsubscribe strings"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new episodes%@.",
+     "id": "feed.unsubscribed.episodes",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new episodes%2$@.",
+     "before": "Отписка от %1$@: TextMouth больше не проверяет новые выпуски%2$@.",
+     "after": "Вы отписались от %1$@: TextMouth больше не проверяет её на новые выпуски%2$@.",
+     "why": "natural: Отписка от reads as a heading (and отписка also means a brush-off reply); Вы отписались is how Russian says it, and проверять её на matches the other unsubscribe strings"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new items%@.",
+     "id": "feed.unsubscribed.items",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new items%2$@.",
+     "before": "Отписка от %1$@: TextMouth больше не проверяет новые элементы%2$@.",
+     "after": "Вы отписались от %1$@: TextMouth больше не проверяет её на новые элементы%2$@.",
+     "why": "natural: Отписка от reads as a heading (and отписка also means a brush-off reply); Вы отписались is how Russian says it, and проверять её на matches the other unsubscribe strings"
+    },
+    {
+     "key": "a package of its name is in both its library folder and its feed's",
+     "id": "feedItemMoveError.packageInBothPlaces",
+     "english": "a package of its name is in both its library folder and its feed's",
+     "before": "пакет с таким именем есть и в его папке библиотеки, и в папке его ленты",
+     "after": "пакет с таким именем есть и в папке библиотеки, и в папке ленты",
+     "why": "grammar: the clause follows a title that may be an article (feminine), so его did not always agree; the folders need no pronoun"
+    },
+    {
+     "key": "by %@",
+     "ids": [
+      "feed.byPublisher",
+      "librarySubview.byAuthor"
+     ],
+     "english": "by %@",
+     "before": "от %@",
+     "after": "автор: %@",
+     "why": "meaning: от reads as from (a sender); a book row and a podcast line name the author, автор:, as the search heading does"
+    },
+    {
+     "key": "it lasts no time",
+     "id": "ffmpegImport.convertedFileIsSilent",
+     "english": "it lasts no time",
+     "before": "её длительность равна нулю",
+     "after": "длительность равна нулю",
+     "why": "grammar: the subject is Звук (masculine) in the sentence this completes, so её длительность did not agree"
+    },
+    {
+     "key": "its file could not be read as a picture",
+     "id": "pageImage.pageNotAPicture",
+     "english": "its file could not be read as a picture",
+     "before": "его файл не удалось прочитать как изображение",
+     "after": "файл не удалось прочитать как изображение",
+     "why": "grammar: the reason follows страница 3 (feminine) or страницы 1 и 2 (plural), so the masculine его did not agree"
+    },
+    {
+     "key": "its file is damaged or incomplete: %@",
+     "id": "pageImage.pageFileDamaged",
+     "english": "its file is damaged or incomplete: %@",
+     "before": "его файл повреждён или неполон: %@",
+     "after": "файл повреждён или неполон: %@",
+     "why": "grammar: the reason follows страница 3 (feminine) or страницы 1 и 2 (plural), so the masculine его did not agree"
+    },
+    {
+     "key": "its package is in neither its library folder nor its feed's",
+     "id": "feedItemMoveError.packageMissing",
+     "english": "its package is in neither its library folder nor its feed's",
+     "before": "его пакета нет ни в папке библиотеки, ни в папке ленты",
+     "after": "пакета нет ни в папке библиотеки, ни в папке ленты",
+     "why": "grammar: the clause follows a title that may be an article (feminine), so его did not always agree; the folders need no pronoun"
+    },
+    {
+     "key": "its picture could not be decoded",
+     "id": "pageImage.pageCannotDecode",
+     "english": "its picture could not be decoded",
+     "before": "его изображение не удалось декодировать",
+     "after": "изображение не удалось декодировать",
+     "why": "grammar: the reason follows страница 3 (feminine) or страницы 1 и 2 (plural), so the masculine его did not agree"
+    },
+    {
+     "key": "its row names no package the library manages",
+     "id": "feedItemMoveError.packageNotManaged",
+     "english": "its row names no package the library manages",
+     "before": "в его строке не указан пакет, которым управляет библиотека",
+     "after": "в строке не указан пакет, которым управляет библиотека",
+     "why": "grammar: the clause follows a title that may be an article (feminine), so его did not always agree"
+    },
+    {
+     "key": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "id": "audioEditor.quitWhileRecording",
+     "english": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "before": "«%@» записывает. Остановите запись или отбросьте её командой «Снять выделение», затем завершите работу TextMouth.",
+     "after": "В редакторе аудио «%@» идёт запись. Остановите её или отбросьте командой «Снять выделение», затем завершите работу TextMouth.",
+     "why": "natural: «книга» записывает makes the book the one recording; the English names the editor window by its title, which Russian says as в редакторе аудио"
+    },
+    {
+     "key": "“%@” is still working. Quit once the change is done.",
+     "id": "audioEditor.quitWhileWorking",
+     "english": "“%@” is still working. Quit once the change is done.",
+     "before": "«%@» ещё выполняется. Завершите работу TextMouth, когда изменение закончится.",
+     "after": "В редакторе аудио «%@» ещё выполняется изменение. Завершите работу TextMouth, когда оно закончится.",
+     "why": "natural: «книга» ещё выполняется makes the book the thing running; it is a change in its audio editor that is under way"
+    }
+   ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ has its default, %@",
+     "id": "shortcutsSettings.defaultsHeldElsewhere",
+     "english": "%1$@ has its default, %2$@",
+     "before": "У «%1$@» по умолчанию %2$@",
+     "after": "Сочетание по умолчанию %2$@ занято действием «%1$@»",
+     "why": "meaning: said that the other action has its own default, not that it now holds this action’s default key"
+    },
+    {
+     "key": "%@ has no words, so the cursor is %@.",
+     "id": "readerPage.hasNoWords",
+     "english": "%1$@ has no words, so the cursor is %2$@.",
+     "before": "%1$@ без слов, курсор %2$@.",
+     "after": "%1$@ не содержит слов, поэтому курсор %2$@.",
+     "why": "natural: «без слов» and the dropped «поэтому» read as a telegram; the cause is now said"
+    },
+    {
+     "key": "%@ is already in the reading list.",
+     "id": "readingList.addRefusal.already",
+     "english": "%@ is already in the reading list.",
+     "before": "%@ уже в списке для чтения.",
+     "after": "«%@» уже в списке для чтения.",
+     "why": "punctuation: a book title inside a sentence takes «…», as in the 32 other sentences of this part"
+    },
+    {
+     "key": "%@ is an audiobook without a transcript, so it has no text to edit.",
+     "id": "bookTextEdit.noText.audiobook",
+     "english": "%@ is an audiobook without a transcript, so it has no text to edit.",
+     "before": "%@ — аудиокнига без расшифровки, поэтому в ней нет текста для изменения.",
+     "after": "«%@» — аудиокнига без расшифровки, поэтому в ней нет текста для изменения.",
+     "why": "punctuation: a book title inside a sentence takes «…», as in the 32 other sentences of this part"
+    },
+    {
+     "key": "%@ is in a skipped section, so the cursor is %@.",
+     "id": "readerPage.isInSkippedSection",
+     "english": "%1$@ is in a skipped section, so the cursor is %2$@.",
+     "before": "%1$@ в пропущенном разделе, курсор %2$@.",
+     "after": "%1$@ находится в пропущенном разделе, поэтому курсор %2$@.",
+     "why": "natural: restores the verb and the cause, as in the sibling announcement"
+    },
+    {
+     "key": "%@ isn't an audiobook of tracks, so it has no manifest to edit.",
+     "id": "bookManifestEdit.noManifest",
+     "english": "%@ isn't an audiobook of tracks, so it has no manifest to edit.",
+     "before": "%@ — не аудиокнига из дорожек, поэтому у неё нет манифеста для изменения.",
+     "after": "«%@» — не аудиокнига из дорожек, поэтому у неё нет манифеста для изменения.",
+     "why": "punctuation: a book title inside a sentence takes «…», as in the 32 other sentences of this part"
+    },
+    {
+     "key": "%@ isn't in the reading list.",
+     "id": "readingList.removeRefusal.isnt",
+     "english": "%@ isn't in the reading list.",
+     "before": "%@ нет в списке для чтения.",
+     "after": "«%@» нет в списке для чтения.",
+     "why": "punctuation: a book title inside a sentence takes «…», as in the 32 other sentences of this part"
+    },
+    {
+     "key": "%@ needs “%@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
+     "id": "phoneImport.macBrailleTableRefusal",
+     "english": "%1$@ needs “%2$@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
+     "before": "%1$@ требует таблицу «%2$@», одну из собственных таблиц Брайля на Mac, которой нет в TextMouth на iPhone.",
+     "after": "%1$@ требует таблицу «%2$@», одну из встроенных таблиц Брайля на Mac, которой нет в TextMouth на iPhone.",
+     "why": "natural: «собственных таблиц Брайля на Mac» copies “a Mac’s own”; these are the Mac’s built-in tables"
+    },
+    {
+     "key": "%@ reset to default: %@",
+     "id": "shortcutsSettings.resetAnnouncement",
+     "english": "%1$@ reset to default: %2$@",
+     "before": "%1$@ возвращено к значениям по умолчанию: %2$@",
+     "after": "Для «%1$@» восстановлено значение по умолчанию: %2$@",
+     "why": "grammar: a neuter participle agreed with no noun after an action name; plural «значениям» for one key"
+    },
+    {
+     "key": "%@ sound",
+     "id": "soundEffectsSettings.soundLabel",
+     "english": "%@ sound",
+     "before": "Звук: %@",
+     "after": "Звук для «%@»",
+     "why": "voiceover: «Звук: Воспроизвести» made the event name sound like the pop-up’s value"
+    },
+    {
+     "key": "%@ uses it in the menus",
+     "id": "shortcutRefusal.reason.systemCommand",
+     "english": "%@ uses it in the menus",
+     "before": "%@ использует это сочетание в меню",
+     "after": "это сочетание использует команда меню «%@»",
+     "why": "grammar: a bare command name such as Скопировать cannot be the subject; quoted as a menu command"
+    },
+    {
+     "key": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "id": "bookTextEdit.addBackNoCopyKept",
+     "english": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "before": "Не удалось добавить «%@» обратно: сначала не получилось сохранить копию текста из пакета книги, поэтому TextMouth оставил текст как был.",
+     "after": "Не удалось добавить «%@» обратно: сначала не получилось сохранить копию текста из пакета книги, поэтому TextMouth оставил текст без изменений.",
+     "why": "natural: «оставил текст как был» is colloquial; «без изменений» is the interface idiom"
+    },
+    {
+     "key": "%@ works in %@.",
+     "id": "shortcutsSettings.scopeChanged",
+     "english": "%1$@ works in %2$@.",
+     "before": "%1$@ работает: %2$@.",
+     "after": "«%1$@» работает: %2$@.",
+     "why": "punctuation: the action name is quoted as in the other shortcut announcements"
+    },
+    {
+     "key": "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol.",
+     "id": "repeatedSymbolsSettingsView.explanation",
+     "english": "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol.",
+     "before": "Серия — это один повторяющийся символ, отдельно или через одиночные пробелы, например * * * * или ====. Озвучивание переписывает серии перед правилами выше; на экране и в Брайле остаётся каждый символ.",
+     "after": "Серия — это один повторяющийся символ, отдельно или через одиночные пробелы, например * * * * или ====. Озвучивание переписывает серии до применения правил выше; на экране и в Брайле остаётся каждый символ.",
+     "why": "meaning: «перед правилами выше» read as a place; runs are rewritten before the rules apply"
+    },
+    {
+     "key": "A web page of the book's text, with a contents list linking each heading.",
+     "id": "htmlExportWriter.hint",
+     "english": "A web page of the book's text, with a contents list linking each heading.",
+     "before": "Веб-страница с текстом книги и списком оглавления со ссылками на каждый заголовок.",
+     "after": "Веб-страница с текстом книги и оглавлением со ссылками на каждый заголовок.",
+     "why": "natural: «списком оглавления» says list twice"
+    },
+    {
+     "key": "Add it again.",
+     "id": "phoneImport.stoppedWhenClosed.again",
+     "english": "Add it again.",
+     "before": "Добавьте её снова.",
+     "after": "Добавьте этот файл снова.",
+     "why": "grammar: «её» had no feminine noun to point to after «Импорт «Dune»»; the English it is the file"
+    },
+    {
+     "key": "Add it on your Mac, then send the book here.",
+     "id": "phoneImport.refusalNextStep",
+     "english": "Add it on your Mac, then send the book here.",
+     "before": "Добавьте её на своём Mac, затем отправьте книгу сюда.",
+     "after": "Добавьте файл на своём Mac, затем отправьте книгу сюда.",
+     "why": "grammar: «её» pointed back to «документ» or «формат», both masculine; the English it is the file"
+    },
+    {
+     "key": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "id": "readerTime.settingHint",
+     "english": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "before": "Добавляет скорость, с которой считается время, например 2,0x для аудиокниги не на скорости 1x или 500 слов в минуту для текстовой книги, в окне чтения, в «Где я?», «Скопировать позицию чтения» и в длительности на листе заголовков.",
+     "after": "Добавляет скорость, с которой считается время, например 2,0x для аудиокниги не на скорости 1x или 500 слов в минуту для текстовой книги, в окне чтения, в «Где я?», в «Скопировать позицию чтения» и в длительностях на листе заголовков.",
+     "why": "grammar: the list lost its preposition before a command name, and the durations were singular"
+    },
+    {
+     "key": "As the table defines",
+     "id": "brailleTable.contractionLabel.defines",
+     "english": "As the table defines",
+     "before": "По определению таблицы",
+     "after": "Как задано в таблице",
+     "why": "natural: «По определению таблицы» reads as “by definition of the table”; the table’s own rules decide"
+    },
+    {
+     "key": "Break",
+     "id": "keyBinding.localizedKeyWords.break",
+     "english": "Break",
+     "before": "Break",
+     "after": "Перенос",
+     "why": "term: Apple’s Russian key name for Break (AppKit FunctionKeyNames)"
+    },
+    {
+     "key": "Caret",
+     "id": "keyBinding.localizedKeyWords.caret",
+     "english": "Caret",
+     "before": "Циркумфлекс",
+     "after": "Знак вставки",
+     "why": "term: VoiceOver’s own Russian speech names “^” «знак вставки» (ScreenReader speech table), so the key name matches what the listener hears"
+    },
+    {
+     "key": "Change this book's forward and backward navigation unit",
+     "id": "playbackControls.unitHelp",
+     "english": "Change this book's forward and backward navigation unit",
+     "before": "Меняет единицу, на которую эта книга перемещается вперёд и назад",
+     "after": "Меняет единицу навигации вперёд и назад для этой книги.",
+     "why": "natural: «на которую эта книга перемещается» was a word-for-word calque; a hint ends with a period"
+    },
+    {
+     "key": "Change this book's forward and backward navigation units",
+     "id": "playbackControls.unitsHelp",
+     "english": "Change this book's forward and backward navigation units",
+     "before": "Меняет единицы, на которые эта книга перемещается вперёд и назад",
+     "after": "Меняет единицы навигации вперёд и назад для этой книги.",
+     "why": "natural: the same calque as the one-unit help text; a hint ends with a period"
+    },
+    {
+     "key": "Chooses what Play and the skip buttons move by.",
+     "id": "phoneReader.navigationUnitHint",
+     "english": "Chooses what Play and the skip buttons move by.",
+     "before": "Выбирает шаг перехода для воспроизведения и кнопок пропуска.",
+     "after": "Выбирает шаг перехода для воспроизведения и кнопок перемотки.",
+     "why": "term: the skip buttons are the glossary’s Перемотать вперёд/назад, so «кнопки перемотки», not «кнопки пропуска»"
+    },
+    {
+     "key": "Copies the whole report as plain text",
+     "id": "speechRefusal.copyHint",
+     "english": "Copies the whole report as plain text",
+     "before": "Копирует весь отчёт как обычный текст.",
+     "after": "Копирует весь отчёт как простой текст.",
+     "why": "term: plain text as a format is «простой текст», as Apple’s TextEdit says it and as part 1 now names the Plain Text format"
+    },
+    {
+     "key": "Could not save: the book's title is empty.",
+     "id": "metadataEditor.titleCleared.empty",
+     "english": "Could not save: the book's title is empty.",
+     "before": "Не удалось сохранить: название книги пусто.",
+     "after": "Не удалось сохранить: не указано название книги.",
+     "why": "natural: the short adjective «название пусто» is unidiomatic"
+    },
+    {
+     "key": "Every window",
+     "id": "shortcutScope.title.app",
+     "english": "Every window",
+     "before": "Каждое окно",
+     "after": "Все окна",
+     "why": "natural: «Каждое окно» copies “every window”; the sibling choices are plural (Окна библиотеки, Окна чтения)"
+    },
+    {
+     "key": "Find",
+     "id": "common.find",
+     "english": "Find",
+     "before": "Найти",
+     "after": "Поиск",
+     "why": "term: Apple’s Russian names both the Find key and the Edit menu’s Find submenu «Поиск» (AppKit FunctionKeyNames, SwiftUI MainMenu)"
+    },
+    {
+     "key": "How high the voice sounds in the file. It starts at the book's pitch.",
+     "id": "speechExport.pitchHint",
+     "english": "How high the voice sounds in the file. It starts at the book's pitch.",
+     "before": "Насколько высоким звучит голос в файле. Начальное значение — высота тона книги.",
+     "after": "Насколько высоко звучит голос в файле. Начальное значение — высота тона книги.",
+     "why": "grammar: «звучит» takes the adverb «высоко», not the adjective «высоким»"
+    },
+    {
+     "key": "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.",
+     "id": "shortcutsSettings.letterNavigationNote",
+     "english": "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.",
+     "before": "В окнах библиотеки отдельная буква переходит к первой книге или папке, название которой с неё начинается, поэтому сочетание из одной буквы, например W, работает только в других окнах.",
+     "after": "В окнах библиотеки нажатая буква выбирает первую книгу или папку, название которой с неё начинается, поэтому сочетание из одной буквы, например W, работает только в других окнах.",
+     "why": "natural: «отдельная буква переходит» made the letter itself move; a pressed letter selects the first match"
+    },
+    {
+     "key": "Jumped to %@ in the recording.",
+     "id": "readerTime.jumped.recording",
+     "english": "Jumped to %@ in the recording.",
+     "before": "Переход к %@ в записи.",
+     "after": "Переход к отметке %@ в записи.",
+     "why": "grammar: the spoken time is nominative (2 часа, 13 минут), so it cannot follow «к» directly; «к отметке» takes it in apposition"
+    },
+    {
+     "key": "Jumped to %@ percent.",
+     "id": "readerTime.jumped",
+     "english": "Jumped to %@ percent.",
+     "before": "Переход к проценту: %@.",
+     "after": "Переход к отметке %@ процента.",
+     "why": "natural: «к проценту: 47,5» was clumsy; the value always has one decimal, so «процента» is always the right form"
+    },
+    {
+     "key": "Jumped to %@.",
+     "id": "readerTime.jumped.words",
+     "english": "Jumped to %@.",
+     "before": "Переход к %@.",
+     "after": "Переход к отметке %@.",
+     "why": "grammar: the spoken time is nominative and cannot follow «к» directly"
+    },
+    {
+     "key": "Leave out",
+     "id": "repeatedSymbolStyle.title.leaveOut",
+     "english": "Leave out",
+     "before": "Пропустить",
+     "after": "Пропускать",
+     "why": "grammar: a reading style is a standing behaviour, imperfective like its siblings «Повторять каждый символ», «Называть количество»"
+    },
+    {
+     "key": "Markup guard: strict, every angle bracket silent, from character %@ to %@ of the spoken text.",
+     "id": "speechRefusal.markupGuard.character",
+     "english": "Markup guard: strict, every angle bracket silent, from character %1$@ to %2$@ of the spoken text.",
+     "before": "Защита разметки: строгая, все угловые скобки не читаются, с символа %1$@ по %2$@ озвучиваемого текста.",
+     "after": "Защита разметки: строгая, ни одна угловая скобка не произносится, с символа %1$@ по %2$@ озвучиваемого текста.",
+     "why": "meaning: «все угловые скобки не читаются» can be heard as “not all are read”"
+    },
+    {
+     "key": "Markup guard: the usual one, which silences only the brackets of tag-shaped text.",
+     "id": "speechRefusal.markupGuard.silences",
+     "english": "Markup guard: the usual one, which silences only the brackets of tag-shaped text.",
+     "before": "Защита разметки: обычная, не читает только скобки текста в виде тегов.",
+     "after": "Защита разметки: обычная, пропускает при чтении только скобки текста, похожего на теги.",
+     "why": "meaning: «не читает только скобки» can be heard as “reads more than the brackets”"
+    },
+    {
+     "key": "Media controls not released: this book does not hold them.",
+     "id": "mediaControls.notHeld",
+     "english": "Media controls not released: this book does not hold them.",
+     "before": "Элементы управления медиа не освобождены: эта книга их не удерживает.",
+     "after": "Медиаклавиши не освобождены: эта книга их не удерживает.",
+     "why": "term: the command is «Освободить медиаклавиши»; the announcement now names the same thing"
+    },
+    {
+     "key": "Media controls released",
+     "id": "mediaControls.released",
+     "english": "Media controls released",
+     "before": "Элементы управления медиа освобождены",
+     "after": "Медиаклавиши освобождены",
+     "why": "term: matches the command «Освободить медиаклавиши» instead of the long «Элементы управления медиа»"
+    },
+    {
+     "key": "Minimize",
+     "id": "keyBinding.localizedSystemCommand.minimize",
+     "english": "Minimize",
+     "before": "Свернуть",
+     "after": "Убрать в Dock",
+     "why": "term: the Window menu’s Minimize is «Убрать в Dock» in Apple’s Russian, so the listener can find the command named"
+    },
+    {
+     "key": "Minimize All",
+     "id": "keyBinding.localizedSystemCommand.minimizeAll",
+     "english": "Minimize All",
+     "before": "Свернуть все",
+     "after": "Убрать все окна в Dock",
+     "why": "term: Apple’s Russian Window menu says «Убрать все окна в Dock» for Minimize All"
+    },
+    {
+     "key": "Mode Switch",
+     "id": "keyBinding.localizedKeyWords.switch",
+     "english": "Mode Switch",
+     "before": "Переключение режима",
+     "after": "Переключение режимов",
+     "why": "term: Apple’s Russian key name for Mode Switch (AppKit FunctionKeyNames)"
+    },
+    {
+     "key": "No key was pressed twice.",
+     "id": "shortcutsSettings.trialResult.noSecondPress",
+     "english": "No key was pressed twice.",
+     "before": "Клавиша не была нажата дважды.",
+     "after": "Ни одна клавиша не была нажата дважды.",
+     "why": "meaning: «Клавиша не была нажата дважды» spoke of one known key; the trial found no key pressed twice"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "id": "speechExportError.noVoice",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "Голос не установлен. Добавьте его в «Системные настройки», «Универсальный доступ», «Речь», затем экспортируйте снова.",
+     "after": "Не установлено ни одного голоса. Добавьте голос в «Системные настройки», «Универсальный доступ», «Устный контент», затем экспортируйте снова.",
+     "why": "term: Apple’s Russian names the pane «Устный контент» (System Settings’ own search terms), not «Речь»; «Голос не установлен» meant one known voice"
+    },
+    {
+     "key": "Not restarted because of the sleep timer",
+     "id": "endOfBook.notRestartedNote",
+     "english": "Not restarted because of the sleep timer",
+     "before": "Не перезапущено из-за таймера сна",
+     "after": "Книга не начата заново из-за таймера сна",
+     "why": "natural: the bare neuter «Не перезапущено» agreed with nothing; the book is what did not start again"
+    },
+    {
+     "key": "OCR could not run on all %lld pages, so text found only in their images is missing: %@.",
+     "id": "pdfExtractionDiagnostics.problem.allPages",
+     "english": {
+      "one": "OCR could not run on all %lld page, so text found only in its images is missing: %@.",
+      "other": "OCR could not run on all %lld pages, so text found only in their images is missing: %@."
+     },
+     "before": {
+      "few": "Не удалось запустить OCR для всех страниц (%lld), поэтому текст, который есть только на изображениях, отсутствует: %@.",
+      "many": "Не удалось запустить OCR для всех страниц (%lld), поэтому текст, который есть только на изображениях, отсутствует: %@.",
+      "one": "Не удалось запустить OCR для всех страниц (%lld), поэтому текст, который есть только на изображениях, отсутствует: %@.",
+      "other": "Не удалось запустить OCR для всех страниц (%lld), поэтому текст, который есть только на изображениях, отсутствует: %@."
+     },
+     "after": {
+      "one": "Не удалось запустить OCR ни для одной из %lld страницы, поэтому текст, который есть только на изображениях, отсутствует: %@.",
+      "few": "Не удалось запустить OCR ни для одной из %lld страниц, поэтому текст, который есть только на изображениях, отсутствует: %@.",
+      "many": "Не удалось запустить OCR ни для одной из %lld страниц, поэтому текст, который есть только на изображениях, отсутствует: %@.",
+      "other": "Не удалось запустить OCR ни для одной из %lld страницы, поэтому текст, который есть только на изображениях, отсутствует: %@."
+     },
+     "why": "meaning: «не удалось … для всех страниц» reads as “not for every page”; the warning is for OCR failing on every page"
+    },
+    {
+     "key": "Open the book in the program that made it, save it again, then import it again.",
+     "id": "xmlInputGuard.refusal.ownDefinitions.book",
+     "english": "Open the book in the program that made it, save it again, then import it again.",
+     "before": "Откройте книгу в программе, в которой она создана, сохраните её снова и затем снова импортируйте.",
+     "after": "Откройте книгу в программе, в которой она создана, пересохраните её и снова импортируйте.",
+     "why": "natural: «сохраните её снова и затем снова импортируйте» repeated «снова»"
+    },
+    {
+     "key": "Open the document in the program that made it, save it again, then import it again.",
+     "id": "xmlInputGuard.refusal.ownDefinitions.document",
+     "english": "Open the document in the program that made it, save it again, then import it again.",
+     "before": "Откройте документ в программе, в которой он создан, сохраните его снова и затем снова импортируйте.",
+     "after": "Откройте документ в программе, в которой он создан, пересохраните его и снова импортируйте.",
+     "why": "natural: the same doubled «снова» as the book sentence"
+    },
+    {
+     "key": "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
+     "id": "readerViewModel.audioStoppedRespondingMessage",
+     "english": "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
+     "before": "Воспроизведение остановлено: звук перестал отвечать. Нажмите «Воспроизвести», чтобы повторить попытку; если оно снова остановится, завершите TextMouth и откройте его заново.",
+     "after": "Воспроизведение остановлено: звуковая система перестала отвечать. Нажмите «Воспроизвести», чтобы повторить попытку; если воспроизведение снова остановится, завершите TextMouth и откройте его заново.",
+     "why": "natural: «звук перестал отвечать» (the sound stopped answering) is a calque; it is the audio system that stops responding"
+    },
+    {
+     "key": "Preview %@ sound",
+     "id": "soundEffectsSettings.previewLabel",
+     "english": "Preview %@ sound",
+     "before": "Прослушать звук: %@",
+     "after": "Прослушать звук для «%@»",
+     "why": "voiceover: «Прослушать звук: Воспроизвести» made the event name sound like the sound’s name"
+    },
+    {
+     "key": "Print",
+     "id": "keyBinding.localizedKeyWords.print",
+     "english": "Print",
+     "before": "Печать",
+     "after": "Напечатать",
+     "why": "term: Apple’s Russian key name for Print (AppKit FunctionKeyNames)"
+    },
+    {
+     "key": "Print Screen",
+     "id": "keyBinding.localizedKeyWords.screen",
+     "english": "Print Screen",
+     "before": "Print Screen",
+     "after": "Напечатать экран",
+     "why": "term: Apple’s Russian key name for Print Screen (AppKit FunctionKeyNames)"
+    },
+    {
+     "key": "Resets this book to %@",
+     "id": "bookSettings.resetHint",
+     "english": "Resets this book to %@",
+     "before": "Возвращает этой книге скорость: %@.",
+     "after": "Возвращает этой книге скорость %@.",
+     "why": "natural: the colon before a value such as «1,0× от обычной скорости» made a broken sentence"
+    },
+    {
+     "key": "Restarts the timer at its full length and plays the book.",
+     "id": "sleepTimerView.resetTimerHint",
+     "english": "Restarts the timer at its full length and plays the book.",
+     "before": "Перезапускает таймер с полной длительности и воспроизводит книгу.",
+     "after": "Запускает таймер заново на полное время и воспроизводит книгу.",
+     "why": "natural: «перезапускает таймер с полной длительности» is a broken calque of “at its full length”"
+    },
+    {
+     "key": "Restores this action's default shortcuts, which follow later releases' changes",
+     "id": "shortcutsSettings.resetToDefaultHint",
+     "english": "Restores this action's default shortcuts, which follow later releases' changes",
+     "before": "Возвращает сочетания этого действия по умолчанию, которые меняются в следующих версиях.",
+     "after": "Возвращает действию сочетания по умолчанию; новые версии могут их изменить.",
+     "why": "meaning: said the defaults do change in later versions, and «по умолчанию» sat on the verb; later versions may change them"
+    },
+    {
+     "key": "Say how many",
+     "id": "repeatedSymbolStyle.title.sayCount",
+     "english": "Say how many",
+     "before": "Назвать количество",
+     "after": "Называть количество",
+     "why": "grammar: imperfective, like the other reading styles in the same pop-up"
+    },
+    {
+     "key": "Select Chapter",
+     "id": "shortcutAction.title.editorSelectChapter",
+     "english": "Select Chapter",
+     "before": "Выбрать главу",
+     "after": "Выделить главу",
+     "why": "term: the audio editor selects a range, as its sibling commands say with «Выделить»; «Выбрать» is for picking items"
+    },
+    {
+     "key": "Settings applied as global defaults",
+     "id": "voiceAndSpeed.appliedAsGlobalDefaults",
+     "english": "Settings applied as global defaults",
+     "before": "Настройки применены как глобальные по умолчанию",
+     "after": "Настройки применены как общие значения по умолчанию",
+     "why": "term: the app says «общие значения по умолчанию» for global defaults everywhere else; «глобальные по умолчанию» lacks its noun"
+    },
+    {
+     "key": "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.",
+     "id": "speechExport.licence",
+     "english": "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.",
+     "before": "Речь голосов Mac предназначена для личного некоммерческого использования по лицензии Apple.",
+     "after": "Речь, созданная голосами Mac, предназначена для личного некоммерческого использования по лицензии Apple.",
+     "why": "natural: «Речь голосов Mac» is an unidiomatic genitive chain"
+    },
+    {
+     "key": "Stop At",
+     "id": "sleepTimerView.stopAtHeading",
+     "english": "Stop At",
+     "before": "Остановить на",
+     "after": "Место остановки",
+     "why": "natural: a heading cannot end on a preposition («Остановить на»)"
+    },
+    {
+     "key": "Taken from %@",
+     "id": "shortcutsSettings.takenFromSentence",
+     "english": "Taken from %@",
+     "before": "Забрано у: %@",
+     "after": "Прежнее назначение: %@",
+     "why": "natural: «Забрано у: …» is slangy and puts a colon after a preposition; the value is a list of action names"
+    },
+    {
+     "key": "Text as plain text",
+     "id": "bookExport.name.plainText",
+     "english": "Text as plain text",
+     "before": "Текст как обычный текст",
+     "after": "Текст как простой текст",
+     "why": "term: plain text as a format is «простой текст», as Apple’s TextEdit says it and as part 1 now names the Plain Text format"
+    },
+    {
+     "key": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "id": "bookTextEdit.stoppedBookGone",
+     "english": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "before": "Текст не обновлён: «%@» убрано из библиотеки или его загрузка удалена, поэтому изменение текста остановлено.",
+     "after": "Текст не обновлён: книга «%@» убрана из библиотеки или её загрузка удалена, поэтому изменение текста остановлено.",
+     "why": "grammar: the neuter «убрано» agreed with no noun before a book title"
+    },
+    {
+     "key": "TextMouth exports one spoken audio file at a time. Export this once the current one has finished.",
+     "id": "speechExportError.busy",
+     "english": "TextMouth exports one spoken audio file at a time. Export this once the current one has finished.",
+     "before": "TextMouth экспортирует озвученное аудио в один файл за раз. Экспортируйте это после завершения текущего.",
+     "after": "TextMouth может экспортировать только один озвученный аудиофайл за раз. Запустите этот экспорт после завершения текущего.",
+     "why": "meaning: «экспортирует озвученное аудио в один файл за раз» said each export makes one file; only one export may run at once"
+    },
+    {
+     "key": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "id": "brailleSettings.fileCodeCaption",
+     "english": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "before": "TextMouth читает файлы BRF и BRL, которые вы добавите с этого момента, с этими символами и сам распознаёт шаблоны Unicode-брайля. Диалог экспорта начинает BRF с них. Книга сохраняет символы, с которыми была импортирована; их можно изменить в окне «Сведения о книге».",
+     "after": "TextMouth читает файлы BRF и BRL, которые вы добавите с этого момента, с этими символами и сам распознаёт шаблоны Unicode-брайля. В диалоге экспорта они выбраны по умолчанию для BRF. Книга сохраняет символы, с которыми была импортирована; их можно изменить в окне «Сведения о книге».",
+     "why": "natural: «Диалог экспорта начинает BRF с них» is a calque; the Export dialog preselects them for a BRF"
+    },
+    {
+     "key": "The %@ ends %@ into “%@”, which is only %@ long.",
+     "id": "audioParseError.sectionEndsPastEnd",
+     "english": "The %1$@ ends %2$@ into “%3$@”, which is only %4$@ long.",
+     "before": "В аудиокниге %1$@ заканчивается на отметке %2$@ файла «%3$@», хотя его длина всего %4$@.",
+     "after": "В аудиокниге %1$@ заканчивается на отметке %2$@ файла «%3$@», хотя длительность этого файла всего %4$@.",
+     "why": "natural: «его длина» could point to the heading as well as the file; Duration is «длительность»"
+    },
+    {
+     "key": "The %@ starts %@ into “%@”, which is only %@ long.",
+     "id": "audioParseError.sectionStartsPastEnd",
+     "english": "The %1$@ starts %2$@ into “%3$@”, which is only %4$@ long.",
+     "before": "В аудиокниге %1$@ начинается на отметке %2$@ файла «%3$@», хотя его длина всего %4$@.",
+     "after": "В аудиокниге %1$@ начинается на отметке %2$@ файла «%3$@», хотя длительность этого файла всего %4$@.",
+     "why": "natural: the same ambiguous «его длина» as the sibling sentence"
+    },
+    {
+     "key": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "id": "ownAudio.sentence.truncated",
+     "english": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "before": "Аудиофайл %@ заканчивается раньше, чем его звук, поэтому его не удалось преобразовать.",
+     "after": "Аудиофайл %@ обрывается до конца записи, поэтому его не удалось преобразовать.",
+     "why": "meaning: «заканчивается раньше, чем его звук» is a calque; the file is cut off before its audio ends"
+    },
+    {
+     "key": "The braille code for reading and writing braille.",
+     "id": "brailleSettings.codeHint",
+     "english": "The braille code for reading and writing braille.",
+     "before": "Код Брайля для чтения и записи Брайля.",
+     "after": "Код Брайля для чтения и записи.",
+     "why": "natural: «Код Брайля для чтения и записи Брайля» repeats Брайль"
+    },
+    {
+     "key": "The file %@ stopped responding.",
+     "id": "audioPlaybackFailure.message.stoppedResponding",
+     "english": "The file %@ stopped responding.",
+     "before": "Файл %@ перестал отвечать.",
+     "after": "Воспроизведение файла %@ перестало отвечать.",
+     "why": "natural: a file does not «перестать отвечать»; its playback does, as the note says"
+    },
+    {
+     "key": "The file “%@” declares the text encoding “%@”, but it holds bytes that are not valid in that encoding.",
+     "id": "textEncodingError.invalidForDeclaredEncoding",
+     "english": "The file “%1$@” declares the text encoding “%2$@”, but it holds bytes that are not valid in that encoding.",
+     "before": "Файл «%1$@» объявляет кодировку текста «%2$@», но содержит байты, недопустимые в этой кодировке.",
+     "after": "В файле «%1$@» указана кодировка текста «%2$@», но он содержит байты, недопустимые в этой кодировке.",
+     "why": "natural: a file «объявляет кодировку» is a calque of “declares”"
+    },
+    {
+     "key": "The file “%@” declares the text encoding “%@”, which TextMouth cannot read.",
+     "id": "textEncodingError.unsupportedDeclaredEncoding",
+     "english": "The file “%1$@” declares the text encoding “%2$@”, which TextMouth cannot read.",
+     "before": "Файл «%1$@» объявляет кодировку текста «%2$@», которую TextMouth не может прочитать.",
+     "after": "В файле «%1$@» указана кодировка текста «%2$@», которую TextMouth не может прочитать.",
+     "why": "natural: the same calque «объявляет кодировку»"
+    },
+    {
+     "key": "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level.",
+     "id": "daisyPackageError.notAPackage",
+     "english": "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level.",
+     "before": "Эта папка не является книгой DAISY: в её верхнем уровне нет файла ncc.html или .opf.",
+     "after": "Эта папка не является книгой DAISY: на её верхнем уровне нет файла ncc.html или .opf.",
+     "why": "grammar: a level takes «на», not «в»"
+    },
+    {
+     "key": "The language of the braille code for reading and writing braille.",
+     "id": "brailleSettings.languageHint",
+     "english": "The language of the braille code for reading and writing braille.",
+     "before": "Язык кода Брайля для чтения и записи Брайля.",
+     "after": "Язык кода Брайля для чтения и записи.",
+     "why": "natural: the same doubled Брайль as the code hint"
+    },
+    {
+     "key": "The other %lld chapters have no text.",
+     "id": "epubParserError.noReadableChapters.other",
+     "english": {
+      "one": "The other %lld chapter has no text.",
+      "other": "The other %lld chapters have no text."
+     },
+     "before": {
+      "few": "Остальные %lld главы не содержат текста.",
+      "many": "Остальные %lld глав не содержат текста.",
+      "one": "Остальная %lld глава не содержит текста.",
+      "other": "Остальные %lld главы не содержат текста."
+     },
+     "after": {
+      "one": "Остальные %lld глава не содержат текста.",
+      "few": "Остальные %lld главы не содержат текста.",
+      "many": "Остальные %lld глав не содержат текста.",
+      "other": "Остальные %lld главы не содержат текста."
+     },
+     "why": "grammar: the one form (21, 31) said «Остальная 21 глава»; the attribute before such a numeral is plural"
+    },
+    {
+     "key": "The other chapter has no text.",
+     "id": "epubParserError.noReadableChapters.chapter",
+     "english": "The other chapter has no text.",
+     "before": "Остальная глава не содержит текста.",
+     "after": "Оставшаяся глава не содержит текста.",
+     "why": "natural: singular «остальная глава» is not said of one countable chapter; it is the one that remains"
+    },
+    {
+     "key": "The words TextMouth reads aloud, as plain text, each chapter under its title.",
+     "id": "bookExport.hint.plainText",
+     "english": "The words TextMouth reads aloud, as plain text, each chapter under its title.",
+     "before": "Слова, которые TextMouth читает вслух, обычным текстом; каждая глава под своим заголовком.",
+     "after": "Слова, которые TextMouth читает вслух, простым текстом; каждая глава под своим заголовком.",
+     "why": "term: plain text as a format is «простой текст», as Apple’s TextEdit says it and as part 1 now names the Plain Text format"
+    },
+    {
+     "key": "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it.",
+     "id": "kfxError.noFlowingText",
+     "english": "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it.",
+     "before": "В этой книге Kindle нет текучего текста, как в комиксах или копиях печатных изданий, поэтому TextMouth не может её прочитать.",
+     "after": "В этой книге Kindle нет текста с плавающей вёрсткой, как в комиксах или копиях печатных изданий, поэтому TextMouth не может её прочитать.",
+     "why": "term: «текучий текст» is not Russian; reflowable text is «текст с плавающей вёрсткой»"
+    },
+    {
+     "key": "This document holds more than %@, the most TextMouth reads from one document.",
+     "id": "documentTooLargeError.errorDescription",
+     "english": "This document holds more than %@, the most TextMouth reads from one document.",
+     "before": "В этом документе больше %@, а это предел для одного документа, который читает TextMouth.",
+     "after": "Этот документ больше %@ — это наибольший объём, который TextMouth читает из одного документа.",
+     "why": "natural: «предел для одного документа, который читает TextMouth» tied the clause to the document"
+    },
+    {
+     "key": "Time exceeds book length.",
+     "id": "readerTime.pastTheEnd.words.exceeds",
+     "english": "Time exceeds book length.",
+     "before": "Время превышает длину книги.",
+     "after": "Время превышает длительность книги.",
+     "why": "term: a book’s length in time is its «длительность», the glossary word for Duration"
+    },
+    {
+     "key": "Time exceeds the recording's length.",
+     "id": "readerTime.pastTheEnd.recording.exceeds",
+     "english": "Time exceeds the recording's length.",
+     "before": "Время превышает длину записи.",
+     "after": "Время превышает длительность записи.",
+     "why": "term: a recording’s length in time is its «длительность»"
+    },
+    {
+     "key": "Toggle Bookmark",
+     "id": "shortcutAction.title.addBookmark",
+     "english": "Toggle Bookmark",
+     "before": "Переключить закладку",
+     "after": "Добавить или убрать закладку",
+     "why": "natural: «Переключить закладку» copies “toggle” and does not say what happens"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "id": "bookManifestEdit.explanation.quotation",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "Вводите прямые кавычки: в TextEdit отключите «Умные кавычки» в меню «Правка», «Подстановки».",
+     "after": "Вводите прямые кавычки: в TextEdit выключите «Смарт-кавычки» в меню «Правка», подменю «Замены».",
+     "why": "term: Apple’s Russian TextEdit names these Смарт-кавычки under Правка > Замены"
+    },
+    {
+     "key": "When %lld minutes or less are left, downloads the next article if it is not on this Mac yet",
+     "id": "listeningOptions.predownloadHint.article",
+     "english": {
+      "one": "When %lld minute or less is left, downloads the next article if it is not on this Mac yet",
+      "other": "When %lld minutes or less are left, downloads the next article if it is not on this Mac yet"
+     },
+     "before": {
+      "few": "Когда осталось %lld минуты, загружает следующую статью, если её ещё нет на этом Mac.",
+      "many": "Когда осталось %lld минут, загружает следующую статью, если её ещё нет на этом Mac.",
+      "one": "Когда осталась %lld минута, загружает следующую статью, если её ещё нет на этом Mac.",
+      "other": "Когда осталось %lld минуты, загружает следующую статью, если её ещё нет на этом Mac."
+     },
+     "after": {
+      "one": "Когда остаётся %lld минута или меньше, загружает следующую статью, если её ещё нет на этом Mac.",
+      "few": "Когда остаётся %lld минуты или меньше, загружает следующую статью, если её ещё нет на этом Mac.",
+      "many": "Когда остаётся %lld минут или меньше, загружает следующую статью, если её ещё нет на этом Mac.",
+      "other": "Когда остаётся %lld минуты или меньше, загружает следующую статью, если её ещё нет на этом Mac."
+     },
+     "why": "meaning: “or less” was dropped, so the hint named one moment instead of a threshold"
+    },
+    {
+     "key": "When %lld minutes or less are left, downloads the next book if it is not on this Mac yet",
+     "id": "listeningOptions.predownloadHint.book",
+     "english": {
+      "one": "When %lld minute or less is left, downloads the next book if it is not on this Mac yet",
+      "other": "When %lld minutes or less are left, downloads the next book if it is not on this Mac yet"
+     },
+     "before": {
+      "few": "Когда осталось %lld минуты, загружает следующую книгу, если её ещё нет на этом Mac.",
+      "many": "Когда осталось %lld минут, загружает следующую книгу, если её ещё нет на этом Mac.",
+      "one": "Когда осталась %lld минута, загружает следующую книгу, если её ещё нет на этом Mac.",
+      "other": "Когда осталось %lld минуты, загружает следующую книгу, если её ещё нет на этом Mac."
+     },
+     "after": {
+      "one": "Когда остаётся %lld минута или меньше, загружает следующую книгу, если её ещё нет на этом Mac.",
+      "few": "Когда остаётся %lld минуты или меньше, загружает следующую книгу, если её ещё нет на этом Mac.",
+      "many": "Когда остаётся %lld минут или меньше, загружает следующую книгу, если её ещё нет на этом Mac.",
+      "other": "Когда остаётся %lld минуты или меньше, загружает следующую книгу, если её ещё нет на этом Mac."
+     },
+     "why": "meaning: “or less” was dropped, so the hint named one moment instead of a threshold"
+    },
+    {
+     "key": "When %lld minutes or less are left, downloads the next episode if it is not on this Mac yet",
+     "id": "listeningOptions.predownloadHint.episode",
+     "english": {
+      "one": "When %lld minute or less is left, downloads the next episode if it is not on this Mac yet",
+      "other": "When %lld minutes or less are left, downloads the next episode if it is not on this Mac yet"
+     },
+     "before": {
+      "few": "Когда осталось %lld минуты, загружает следующий выпуск, если его ещё нет на этом Mac.",
+      "many": "Когда осталось %lld минут, загружает следующий выпуск, если его ещё нет на этом Mac.",
+      "one": "Когда осталась %lld минута, загружает следующий выпуск, если его ещё нет на этом Mac.",
+      "other": "Когда осталось %lld минуты, загружает следующий выпуск, если его ещё нет на этом Mac."
+     },
+     "after": {
+      "one": "Когда остаётся %lld минута или меньше, загружает следующий выпуск, если его ещё нет на этом Mac.",
+      "few": "Когда остаётся %lld минуты или меньше, загружает следующий выпуск, если его ещё нет на этом Mac.",
+      "many": "Когда остаётся %lld минут или меньше, загружает следующий выпуск, если его ещё нет на этом Mac.",
+      "other": "Когда остаётся %lld минуты или меньше, загружает следующий выпуск, если его ещё нет на этом Mac."
+     },
+     "why": "meaning: “or less” was dropped, so the hint named one moment instead of a threshold"
+    },
+    {
+     "key": "When %lld minutes or less are left, downloads the next item if it is not on this Mac yet",
+     "id": "listeningOptions.predownloadHint.item",
+     "english": {
+      "one": "When %lld minute or less is left, downloads the next item if it is not on this Mac yet",
+      "other": "When %lld minutes or less are left, downloads the next item if it is not on this Mac yet"
+     },
+     "before": {
+      "few": "Когда осталось %lld минуты, загружает следующий элемент, если его ещё нет на этом Mac.",
+      "many": "Когда осталось %lld минут, загружает следующий элемент, если его ещё нет на этом Mac.",
+      "one": "Когда осталась %lld минута, загружает следующий элемент, если его ещё нет на этом Mac.",
+      "other": "Когда осталось %lld минуты, загружает следующий элемент, если его ещё нет на этом Mac."
+     },
+     "after": {
+      "one": "Когда остаётся %lld минута или меньше, загружает следующий элемент, если его ещё нет на этом Mac.",
+      "few": "Когда остаётся %lld минуты или меньше, загружает следующий элемент, если его ещё нет на этом Mac.",
+      "many": "Когда остаётся %lld минут или меньше, загружает следующий элемент, если его ещё нет на этом Mac.",
+      "other": "Когда остаётся %lld минуты или меньше, загружает следующий элемент, если его ещё нет на этом Mac."
+     },
+     "why": "meaning: “or less” was dropped, so the hint named one moment instead of a threshold"
+    },
+    {
+     "key": "Whether each page's last line carries its braille page number.",
+     "id": "brailleExport.numbersHint",
+     "english": "Whether each page's last line carries its braille page number.",
+     "before": "Указывает, несёт ли последняя строка каждой страницы номер страницы Брайля.",
+     "after": "Указывает, ставится ли номер страницы Брайля в последней строке каждой страницы.",
+     "why": "natural: «несёт ли последняя строка номер» copies “carries”"
+    },
+    {
+     "key": "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning.",
+     "id": "endOfBook.playOnAFinishedBookCaption",
+     "english": "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning.",
+     "before": "При «%1$@» воспроизведение завершённой книги сообщает, что она завершена; при «%2$@» оно начинает её заново с начала.",
+     "after": "Если выбрано «%1$@», «Воспроизвести» для завершённой книги сообщает, что она завершена; если «%2$@» — начинает её заново с начала.",
+     "why": "meaning: Play is the command, not «воспроизведение» (playback), which cannot say anything"
+    },
+    {
+     "key": "every window",
+     "id": "shortcutScope.inSentence.app",
+     "english": "every window",
+     "before": "каждое окно",
+     "after": "все окна",
+     "why": "natural: matches the pop-up choice «Все окна»; «каждое окно» copied “every window”"
+    },
+    {
+     "key": "the audiobook's audio changed since it was transcribed, so its transcript no longer fits it.",
+     "id": "bookTextEdit.transcriptStaleReason",
+     "english": "the audiobook's audio changed since it was transcribed, so its transcript no longer fits it.",
+     "before": "аудио аудиокниги изменилось после расшифровки, поэтому её расшифровка ей больше не соответствует.",
+     "after": "звук аудиокниги изменился после расшифровки, поэтому расшифровка ему больше не соответствует.",
+     "why": "natural: «аудио аудиокниги» and «её расшифровка ей» stacked echoes and pronouns"
+    },
+    {
+     "key": "the edited transcript can't be laid over the audiobook's audio.",
+     "id": "bookTextEdit.transcriptUnindexable",
+     "english": "the edited transcript can't be laid over the audiobook's audio.",
+     "before": "изменённую расшифровку нельзя наложить на аудио аудиокниги.",
+     "after": "изменённую расшифровку нельзя наложить на звук аудиокниги.",
+     "why": "natural: «аудио аудиокниги» repeats the root; the same wording as its sibling reason"
+    },
+    {
+     "key": "the file %@ stopped responding",
+     "id": "audioPlaybackFailure.problem.stoppedResponding",
+     "english": "the file %@ stopped responding",
+     "before": "файл %@ перестал отвечать",
+     "after": "воспроизведение файла %@ перестало отвечать",
+     "why": "natural: the same clause as the full sentence; it is playback that stops responding"
+    },
+    {
+     "key": "“%@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "id": "speechExportError.personalVoice",
+     "english": "“%1$@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %2$@ button in the reader, then export again.",
+     "before": "«%1$@» — персональный голос, который macOS не может записать в файл. Выберите другой голос кнопкой «%2$@» в окне чтения, затем экспортируйте снова.",
+     "after": "«%1$@» — личный голос, который macOS не может записать в файл. Выберите другой голос кнопкой «%2$@» в окне чтения, затем экспортируйте снова.",
+     "why": "term: Apple’s Russian calls Personal Voice «Личный голос» (Accessibility settings)"
+    }
+   ]
+  }
+ ]
+}

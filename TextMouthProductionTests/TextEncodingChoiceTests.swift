@@ -179,7 +179,7 @@ final class TextEncodingChoiceTests: XCTestCase {
         XCTAssertEqual(TextEncodingWording.describe(name: name, basis: .guessed), "Windows-1251 (Cyrillic), guessed")
         XCTAssertEqual(TextEncodingWording.describe(name: "UTF-8", basis: .byteOrderMark), "UTF-8, from its byte order mark")
         XCTAssertEqual(
-            TextEncodingWording.describe(name: "UTF-16 (big-endian)", basis: .unmarkedUTF16), "UTF-16 (big-endian), recognized by its bytes"
+            TextEncodingWording.describe(name: "UTF-16 (big-endian)", basis: .unmarkedUnicode), "UTF-16 (big-endian), recognized by its bytes"
         )
         XCTAssertEqual(TextEncodingWording.describe(name: "UTF-8", basis: .validUTF8), "UTF-8")
         XCTAssertEqual(TextEncodingWording.describe(name: name, basis: .declared), "Windows-1251 (Cyrillic), declared in the file")

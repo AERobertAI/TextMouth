@@ -439,6 +439,30 @@ final class PerformanceBaselineTests: XCTestCase {
         }
     }
 
+    /// Reading a megabyte of Markdown (the walk corpus's long document:
+    /// prose, lists, a quote, a table, code, and page markers in every
+    /// section) into its reading text, headings, and pages, markers read:
+    /// the step every text book passes through at import and at its first
+    /// open. Since November 15, 2026 the reader walks cmark's own tree; with
+    /// swift-markdown's tree on top it took 12% to 30% of a text import.
+    func testReadingAMegabyteOfMarkdown() throws {
+        let markdown = MarkdownWalkCorpusKit.longDocument(bytes: 1_000_000)
+
+        try baselines.check(.markdownRead) {
+            // A copy of its own for each run (`freshCopy(of:)`), and the
+            // chapter kept past the timing, so freeing it is not timed.
+            let text = freshCopy(of: markdown)
+            var chapter: Chapter?
+            let milliseconds = try PerformanceClock.milliseconds {
+                chapter = try MarkdownDocParser.parseChapter(markdown: text, includeNavigationHeadings: true)
+            }
+            guard let chapter, chapter.headings.count >= 100, chapter.pages.count >= 200 else {
+                throw PerformanceBaselineError.fixture("the Markdown document read as too few headings or pages")
+            }
+            return milliseconds
+        }
+    }
+
     // MARK: - The Cloud
 
     /// The processor time of one cloud refresh of the 643 books in a

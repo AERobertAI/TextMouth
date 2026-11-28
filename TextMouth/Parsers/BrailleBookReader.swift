@@ -9,10 +9,11 @@ import Foundation
 /// records (`BrailleFileCode`, braillecodes; North American Braille ASCII
 /// for a book that records none), `BraillePageAnalyzer` finds the headings
 /// and paragraphs, and `BrailleTranslator` turns each block's cells into
-/// print through liblouis in the braille helper, with the table the book
-/// was imported with, and with the emphasis liblouis reads from the
-/// braille's indicators. Both reading paths, the direct parse and the
-/// Markdown cache, call `markdown(of:table:)`, so they read the same text.
+/// print through liblouis (in the Mac's braille helper, and in the iPhone
+/// app itself, DR34), with the table the book was imported with, and with
+/// the emphasis liblouis reads from the braille's indicators. Both reading
+/// paths, the direct parse and the Markdown cache, call
+/// `markdown(of:table:)`, so they read the same text, as both platforms do.
 enum BrailleBookReader {
 
     // MARK: - The kind of file
@@ -79,11 +80,16 @@ enum BrailleBookReader {
     /// so a macOS update that changes a table changes the version, and
     /// reading the book with the changed rules could move its text under its
     /// places. The rebuild then fails by name and keeps the old content.md.
-    /// A bundled table, and a book that recorded no version, pass.
+    /// A table both platforms bundle, and a book that recorded no version, pass. Each platform compares with the version it
+    /// reads the table with (`BrailleTableCatalog.liblouisVersionRead(forTable:)`): this Mac's for a table of VoiceOver's, which
+    /// includes a bare value the Mac's pack lacks, and the iPhone's own 3.39.0 for any other table it reads, which includes a
+    /// Mac's `mac:` value (FR40). The failure is worded by the platform that reads.
     static func requireUnchangedTable(_ table: String, recordedVersion recorded: String?) throws {
-        guard let recorded, BrailleTableSource.parse(table).source == .mac else { return }
-        let now = BrailleTableCatalog.currentMacLiblouisVersion()
-        guard now == recorded else { throw BrailleTranslator.Failure.changedTable(table, then: recorded, now: now) }
+        guard let recorded else { return }
+        let read = BrailleTableCatalog.liblouisVersionRead(forTable: table)
+        if read.guarded, read.version != recorded {
+            throw BrailleTranslator.Failure.changedTable(table, then: recorded, now: read.version)
+        }
     }
 
     /// The braille file code a file of `fileKind` is read in, from the id a
@@ -163,11 +169,20 @@ enum BrailleBookReader {
     ///   `FileImportError.noTextToRead` when the book has no blocks or no
     ///   print text, `BrailleTranslator.Failure` for a table that is unknown,
     ///   has changed (`requireUnchangedTable(_:recordedVersion:)`), or a
-    ///   translation that fails, and what the file's reading throws.
+    ///   translation that fails, and what the file's reading throws; on the
+    ///   iPhone, `PhoneImportRefusal.macBrailleTable` first for one of a
+    ///   Mac's own tables.
     static func markdown(
         of url: URL, table: String, recordedVersion: String? = nil, fileCode: String? = nil,
         includesPages: Bool = false
     ) throws -> String {
+        #if os(iOS)
+        // One of a Mac's own tables is refused first, in the phone's words:
+        // the iPhone has none of them, so the version check below and the
+        // translator would both speak of this Mac's tables (the review of
+        // November 16, finding 5).
+        try PhoneImportRefusal.refuseMacBrailleTable(table)
+        #endif
         // A book whose Mac table changed is not read again (review R2).
         try requireUnchangedTable(table, recordedVersion: recordedVersion)
         // A book whose braille file characters this TextMouth lacks is
@@ -187,12 +202,14 @@ enum BrailleBookReader {
         // whose pages are pages (`marksItsPages(_:_:)`).
         let translation = PagedTranslation(
             blocks: structure.blocks,
-            starts: includesPages && marksItsPages(pages, structure) ? pageStarts(of: structure) : []
+            starts: includesPages && marksItsPages(pages, structure) ? pageStarts(of: structure) : [],
+            volumeStarts: structure.volumeStarts
         )
 
-        // One run of the helper translates every text, in a working folder
-        // beside the staged package during an import and a temporary one
-        // otherwise, with the emphasis liblouis reads.
+        // One translation reads every text, with the emphasis liblouis reads:
+        // one run of the Mac's helper, in a working folder beside the staged
+        // package during an import and a temporary one otherwise, or the
+        // iPhone's library in its own process, which writes nothing there.
         let printed = try TextutilDocumentReader.withWorkingFolder(for: url) { folder in
             try BrailleTranslator.translate(translation.texts, table: table, direction: .brailleToPrint, workingIn: folder)
         }

@@ -94,6 +94,9 @@ struct AudioEditSaveOutcome: Equatable, Sendable {
     /// Whether anything was rendered: false when the file already held
     /// every applied edit.
     let rendered: Bool
+    /// Whether the file was written without its chapter markers, their
+    /// marker list refused (FMT11), which the save then says.
+    var chapterMarkersLeftOut = false
 }
 
 extension LibraryViewModel {
@@ -128,10 +131,13 @@ extension LibraryViewModel {
         now: Date = Date(),
         progress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> AudioEditSaveOutcome {
+        // A removal of the book's download whose last look has said yes ends first (FR46): no render writes into a
+        // package whose files are going. The book is then looked at as it is.
+        await booksBeingFreed.waitUntilFreed([bookID])
         guard let book = bookByID(bookID), book.format.isAudio, !book.tmbDirectoryName.isEmpty else {
             throw AudioEditError.bookNotInLibrary
         }
-        guard !openBookIDs.contains(bookID) else { throw AudioEditError.bookIsOpen }
+        guard !isBookOpenNow(bookID) else { throw AudioEditError.bookIsOpen }
         let place = AudioBookPlace(book: book)
         let file = audioFile ?? place.bookFile
         let global = AudioOriginalPolicy.global(in: TextMouthRuntime.current.preferences)
@@ -177,7 +183,8 @@ extension LibraryViewModel {
                 book: bookByID(bookID) ?? book,
                 audioFile: saved.render.audioFile,
                 duration: saved.render.duration,
-                rendered: saved.render.rendered
+                rendered: saved.render.rendered,
+                chapterMarkersLeftOut: saved.render.chapterMarkersLeftOut
             )
         }
         library.books[row].filePath = saved.bookFilePath
@@ -211,7 +218,8 @@ extension LibraryViewModel {
             book: updated,
             audioFile: saved.render.audioFile,
             duration: saved.render.duration,
-            rendered: true
+            rendered: true,
+            chapterMarkersLeftOut: saved.render.chapterMarkersLeftOut
         )
     }
 
@@ -276,9 +284,28 @@ extension LibraryViewModel {
                 bookID: book.id
             )
         }
+        // The podcast's chapters kept beside a book of one file were timed
+        // to the audio before any edit. While the file holds edits they are
+        // set aside, and the analysis below must not take them even when
+        // they could not be: the file left would lay the old chapters over
+        // the new audio. Once every edit is undone and saved, the original
+        // audio is back and so are its chapters.
+        var readsPodcastChapters = false
+        if isOneFile {
+            if render.appliedEditCount > 0 {
+                setAsidePodcastChapters(of: book, in: request.package)
+            } else {
+                restorePodcastChapters(of: book, in: request.package)
+                readsPodcastChapters = true
+            }
+        }
         var analyzed = book
         analyzed.filePath = bookURL.path
-        let analysis = try BookContentAnalysisService.analyzeAudio(book: analyzed, url: bookURL)
+        let analysis = try BookContentAnalysisService.analyzeAudio(
+            book: analyzed,
+            url: bookURL,
+            readingPodcastChapters: readsPodcastChapters
+        )
         return RenderedBook(
             render: render,
             analysis: analysis.index,
@@ -286,6 +313,87 @@ extension LibraryViewModel {
             bookFilePath: bookURL.path,
             hash: isOneFile ? try FileImportService.md5Hash(of: bookURL) : nil
         )
+    }
+
+    /// Sets aside the podcast episode's chapters kept in `package` beside the
+    /// audio of `book`, a book of one file whose audio an edit has just
+    /// replaced (FMT25): they were timed to the audio before the edit, so
+    /// they no longer fit it. They are kept, hidden, not deleted, so that
+    /// undoing every edit and saving brings them back with the original
+    /// audio (`restorePodcastChapters(of:in:)`). A file not there is no
+    /// error. A file set aside is said in one `PODCAST_CHAPTERS_SET_ASIDE`
+    /// line; one that cannot be, in one `PODCAST_CHAPTERS_LEFT` line, and
+    /// the save goes on.
+    nonisolated static func setAsidePodcastChapters(of book: Book, in package: URL) {
+        do {
+            try DatalessFiles.withoutDownloading {
+                try moveReplacing(
+                    TextMouthPaths.podcastChaptersSetAsidePath(in: package),
+                    with: TextMouthPaths.podcastChaptersPath(in: package)
+                )
+            }
+            DiagnosticLog.event(
+                .storage,
+                "PODCAST_CHAPTERS_SET_ASIDE: \(book.title): the audio was edited, so the podcast's chapters no longer fit it"
+            )
+        } catch where BookCloudStorageService.isMissingItem(error) {
+            return
+        } catch {
+            // Named by its domain and code: its own words can name the
+            // package's folder by its absolute path.
+            let failure = error as NSError
+            DiagnosticLog.event(
+                .storage,
+                "PODCAST_CHAPTERS_LEFT: \(book.title): the audio was edited, but the podcast's chapters "
+                    + "could not be set aside: error \(failure.code) in \(failure.domain)"
+            )
+        }
+    }
+
+    /// Brings back the podcast episode's chapters set aside in `package`
+    /// (`setAsidePodcastChapters(of:in:)`), once every edit of the audio of
+    /// `book` is undone and saved, so the original audio they were timed to
+    /// is back. Nothing set aside is no error and says nothing; chapters in
+    /// their place already (a new download's) are left as they are, and the
+    /// set-aside file with them. A file brought back is said in one
+    /// `PODCAST_CHAPTERS_RESTORED` line; one that cannot be, in one
+    /// `PODCAST_CHAPTERS_LEFT` line, and the save goes on without them.
+    nonisolated static func restorePodcastChapters(of book: Book, in package: URL) {
+        let live = TextMouthPaths.podcastChaptersPath(in: package)
+        var brought = false
+        do {
+            try DatalessFiles.withoutDownloading {
+                guard !FileManager.default.fileExists(atPath: live.path) else { return }
+                try FileManager.default.moveItem(at: TextMouthPaths.podcastChaptersSetAsidePath(in: package), to: live)
+                brought = true
+            }
+            if brought {
+                DiagnosticLog.event(
+                    .storage,
+                    "PODCAST_CHAPTERS_RESTORED: \(book.title): every edit was undone, so the podcast's chapters fit the audio again"
+                )
+            }
+        } catch where BookCloudStorageService.isMissingItem(error) {
+            return
+        } catch {
+            let failure = error as NSError
+            DiagnosticLog.event(
+                .storage,
+                "PODCAST_CHAPTERS_LEFT: \(book.title): every edit was undone, but the podcast's chapters "
+                    + "could not be brought back: error \(failure.code) in \(failure.domain)"
+            )
+        }
+    }
+
+    /// Moves `source` to `destination`, replacing a file already there.
+    /// - Throws: the error that kept the file from moving; a missing
+    ///   `source` is a missing-file error, whatever is at `destination`.
+    nonisolated private static func moveReplacing(_ destination: URL, with source: URL) throws {
+        if FileManager.default.fileExists(atPath: destination.path) {
+            _ = try FileManager.default.replaceItemAt(destination, withItemAt: source)
+        } else {
+            try FileManager.default.moveItem(at: source, to: destination)
+        }
     }
 
     // MARK: The Book's Places

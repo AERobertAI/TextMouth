@@ -89,8 +89,9 @@ final class SpeedBesideTimesTests: XCTestCase {
         XCTAssertEqual(ReaderTimeWording.timeLeftSpoken(13_441, nil), "3 hours, 44 minutes, 1 second remaining at current speed")
         XCTAssertEqual(ReaderTimeWording.totalShown("4:50:33", nil), "Total: 4:50:33")
         XCTAssertEqual(ReaderTimeWording.totalSpoken(17_433, nil), "Total time: 4 hours, 50 minutes, 33 seconds")
-        XCTAssertEqual(ReaderTimeWording.shownSpeed(nil), "")
-        XCTAssertEqual(ReaderTimeWording.spokenSpeed(nil), "")
+        XCTAssertEqual(ReaderTimeWording.shown("3:44:01", speed: nil), "3:44:01")
+        XCTAssertEqual(ReaderTimeWording.spoken("3 hours", speed: nil), "3 hours")
+        XCTAssertEqual(ReaderTimeWording.remainingSpoken("3 hours", speed: nil), "3 hours remaining")
     }
 
     /// With it on, an audiobook not at 1x names its speed beside its time
@@ -108,8 +109,12 @@ final class SpeedBesideTimesTests: XCTestCase {
             ReaderTimeWording.totalSpoken(17_433, speed),
             "Total time: 4 hours, 50 minutes, 33 seconds at 2.0 times speed"
         )
-        XCTAssertEqual(ReaderTimeWording.shownSpeed(.audio(1.25)), " at 1.25x")
-        XCTAssertEqual(ReaderTimeWording.spokenSpeed(.audio(0.5)), " at 0.5 times speed")
+        XCTAssertEqual(ReaderTimeWording.shown("3:44:01", speed: .audio(1.25)), "3:44:01 at 1.25x")
+        XCTAssertEqual(ReaderTimeWording.spoken("3 hours", speed: .audio(0.5)), "3 hours at 0.5 times speed")
+        XCTAssertEqual(
+            ReaderTimeWording.remainingSpoken("3 hours", speed: .audio(0.5)),
+            "3 hours remaining at 0.5 times speed"
+        )
     }
 
     /// An audiobook at 1x, which its times already are, names nothing even
@@ -121,7 +126,7 @@ final class SpeedBesideTimesTests: XCTestCase {
         XCTAssertEqual(ReaderTimeWording.timeLeftSpoken(13_441, speed), "3 hours, 44 minutes, 1 second remaining at current speed")
         XCTAssertEqual(ReaderTimeWording.totalShown("4:50:33", speed), "Total: 4:50:33")
         XCTAssertEqual(ReaderTimeWording.totalSpoken(17_433, speed), "Total time: 4 hours, 50 minutes, 33 seconds")
-        XCTAssertEqual(ReaderTimeWording.shownSpeed(.audio(1.000_000_1)), "")
+        XCTAssertEqual(ReaderTimeWording.shown("3:44:01", speed: .audio(1.000_000_1)), "3:44:01")
     }
 
     /// With it on, a text book names its words a minute beside its time

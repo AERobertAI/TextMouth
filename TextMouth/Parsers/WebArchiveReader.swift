@@ -28,7 +28,7 @@ enum WebArchiveReader {
     /// Why an archive's main page cannot be read. Each sentence never names
     /// the file: an import's failure names it before the sentence
     /// (`ImportFailure`).
-    enum Failure: LocalizedError, Equatable {
+    enum Failure: LocalizedError, LogDescribing, Equatable {
         /// The file is not a property list holding a main resource with data.
         case notAWebArchive
         /// The main resource is a file of another type (an image, a PDF),
@@ -38,9 +38,21 @@ enum WebArchiveReader {
         var errorDescription: String? {
             switch self {
             case .notAWebArchive:
-                return "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file."
+                // Translators: Why a file could not be imported as a web archive (.webarchive, which Safari saves): it does not hold a main page.
+                return InterfaceText.line("failure.notAWebArchive", "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file.")
             case .notAPage(let mimeType):
-                return "This web archive holds a file of the type “\(mimeType)”, not a web page or text, so it has nothing to read."
+                // Translators: Why a web archive (.webarchive, which Safari saves) could not be imported: its main file is not a page or text, but a picture or a PDF. %@ is the file's media type, such as image/png, which stays as it is.
+                return InterfaceText.line("failure.notAPage", "This web archive holds a file of the type “\(mimeType)”, not a web page or text, so it has nothing to read.")
+            }
+        }
+
+        /// The failure in English for the debug log (FR34).
+        var logDescription: String {
+            switch self {
+            case .notAWebArchive:
+                return "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file." // l10n: no (debug log)
+            case .notAPage(let mimeType):
+                return "This web archive holds a file of the type “\(mimeType)”, not a web page or text, so it has nothing to read." // l10n: no (debug log)
             }
         }
     }
@@ -89,7 +101,12 @@ enum WebArchiveReader {
             let finished = TextFileDecoder.normalizingLineEndings(TextFileDecoder.droppingLeadingByteOrderMarks(text))
             return MainPage(text: finished, isHTML: isHTML)
         }
-        let decoded = try TextFileDecoder.decode(bytes, fileName: fileName, format: isHTML ? .html : .txt)
+        // The old evidence: this reader has no page reader version to raise, so what
+        // it reads does not change with the book decoder's newer rules
+        // (`TextFileDecoder.Evidence.legacy`).
+        let decoded = try TextFileDecoder.decode(
+            bytes, fileName: fileName, format: isHTML ? .html : .txt, evidence: .legacy
+        )
         return MainPage(text: decoded.text, isHTML: isHTML)
     }
 

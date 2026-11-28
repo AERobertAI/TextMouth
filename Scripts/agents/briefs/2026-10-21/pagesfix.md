@@ -3,7 +3,7 @@
 You are `pagesfix`, an Opus agent, working on `team/pages` itself (a8e7fa2e). TextMouth is a native macOS text-to-speech and audiobook player whose user is blind and reads with VoiceOver and a braille display.
 
 ## Why
-A fresh Opus review of team/pages (the whole report is `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/review-pages-report.md`; read it first) judged that PG09, the re-reading of the user's existing books at the next launch, is **not safe yet**:
+A fresh Opus review of team/pages (the whole report is `<main checkout>/build/orchestrator/review-pages-report.md`; read it first) judged that PG09, the re-reading of the user's existing books at the next launch, is **not safe yet**:
 - heading-only Edit Text changes made before today look unchanged to its check, so they would be read over;
 - a book it keeps as hand-changed gets no protection afterwards;
 - an interrupted batch turns TextMouth's own text into a false edit.

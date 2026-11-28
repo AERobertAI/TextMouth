@@ -34,7 +34,9 @@ struct TranscriptionSheet: View {
         }
         .padding(20)
         .frame(width: 480, alignment: .leading)
+        #if os(macOS)
         .onExitCommand { model.escape() }
+        #endif
         .task { await model.load() }
         .task(id: model.focusTarget) { await moveFocus() }
         .onDisappear { model.sheetClosed() }

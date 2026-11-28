@@ -11,10 +11,13 @@ import SwiftUI
 @MainActor
 final class OggConversionProgress: ObservableObject {
     /// The overlay's title.
-    nonisolated static let title = "Converting Audio"
+    nonisolated static var title: String {
+        // Translators: Title of the overlay shown while the library's Ogg audio is converted to AAC. Title case.
+        InterfaceText.line("oggConversionProgress.title", "Converting Audio")
+    }
     /// What the overlay's count counts, agreeing with the total: "12 of 176
     /// tracks converted", "0 of 1 track converted".
-    nonisolated static let itemNoun = CountWording.Noun(singular: "track converted", plural: "tracks converted")
+    nonisolated static let itemNoun = CountWording.Noun(singular: "track converted", plural: "tracks converted") // l10n: no (inside ProgressOverlay's English count until the library's views convert)
 
     /// Whether a book is being converted, which shows the overlay.
     @Published private(set) var isConverting = false
@@ -101,6 +104,7 @@ final class OggConversionProgress: ObservableObject {
     /// The overlay's line: "Converting audio: 12 of 176 tracks of “Harbor
     /// Dramas”".
     nonisolated static func message(done: Int, of total: Int, title: String) -> String {
-        "Converting audio: \(ImportProgressWording.tracks(done: done, of: total)) of “\(title)”"
+        // Translators: Line of the overlay shown while a book's Ogg audio is converted to AAC. %1$@ is how many of how many tracks are done, such as "12 of 176 tracks", and %2$@ the book's title.
+        InterfaceText.line("oggConversionProgress.message", "Converting audio: \(ImportProgressWording.tracks(done: done, of: total)) of “\(title)”")
     }
 }

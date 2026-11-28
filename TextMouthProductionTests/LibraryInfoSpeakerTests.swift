@@ -366,7 +366,7 @@ final class LibraryInfoSpeakerTests: XCTestCase {
             Book(title: "Second", format: .txt, filePath: "/nonexistent/second.txt", md5Hash: "second"),
         ]
         func selected(_ ids: Set<UUID>, edit: Set<UUID> = []) -> LibraryInfoRow? {
-            LibraryInfoRow.selected(ids, editSelection: edit, folders: folders, feeds: [feed], books: books)
+            LibraryInfoRow.selected(ids, editSelection: edit, folders: folders, feeds: [feed], rows: books.map(LibraryInfoRow.book))
         }
 
         XCTAssertEqual(selected([books[1].id]), .book(books[1]))
@@ -620,6 +620,62 @@ final class LibraryInfoSpeakerTests: XCTestCase {
             return XCTFail("a folder whose feed is gone was still spoken as a feed")
         }
         XCTAssertEqual(plain.name, feedFolder.name)
+    }
+
+    // MARK: - A Feed's Item Not Downloaded
+
+    /// A feed's item not downloaded is a row of its own (returnrow). It is
+    /// selected by its own tag, in the list's order among the books beside
+    /// it. Its summary is what its row says, then its feed, and the full
+    /// one adds what Return and the row's default action do with it.
+    /// Command-I speaks the full summary, since the item has no sheet. Once
+    /// the feed's record is gone, the summary leaves the feed out.
+    func testAFeedsItemNotDownloadedIsARowOfItsOwn() async throws {
+        let world = try FeedTestWorld(self, label: "SpeakInfoFeedItem")
+        let feed = try await subscribe(world, title: "The Tactile Atlas", path: "/atlas.xml", into: world.bookFolder.fullPath)
+        let record = try XCTUnwrap(world.center.store.record(of: feed.id))
+        let entry = try XCTUnwrap(record.item("guid:ep-1"), "the feed lists no episode")
+        let item = FeedItemRowContent(entry, of: record.feed, in: world.center, wordsPerMinute: 200)
+        XCTAssertEqual(item.state, .notDownloaded)
+        let first = Book(title: "First", format: .txt, filePath: "/nonexistent/first.txt", md5Hash: "first")
+        let second = Book(title: "Second", format: .txt, filePath: "/nonexistent/second.txt", md5Hash: "second")
+        let rows: [LibraryInfoRow] = [.book(first), .feedItem(item), .book(second)]
+        func selected(_ ids: Set<UUID>, edit: Set<UUID> = []) -> LibraryInfoRow? {
+            LibraryInfoRow.selected(ids, editSelection: edit, folders: [], feeds: [], rows: rows)
+        }
+
+        XCTAssertEqual(LibraryInfoRow.feedItem(item).id, item.selectionID)
+        XCTAssertEqual(LibraryInfoRow.feedItem(item).id, FeedItemRowContent.selectionID(feedID: feed.id, itemID: "guid:ep-1"))
+        XCTAssertNil(LibraryInfoRow.feedItem(item).book)
+        XCTAssertEqual(selected([item.selectionID]), .feedItem(item))
+        XCTAssertEqual(selected([item.selectionID, second.id]), .feedItem(item), "the item comes before the second book")
+        XCTAssertEqual(selected([first.id, item.selectionID]), .book(first))
+        XCTAssertEqual(selected([UUID()], edit: [second.id]), .book(second), "the edit selection's first book")
+        XCTAssertNil(selected([UUID()], edit: [item.selectionID]), "edit mode checks books alone")
+        XCTAssertEqual(LibraryInfoRow.feedItem(item).infoCommand(feedInFolder: { _ in feed.id }), .speakFullInfo)
+
+        let feedFolders = LibraryFeedFolders(center: world.center)
+        func subject() -> LibraryInfoSubject {
+            LibraryInfoSubject(
+                .feedItem(item),
+                library: world.library,
+                feedFolders: feedFolders,
+                wordsPerMinute: 200,
+                cloudStates: BookCloudStates(),
+                keptBooks: KeptBooks(file: nil),
+                measuresFileSize: false
+            )
+        }
+        let facts = FeedItemInfoFacts(rowLabel: item.label, opening: "Downloads it, then opens it", feedTitle: "The Tactile Atlas")
+        XCTAssertEqual(subject(), .feedItem(facts))
+        XCTAssertEqual(LibraryInfoWording.brief(subject()), "\(item.label). In The Tactile Atlas, a feed.")
+        XCTAssertEqual(
+            LibraryInfoWording.full(subject(), now: Date()),
+            "\(item.label). In The Tactile Atlas, a feed. Downloads it, then opens it."
+        )
+
+        world.center.store.remove(feed.id)
+        XCTAssertEqual(LibraryInfoWording.brief(subject()), "\(item.label).", "a feed whose record is gone was named")
     }
 
     // MARK: - The Library Window

@@ -164,7 +164,7 @@ enum NeroChapterReader {
         -> [(title: String, startTime: TimeInterval, duration: TimeInterval)] {
         guard fileDuration.isFinite, fileDuration > 0 else { return [] }
         let ordered = chapters.enumerated()
-            .sorted { $0.element.start != $1.element.start ? $0.element.start < $1.element.start : $0.offset < $1.offset }
+            .sortedStably { $0.element.start != $1.element.start ? $0.element.start < $1.element.start : $0.offset < $1.offset }
             .map(\.element)
 
         // Drop what lies past the end and repeated starts (the list is sorted).
@@ -178,7 +178,7 @@ enum NeroChapterReader {
         return kept.enumerated().map { index, chapter in
             let start = index == 0 ? 0 : chapter.start
             let next = index + 1 < kept.count ? kept[index + 1].start : fileDuration
-            return (title: chapter.title.isEmpty ? "Chapter \(index + 1)" : chapter.title,
+            return (title: chapter.title.isEmpty ? "Chapter \(index + 1)" : chapter.title, // l10n: no (stored id: a chapter title the book keeps as written, question 9)
                     startTime: start,
                     duration: max(0, next - start))
         }

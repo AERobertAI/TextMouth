@@ -132,8 +132,18 @@ extension LibraryViewModel {
     /// questions (TODO I01).
     ///
     /// - Parameter origin: The Library window importing the items.
-    func importAndOpenFiles(urls: [URL], from origin: ImportOrigin? = nil) {
-        for url in urls {
+    func importAndOpenFiles(urls: [URL], from origin: ImportOrigin? = nil, askingForPasswords: Bool = true) {
+        // Protected books are asked about first (FR41); the import carries on
+        // from the answer.
+        if askingForPasswords,
+           askForPasswordsBeforeImporting(urls, proceed: { [weak self] in
+               self?.importAndOpenFiles(urls: urls, from: origin, askingForPasswords: false)
+           }) {
+            return
+        }
+        // A WebVTT or SubRip file opened with its audio is attached to that
+        // audio's book as it is imported, not refused as a book.
+        for url in TranscriptPairing.droppingTranscriptsChosenWithTheirAudio(urls) {
             let ext = url.pathExtension.lowercased()
 
             if FileImportService.isBookPackage(url) {
@@ -183,7 +193,10 @@ extension LibraryViewModel {
 
     /// What the import overlay says while a data-directory move holds an
     /// import back (TODO S04).
-    nonisolated static let importWaitingForMoveMessage = "Waiting for the data directory move to finish..."
+    nonisolated static var importWaitingForMoveMessage: String {
+        // Translators: Line of the import overlay while a move of the data directory holds an import back. Ends with an ellipsis written as three full stops.
+        InterfaceText.line("libraryViewModel.importWaitingForMoveMessage", "Waiting for the data directory move to finish...")
+    }
 
     /// Queues `operation`, one import, on the import queue. While a
     /// data-directory move holds imports back, the overlay says why this one
@@ -219,25 +232,27 @@ extension LibraryViewModel {
 
     // MARK: - Import Folder…
 
-    /// The panel the Import Folder… command presents (TODO I02, FR17): it
+    #if os(macOS)
+    /// The settings of the panel the Import Folder… command presents (TODO I02, FR17): it
     /// chooses folders, several at once, and no files, since a DAISY book
     /// kept as loose files is imported by its folder, and so is a folder of
     /// audio tracks, as one audiobook. Here Return on a folder chooses it;
     /// the standard Open Book... panel offers files only, so Return on a
     /// folder there keeps opening the folder. A TextMouth package counts as
-    /// a file, so it cannot be chosen here.
-    static func makeDAISYFolderPanel() -> NSOpenPanel {
-        let panel = NSOpenPanel()
-        panel.title = "Import Folder"
-        panel.message = "Choose each folder to import: a DAISY book's folder, which holds its ncc.html or .opf file, "
-            + "or a folder of audio tracks, which becomes one audiobook."
-        panel.prompt = "Import"
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = true
-        panel.canCreateDirectories = false
-        return panel
+    /// a file, so it cannot be chosen here. Settings only; the panel is
+    /// built where it is presented.
+    static func makeDAISYFolderPanel() -> FolderPanelSettings {
+        FolderPanelSettings(
+            allowsMultipleSelection: true,
+            // Translators: Title of the panel that chooses folders to import. Title case.
+            title: InterfaceText.line("libraryViewModel.makeDAISYFolderPanel.import", "Import Folder"),
+            // Translators: Message of the panel that chooses folders to import. ncc.html and .opf are file names inside a DAISY book.
+            message: InterfaceText.line("libraryViewModel.makeDAISYFolderPanel.audiobook", "Choose each folder to import: a DAISY book's folder, with its ncc.html or .opf file, or a folder of audio tracks, which becomes one audiobook."),
+            // Translators: Title of the button of the Import Folder panel that imports the chosen folders.
+            prompt: InterfaceText.line("common.import", "Import")
+        )
     }
+    #endif
 
     /// Imports the folders chosen with Import Folder… into the library
     /// folder `folderPath`, each as the book or books it holds: a folder
@@ -456,7 +471,10 @@ extension LibraryViewModel {
             if ext.isEmpty || ext == "json" { continue } // Skip directories and manifest
             if audioExtensions.contains(ext) {
                 hasAudio = true
-            } else if BookFormat.detect(from: URL(fileURLWithPath: entry.path)) != nil {
+            } else if BookFormat.detect(from: URL(fileURLWithPath: entry.path))?.isBookBesideTracks == true {
+                // A cover picture, or a comic book archive, beside the tracks
+                // leaves them one audiobook, as before TextMouth read either
+                // (FMT34).
                 hasNonAudio = true
             }
         }
@@ -772,7 +790,12 @@ extension LibraryViewModel {
         // alert and its questions (FR10).
         importProgress.end(.batch(result))
         if let failureSummary = result.failureSummary {
-            presentImportMessage(failureSummary)
+            // Never the bare "Error": the books that came in are in the
+            // library, so the title says what the batch left out.
+            presentImportMessage(
+                failureSummary,
+                title: ImportProgressWording.zipAlertTitle(for: result, addedBooks: acceptedBooks.count)
+            )
         } else if result.foundNoNewBook {
             presentImportMessage(
                 ImportProgressWording.nothingImported(from: originalURL.lastPathComponent, result: result),
@@ -803,7 +826,12 @@ extension LibraryViewModel {
         // alert: the overlay clears as the queue empties.
         guard !(error is ImportCancelled) else { return }
         importProgress.end(.failure)
+        #if os(iOS)
+        // The phone's alert for a failed import is titled as the spec asks.
+        presentImportMessage(error.localizedDescription, title: ImportProgressWording.nothingImportedTitle)
+        #else
         presentImportMessage(error.localizedDescription)
+        #endif
     }
 
     /// Tell the reader about an import through the library's alert: why it
@@ -887,11 +915,25 @@ extension LibraryViewModel {
         urls: [URL],
         toFolder folderPath: String = "",
         from origin: ImportOrigin? = nil,
-        addingToReadingList: Bool = false
+        addingToReadingList: Bool = false,
+        askingForPasswords: Bool = true
     ) {
+        // Protected books are asked about first (FR41); the import carries on
+        // from the answer.
+        if askingForPasswords,
+           askForPasswordsBeforeImporting(urls, proceed: { [weak self] in
+               self?.importFiles(
+                   urls: urls, toFolder: folderPath, from: origin,
+                   addingToReadingList: addingToReadingList, askingForPasswords: false
+               )
+           }) {
+            return
+        }
         // Only the first package opens a window; the others are imported.
         var hasOpenedPackage = false
-        for url in urls {
+        // A WebVTT or SubRip file chosen with its audio is attached to that
+        // audio's book as it is imported, not refused as a book.
+        for url in TranscriptPairing.droppingTranscriptsChosenWithTheirAudio(urls) {
             let ext = url.pathExtension.lowercased()
             if FileImportService.isBookPackage(url) {
                 openTMBPackage(

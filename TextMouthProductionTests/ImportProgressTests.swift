@@ -974,7 +974,7 @@ final class ImportProgressTests: XCTestCase {
             progress.showArchive("Radio.zip")
             clock.advance(by: 600)
             progress.end(.batch(ZipImportResult(
-                books: [], failures: [], nonBookFiles: NonBookFiles(countsByExtension: ["wma": 176])
+                books: [], failures: [], nonBookFiles: NonBookFiles(countsByExtension: ["exe": 176])
             )))
 
             progress.showArchive("Damaged.zip")

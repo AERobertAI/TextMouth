@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 
 // MARK: - The Dispatcher
 
@@ -94,7 +98,7 @@ final class ShortcutPressDispatcher {
         /// since the Mac started.
         var time: TimeInterval
         /// The window that was key, or nil when none was.
-        var window: NSWindow?
+        var window: PlatformWindow?
         /// The kind of window the press was made in, whose scopes'
         /// shortcuts it matches (FR12's branch E), or nil where none do, as
         /// in a sheet over an audio editor.
@@ -120,7 +124,7 @@ final class ShortcutPressDispatcher {
         let shiftHeld: Bool
         /// The window the key was pressed in, where the action acts; nil
         /// when none was key.
-        let window: NSWindow?
+        let window: PlatformWindow?
     }
 
     // MARK: State
@@ -353,7 +357,7 @@ final class ShortcutPressDispatcher {
     }
 
     /// Posts `action`, triggered by `binding` in `window`.
-    private func trigger(_ action: ShortcutAction, binding: KeyBinding, shiftHeld: Bool, window: NSWindow?) {
+    private func trigger(_ action: ShortcutAction, binding: KeyBinding, shiftHeld: Bool, window: PlatformWindow?) {
         perform(Trigger(action: action, binding: binding, shiftHeld: shiftHeld, window: window))
     }
 }
@@ -560,19 +564,19 @@ extension ShortcutPressDispatcher {
     /// keeps a closed window alive, and known by its identity.
     private struct PressWindow {
         /// The window, while it lives.
-        weak var window: NSWindow?
+        weak var window: PlatformWindow?
         /// Which window it was, or nil when none was key.
         let identity: ObjectIdentifier?
 
         /// The window `window`, or none.
-        init(_ window: NSWindow?) {
+        init(_ window: PlatformWindow?) {
             self.window = window
             identity = window.map(ObjectIdentifier.init)
         }
 
         /// Whether `other` is this window, or both are none. A window that
         /// has gone is no window pressed in since.
-        func isSame(as other: NSWindow?) -> Bool {
+        func isSame(as other: PlatformWindow?) -> Bool {
             identity == other.map(ObjectIdentifier.init) && !isGone
         }
 

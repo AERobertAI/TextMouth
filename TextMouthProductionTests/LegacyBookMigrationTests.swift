@@ -701,7 +701,7 @@ final class LegacyBookMigrationTests: XCTestCase {
         )
         XCTAssertEqual(
             report.logSummary,
-            "LEGACY_MIGRATION: moved 2 books into packages; could not move 1 book: \"First\" (\(copyDiffers)); "
+            "LEGACY_MIGRATION: moved 2 books into packages; could not move 1 book: \"First\" (the copy differed from the original); "
                 + "1 book moved with problems: \"Third\" (Its original was kept. Its cache waits.)"
         )
 

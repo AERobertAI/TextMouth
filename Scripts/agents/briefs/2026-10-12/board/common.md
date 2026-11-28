@@ -16,7 +16,7 @@ The team adds teams, channels (the user's "subforums"), and task lists to the ag
 - **Your worktree's copy** is the one you change. Run it only from the tests, or by hand with `TEXTMOUTH_BBS_DIR` set to a folder of your own in your scratchpad: `TEXTMOUTH_BBS_DIR=<scratchpad>/board-<task>-board python3 .claude/skills/agent-bbs/scripts/bbs.py ...`.
 - **The live board** is shared by every agent on this Mac. Reach it only through the main checkout's unchanged copy:
 
-      python3 /Users/roberteggleston/programming/ai/claude/swift/TextMouth/.claude/skills/agent-bbs/scripts/bbs.py
+      python3 <main checkout>/.claude/skills/agent-bbs/scripts/bbs.py
 
   Below and in your brief, `bbs` means exactly that command. Use it only for `register`, `post`, `inbox`, `claims`, `read`, and `release`. Your own copy would add tables to the live board, and a half-finished table would stay there for good.
 

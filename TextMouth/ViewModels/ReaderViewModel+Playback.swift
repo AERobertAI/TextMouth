@@ -1,6 +1,10 @@
 import SwiftUI
 import Combine
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import AVFoundation
 
 // MARK: - Playback Controls & Audio Engine
@@ -64,6 +68,12 @@ extension ReaderViewModel {
                 awaitedSpeech = inputs
             }
         }
+        #if os(iOS)
+        // The iPhone's audio session must be the app's before anything claims
+        // playback (the engineer's review, F7): refused, as during a call,
+        // nothing changes, and the listener hears why.
+        guard phoneHooks.audioMayStart() else { return }
+        #endif
         // The book plays again, so it no longer rests finished at its end; a
         // book with nothing left to say ended again above instead.
         hasFinishedBook = false
@@ -110,8 +120,10 @@ extension ReaderViewModel {
     /// of one, and stays finished. Play once played the book's last word
     /// or moment again, which ended it again at once: "Finished" again, and
     /// another entry in Books Finished, six of them for one book within nine
-    /// seconds on October 7. The sleep timer keeps its rule: this reader's
-    /// timer in effect starts no next book, since it could never pause it.
+    /// seconds on October 7. The sleep timer goes on with the next book, as
+    /// at the end (0.2.5): only a timer fading out ends listening here, since
+    /// one set for the end of a heading or of the book, now that the book has
+    /// ended, has not run out.
     private func playFromTheEnd() {
         DiagnosticLog.trace(.playback, "play: the book rests at its end; Play does what its end does")
         // Play is a new end decision: a wait for a next episode that an
@@ -121,7 +133,7 @@ extension ReaderViewModel {
         nextEpisodeWait = nil
         if isOpenedFromReadingList {
             followReadingListPastThisBook(
-                sleepTimerEndsListening: sleepTimerEndsListeningHere,
+                sleepTimerEndsListening: sleepTimerIsFadingOutHere,
                 sleepTimerStoppedHere: false,
                 sayingNothingFollows: announceToVoiceOver(_:)
             )
@@ -138,7 +150,7 @@ extension ReaderViewModel {
         case .continueNext:
             continueToNextBookInFolder(
                 following: rule,
-                sleepTimerEndsListening: sleepTimerEndsListeningHere,
+                sleepTimerEndsListening: sleepTimerIsFadingOutHere,
                 sleepTimerStoppedHere: false,
                 sayingNothingFollows: announceToVoiceOver(_:)
             )
@@ -146,8 +158,12 @@ extension ReaderViewModel {
     }
 
     /// Speak `start`'s chapter from its offset (`startSpeaking(_:playing:)`),
-    /// and tell Now Playing the book plays.
+    /// and tell Now Playing the book plays. Where Play starts reading from a
+    /// stop: it first settles the heading an End of heading timer waits for
+    /// (`retargetSleepTimerHeading(toPlayStartingAt:)`).
     private func startSpeakingAsNowPlaying(_ start: SpeechStart) {
+        // Before the cursor moves to where speech begins.
+        retargetSleepTimerHeading(toPlayStartingAt: start)
         startSpeaking(start)
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: true
@@ -212,6 +228,12 @@ extension ReaderViewModel {
     }
 
     private func resumeAudioPlayback() {
+        #if os(iOS)
+        // The iPhone's audio session must be the app's before anything claims
+        // playback (the engineer's review, F7): refused, as during a call,
+        // nothing changes, and the listener hears why.
+        guard phoneHooks.audioMayStart() else { return }
+        #endif
         mediaControlsReleased = false
         nowPlayingService.activateRemoteCommandsIfNeeded()
         soundEffectService?.play(for: .play)
@@ -239,6 +261,12 @@ extension ReaderViewModel {
     }
 
     private func resumeSpeechPlayback() {
+        #if os(iOS)
+        // The iPhone's audio session must be the app's before anything claims
+        // playback (the engineer's review, F7): refused, as during a call,
+        // nothing changes, and the listener hears why.
+        guard phoneHooks.audioMayStart() else { return }
+        #endif
         mediaControlsReleased = false
         nowPlayingService.activateRemoteCommandsIfNeeded()
         soundEffectService?.play(for: .play)
@@ -257,7 +285,11 @@ extension ReaderViewModel {
             restartPlaybackAtCursor()
             return
         }
+        // The pause is over: a look-ahead let go of during a long pause
+        // renders again at once when the cursor is within the lead.
+        endLongPause()
         if speechService.resume() {
+            startLookAheadRenderIfDue()
             nowPlayingService.updateNowPlayingInfo(
                 title: book.title, author: book.author, isPlaying: true
             )
@@ -291,6 +323,9 @@ extension ReaderViewModel {
             restartAudioAtCursor(volume: audioPlaybackService.intendedVolume)
             return
         }
+        // Whatever follows, the pause this ends is over, even when the book
+        // then ends with nothing left to say.
+        endLongPause()
         speechService.stop()
         if speakCurrentChapter() {
             nowPlayingService.updateNowPlayingInfo(
@@ -483,15 +518,16 @@ extension ReaderViewModel {
         let wasActive = isPlaybackUnderWay || wasPaused
         endWhereAmIAsTheBookStops()
 
-        let wasSleepTimerFading = isOwnSleepTimerFading
+        let wasSleepTimerFading = sleepTimerIsFadingOutHere
         // Stop audio FIRST, then restore volume. Restoring volume
         // while audio is still playing causes a brief pop of
         // full-volume audio (same fix pattern as pause()).
         if isAudioBook {
-            stopAudioWaitingToPlay(because: "playback stopped")
+            stopAudioWaitingToPlay(because: "playback stopped") // l10n: no (debug-log reason)
             audioPlaybackService.stop()
         } else {
             stopWaitingForChapterSpeech()
+            endLongPause()
             speechService.stop()
             // Stopped speech looks ahead to nothing: the next Play chooses
             // the next chapter afresh. Abandoning the look-ahead now also
@@ -504,11 +540,6 @@ extension ReaderViewModel {
             chapterSpeechCache.removeAll()
         }
         finishStopping(wasActive: wasActive, wasSleepTimerFading: wasSleepTimerFading)
-    }
-
-    /// Whether this reader's sleep timer is fading playback out right now.
-    private var isOwnSleepTimerFading: Bool {
-        sleepTimerService.ownerID == readerID && sleepTimerService.isFadingOut
     }
 
     /// Everything stopping does once the playback backend is silent:
@@ -543,7 +574,15 @@ extension ReaderViewModel {
         // callback can now restore volume without briefly restarting direct
         // speech that this stop operation would immediately halt again.
         if wasSleepTimerFading {
-            sleepTimerService.stop()
+            // A fade that began while the timer was held for the next book is
+            // left to run out, as it would if this reader stayed open: the
+            // timer ends listening, its expiry is said once, and the book it
+            // was held for is not started. Closing this reader must not stop
+            // it (`SleepTimerService.noteExpiry`). Its callbacks touch only
+            // this reader's own audio and speech.
+            if !sleepTimerService.isHeld(from: readerID) {
+                sleepTimerService.stop()
+            }
         } else {
             // A minutes timer keeps the time it has left until Play resumes
             // its countdown (`play()`), so none is spent while nothing
@@ -564,6 +603,9 @@ extension ReaderViewModel {
             recordPlaybackStopped()
             savePosition()
         }
+        #if os(iOS)
+        phoneHooks.audioEnded?()
+        #endif
     }
 
     /// Speak from the cursor, passing over text with nothing to say.
@@ -615,6 +657,95 @@ extension ReaderViewModel {
         return nil
     }
 
+    /// The place in the book where Play would begin reading aloud: the chapter
+    /// and the UTF-16 offset in its original text of the first word it would
+    /// say, which `start`, the one rule for where Play begins
+    /// (`searchForSpeechStart`), says in the spoken text. White space before
+    /// that word, and a skipped section, are passed over, since nothing is
+    /// said there.
+    func playbackStartPlace(of start: SpeechStart) -> (chapterIndex: Int, characterOffset: Int) {
+        // The first spoken character that is not white space is where the
+        // listener first hears the book. A start always has one
+        // (`hasSpeakableText`); falling back to the start's own offset keeps
+        // this safe if that ever changes.
+        let firstWord = Self.firstSpeakableOffset(in: start.speech.text, fromSpokenOffset: start.offset) ?? start.offset
+        var original = start.speech.offsetMap.toOriginal(firstWord)
+        if start.speech.chapterIndex == currentChapterIndex {
+            // Within the cursor's own chapter reading never goes backward,
+            // whatever a round trip through the offset maps gives.
+            original = max(original, currentCharacterOffset)
+        }
+        return (chapterIndex: start.speech.chapterIndex, characterOffset: original)
+    }
+
+    /// Where Play would begin reading aloud from the cursor, as
+    /// `playbackStartPlace(of:)` gives it, found without preparing any speech
+    /// that is not ready: a long chapter whose speech is not kept ends the
+    /// search (`LongChapterPreparation.never`), so choosing a heading never
+    /// holds the main actor, and starts no preparation of its own.
+    ///
+    /// Nil for an audiobook, which plays files and not speech, when nothing
+    /// speakable remains in the book, and when the chapter Play would start
+    /// in is long and not ready yet. Play settles that last case itself, when
+    /// it starts (`retargetSleepTimerHeading(toPlayStartingAt:)`).
+    func playbackStartPlace() -> (chapterIndex: Int, characterOffset: Int)? {
+        guard !isAudioBook, case .found(let start) = searchForSpeechStart(preparingLongChapters: .never) else { return nil }
+        return playbackStartPlace(of: start)
+    }
+
+    /// The offset in `spokenText`, from `spokenOffset` on, of the first
+    /// character that is not white space or a line break, which is where
+    /// speech starting at `spokenOffset` first says anything; nil when there
+    /// is none. An offset past the end leaves nothing, and one inside a
+    /// character starts at that character. The one rule of what speech
+    /// says nothing for (`hasSpeakableText(in:fromSpokenOffset:)` is this).
+    nonisolated static func firstSpeakableOffset(in spokenText: String, fromSpokenOffset spokenOffset: Int) -> Int? {
+        let rest = spokenText[spokenText.index(atUTF16Offset: spokenOffset)...]
+        return rest.firstIndex(where: { !$0.isWhitespace }).map { spokenText.utf16Offset(of: $0) }
+    }
+
+    /// The heading a timer for the end of the heading waits for: the first
+    /// heading after the place where the listener first hears the book, the
+    /// end of the heading playing there.
+    ///
+    /// While playback is under way that place is the cursor, which playback
+    /// carries along. Otherwise Play will begin at `playbackStartPlace()`,
+    /// which is later than the cursor where the cursor's own place says
+    /// nothing: a cover that is only an image, the end of a chapter after its
+    /// last words, a skipped section, or white space before a heading. The
+    /// heading after the cursor would then already have begun as Play starts,
+    /// and the timer would stop the book at once, in silence. Everything else
+    /// is as `headingAfterCursor`, which this is also for an audiobook, where
+    /// Play has nothing left to read, since the book ends there, and where
+    /// the place is not known yet (a long chapter still being prepared) or
+    /// Play waits for it, which counts as under way: the choice is then
+    /// provisional, and Play corrects it as it starts reading
+    /// (`retargetSleepTimerHeading(toPlayStartingAt:)`).
+    var headingAfterPlaybackStart: Heading? {
+        guard !isPlaybackUnderWay, let place = playbackStartPlace() else { return headingAfterCursor }
+        return Self.nextHeading(in: headings, chapterIndex: place.chapterIndex, characterOffset: place.characterOffset)
+    }
+
+    /// Settles the heading this reader's End of heading timer waits for as
+    /// Play starts reading from `start`, the one moment the place it reads
+    /// from is surely known: a heading chosen earlier, provisionally, or
+    /// before a wait for a long chapter's speech, that has already begun at
+    /// that place would stop the book at once, in silence, so the timer
+    /// waits for the first heading after the place instead. A heading
+    /// still ahead of the place is kept: a timer waits for it, as it does
+    /// after a move the listener made. Called from both ways Play starts
+    /// reading from a stop (`play()` and the play that waited for its
+    /// chapter's speech, `continueWaitingPlay()`), through
+    /// `startSpeakingAsNowPlaying(_:)`, and no other.
+    ///
+    /// - Parameter start: Where speech is about to begin.
+    private func retargetSleepTimerHeading(toPlayStartingAt start: SpeechStart) {
+        guard let waited = sleepTimerNextHeading, sleepTimerService.waitsForHeadingEnd(ownedBy: readerID) else { return }
+        let place = playbackStartPlace(of: start)
+        guard waited.startsAtOrBefore(chapterIndex: place.chapterIndex, characterOffset: place.characterOffset) else { return }
+        sleepTimerNextHeading = Self.nextHeading(in: headings, chapterIndex: place.chapterIndex, characterOffset: place.characterOffset)
+    }
+
     /// What a search for where speech begins from the cursor found.
     enum SpeechStartSearch {
         /// Where speech begins.
@@ -634,6 +765,9 @@ extension ReaderViewModel {
     private func searchForSpeechStart(preparingLongChapters preparation: LongChapterPreparation) -> SpeechStartSearch {
         guard let inputs = speechInputs(forChapterAt: currentChapterIndex) else { return .noneLeft }
         if preparation == .nowUnlessUnderWay, waitsForPreparation(of: inputs) {
+            return .preparingInBackground(inputs)
+        }
+        if skipsPreparation(of: inputs, for: preparation) {
             return .preparingInBackground(inputs)
         }
         let current = preparedSpeech(for: inputs)
@@ -685,6 +819,8 @@ extension ReaderViewModel {
         let play = beginChapterPlay()
         listenForSpeechEnd(of: play)
         DiagnosticLog.trace(.playback, "startSpeaking: chapter=\(currentChapterIndex) offset=\(currentCharacterOffset) gen=\(play.generation)")
+        // A new play ends any pause, however long it had lasted.
+        endLongPause()
 
         currentTransformation = speech.transformation
         currentOffsetMap = speech.offsetMap
@@ -855,7 +991,10 @@ extension ReaderViewModel {
 
     /// What the listener hears when this reader's sleep timer runs out on
     /// its own clock and pauses playback: one counting minutes.
-    nonisolated static let sleepTimerExpiredAnnouncement = "Sleep timer expired. Playback paused."
+    nonisolated static var sleepTimerExpiredAnnouncement: String {
+        // Translators: VoiceOver announcement as a sleep timer of so many minutes runs out and pauses the book.
+        InterfaceText.line("readerViewModel.sleepTimerExpiredAnnouncement", "Sleep timer expired. Playback paused.")
+    }
 
     /// What the listener hears when this reader's sleep timer stops playback
     /// where the heading it was set in ends, before the next heading is
@@ -866,8 +1005,10 @@ extension ReaderViewModel {
     /// any document. At the book's end, which ends the last heading, the
     /// listener hears instead that the book finished and why nothing follows
     /// (`handleEndOfBook()`).
-    nonisolated static let sleepTimerStoppedAtHeadingEndAnnouncement =
-        "Sleep timer expired at the end of the heading. Playback paused."
+    nonisolated static var sleepTimerStoppedAtHeadingEndAnnouncement: String {
+        // Translators: VoiceOver announcement as a sleep timer set to End of heading pauses the book where the heading ends.
+        InterfaceText.line("readerViewModel.sleepTimerStoppedHeadingEnd", "Sleep timer expired at the end of the heading. Playback paused.")
+    }
 
     /// Stop where the chapter just played ended, because this reader's sleep
     /// timer, which has just ended, was set for the end of the heading, and
@@ -914,12 +1055,13 @@ extension ReaderViewModel {
     /// Now Playing, as a pause does. The caller tells the listener why.
     private func stopPlaybackForSleepTimer(waitingAt chapterIndex: Int, characterOffset: Int) {
         if isAudioBook {
-            stopAudioWaitingToPlay(because: "the sleep timer stopped playback")
+            stopAudioWaitingToPlay(because: "the sleep timer stopped playback") // l10n: no (debug-log reason)
             audioPlaybackService.stop()
             isCurrentlyPlaying = false
             isCurrentlyPaused = false
         } else {
             stopWaitingForChapterSpeech()
+            endLongPause()
             speechService.stop()
             discardLookAhead()
         }
@@ -1001,6 +1143,8 @@ extension ReaderViewModel {
         )
         recordPlaybackStopped()
         savePosition()
+        // Speech that paused itself is in a pause like any other.
+        watchPauseForGrowingLong()
     }
 
     // MARK: - Where a Chapter's End Stops the Timer
@@ -1170,7 +1314,7 @@ extension ReaderViewModel {
         guard isAudioBook else { return }
         if let volume = sleepTimerFadeVolumeBeforeStop {
             audioPlaybackService.setVolume(volume)
-        } else if audioPlaybackService.intendedVolume < 1, !isOwnSleepTimerFading {
+        } else if audioPlaybackService.intendedVolume < 1, !sleepTimerIsFadingOutHere {
             audioPlaybackService.restoreVolume()
         }
     }
@@ -1219,6 +1363,36 @@ extension ReaderViewModel {
         let engine: AudioEngineService
     }
 
+    /// A look-ahead whose speech is prepared and whose render waits for the
+    /// current chapter's end to come within the lead (`LookAheadLead`).
+    struct LookAheadWait: Equatable {
+        /// The chapter that was playing when the render began to wait: the
+        /// lead is measured to its end, and a cursor in any other chapter
+        /// starts nothing.
+        let playingChapterIndex: Int
+        /// The UTF-16 length of that chapter's speech, or nil when the
+        /// reader holds no speech for it, and the render is due at once.
+        let playingSpeechLength: Int?
+        /// The UTF-16 length of the next chapter's speech, which sets how
+        /// long its render takes, and so the lead.
+        let nextSpeechLength: Int
+        /// Whether the render, once due, was held off by the phone's memory
+        /// or heat (`mayRenderAhead`), so that it is logged once, not at
+        /// every word spoken until the phone recovers.
+        var wasHeldOff = false
+    }
+
+    /// Whether the system allows a look-ahead render now: on the iPhone,
+    /// what its life cycle says of the memory left and the heat
+    /// (`SpeechRenderCoordinator.mayRenderAhead`); always on the Mac.
+    nonisolated static func systemMayRenderAhead() -> Bool {
+        #if os(iOS)
+        return SpeechRenderCoordinator.shared.mayRenderAhead()
+        #else
+        return true
+        #endif
+    }
+
     /// What rendering `speech` asks of the synthesizer now: its exact text,
     /// in the voice chosen now.
     func renderRequest(for speech: ChapterSpeech) -> SpeechRenderRequest {
@@ -1233,9 +1407,13 @@ extension ReaderViewModel {
         preparedSpeech(forChapterAt: chapterIndex).map { renderRequest(for: $0).signature }
     }
 
-    /// Pre-render the next speakable chapter's audio in the background so
-    /// the chapter transition is instant. Chapters with nothing to say are
-    /// passed over exactly as the utterance-finished path passes over them.
+    /// Choose the next speakable chapter and prepare its speech now, so the
+    /// chapter transition is instant, and render its audio in the background
+    /// once the current chapter's end is within the lead
+    /// (`startLookAheadRenderIfDue()`): at once for a current chapter
+    /// shorter than the lead, or already that near its end. Chapters with
+    /// nothing to say are passed over exactly as the utterance-finished path
+    /// passes over them.
     ///
     /// The chapter's speech is carried to the moment it begins, so the
     /// chapter's end prepares nothing. A long chapter whose speech is not
@@ -1246,6 +1424,7 @@ extension ReaderViewModel {
         // speakable chapter changes when sections are skipped, so an old
         // engine must never stay paired with a newly chosen chapter.
         discardLookAhead()
+        _lookAheadChoiceCountForTesting += 1
 
         // Render exactly the text playback will speak for that chapter.
         let search = searchForSpeakableChapter(from: currentChapterIndex + 1, preparingLongChapters: .inBackground)
@@ -1261,6 +1440,67 @@ extension ReaderViewModel {
             return
         }
 
+        waitForLead(toRender: speech)
+        startLookAheadRenderIfDue()
+    }
+
+    /// Have the render of `speech`, the look-ahead's chapter, wait for the
+    /// lead, measured over the speech the reader plays now; with none
+    /// loaded the render is due at once.
+    private func waitForLead(toRender speech: ChapterSpeech) {
+        lookAheadWait = LookAheadWait(
+            playingChapterIndex: currentChapterIndex,
+            playingSpeechLength: currentTransformation?.modifiedText.utf16Length,
+            nextSpeechLength: speech.text.utf16Length
+        )
+    }
+
+    /// Start the render the look-ahead waits to make, once the listening
+    /// time left in the playing chapter falls within the lead for the next
+    /// one (`LookAheadLead`, audit C11). Until then the reader holds the
+    /// next chapter's speech and none of its audio.
+    ///
+    /// The cursor asks at every move (`currentCharacterOffset`), so speech
+    /// reaching the lead and a seek into it both start the render, and a
+    /// seek back out of it leaves a render made or under way alone. The
+    /// speed is read as it is asked, so a faster speed reaches the lead
+    /// sooner. Nothing starts while a pause has grown long (`longPause`):
+    /// the resume asks again. Nor while the iPhone is hot or short of memory
+    /// (`mayRenderAhead`): the render waits, and each later word asks again.
+    func startLookAheadRenderIfDue() {
+        // Asked at every spoken word: with no render waiting, nothing more.
+        guard let wait = lookAheadWait else { return }
+        guard !longPause.hasElapsed,
+              wait.playingChapterIndex == currentChapterIndex,
+              let speech = chapterSpeechCache.lookAheadSpeech else { return }
+        if let playingLength = wait.playingSpeechLength {
+            let spokenOffset = currentOffsetMap?.toModified(currentCharacterOffset) ?? currentCharacterOffset
+            guard LookAheadLead.isReached(
+                unitsLeft: playingLength - spokenOffset,
+                wordsPerMinute: speechService.wordsPerMinute,
+                nextChapterLength: wait.nextSpeechLength
+            ) else { return }
+        }
+        // Asked now, as the render is about to start, and not when the wait
+        // began minutes earlier: a phone that has grown hot or short of
+        // memory since renders nothing, and one that has recovered renders
+        // at the next word. Refused, the render goes on waiting.
+        guard mayRenderAhead() else {
+            if !wait.wasHeldOff {
+                lookAheadWait?.wasHeldOff = true
+                DiagnosticLog.trace(.playback, "preRender: chapter \(speech.chapterIndex) is due, held off by the phone's memory or thermal state")
+            }
+            return
+        }
+        lookAheadWait = nil
+        DiagnosticLog.trace(.playback, "preRender: chapter \(speech.chapterIndex) is due; rendering it ahead")
+        renderLookAhead(speech)
+    }
+
+    /// Queue the render of `speech`, the next speakable chapter, and make it
+    /// the reader's look-ahead.
+    private func renderLookAhead(_ speech: ChapterSpeech) {
+        let nextIdx = speech.chapterIndex
         let request = renderRequest(for: speech)
         let lookAhead = LookAhead(chapterIndex: nextIdx, signature: request.signature, engine: AudioEngineService())
         self.lookAhead = lookAhead
@@ -1324,7 +1564,58 @@ extension ReaderViewModel {
     func discardLookAhead() {
         lookAhead?.engine.cancelRender()
         lookAhead = nil
+        lookAheadWait = nil
         chapterSpeechCache.forgetLookAhead()
+    }
+
+    // MARK: - A Long Pause (audit C11)
+
+    /// Watch the pause a text book has just been left in for growing long
+    /// (`LongPauseWatch.delay`), when the reader settles into it
+    /// (`settleIntoLongPause()`). A pause already watched keeps its time,
+    /// and one that has grown long stays long; speech that is not paused,
+    /// and an audiobook, are not watched.
+    ///
+    /// Every way a text book is left paused comes through here: Pause
+    /// (`pause(playingPauseSound:)`), a Where Am I? announcement that ends
+    /// with the book it paused left paused (`settlePauseLeftByWhereAmI()`),
+    /// and speech that paused itself (`settleStopMadeBySpeech()`).
+    func watchPauseForGrowingLong() {
+        guard !isAudioBook, speechService.isPaused, !longPause.isWaiting, !longPause.hasElapsed else { return }
+        longPause.begin { [weak self] in self?.settleIntoLongPause() }
+    }
+
+    /// The pause has grown long: let go of the next chapter's rendered
+    /// audio. The chapter being read keeps its own audio, so resuming plays
+    /// from it as ever. Nothing changes for speech that is no longer paused.
+    private func settleIntoLongPause() {
+        guard !isAudioBook, speechService.isPaused else { return }
+        releaseLookAheadAudioForLongPause()
+    }
+
+    /// Let go of the look-ahead's rendered audio, or abandon its render
+    /// still under way, and keep the speech it was rendered from: the render
+    /// waits again, and the resume starts it at once if the cursor is within
+    /// the lead (`startLookAheadRenderIfDue()`). A look-ahead that holds no
+    /// render, waiting already or with none to make, is left as it is.
+    private func releaseLookAheadAudioForLongPause() {
+        guard let lookAhead, let speech = chapterSpeechCache.lookAheadSpeech,
+              speech.chapterIndex == lookAhead.chapterIndex else { return }
+        DiagnosticLog.trace(
+            .playback,
+            "preRender: paused for \(Int(LongPauseWatch.delay)) s; let go of chapter \(lookAhead.chapterIndex)'s "
+                + "rendered audio (\(lookAhead.engine.renderedAudioByteCount) bytes), keeping its speech"
+        )
+        lookAhead.engine.cancelRender()
+        self.lookAhead = nil
+        waitForLead(toRender: speech)
+    }
+
+    /// The pause is over, or what was paused is gone: stop watching it.
+    /// Every way out of a text book's pause comes through here: a resume, a
+    /// new play of a chapter, a stop, and the reader closing, which stops.
+    private func endLongPause() {
+        longPause.end()
     }
 
     /// Take the look-ahead's engine to play `speech`, the chapter that is
@@ -1344,11 +1635,11 @@ extension ReaderViewModel {
         let current = renderRequest(for: speech).signature
         let reason: String
         if lookAhead.chapterIndex != speech.chapterIndex {
-            reason = "it was for chapter \(lookAhead.chapterIndex)"
+            reason = "it was for chapter \(lookAhead.chapterIndex)" // l10n: no (debug-log reason)
         } else if !lookAhead.engine.hasRenderedAudio {
-            reason = "it was still rendering"
+            reason = "it was still rendering" // l10n: no (debug-log reason)
         } else if lookAhead.engine.renderedSignature != current {
-            reason = "it was rendered from other inputs (\(lookAhead.engine.renderedSignature?.description ?? "unsigned"), now \(current))"
+            reason = "it was rendered from other inputs (\(lookAhead.engine.renderedSignature?.description ?? "unsigned"), now \(current))" // l10n: no (debug-log reason)
         } else {
             // Used up by the chapter that plays it: forget it without
             // abandoning anything.
@@ -1376,10 +1667,13 @@ extension ReaderViewModel {
     /// current voice, still has the signature it renders, as after a section
     /// is skipped in the chapter being spoken; a repeated notice of one change
     /// therefore does nothing more. Otherwise its render is abandoned and the
-    /// next speakable chapter, which may now be another one, is queued to
-    /// render from the current settings, so the next chapter keeps its
-    /// instant start. Speed and pitch are not such settings: they are applied
-    /// as the audio plays.
+    /// next speakable chapter, which may now be another one, is chosen and
+    /// prepared from the current settings, its render queued at once or left
+    /// waiting for the lead (`preRenderNextChapter()`), so the next chapter
+    /// keeps its instant start. A look-ahead whose render still waits is
+    /// always chosen again: it has no signature to compare, and choosing
+    /// costs only a search of speech already prepared. Speed and pitch are
+    /// not such settings: they are applied as the audio plays.
     ///
     /// Nothing happens unless a text book's speech is playing or paused.
     /// Speech already prepared from the current settings is not prepared
@@ -1603,6 +1897,13 @@ extension ReaderViewModel {
         inputs.isLong && chapterSpeechCache.isOnlyBeingPreparedInBackground(inputs)
     }
 
+    /// Whether a search made as `preparation` says ends at `inputs`' chapter
+    /// without preparing it: only `.never`, for a long chapter whose speech is
+    /// not kept. Asked without counting a miss in the cache.
+    private func skipsPreparation(of inputs: ChapterSpeechInputs, for preparation: LongChapterPreparation) -> Bool {
+        preparation == .never && inputs.isLong && !chapterSpeechCache.isKept(inputs)
+    }
+
     /// Wait for the speech of `inputs`, the long chapter Play starts in,
     /// which is being prepared off the main thread, showing Playing
     /// meanwhile, in the reader and in Now Playing.
@@ -1618,6 +1919,10 @@ extension ReaderViewModel {
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: true
         )
+        #if os(iOS)
+        // Nothing plays while the speech is prepared off the main thread.
+        phoneHooks.silentGapBegan?()
+        #endif
     }
 
     /// Start the play that waited for its chapter's speech, now that the
@@ -1637,6 +1942,15 @@ extension ReaderViewModel {
             DiagnosticLog.trace(.playback, "play: the chapter's speech is ready while Where Am I speaks or sounds its end; starting it once they are over")
             return
         }
+        #if os(iOS)
+        // Speech starts after a silent wait: asked first, as at a chapter after
+        // its pause, which ends the phone's hold. Refused, the book pauses while
+        // the wait still counts as playing, so the pause settles it.
+        guard phoneHooks.audioMayStart() else {
+            pause(playingPauseSound: false)
+            return
+        }
+        #endif
         chapterSpeechCache.awaitedByPlay = nil
         switch searchForSpeechStart(preparingLongChapters: .nowUnlessUnderWay) {
         case .found(let start):
@@ -1728,7 +2042,7 @@ extension ReaderViewModel {
     /// the end leaves nothing, and one inside a character starts at that
     /// character.
     nonisolated static func hasSpeakableText(in spokenText: String, fromSpokenOffset spokenOffset: Int) -> Bool {
-        hasSpeakableText(spokenText[spokenText.index(atUTF16Offset: spokenOffset)...])
+        firstSpeakableOffset(in: spokenText, fromSpokenOffset: spokenOffset) != nil
     }
 
     /// The index of the first chapter at or after `start` that `isSpeakable`
@@ -1775,6 +2089,13 @@ extension ReaderViewModel {
         /// In the background, ending the search until it is ready: the
         /// look-ahead, which waits for it rather than hold the main thread.
         case inBackground
+        /// Not at all: the search ends at a long chapter whose speech is not
+        /// kept, whether or not it is being prepared, and starts nothing. A
+        /// chapter that is short, or kept, is read as the others are. For a
+        /// caller that only wants to know where Play would begin, and must
+        /// neither hold the main actor nor do the work Play will do: the
+        /// sleep timer choosing the heading it waits for.
+        case never
     }
 
     /// What a search for the next speakable chapter found.
@@ -1805,6 +2126,10 @@ extension ReaderViewModel {
             // Play waits for a long chapter being prepared in the background
             // rather than prepare it again on the main thread.
             if preparingLongChapters == .nowUnlessUnderWay, waitsForPreparation(of: inputs) {
+                result = .preparingInBackground(inputs)
+                return true
+            }
+            if skipsPreparation(of: inputs, for: preparingLongChapters) {
                 result = .preparingInBackground(inputs)
                 return true
             }
@@ -2103,7 +2428,7 @@ extension ReaderViewModel {
         // nor does one waiting out the pause before it, so that nothing
         // ever starts twice.
         isChapterHeldByWhereAmI = false
-        stopWaitingOutChapterPause(because: "a chapter starts now")
+        stopWaitingOutChapterPause(because: "a chapter starts now") // l10n: no (debug-log reason)
         guard isAudioBook, let content = content,
               content.chapters.indices.contains(currentChapterIndex) else { return }
         // The book's package is moving (ST08), so its files are read only
@@ -2315,13 +2640,18 @@ extension ReaderViewModel {
     /// The one way the reader waits out a pause between chapters: a pause
     /// from another source (`ChapterPauses`) waits here too.
     private func startCursorChapter(afterPause seconds: TimeInterval) {
-        stopWaitingOutChapterPause(because: "another pause began")
+        stopWaitingOutChapterPause(because: "another pause began") // l10n: no (debug-log reason)
         let start = DispatchWorkItem { [weak self] in
             self?.startChapterAfterPause()
         }
         chapterStartAfterPause = start
         DiagnosticLog.trace(.playback, "chapter \(currentChapterIndex) starts after a pause of \(seconds) s")
         DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: start)
+        #if os(iOS)
+        // Nothing plays during the pause, a manifest's among them, and a
+        // suspended app would never start the chapter: the phone holds it.
+        phoneHooks.silentGapBegan?()
+        #endif
     }
 
     /// The pause before the cursor's chapter has passed: the chapter plays
@@ -2331,6 +2661,16 @@ extension ReaderViewModel {
     /// one waits, still counted as playing. It plays once the announcement's
     /// end sound has passed (`startPlayHeldByWhereAmI()`).
     private func startChapterAfterPause() {
+        #if os(iOS)
+        // The chapter's audio starts after a silent gap: asked first, as every
+        // start asks, which also ends the phone's hold for the gap. Refused, as
+        // when a call came during the pause, the book pauses where it is, at
+        // the chapter's start, while the wait still counts as playing.
+        if !hasClosed, !isWhereAmISpeakingOrSoundingItsEnd, !phoneHooks.audioMayStart() {
+            pause(playingPauseSound: false)
+            return
+        }
+        #endif
         chapterStartAfterPause = nil
         guard !hasClosed else { return }
         guard !isWhereAmISpeakingOrSoundingItsEnd else {
@@ -2380,7 +2720,7 @@ extension ReaderViewModel {
         // failure only ever comes from a file the reader loaded to play,
         // so playback was active and its stop is recorded; the sleep
         // timer's countdown halts with it, as with every stop.
-        finishStopping(wasActive: true, wasSleepTimerFading: isOwnSleepTimerFading)
+        finishStopping(wasActive: true, wasSleepTimerFading: sleepTimerIsFadingOutHere)
         // A Where Am I announcement ends with the book, as `stop()` ends it:
         // it has nothing left to resume.
         endWhereAmIAsTheBookStops()
@@ -2399,17 +2739,24 @@ extension ReaderViewModel {
     /// while it claimed to play, and playback was stopped (B07): no file or
     /// chapter is at fault, but the system's audio, which a fresh player may
     /// get past and a fresh launch of TextMouth will.
-    nonisolated static let audioStoppedRespondingMessage =
-        "Playback stopped: the audio stopped responding. Press Play to try again; "
-        + "if it stops again, quit and reopen TextMouth."
+    nonisolated static var audioStoppedRespondingMessage: String {
+        // Translators: Message when playback was stopped because the system's audio stopped responding. Play is the name of a button; TextMouth is the app's name.
+        InterfaceText.line("readerViewModel.audioStoppedRespondingMessage", "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.")
+    }
 
     /// What the listener is told when the memory guard stopped playback,
     /// TextMouth's memory having grown to `footprint` bytes while it played
     /// (B07): "Playback stopped because TextMouth's memory grew to 3.2 GB
     /// while the audio played, a fault in macOS's audio."
     nonisolated static func memoryRunawayMessage(footprint: UInt64) -> String {
-        "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB "
-            + "while the audio played, a fault in macOS's audio."
+        #if os(iOS)
+        // The spec's "Words that say Mac": the phone's audio is the system's.
+        // Translators: Message on the iPhone when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before "GB" (gigabytes).
+        InterfaceText.line("readerViewModel.memoryRunawayMessage.system", "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB while the audio played, a fault in the system's audio.")
+        #else
+        // Translators: Message on the Mac when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before "GB" (gigabytes); macOS is the name of the Mac's system.
+        InterfaceText.line("readerViewModel.memoryRunawayMessage.macos", "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB while the audio played, a fault in macOS's audio.")
+        #endif
     }
 
     /// Stop playback because TextMouth's memory grew to `footprint` bytes
@@ -2463,7 +2810,10 @@ extension ReaderViewModel {
         chapterNumber: Int,
         bookHasPackage: Bool
     ) -> String {
-        var problem = failure.problem
+        let problem = failure.problem
+        // The chapter's number names it, so it is written without digit grouping.
+        let number = String(chapterNumber)
+        let head: String
         let remedy: String
         switch failure.reason {
         case .stoppedResponding:
@@ -2472,18 +2822,33 @@ extension ReaderViewModel {
         case .memoryRunaway(let footprint):
             return memoryRunawayMessage(footprint: footprint)
         case .fileMissing:
-            if bookHasPackage {
-                problem += " from the book's package"
-            }
-            remedy = "Re-import the book to restore it."
+            head = bookHasPackage
+                // Translators: First sentence of the message when a chapter's audio file is missing from the book's package. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is what went wrong, such as "the file chapter3.mp3 is missing".
+                ? InterfaceText.line("readerViewModel.chapterNotPlayed", "Chapter \(number) could not be played: \(problem) from the book's package.")
+                : chapterCouldNotBePlayed(number: number, problem: problem)
+            // Translators: Second sentence of the message when a chapter's audio file is missing: what to do.
+            remedy = InterfaceText.line("readerViewModel.reImportBookRestore", "Re-import the book to restore it.")
         case .fileUnreadable:
-            remedy = "Re-import the book to replace it."
+            head = chapterCouldNotBePlayed(number: number, problem: problem)
+            // Translators: Second sentence of the message when a chapter's audio file is unreadable: what to do.
+            remedy = InterfaceText.line("readerViewModel.reImportBookReplace", "Re-import the book to replace it.")
         case .failedDuringPlayback:
-            remedy = "Choose Retry to try again, or re-import the book if it keeps failing."
+            head = chapterCouldNotBePlayed(number: number, problem: problem)
+            // Translators: Second sentence of the message when a chapter failed while playing: what to do. Retry is the name of a button.
+            remedy = InterfaceText.line("readerViewModel.chooseRetryTry", "Choose Retry to try again, or re-import the book if it keeps failing.")
         case .stalled:
-            remedy = "Check that the disk holding your library is connected, then choose Retry."
+            head = chapterCouldNotBePlayed(number: number, problem: problem)
+            // Translators: Second sentence of the message when a chapter's playback stalled: what to do. Retry is the name of a button.
+            remedy = InterfaceText.line("readerViewModel.checkDiskHolding", "Check that the disk holding your library is connected, then choose Retry.")
         }
-        return "Chapter \(chapterNumber) could not be played: \(problem). \(remedy)"
+        return SentenceWording.joined([head, remedy])
+    }
+
+    /// The first sentence of a chapter's playback failure that says nothing
+    /// of the book's package: "Chapter 3 could not be played: <what went wrong>."
+    private nonisolated static func chapterCouldNotBePlayed(number: String, problem: String) -> String {
+        // Translators: First sentence of the message when a chapter's audio could not be played. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is what went wrong, such as "the file is damaged".
+        InterfaceText.line("readerViewModel.chapterCouldNotBePlayed", "Chapter \(number) could not be played: \(problem).")
     }
 
     /// The error alert's Retry: close the alert and play the failed chapter
@@ -2554,8 +2919,8 @@ extension ReaderViewModel {
     /// finished: it plays again, or waits at its beginning. Nor is a book
     /// that hands over to the next one, in its folder or in the reading
     /// list (`handOverToNextBook(to:titled:askingWith:)`): the next book takes
-    /// the media controls. A book whose sleep timer keeps the next one from
-    /// starting, or with no next book, rests finished.
+    /// the media controls. A book whose sleep timer ends listening there, or
+    /// with no next book, rests finished.
     ///
     /// Every end but a loop's saves the book exactly at its end, its last
     /// chapter at its full length (`finishAtTheEnd(replayingAFinishedEnd:)`,
@@ -2585,7 +2950,8 @@ extension ReaderViewModel {
         // is neither counted nor told, and does all else an end does.
         let replayedFinishedEnd = replaysFinishedEnd
         replaysFinishedEnd = false
-        // Whether this reader's sleep timer keeps the next book from starting,
+        // Whether this reader's sleep timer ends listening here, which keeps
+        // the next book from starting (a timer counting minutes goes on with it),
         // decided before a timer that stops playback here ends just below.
         let sleepTimerEndsListening = sleepTimerEndsListeningHere
         let sleepTimerStoppedHere = expireSleepTimerAtChapterEnd(beforeChapter: nil)
@@ -2654,8 +3020,9 @@ extension ReaderViewModel {
     /// the rule skips them
     /// (`LibraryViewModel.nextBook(after:going:skippingFinished:)`), takes
     /// listening over (`handOverToNextBook(to:titled:askingWith:)`), unless
-    /// this reader's sleep timer is in effect, which could never pause it,
-    /// or no book, or only finished books, follow. Then `say` says that the
+    /// this reader's sleep timer ends listening here (it fades out, or waits
+    /// for a place this end spends), or no book, or only finished books,
+    /// follow. Then `say` says that the
     /// book finished and why nothing follows: "No more books in folder", or
     /// "Every book after it in the folder is finished" ("before it" going
     /// up).
@@ -2677,8 +3044,10 @@ extension ReaderViewModel {
     ) {
         goOnPastThisBook(
             to: successionInFolder(following: rule),
-            in: "its folder",
-            startingWith: { self.continueToNextBook($0) },
+            in: "its folder", // l10n: no (debug-log reason)
+            // The window choice is read as the book is asked for, not
+            // before: the listener may change it meanwhile.
+            startingWith: { self.continueToNextBook($0, under: self.folderMoveWindowChoice) },
             sleepTimerEndsListening: sleepTimerEndsListening,
             sleepTimerStoppedHere: sleepTimerStoppedHere,
             sayingNothingFollows: say
@@ -2707,6 +3076,10 @@ extension ReaderViewModel {
         currentCharacterOffset = 0
         hasFinishedBook = false
         chapterPlaybackGeneration += 1
+        // A timer for the end of the heading, which this reader took or set
+        // while the book rested at its end, found no heading after the cursor:
+        // it waits for the heading after the beginning now, not the book's end.
+        refreshSleepTimerHeading()
         savePosition()
     }
 
@@ -2742,6 +3115,13 @@ extension ReaderViewModel {
             title: book.title, author: book.author, isPlaying: false
         )
         announceToVoiceOver(announcement)
+        #if os(iOS)
+        // Nothing follows: other apps may have the audio back, and the item
+        // stays, shown paused at the end, so a Play from the lock screen still
+        // reaches this book (the engineer's review, F1).
+        phoneHooks.audioEnded?()
+        nowPlayingService.deactivatePhoneSessionIfIdle()
+        #endif
     }
 
     // MARK: - Resting at the End (TODO P07)
@@ -2768,11 +3148,11 @@ extension ReaderViewModel {
     func finishAtTheEnd(replayingAFinishedEnd: Bool) {
         let outcome: String
         if replayingAFinishedEnd {
-            outcome = "a rewind replayed its end; not counted again"
+            outcome = "a rewind replayed its end; not counted again" // l10n: no (debug-log reason)
         } else if readingStatsService.markBookFinished(bookID: book.id, title: book.title) {
-            outcome = "counted in Books Finished"
+            outcome = "counted in Books Finished" // l10n: no (debug-log reason)
         } else {
-            outcome = "counted in Books Finished already"
+            outcome = "counted in Books Finished already" // l10n: no (debug-log reason)
         }
         DiagnosticLog.event(.playback, "BOOK_FINISHED: book \(book.id.uuidString.prefix(8)) rests at its end; \(outcome)")
         restAtEnd()
@@ -2906,11 +3286,18 @@ extension ReaderViewModel {
         titled title: String,
         askingWith askForNextBook: @escaping () -> Void
     ) {
+        // One move at a time: a move announced and not yet asked for is
+        // cancelled, as is an earlier hand-over.
+        cancelPendingMoves()
         hasFinishedBook = false
         nowPlayingService.updateNowPlayingInfo(
             title: book.title, author: book.author, isPlaying: false
         )
         announceToVoiceOver(EndOfBookWording.starting(title))
+        // A running sleep timer is held for the next book, which it goes on
+        // with; one that runs out before the book is asked for ends listening
+        // (`showNextBook`).
+        noteMoveAnnounced(to: nextBookID)
         let handOver = NextBookHandOver(
             nextBookID: nextBookID,
             titled: title,
@@ -2921,6 +3308,11 @@ extension ReaderViewModel {
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.continueToNextBookDelay) {
             handOver.askForNextBookIfNotYetAsked()
         }
+        #if os(iOS)
+        // Nothing plays until the next book is asked for, half a second on,
+        // and the phone's session holds the app from then until it has loaded.
+        phoneHooks.silentGapBegan?()
+        #endif
     }
 
     /// Whether a Play that reaches this reader goes to the hand-over to the
@@ -2946,7 +3338,7 @@ extension ReaderViewModel {
             nextBookHandOver = nil
             return false
         }
-        let askedBefore = handOver.hasAskedForNextBook
+        let askedBefore = !handOver.isPendingAsk
         DiagnosticLog.trace(
             .playback,
             "play: the hand-over to the next book is under way; asked before=\(askedBefore)"
@@ -2967,14 +3359,23 @@ extension ReaderViewModel {
     /// own center, where the app opens the book's reader window, or
     /// brings it forward when it is already open.
     ///
-    /// - Parameter nextBookID: The book after this one in its folder.
-    func continueToNextBook(_ nextBookID: UUID) {
+    /// Where the book shows is `choice`'s to say (`showNextBook`): a new
+    /// window opens through the notification, as before 0.2.5, or this
+    /// window shows the book, the request waiting for the reader that takes
+    /// over.
+    ///
+    /// - Parameters:
+    ///   - nextBookID: The book after this one in its folder.
+    ///   - choice: The window choice in force for this move.
+    func continueToNextBook(_ nextBookID: UUID, under choice: NextBookWindow) {
         let request = autoplayRequests.request(for: nextBookID, from: book.id)
-        notificationCenter.post(
-            name: .continueToNextBook,
-            object: nil,
-            userInfo: request.notificationUserInfo
-        )
+        showNextBook(nextBookID, under: choice) {
+            notificationCenter.post(
+                name: .continueToNextBook,
+                object: nil,
+                userInfo: request.notificationUserInfo
+            )
+        }
     }
 
     /// Start playing because a finished book continued to this one, when
@@ -3037,20 +3438,24 @@ extension ReaderViewModel {
     }
 
     /// Whether this reader's own sleep timer ends listening with this book,
-    /// so that Continue to Next Book does not start the next one.
-    ///
-    /// The timer pauses only the reader that set it, so it could never pause
-    /// the next book, which would play on past it. Continuing is therefore
-    /// ruled out while the timer is in effect: counting down, fading out,
-    /// or waiting for the end of a heading or of the book. A timer set for
-    /// either place is still in effect as the book's last chapter ends,
-    /// since it ends there itself (`handleEndOfBook()` asks first). A timer
-    /// that has ended, at an earlier heading's end or by running out, rules
+    /// so that Continue to Next Book does not start the next one: the timer
+    /// is fading out, putting the listener to sleep, or waits for the end of
+    /// a heading or of the book. A timer set for either place is still in
+    /// effect as the book's last chapter ends, since it ends there itself
+    /// (`handleEndOfBook()` asks first). A timer counting minutes does not:
+    /// it goes on with the next book (0.2.5, `noteMoveAnnounced(to:)`),
+    /// which it pauses when it runs out as it pauses any book. A timer that
+    /// has ended, at an earlier heading's end or by running out, rules
     /// nothing out.
     var sleepTimerEndsListeningHere: Bool {
         Self.sleepTimerEndsListening(
             timerBelongsToThisReader: sleepTimerService.ownerID == readerID,
-            timerIsActive: sleepTimerService.isActive
+            timerIsActive: sleepTimerService.isActive,
+            timerFadesOutOrWaitsForAPlace: sleepTimerService.isFadingOut
+                || sleepTimerService.duration.map { duration in
+                    if case .minutes = duration { return false }
+                    return true
+                } ?? false
         )
     }
 
@@ -3062,92 +3467,53 @@ extension ReaderViewModel {
     ///     book's, set the timer.
     ///   - timerIsActive: Whether the timer is counting down, waiting for
     ///     its moment, or fading out.
+    ///   - timerFadesOutOrWaitsForAPlace: Whether the timer is fading out, or
+    ///     is set for the end of a heading or of the book, rather than
+    ///     counting minutes, which goes on with the next book.
     nonisolated static func sleepTimerEndsListening(
         timerBelongsToThisReader: Bool,
-        timerIsActive: Bool
+        timerIsActive: Bool,
+        timerFadesOutOrWaitsForAPlace: Bool
     ) -> Bool {
-        timerBelongsToThisReader && timerIsActive
+        timerBelongsToThisReader && timerIsActive && timerFadesOutOrWaitsForAPlace
     }
 
     // MARK: - Sleep Timer
 
-    /// Start a sleep timer owned by this reader. Replaces any timer that
-    /// might be running for another reader. The provided duration is
+    /// Start a sleep timer owned by this reader, in this reader's window.
+    /// Replaces the window's timer, whoever owned it, and a timer on its way
+    /// to this book from another window (`sleepTimerComingHere`); another
+    /// window's own timer is left as it is. The provided duration is
     /// captured along with this reader's pause/fade callbacks so the
-    /// shared service knows what to do when the timer fires.
+    /// window's timer knows what to do when it fires.
     /// Calling this with a timer already running just replaces it
-    /// (the singleton's start() implicitly stops any previous timer).
+    /// (the service's start() implicitly stops any previous timer).
     /// When `startPlaybackIfNeeded` is true, paused/stopped playback is
     /// resumed or started, as Play does (`playUnlessUnderWay()`), so the
     /// armed timer has audio to count against; while Where Am I? speaks,
     /// the book plays as the announcement ends.
-    /// A timer for the end of the heading waits for the heading the cursor
-    /// is in now to end, where the next heading begins, or the book ends
-    /// after the last heading, for which nothing is kept (finding #787).
+    /// A timer for the end of the heading waits for the heading playing to
+    /// end, where the next heading begins, or the book ends after the last
+    /// heading, for which nothing is kept (finding #787). The heading playing
+    /// is the one in the cursor's place, or, where nothing is read there and
+    /// Play begins later, as at a book's cover, the one Play begins in
+    /// (`headingAfterPlaybackStart`).
     func startSleepTimer(duration: SleepTimerDuration, startPlaybackIfNeeded: Bool = false) {
-        sleepTimerNextHeading = duration == .endOfHeading ? headingAfterCursor : nil
+        // The listener has set this window's timer: one coming here from
+        // another window would replace it as this book loads.
+        stopSleepTimerComingHere(because: "replaced by a timer started where it was going") // l10n: no (debug-log reason)
+        sleepTimerNextHeading = duration == .endOfHeading ? headingAfterPlaybackStart : nil
         // Capture one value for both timer scheduling and direct-speech fade
         // planning. A settings edit while the timer runs must not make the
         // utterance queue disagree with the timer's already-armed duration.
         let fadeOutDuration = settingsViewModel.sleepFadeOutDuration
+        let handlers = makeSleepTimerHandlers(fadeOutDuration: fadeOutDuration)
         sleepTimerService.start(
             duration: duration,
             ownerID: readerID,
-            onExpire: { [weak self] in
-                guard let self = self else { return }
-                let bookToken = String(self.book.id.uuidString.prefix(8))
-                let wasPlaying = self.isAudioBook
-                    ? self.audioPlaybackService.isPlaying
-                    : self.speechService.isSpeaking
-                let wasPaused = self.isAudioBook
-                    ? self.audioPlaybackService.isPaused
-                    : self.speechService.isPaused
-                let backend = self.isAudioBook ? "audiobook" : "speech"
-                SleepTimerService.log(
-                    .event,
-                    "EXPIRY_HANDLER_BEGIN book=\(bookToken) backend=\(backend) "
-                        + "playing=\(wasPlaying) paused=\(wasPaused)"
-                )
-                // Use the sleep-timer-specific pause path so the
-                // end-of-fade completion does not play the normal
-                // pause sound. The pause helper still stops audio
-                // before restoring volume, and it also consumes the
-                // service's one-shot fade-completion latch so the
-                // "just finished fading" case is treated the same as
-                // a still-in-progress fade.
-                self.pause(playingPauseSound: false)
-                let isPlayingAfterPause = self.isAudioBook
-                    ? self.audioPlaybackService.isPlaying
-                    : self.speechService.isSpeaking
-                let isPausedAfterPause = self.isAudioBook
-                    ? self.audioPlaybackService.isPaused
-                    : self.speechService.isPaused
-                SleepTimerService.log(
-                    .event,
-                    "EXPIRY_HANDLER_END book=\(bookToken) playing=\(isPlayingAfterPause) "
-                        + "paused=\(isPausedAfterPause)"
-                )
-                self.announceToVoiceOver(Self.sleepTimerExpiredAnnouncement)
-            },
-            onFadeStep: { [weak self] volume in
-                guard let self = self else { return }
-                if self.isAudioBook {
-                    self.audioPlaybackService.setVolume(volume)
-                } else {
-                    self.speechService.setSleepTimerFadeVolume(
-                        volume,
-                        duration: fadeOutDuration
-                    )
-                }
-            },
-            onFadeCancelled: { [weak self] in
-                guard let self else { return }
-                if self.isAudioBook {
-                    self.audioPlaybackService.restoreVolume()
-                } else {
-                    self.speechService.cancelSleepTimerFade()
-                }
-            },
+            onExpire: handlers.onExpire,
+            onFadeStep: handlers.onFadeStep,
+            onFadeCancelled: handlers.onFadeCancelled,
             fadeOutDuration: fadeOutDuration
         )
         // A timer for the end of the heading stops playback at this chapter's
@@ -3163,11 +3529,102 @@ extension ReaderViewModel {
         }
     }
 
-    /// Cancel the sleep timer if one is running. Anyone may cancel —
-    /// no owner check, since "Cancel" should always work even if the
-    /// user is in a different window from the one that started it.
+    /// What this reader's sleep timer does as it runs: pause this reader's
+    /// playback and say so as it runs out, fade this reader's volume as it
+    /// fades, and restore it if the fade is cancelled. A timer this reader
+    /// starts is given them (`startSleepTimer`), and so is one handed over
+    /// to it (`claimSleepTimerHandOver()`), so the one copy of what a timer
+    /// does to a book serves both. Each captures this reader weakly.
+    ///
+    /// - Parameter fadeOutDuration: The fade the timer was armed with, which
+    ///   direct speech plans its utterance queue by.
+    func makeSleepTimerHandlers(fadeOutDuration: TimeInterval)
+        -> (onExpire: () -> Void, onFadeStep: (Float) -> Void, onFadeCancelled: () -> Void) {
+        let onExpire: () -> Void = { [weak self] in
+            Self.sleepTimerRanOut(for: self)
+        }
+        let onFadeStep: (Float) -> Void = { [weak self] volume in
+            guard let self = self else { return }
+            if self.isAudioBook {
+                self.audioPlaybackService.setVolume(volume)
+            } else {
+                self.speechService.setSleepTimerFadeVolume(
+                    volume,
+                    duration: fadeOutDuration
+                )
+            }
+        }
+        let onFadeCancelled: () -> Void = { [weak self] in
+            guard let self else { return }
+            if self.isAudioBook {
+                self.audioPlaybackService.restoreVolume()
+            } else {
+                self.speechService.cancelSleepTimerFade()
+            }
+        }
+        return (onExpire, onFadeStep, onFadeCancelled)
+    }
+
+    /// What the running out of a timer does for `reader`, the book it was
+    /// given to: pauses it, and says so. A reader that is gone cannot pause
+    /// its book, which went with it, but the listener is still owed the word
+    /// that the timer ran out (W5): a held timer is kept running for a book
+    /// that never took it. Said once, here, whether the reader is gone or not.
+    static func sleepTimerRanOut(for reader: ReaderViewModel?) {
+        reader?.pauseForSleepTimerExpiry()
+        if let reader {
+            reader.announceToVoiceOver(sleepTimerExpiredAnnouncement)
+        } else {
+            // Only a reader that is gone has no call of its own to say it.
+            VoiceOverAnnouncer.announce(sleepTimerExpiredAnnouncement, priority: .high)
+        }
+    }
+
+    /// Pauses this reader's book as its timer runs out, logging the state
+    /// before and after: the timer's own log holds the whole path from an
+    /// input event to the expiry.
+    private func pauseForSleepTimerExpiry() {
+        let bookToken = String(self.book.id.uuidString.prefix(8))
+        let wasPlaying = self.isAudioBook
+            ? self.audioPlaybackService.isPlaying
+            : self.speechService.isSpeaking
+        let wasPaused = self.isAudioBook
+            ? self.audioPlaybackService.isPaused
+            : self.speechService.isPaused
+        let backend = self.isAudioBook ? "audiobook" : "speech"
+        SleepTimerService.log(
+            .event,
+            "EXPIRY_HANDLER_BEGIN book=\(bookToken) backend=\(backend) "
+                + "playing=\(wasPlaying) paused=\(wasPaused)"
+        )
+        // Use the sleep-timer-specific pause path so the
+        // end-of-fade completion does not play the normal
+        // pause sound. The pause helper still stops audio
+        // before restoring volume, and it also consumes the
+        // service's one-shot fade-completion latch so the
+        // "just finished fading" case is treated the same as
+        // a still-in-progress fade.
+        self.pause(playingPauseSound: false)
+        let isPlayingAfterPause = self.isAudioBook
+            ? self.audioPlaybackService.isPlaying
+            : self.speechService.isSpeaking
+        let isPausedAfterPause = self.isAudioBook
+            ? self.audioPlaybackService.isPaused
+            : self.speechService.isPaused
+        SleepTimerService.log(
+            .event,
+            "EXPIRY_HANDLER_END book=\(bookToken) playing=\(isPlayingAfterPause) "
+                + "paused=\(isPausedAfterPause)"
+        )
+    }
+
+    /// Cancel this window's sleep timer if one is running, and one on its
+    /// way to this book from another window. No owner check, since "Cancel"
+    /// should always work, even on a timer the reader before this one in the
+    /// window set; another window's own timer is left as it is.
     func cancelSleepTimer() {
         sleepTimerService.stop()
+        stopSleepTimerComingHere(because: "cancelled where it was going") // l10n: no (debug-log reason)
         // Playback no longer has to stop at this chapter's end for a timer,
         // so the next chapter's file may follow on again (TODO PERF09), and
         // audio fading toward that end returns to full volume (TODO P01).
@@ -3179,6 +3636,13 @@ extension ReaderViewModel {
     /// latest fade-out settings. Used by the "Reset Timer" button in
     /// the sleep timer sheet.
     func restartSleepTimer(startPlaybackIfNeeded: Bool = false) {
+        // A timer held for the next book restarts where it is, whether this
+        // reader's window holds it, this reader having moved on, or it is on
+        // its way to this book from another window: its owner and hold are
+        // kept, and no reader is resumed, as a restart here would resume the
+        // reader that moved on (`SleepTimerService.restartHeld()`).
+        if sleepTimerService.restartHeld() { return }
+        if sleepTimerComingHere?.restartHeld() == true { return }
         guard let duration = sleepTimerService.duration else { return }
         // Rebuild every callback rather than asking the service to retain the
         // old closures. The direct-speech callback captures the effective fade
@@ -3198,30 +3662,42 @@ extension ReaderViewModel {
     /// this install, so we have nothing to repeat.
     func restartOrStartLastSleepTimer() {
         let bookToken = String(book.id.uuidString.prefix(8))
-        if sleepTimerService.isActive {
+        // This window's timer, or one on its way to this book from another
+        // window, which a restart reaches as it reached the one timer there was.
+        if let running = sleepTimerService.isActive ? sleepTimerService : sleepTimerComingHere {
             // Existing timer running — same as Reset Timer.
             SleepTimerService.log(
                 .event,
-                "RESTART_ACTION book=\(bookToken) result=reset-active remainingBefore=\(sleepTimerService.remainingSeconds)"
+                "RESTART_ACTION book=\(bookToken) result=reset-active remainingBefore=\(running.remainingSeconds)"
             )
             restartSleepTimer(startPlaybackIfNeeded: true)
-            announceToVoiceOver("Timer reset.")
+            // Translators: VoiceOver announcement after the Restart Sleep Timer command started the running sleep timer again.
+            announceToVoiceOver(InterfaceText.line("readerViewModel.restartLastSleepTimer.reset", "Timer reset."))
         } else if let last = sleepTimerService.lastUsedDuration {
             // Previous timer ended — re-arm with that duration.
             SleepTimerService.log(
                 .event,
-                "RESTART_ACTION book=\(bookToken) result=rearm-last duration=\(last.displayName)"
+                "RESTART_ACTION book=\(bookToken) result=rearm-last duration=\(last.logName)"
             )
             startSleepTimer(duration: last, startPlaybackIfNeeded: true)
-            announceToVoiceOver("Timer restarted: \(last.displayName).")
+            announceToVoiceOver(Self.sleepTimerRestartedAnnouncement(last))
         } else {
             // First-ever press — nothing to repeat.
             SleepTimerService.log(
                 .event,
                 "RESTART_ACTION book=\(bookToken) result=no-previous-duration"
             )
-            announceToVoiceOver("No previous sleep timer to restart.")
+            // Translators: VoiceOver announcement when the Restart Sleep Timer command finds no timer was ever set.
+            announceToVoiceOver(InterfaceText.line("readerViewModel.restartLastSleepTimer.none", "No previous sleep timer to restart."))
         }
+    }
+
+    /// What VoiceOver says once the timer last used, `duration`, has been set
+    /// again after it ended: "Timer restarted: 30 minutes." The Restart Sleep
+    /// Timer command says it, and so does the iPhone's shake (FR55).
+    static func sleepTimerRestartedAnnouncement(_ duration: SleepTimerDuration) -> String {
+        // Translators: VoiceOver announcement after the Restart Sleep Timer command set the last timer used again. %@ is that timer's name, such as 30 minutes or End of heading.
+        InterfaceText.line("readerViewModel.restartLastSleepTimer.restarted", "Timer restarted: \(duration.displayName).")
     }
 
     /// Pause playback as `pause()` does, making the pause sound only when
@@ -3266,9 +3742,18 @@ extension ReaderViewModel {
         // lives in the fade-cleanup branch below, which is why the
         // sleep timer must keep a one-shot "fade just completed"
         // marker until this helper runs.
+        // A fade that began while the timer was held for the next book is left
+        // to run out, as `finishStopping` leaves it (W2): a pause reaching this
+        // reader meanwhile neither ends it nor consumes its completion, so the
+        // timer ends listening, its expiry is said once, and the book it was
+        // held for is not started. A move's own pause ends a fade because the
+        // move undoes the hold it made first (`cancelPendingMoves()`); the
+        // expiry's own pause stops the timer because `noteExpiry` clears the
+        // hold before it.
         let ownsSleepTimer = sleepTimerService.ownerID == readerID
-        let completedSleepTimerFade = ownsSleepTimer && sleepTimerService.consumePendingFadeCompletion()
-        let completingSleepFade = ownsSleepTimer && (sleepTimerService.isFadingOut || completedSleepTimerFade)
+        let fadeIsHeld = ownsSleepTimer && sleepTimerService.isHeld(from: readerID)
+        let completedSleepTimerFade = ownsSleepTimer && !fadeIsHeld && sleepTimerService.consumePendingFadeCompletion()
+        let completingSleepFade = ownsSleepTimer && !fadeIsHeld && (sleepTimerService.isFadingOut || completedSleepTimerFade)
         // Halt audio output before any volume restoration. For TTS engine
         // playback, a sleep fade needs stronger handling than pause(): the
         // engine is stopped at volume 0 so downstream time-pitch/mixer
@@ -3278,7 +3763,7 @@ extension ReaderViewModel {
             // move of the book's package, so that nothing starts the book
             // when it ends (a sleep timer that ran out would otherwise have
             // the book play on).
-            stopAudioWaitingToPlay(because: "playback paused")
+            stopAudioWaitingToPlay(because: "playback paused") // l10n: no (debug-log reason)
             audioPlaybackService.pause()
             // Only advertise the "playing-but-paused" state when there
             // was something to pause. Otherwise (book stopped or never
@@ -3298,6 +3783,9 @@ extension ReaderViewModel {
             } else {
                 speechService.pause()
             }
+            // A pause that lasts lets go of what only an instant resume
+            // needs (audit C11).
+            watchPauseForGrowingLong()
         }
         // Now safe to clean up fade state. Audio books still restore here;
         // TTS restores inside SpeechService after the engine has stopped.
@@ -3337,6 +3825,10 @@ extension ReaderViewModel {
             recordPlaybackStopped()
             savePosition()
         }
+        #if os(iOS)
+        // Paused, the book needs nothing held for it in the background.
+        phoneHooks.audioEnded?()
+        #endif
     }
 
     /// Stops an audiobook waiting to play, so that nothing starts it later:
@@ -3681,16 +4173,24 @@ final class NextBookHandOver {
         self.askForNextBook = askForNextBook
     }
 
-    /// Whether the next book has been asked for.
-    var hasAskedForNextBook: Bool {
-        askForNextBook == nil
+    /// Whether the next book is still to be asked for: announced, and not
+    /// cancelled or asked.
+    var isPendingAsk: Bool {
+        askForNextBook != nil
+    }
+
+    /// Cancels the ask, because another move took the book's place before it
+    /// was made: nothing more is asked for, and the hand-over is no longer
+    /// under way.
+    func cancel() {
+        askForNextBook = nil
     }
 
     /// Whether the hand-over is still under way: the next book not yet
     /// asked for, or asked for and its request still waiting for that
     /// book's reader to claim it as it starts.
     var isUnderWay: Bool {
-        !hasAskedForNextBook || autoplayRequests.hasRequest(for: nextBookID)
+        isPendingAsk || autoplayRequests.hasRequest(for: nextBookID)
     }
 
     /// Asks for the next book, unless it has been asked for already, so it
@@ -3708,3 +4208,68 @@ final class NextBookHandOver {
 /// which stops it (`stopPlaybackForMemoryRunaway(footprint:)`) or saves its
 /// place (`savePosition()`) as TextMouth's memory runs away.
 extension ReaderViewModel: MemoryGuardedReader {}
+
+#if os(iOS)
+// MARK: - The iPhone's Audio Session
+
+/// What the iPhone's audio session asks of a reader (`PhoneAudioSession.attach(_:)`,
+/// `NowPlayingService.PhoneHandlers`).
+extension ReaderViewModel {
+    /// The system took the audio away for an interruption (a call, an alarm,
+    /// Siri, a navigation prompt): the book counts as paused where it stopped,
+    /// and its place is saved, as any pause saves it, with no pause sound,
+    /// which would ask for the audio the interruption holds.
+    ///
+    /// A text book's next Play starts cold at the cursor, since whether the
+    /// synthesizer or a stopped engine can go on afterwards is unknown on a
+    /// phone. An audiobook resumes its player, which AVFoundation pauses and
+    /// resumes across an interruption itself (Apple's guide, Table 3-2).
+    func pauseForAudioInterruption() {
+        if !isAudioBook {
+            invalidatePlaybackBackendForAudioRouteChange()
+        }
+        pause(playingPauseSound: false)
+    }
+
+    /// The session is about to be let go while this book isn't playing: its
+    /// next Play starts cold, and its speech engine stops running, so no audio
+    /// runs as the session deactivates (the engineer's review, F8).
+    func prepareForAudioSessionDeactivation() {
+        invalidatePlaybackBackendForAudioRouteChange()
+        if !isAudioBook {
+            speechService.pauseEngineForSessionDeactivation()
+        }
+    }
+
+    /// What the lock screen shows beside the title and author
+    /// (`PhoneNowPlayingInfo`): for an audiobook, its speed and the chapter's
+    /// clock, from the chapter's placeholder text, whose length is the
+    /// chapter's duration in tenths of a second (`AudioBookParser`); for
+    /// speech, nothing, since any figure would be an estimate.
+    var phoneNowPlayingDetails: PhoneNowPlayingDetails {
+        guard isAudioBook else { return .none }
+        guard let content, content.chapters.indices.contains(currentChapterIndex) else {
+            return PhoneNowPlayingDetails(speed: audioSpeed, chapterTime: nil)
+        }
+        let chapterLength = content.chapters[currentChapterIndex].text.utf16Length
+        return PhoneNowPlayingDetails(
+            speed: audioSpeed,
+            chapterTime: PhoneNowPlayingDetails.ChapterTime(
+                elapsed: AudioBookParser.time(forCharacterOffset: currentCharacterOffset),
+                duration: AudioBookParser.time(forCharacterOffset: chapterLength)
+            )
+        )
+    }
+
+    /// The media commands this book's units allow (`PhoneRemoteCommandPolicy`).
+    var phoneRemoteCommandPolicy: PhoneRemoteCommandPolicy {
+        // The phone moves by one unit in force, filled by its reader model;
+        // the lock screen must promise what a press does.
+        PhoneRemoteCommandPolicy(
+            unitInForce: phoneHooks.unitInForce,
+            forward: playbackSkipForwardUnit,
+            backward: playbackSkipBackwardUnit
+        )
+    }
+}
+#endif

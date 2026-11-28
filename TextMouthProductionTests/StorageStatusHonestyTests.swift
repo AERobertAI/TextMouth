@@ -94,6 +94,32 @@ final class StorageStatusHonestyTests: XCTestCase {
         XCTAssertEqual(model.outcomeConfirmingSaves(.success("Done.")), .success("Done."))
     }
 
+    /// A Retry kept while an operation held the storage work runs before
+    /// that operation's outcome is judged, in the turn the hold ended and
+    /// before its own wait's turn (nothing here awaits): a finished move is
+    /// reported done, not failed for a change about to be saved, and
+    /// VoiceOver hears only the outcome. It used to be reported failed.
+    func testARetryKeptForTheOperationRunsBeforeItsOutcomeIsJudged() throws {
+        let sharedCenter = cleanSharedFailureCenter()
+        sharedCenter.recordFailure(.statistics, path: "/data/reading_stats.json", error: WriteRefused(), waitsForStorageWork: true) { _ in
+            sharedCenter.recordSuccess(.statistics)
+        }
+        let model = LibraryViewModel(initializeServices: false)
+        let hold = try StorageBoundary.shared.holdWork(for: .movingDataDirectory)
+        defer { hold.release() }
+        recordingAnnouncements { sharedCenter.retry(.statistics) }
+        XCTAssertTrue(sharedCenter.hasUnsavedChanges)
+
+        hold.release()
+        let done = OperationOutcome.success("Done. Data is now at /Volumes/Library.")
+        var judged: OperationOutcome?
+        let heard = recordingAnnouncements { judged = model.outcomeConfirmingSaves(done) }
+
+        XCTAssertEqual(judged, done, "the finished move was reported failed for the kept retry")
+        XCTAssertFalse(sharedCenter.hasUnsavedChanges)
+        XCTAssertEqual(heard.announcements.map(\.message), [], "the kept retry announced itself beside the outcome")
+    }
+
     // MARK: - The Status Line
 
     /// The status says "Changes not saved" rather than "Active" or "Not

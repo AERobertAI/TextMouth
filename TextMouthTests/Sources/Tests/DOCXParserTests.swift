@@ -144,10 +144,11 @@ test("DOCX Markdown contains bold-italic text") {
     try assertTrue(markdown.contains("***Critical observation***"), "Should contain bold-italic text")
 }
 
-test("DOCX Markdown contains strikethrough text") {
+test("DOCX Markdown contains struck text, written plain") {
     let url = try requireFile("test_book.docx")
     let markdown = try parseDOCXToMarkdown(from: url)
-    try assertTrue(markdown.contains("~~"), "Should contain strikethrough markers")
+    try assertTrue(markdown.contains("The old semaphore codes are no longer required knowledge"), "Should contain the struck sentence")
+    try assertTrue(!markdown.contains("~"), "Should hold no tilde: strikethrough is written as plain text")
 }
 
 test("DOCX Markdown contains bullet list items") {
@@ -229,14 +230,17 @@ test("Alice DOCX produces DocumentContent with text") {
 // Every byte of each fixture's Markdown, pinned on September 30, 2026, before
 // the DOCX parts were checked for damaged XML (TODO T04), and pinned again on
 // October 3, 2026, when DOCX text began to be written as Markdown literals
-// (TODO T05). An intact document must convert exactly as pinned: a change
+// (TODO T05), and test_book.docx again on November 6, 2026, when the emphasis
+// went through MarkdownEmphasis (the struck sentence is plain text, and two
+// quotation marks stand outside their italics). An intact document must
+// convert exactly as pinned: a change
 // here changes every DOCX book's cached text, so it needs a cache format
 // version bump.
 test("DOCX fixture test_book.docx converts to its pinned Markdown") {
     try assertPinnedMarkdown(
         "test_book.docx",
-        bytes: 3270,
-        sha256: "03acb604568b522cefed0a7284e349bb1ff5278269a9a5593346e347ba59c5de"
+        bytes: 3266,
+        sha256: "6527183089c8c32c33f9abad2a6a7c56c16f32322154896c7cae3384951b94b9"
     )
 }
 

@@ -35,6 +35,59 @@ final class BrailleSettingsViewTests: XCTestCase {
         XCTAssertEqual(SettingsView.windowSize.width, 860)
     }
 
+    /// A value an iPhone stores, the bare `fr-bfu-g2.ctb`, which this Mac reads with VoiceOver's file: the tab's pop-ups show
+    /// French, French braille, contracted (not English, the table the raw value matches nothing of), and choosing the table
+    /// already shown changes nothing: the value stays as it was stored, with no check and no write. This pins the pickers' two
+    /// call sites of the lists' spelling, the table shown (`currentTable`) and the guard of a choice.
+    func testAnIPhonesBareValueShowsVoiceOversTableAndChoosingItChangesNothing() throws {
+        try XCTSkipIf(BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb") == nil,
+                      "This Mac has no VoiceOver table fr-bfu-g2.ctb (\(BrailleTableCatalog.macTablesFolder.path))")
+        let bare = "fr-bfu-g2.ctb"
+        let defaults = try isolatedDefaults()
+        let settings = try makeSettings(defaults: defaults)
+        settings.brailleTable = bare
+        XCTAssertEqual(settings.brailleTable, bare, "the setting did not keep the iPhone's value")
+        try withBrailleTab(settings: settings, codes: BrailleTableCatalog.offeredCodes) { hosting, _ in
+            XCTAssertTrue(waitUntil {
+                hosting.layoutSubtreeIfNeeded()
+                guard let (language, code, contraction) = self.popUpTriple(in: hosting) else { return false }
+                return language.titleOfSelectedItem == self.french && code.titleOfSelectedItem == "French braille"
+                    && contraction.titleOfSelectedItem == "Contracted (Grade 2)"
+            }, "the pop-ups did not show French for the stored \(bare)")
+            let (language, _, _) = try popUps(in: hosting)
+            let frenchItem = try XCTUnwrap(language.itemTitles.firstIndex(of: french))
+            language.menu?.performActionForItem(at: frenchItem)
+            // A choice of another table would be checked and stored within moments (the check of a Mac table runs the helper).
+            XCTAssertFalse(waitUntil(timeout: 3) { settings.brailleTable != bare }, "choosing the table shown changed the value")
+            XCTAssertEqual(BraillePreferences.table.read(from: defaults), bare)
+        }
+        // The guard itself, for every spelling.
+        let shown = try XCTUnwrap(BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb"))
+        XCTAssertTrue(BrailleSettingsChoice.isShown(shown, stored: bare))
+        XCTAssertTrue(BrailleSettingsChoice.isShown(shown, stored: "mac:fr-bfu-g2.ctb"))
+        XCTAssertFalse(BrailleSettingsChoice.isShown(shown, stored: "en-ueb-g2.ctb"))
+    }
+
+    // MARK: - Export's Choices
+
+    /// Export's braille options offer the tables that only write braille as well as those that read it back (FR40): its codes,
+    /// by default, are the export codes, while the Braille tab's are the codes for reading. A print-only table is among the
+    /// export codes where this Mac has one, and in none of the tab's. A stored value a list spells otherwise still finds its
+    /// table there (`BrailleSettingsChoice.table(ofStored:in:)`).
+    func testExportsPopUpsOfferThePrintOnlyTablesTheTabDoesNot() throws {
+        let export = BrailleExportOptionsView(options: .constant(BrailleExportOptions(table: "en-ueb-g2.ctb")), choosesLineEnds: false)
+        XCTAssertEqual(export.codes.map(\.id), BrailleTableCatalog.exportCodes.map(\.id), "Export does not default to the export codes")
+        let exportTables = export.codes.flatMap(\.tables)
+        let tabTables = BrailleTableCatalog.offeredCodes.flatMap(\.tables)
+        XCTAssertFalse(tabTables.contains(where: \.isPrintOnly), "the tab offers a table that only writes braille")
+        try XCTSkipIf(BrailleTableCatalog.mac?.printOnly.isEmpty ?? true, "This Mac has no print-only VoiceOver table")
+        XCTAssertTrue(exportTables.contains(where: \.isPrintOnly), "Export offers no table that only writes braille")
+        XCTAssertTrue(exportTables.count > tabTables.count)
+        if BrailleTableCatalog.table(withID: "mac:fr-bfu-g2.ctb") != nil {
+            XCTAssertEqual(BrailleSettingsChoice.table(ofStored: "fr-bfu-g2.ctb", in: export.codes)?.id, "mac:fr-bfu-g2.ctb")
+        }
+    }
+
     // MARK: - The Pop-ups
 
     /// The four pop-ups are found by their labels, with their hints exactly,
@@ -46,18 +99,19 @@ final class BrailleSettingsViewTests: XCTestCase {
         try withBrailleTab(settings: makeSettings()) { hosting, _ in
             let controls = accessibleControls(in: hosting)
             let language = try control(labelled: "Language", in: controls)
-            XCTAssertEqual(language.hint, "The language of the braille code TextMouth reads braille files with and writes braille in.")
+            XCTAssertEqual(language.hint, "The language of the braille code for reading and writing braille.")
             let code = try control(labelled: "Braille code", in: controls)
-            XCTAssertEqual(code.hint, "The braille code TextMouth reads braille files with and writes braille in.")
+            XCTAssertEqual(code.hint, "The braille code for reading and writing braille.")
             let contraction = try control(labelled: "Contraction", in: controls)
             XCTAssertEqual(
                 contraction.hint,
-                "Whether that code's braille is contracted. Contracted braille writes common words and letter groups in fewer cells."
+                "Whether that code's braille is contracted, which writes common words and letter groups in "
+                    + "fewer cells."
             )
             let fileCode = try control(labelled: "Braille file characters", in: controls)
             XCTAssertEqual(
                 fileCode.hint,
-                "How a BRF or BRL file writes each braille cell as a character. Most files use North American Braille ASCII."
+                "How a BRF or BRL file writes each braille cell. Most files use North American Braille ASCII."
             )
             XCTAssertEqual(fileCode.role, .popUpButton)
             XCTAssertEqual(fileCode.element.accessibilityValue() as? String, "North American Braille ASCII")
@@ -177,7 +231,7 @@ final class BrailleSettingsViewTests: XCTestCase {
     func testTheBrailleFileCharactersFollowTheCodesCaption() {
         XCTAssertEqual(
             BrailleSettingsView.trailingRows(for: .choices),
-            [.caption, .fileCodePopUp, .fileCodeCaption]
+            [.caption, .fileCodePopUp, .fileCodeCaption, .guessSwitch, .guessCaption]
         )
         XCTAssertEqual(BrailleSettingsView.trailingRows(for: .noTables(BrailleSettingsWording.noTables)), [.caption])
     }
@@ -187,7 +241,7 @@ final class BrailleSettingsViewTests: XCTestCase {
     func testChoosingEurobrailleStoresItsID() throws {
         let defaults = try isolatedDefaults()
         let url = try makeConfigFileURL()
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: defaults, configService: service
         )
@@ -265,7 +319,7 @@ final class BrailleSettingsViewTests: XCTestCase {
                       "This Mac does not offer its French contracted table (\(BrailleTableCatalog.macTablesFolder.path))")
         let defaults = try isolatedDefaults()
         let url = try makeConfigFileURL()
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: defaults, configService: service
         )
@@ -300,8 +354,8 @@ final class BrailleSettingsViewTests: XCTestCase {
         defer { VoiceOverAnnouncer.poster = previousPoster }
         let file = try makeSandboxDirectory("BrailleTabCheckRoot").appendingPathComponent("plain.txt")
         try "not a folder".write(to: file, atomically: true, encoding: .utf8)
-        let expected = "TextMouth could not check this Mac's table \u{201C}Fixture French contracted braille\u{201D}: "
-            + "TextMouth could not make a folder to check it in. Choose it again to try once more."
+        let expected = "TextMouth could not check this Mac's table \u{201C}Fixture French contracted "
+            + "braille\u{201D}: TextMouth could not make a folder to check it in. Choose it again to retry."
 
         try withBrailleTab(settings: settings, codes: codesWithAFixtureMacLanguage(), checkRoot: file) { hosting, _ in
             let (language, _, _) = try popUps(in: hosting)
@@ -351,30 +405,34 @@ final class BrailleSettingsViewTests: XCTestCase {
         XCTAssertEqual(BrailleSettingsWording.languageLabel, "Language")
         XCTAssertEqual(
             BrailleSettingsWording.languageHint,
-            "The language of the braille code TextMouth reads braille files with and writes braille in."
+            "The language of the braille code for reading and writing braille."
         )
         XCTAssertEqual(BrailleSettingsWording.codeLabel, "Braille code")
         XCTAssertEqual(
             BrailleSettingsWording.codeHint,
-            "The braille code TextMouth reads braille files with and writes braille in."
+            "The braille code for reading and writing braille."
         )
         XCTAssertEqual(BrailleSettingsWording.contractionLabel, "Contraction")
         XCTAssertEqual(
             BrailleSettingsWording.contractionHint,
-            "Whether that code's braille is contracted. Contracted braille writes common words and letter groups in fewer cells."
+            "Whether that code's braille is contracted, which writes common words and letter groups in fewer "
+                + "cells."
         )
         XCTAssertEqual(BrailleSettingsWording.fileCodeLabel, "Braille file characters")
         XCTAssertEqual(
             BrailleSettingsWording.fileCodeHint,
-            "How a BRF or BRL file writes each braille cell as a character. Most files use North American Braille ASCII."
+            "How a BRF or BRL file writes each braille cell. Most files use North American Braille ASCII."
         )
         XCTAssertEqual(
             BrailleSettingsWording.caption,
-            "TextMouth reads braille files (BRF, BRL, and PEF) with this code, and exports braille with it unless you choose another in the Export dialog. A book keeps the code it was imported with."
+            "TextMouth reads braille files (BRF, BRL, and PEF) with this code and exports with it unless the "
+                + "Export dialog chooses another. A book keeps the code it was imported with."
         )
         XCTAssertEqual(
             BrailleSettingsWording.fileCodeCaption,
-            "TextMouth reads BRF and BRL files you add from now on with these characters; a file of Unicode braille patterns is recognized by itself. The Export dialog starts a BRF with them. A book keeps the characters it was imported with, which Book Information can change."
+            "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes "
+                + "Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book "
+                + "keeps its import characters, which Book Information can change."
         )
         XCTAssertEqual(BrailleSettingsWording.noTables, "TextMouth found no braille tables in its bundle.")
     }
@@ -418,7 +476,8 @@ final class BrailleSettingsViewTests: XCTestCase {
         )
         XCTAssertEqual(
             BrailleSettingsWording.refusal(ofTableNamed: name, because: .helperFailed),
-            "TextMouth could not check this Mac's table \u{201C}Greek braille\u{201D}: the braille helper failed. Choose it again to try once more."
+            "TextMouth could not check this Mac's table \u{201C}Greek braille\u{201D}: the braille helper "
+                + "failed. Choose it again to retry."
         )
     }
 
@@ -456,7 +515,7 @@ final class BrailleSettingsViewTests: XCTestCase {
             notificationCenter: NotificationCenter(),
             initializeServices: false,
             userDefaults: store,
-            configService: ConfigService(fileURL: try makeConfigFileURL())
+            configService: makeConfigService(fileURL: try makeConfigFileURL())
         )
     }
 

@@ -11,7 +11,9 @@ import Foundation
 class DAISYSAXParser: PackageSAXParser {
     /// Prepare to parse `data`, reporting problems under the name `file`.
     init(data: Data, file: String) {
-        super.init(data: data, file: file, malformedXMLError: DAISYParserError.malformedXML)
+        super.init(
+            data: data, file: file, malformedXMLError: DAISYParserError.malformedXML,
+            refusedXMLError: DAISYParserError.unsafeXML)
     }
 
     /// Read `path` from `provider` and prepare to parse it under that name,

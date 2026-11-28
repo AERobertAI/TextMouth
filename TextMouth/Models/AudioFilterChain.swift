@@ -60,7 +60,8 @@ struct AudioFilterChain: Equatable, Sendable {
     private static func parseFilter(_ description: String) throws -> Filter {
         let text = description.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else {
-            throw AudioFilterError.syntax("There's an empty filter between two commas.")
+            // Translators: Problem found in a typed filter chain (the audio editor's Apply Filter and the filter presets): two commas in a row leave a filter with nothing in it.
+            throw AudioFilterError.syntax(InterfaceText.line("audioFilterChain.parseFilter.between", "There's an empty filter between two commas."))
         }
         if text.hasPrefix("[") || text.hasSuffix("]") || containsUnquoted(";", in: text) {
             throw AudioFilterError.needsFFmpeg
@@ -70,7 +71,8 @@ struct AudioFilterChain: Equatable, Sendable {
         // "volume@loud" names one instance of the filter: the filter is "volume".
         if let at = name.firstIndex(of: "@") { name = String(name[..<at]) }
         guard !name.isEmpty, name.allSatisfy({ $0.isLetter || $0.isNumber || $0 == "_" }) else {
-            throw AudioFilterError.syntax("“\(parts[0])” isn't a filter's name.")
+            // Translators: Problem found in a typed filter chain: the text before an equals sign is not a filter's name. %@ is that text.
+            throw AudioFilterError.syntax(InterfaceText.line("audioFilterChain.parseFilter.isnt", "“\(parts[0])” isn't a filter's name."))
         }
         guard parts.count > 1 else { return Filter(name: name, options: []) }
         let options = try split(parts[1], on: ":").map { argument -> Option in
@@ -78,7 +80,8 @@ struct AudioFilterChain: Equatable, Sendable {
             if pieces.count == 2 {
                 let key = unescape(pieces[0]).trimmingCharacters(in: .whitespaces)
                 guard !key.isEmpty else {
-                    throw AudioFilterError.syntax("An option of the \(name) filter has a value but no name.")
+                    // Translators: Problem found in a typed filter chain: an equals sign with nothing before it, in one filter's options. %@ is the filter's name, such as volume.
+                    throw AudioFilterError.syntax(InterfaceText.line("audioFilterChain.parseFilter.option", "An option of the \(name) filter has a value but no name."))
                 }
                 return Option(key: key, value: unescape(pieces[1]))
             }
@@ -113,7 +116,8 @@ struct AudioFilterChain: Equatable, Sendable {
                 current.append(character)
             }
         }
-        guard !quoted else { throw AudioFilterError.syntax("A quote isn't closed in “\(text)”.") }
+        // Translators: Problem found in a typed filter chain: a single quote is opened and never closed. %@ is the text of the part holding it.
+        guard !quoted else { throw AudioFilterError.syntax(InterfaceText.line("audioFilterChain.split", "A quote isn't closed in “\(text)”.")) }
         pieces.append(current)
         return pieces
     }
@@ -176,33 +180,43 @@ enum AudioFilterError: LocalizedError, Equatable, Sendable {
     var errorDescription: String? {
         switch self {
         case .empty:
-            return "The filter chain is empty."
+            // Translators: Problem said when a filter chain is typed as nothing at all, in the audio editor's Apply Filter and the filter presets.
+            return InterfaceText.line("audioFilterError.empty", "The filter chain is empty.")
         case .syntax(let sentence):
             return sentence
         case .needsFFmpeg:
-            return "Labels and semicolons in a filter graph need ffmpeg. TextMouth's own filters take one chain of "
-                + "filters separated by commas."
+            // Translators: Problem said of a filter graph with labels or semicolons, which only the ffmpeg program runs: TextMouth's own filters take a chain separated by commas.
+            return InterfaceText.line("audioFilterError.needsFFmpeg", "Labels and semicolons need ffmpeg. TextMouth's own filters take one comma-separated chain.")
         case .unknownFilter(let name):
-            return "TextMouth's own filters don't include “\(name)”. They are "
-                + Self.list(AudioBuiltInFilter.names) + "; with ffmpeg installed, every filter it has works."
+            // Translators: Problem said of a filter TextMouth doesn't run itself. %1$@ is the filter's name as typed, and %2$@ the list of the filters TextMouth does run, such as "a, b, and c".
+            return InterfaceText.line("audioFilterError.unknownFilter", "TextMouth's own filters don't include “\(name)”. They are \(Self.list(AudioBuiltInFilter.names)); with ffmpeg installed, every filter it has works.")
         case .unknownOption(let filter, let option, let supported):
-            return "The \(filter) filter has no option “\(option)” here. Its options are \(Self.list(supported))."
+            // Translators: Problem said of an option a filter doesn't take. %1$@ is the filter's name, %2$@ the option as typed, and %3$@ the list of the options it takes.
+            return InterfaceText.line("audioFilterError.unknownOption", "The \(filter) filter has no option “\(option)” here. Its options are \(Self.list(supported)).")
         case .tooManyValues(let filter):
-            return "The \(filter) filter was given more values than it has options; give them as key=value."
+            // Translators: Problem said when a filter is given more values than it has options. %@ is the filter's name. "key=value" is filter syntax and stays as it is.
+            return InterfaceText.line("audioFilterError.tooManyValues", "The \(filter) filter was given more values than it has options; give them as key=value.")
         case .badValue(let filter, let option, let value, let expected):
-            return "The \(filter) filter's \(option) can't be “\(value)”: \(expected)."
+            // Translators: Problem said of a value a filter's option can't take. %1$@ is the filter's name, %2$@ the option's name, %3$@ the value as typed, and %4$@ what the option takes, a clause such as "give a number from 0 to 1", written without its full stop.
+            return InterfaceText.line("audioFilterError.badValue", "The \(filter) filter's \(option) can't be “\(value)”: \(expected).")
         case .missingValue(let filter, let option, let expected):
-            return "The \(filter) filter needs its \(option): \(expected)."
+            // Translators: Problem said when a filter lacks an option it needs. %1$@ is the filter's name, %2$@ the option's name, and %3$@ what the option takes, a clause such as "give a time such as 2.5", written without its full stop.
+            return InterfaceText.line("audioFilterError.missingValue", "The \(filter) filter needs its \(option): \(expected).")
         case .ffmpegFailed(let words):
-            return "ffmpeg couldn't run the filters: \(words)"
+            // Translators: Problem said when the ffmpeg program refused a filter chain or the audio. %@ is ffmpeg's own words, in English.
+            return InterfaceText.line("audioFilterError.ffmpegFailed", "ffmpeg couldn't run the filters: \(words)")
         case .ffmpegMissing:
-            return "ffmpeg couldn't be started. Check that it is still installed, or turn off Use ffmpeg in Storage settings."
+            // Translators: Problem said when the ffmpeg program can't be started. "Use ffmpeg" is the name of a switch in the Storage settings.
+            return InterfaceText.line("audioFilterError.ffmpegMissing", "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings.")
         }
     }
 
     /// `items` as a list in words ("a, b, and c") through the one joiner,
     /// `CountWording.list`; "none" for an empty list, the filter messages' own word.
     private static func list(_ items: [String]) -> String {
-        items.isEmpty ? "none" : CountWording.list(items)
+        items.isEmpty
+            // Translators: Said in place of a list of filters or options when there are none, inside a filter message such as "Its options are none."
+            ? InterfaceText.line("audioFilterError.list", "none")
+            : CountWording.list(items)
     }
 }

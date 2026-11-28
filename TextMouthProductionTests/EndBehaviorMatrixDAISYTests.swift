@@ -16,7 +16,7 @@ extension EndBehaviorMatrixTests {
     /// each cell of the DAISY column that no other test pins. The last
     /// section is long, so a loop plays on for long after the end.
     func testDAISYEndBehaviorMatrix() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         // The first section is long enough to outlast the moments the test
         // spends after a loop starts it again. The last section plays half a second of the first file's tail and
         // ten seconds of the second.

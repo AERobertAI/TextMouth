@@ -1,0 +1,24 @@
+# internal.txt: declarations that stay internal although their name is in
+# allow-api.txt. Each shares its name with an allowed declaration (`html`,
+# `select`, `valueOf`, `index`, `subscript`, `outerHtml`) but has a type in
+# its signature that is itself internal, which Swift refuses on a public
+# declaration ("cannot be declared public because its parameter uses an
+# internal type"). The compiler found them in the first campaign; a new
+# SwiftSoup release may add or drop some: the script stops when a line here
+# is not in the release, and the compiler names a declaration that must be
+# added.
+#
+# Format: File.swift: the declaration's line as the release has it, without
+# its indentation (and without the `@inline(__always)` line before it).
+Attribute.swift: public func html(accum: StringBuilder, out: OutputSettings) {
+Attributes.swift: public func html(accum: StringBuilder, out: OutputSettings ) throws {
+Element.swift: public func select(_ evaluator: Evaluator)throws->Elements {
+Element.swift: open override func html(_ appendable: StringBuilder) throws -> StringBuilder {
+Elements.swift: open func select(_ evaluator: Evaluator)throws->Elements {
+Node.swift: public func outerHtml(_ accum: StringBuilder) throws {
+Node.swift: open func html(_ appendable: StringBuilder)throws -> StringBuilder {
+OrderedSet.swift: public func index(of object: T) -> Index? {
+OrderedSet.swift: public subscript(index: Index) -> T {
+Tag.swift: public static func valueOf(_ tagName: String, _ settings: ParseSettings) throws -> Tag {
+Tag.swift: public static func valueOf(_ tagName: [UInt8], _ settings: ParseSettings) throws -> Tag {
+Whitelist.swift: public func == (lhs: TypedValue, rhs: TypedValue) -> Bool {

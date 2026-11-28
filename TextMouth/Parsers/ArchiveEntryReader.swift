@@ -56,7 +56,7 @@ struct ArchiveEntryLimits: Equatable, Sendable {
 /// a damaged or deliberately crafted archive does. Each reader names the
 /// entry in its own damage sentence with `reason`; on its own, the error
 /// describes the entry as a file in "this archive".
-enum ArchiveEntryOverflow: LocalizedError, Equatable {
+enum ArchiveEntryOverflow: LocalizedError, LogDescribing, Equatable {
     /// The entry at `path` holds more than `limit`, the most a reader takes
     /// from one entry.
     case pastLimit(path: String, limit: Int64)
@@ -77,14 +77,19 @@ enum ArchiveEntryOverflow: LocalizedError, Equatable {
     var reason: String {
         switch self {
         case .pastLimit(_, let limit):
-            return "it holds more than \(ArchiveFigures.size(limit)), the most TextMouth reads from one file"
+            return "it holds more than \(ArchiveFigures.size(limit)), the most TextMouth reads from one file" // l10n: no (a parser's damage reason)
         case .pastDeclaredSize(_, let declared):
-            return "it holds more than the \(ArchiveFigures.size(declared)) the archive records for it"
+            return "it holds more than the \(ArchiveFigures.size(declared)) the archive records for it" // l10n: no (a parser's damage reason)
         }
     }
 
     var errorDescription: String? {
-        PackageDamage.message(file: path, reason: reason, container: "this archive", original: "the archive")
+        PackageDamage.message(file: path, reason: reason, container: .archive)
+    }
+
+    /// The error in English for the debug log (FR34).
+    var logDescription: String {
+        PackageDamage.logMessage(file: path, reason: reason, container: .archive)
     }
 }
 
@@ -101,7 +106,7 @@ enum ArchiveFigures {
 
     /// `value` as a count, such as "12,345".
     static func count(_ value: Int) -> String {
-        value.formatted()
+        value.interfaceFormatted()
     }
 }
 
@@ -120,7 +125,7 @@ extension Archive {
     /// given only a URL and an access mode, `try?` resolves to the
     /// deprecated one.
     static func openedForReading(at url: URL) -> Archive? {
-        try? Archive(url: url, accessMode: .read, pathEncoding: nil)
+        UnlockedSources.archiveOpenedForReading(at: url)
     }
 }
 
@@ -217,6 +222,21 @@ extension Archive {
 /// counts the bytes as they come out and stops at the first chunk past the
 /// most the entry may hold, before anything is done with that chunk.
 enum ArchiveEntryReader {
+
+    /// Why the data of `entry` could not be read, in the words that complete
+    /// "The file “…” in this book is damaged or incomplete: …" (`PackageDamage`),
+    /// for a reader to put in its own damage error when `read` or `stream`
+    /// threw `error`, ZIPFoundation's, rather than an overflow. The reader
+    /// tells the listener the file is damaged and to get a fresh copy; this
+    /// keeps what went wrong, ZIPFoundation's own error, in the debug log as
+    /// one import event that begins with `tag`.
+    static func unreadableReason(of entry: Entry, error: Error, tag: String) -> String {
+        // The entry's path is its place inside the archive, a package-relative
+        // name and no absolute path, which the log policy allows.
+        let member = entry.path
+        DiagnosticLog.event(.import, "\(tag): \(member): \(error)")
+        return entry.isCompressed ? "its compressed data could not be decoded" : "its data could not be read" // l10n: no (a parser's damage reason)
+    }
 
     /// Reads `entry` of `archive` wholly into memory and returns its bytes
     /// with the checksum of the bytes read, which the caller may compare

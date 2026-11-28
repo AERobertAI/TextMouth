@@ -280,7 +280,7 @@ final class DTBookImportTests: XCTestCase {
             XCTAssertEqual(
                 error.localizedDescription,
                 "Could not import “catalog.xml”. Checking its format failed: This XML file is not a DTBook book, "
-                    + "a Word 2003 XML document, or a PEF braille file, the kinds of XML file TextMouth reads."
+                    + "a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads."
             )
         }
         XCTAssertEqual(try folderEntries(), [])
@@ -316,7 +316,7 @@ final class DTBookImportTests: XCTestCase {
         XCTAssertThrowsError(try FileImportService.importFileWithReport(from: copy, toFolder: folderPath)) { error in
             XCTAssertTrue(error.localizedDescription.hasPrefix("Could not import “harbour-standalone.xml”. "), "\(error)")
             XCTAssertTrue(
-                error.localizedDescription.contains("The file “harbour-standalone.xml” in this DAISY book is damaged or incomplete: "),
+                error.localizedDescription.contains("The file “harbour-standalone.xml” in this book is damaged or incomplete: "),
                 "\(error)"
             )
             XCTAssertTrue(

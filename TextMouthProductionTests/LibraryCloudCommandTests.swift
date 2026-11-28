@@ -602,6 +602,8 @@ final class CommandFixture {
     let revealed: RevealLog
     /// The time the commands read, which only the test moves.
     let clock: CommandClock
+    /// The free space the commands read: roomy until a test narrows it.
+    let space: FreeSpaceStandIn
 
     init(books: [Book], states recorded: [UUID: BookCloudState]) {
         let states = BookCloudStates()
@@ -611,6 +613,8 @@ final class CommandFixture {
         let refreshRequests = RequestCounter()
         let revealed = RevealLog()
         let clock = CommandClock()
+        let space = FreeSpaceStandIn()
+        self.space = space
         self.states = states
         self.kept = kept
         self.fake = fake
@@ -625,7 +629,8 @@ final class CommandFixture {
             storage: { storage },
             refreshAfterRemoval: { refreshRequests.count += 1 },
             revealInFinder: { revealed.files.append($0) },
-            now: { clock.now }
+            now: { clock.now },
+            freeSpace: { _ in space.next() }
         )
         model.library = Library(books: books)
         states.setLibraryLocation(.cloud(.iCloudDrive))
@@ -653,6 +658,50 @@ final class CommandFixture {
         await body()
         subscription.cancel()
         return recorded
+    }
+}
+
+/// The free space on the library's volume as a test says it, in place of
+/// the real volume's, which no test reads: a terabyte until a test sets
+/// another figure, or nil for a volume that cannot tell. Read by the
+/// commands off the main thread.
+final class FreeSpaceStandIn: @unchecked Sendable {
+    /// Guards `figure`.
+    private let lock = NSLock()
+    /// The bytes free.
+    private var figure: Int64? = 1_000_000_000_000
+
+    /// The figures the next reads return, one each, before `free` answers
+    /// again: a volume that fills as the first download lands.
+    private var scripted: [Int64?] = []
+    /// How many times the free space was read.
+    private var reads = 0
+
+    /// The bytes free, or nil when the volume cannot tell. Reading it counts
+    /// nothing, so a test may look at it freely; the commands read through
+    /// `next()`.
+    var free: Int64? {
+        get { lock.withLock { figure } }
+        set { lock.withLock { figure = newValue } }
+    }
+
+    /// What the commands' read of the volume returns: the next scripted
+    /// figure, if any, else `free`. Each call is counted (`readCount`).
+    func next() -> Int64? {
+        lock.withLock {
+            reads += 1
+            return scripted.isEmpty ? figure : scripted.removeFirst()
+        }
+    }
+
+    /// Makes the next reads return `figures`, one each, in order.
+    func script(_ figures: [Int64?]) {
+        lock.withLock { scripted = figures }
+    }
+
+    /// How many times the commands read the free space (`next()`).
+    var readCount: Int {
+        lock.withLock { reads }
     }
 }
 

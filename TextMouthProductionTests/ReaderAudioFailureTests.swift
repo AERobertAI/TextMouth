@@ -217,20 +217,12 @@ final class ReaderAudioFailureTests: XCTestCase {
     /// The sleep timer's countdown halts while a failure leaves nothing
     /// playing, and runs again once the chapter plays.
     func testFailureHaltsTheSleepTimerCountdownUntilPlayingAgain() throws {
-        let timer = SleepTimerService.shared
-        let savedDuration = timer.lastUsedDuration
-        let savedPreference = TextMouthRuntime.current.preferences.object(forKey: "sleepTimer.lastUsedDuration")
-        defer {
-            // Put back the shared timer's remembered duration and the
-            // preference it was saved in.
-            timer._resetForTesting()
-            if let savedDuration {
-                timer.start(duration: savedDuration, ownerID: UUID(), onExpire: {})
-                timer.stop()
-            }
-            TextMouthRuntime.current.preferences.set(savedPreference, forKey: "sleepTimer.lastUsedDuration")
-        }
+        // Stops every window's timer when the test ends, and puts back the
+        // duration last used, the one preference every window's timer shares.
+        preserveSleepTimers()
         try withAudioBook(damage: Self.deleteSecondTrack) { reader, tracks in
+            // The timer of the reader's window.
+            let timer = reader.sleepTimerService
             reader.startSleepTimer(duration: .minutes(1))
             let remainingAtFailure = timer.remainingSeconds
 

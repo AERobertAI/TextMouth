@@ -88,7 +88,7 @@ final class LibraryViewDefinitionStoreTests: XCTestCase {
     @MainActor
     func testTheViewsTravelThroughConfigJSONBothWays() throws {
         let defaults = try isolatedDefaults()
-        let service = ConfigService(fileURL: try makeConfigFileURL())
+        let service = makeConfigService(fileURL: try makeConfigFileURL())
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(),
             initializeServices: false,
@@ -124,7 +124,7 @@ final class LibraryViewDefinitionStoreTests: XCTestCase {
     @MainActor
     func testARepairOfConfigJSONIsLoggedAsItsOwn() throws {
         let defaults = try isolatedDefaults()
-        let service = ConfigService(fileURL: try makeConfigFileURL())
+        let service = makeConfigService(fileURL: try makeConfigFileURL())
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(),
             initializeServices: false,

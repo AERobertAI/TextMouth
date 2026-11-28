@@ -38,38 +38,79 @@ enum PersistenceSubsystem: CaseIterable, Comparable, Sendable {
     /// name it: "library changes", "listening statistics".
     var topic: String {
         switch self {
-        case .libraryIndex: return "library changes"
-        case .bookRecord: return "changes to books"
-        case .statistics: return "listening statistics"
-        case .configuration: return "settings"
-        case .substitutions: return "text substitution rules"
-        case .feedRecords: return "feed subscriptions"
-        case .originalFileCleanup: return "original files"
+        case .libraryIndex:
+            // Translators: What the library's saving failure is about, as a noun phrase inside a sentence, with no capital letter, such as "Dismiss the notice about library changes".
+            return InterfaceText.line("persistenceSubsystem.topic.libraryIndex", "library changes")
+        case .bookRecord:
+            // Translators: What the saving failure of books' records is about, as a noun phrase inside a sentence, with no capital letter.
+            return InterfaceText.line("persistenceSubsystem.topic.bookRecord", "changes to books")
+        case .statistics:
+            // Translators: What the saving failure of the listening statistics is about, as a noun phrase inside a sentence, with no capital letter.
+            return InterfaceText.line("persistenceSubsystem.topic.statistics", "listening statistics")
+        case .configuration:
+            // Translators: What the saving failure of the settings is about, as a noun phrase inside a sentence, with no capital letter.
+            return InterfaceText.line("persistenceSubsystem.topic.configuration", "settings")
+        case .substitutions:
+            // Translators: What the saving failure of the text substitution rules is about, as a noun phrase inside a sentence, with no capital letter.
+            return InterfaceText.line("persistenceSubsystem.topic.substitutions", "text substitution rules")
+        case .feedRecords:
+            // Translators: What the saving failure of the feed subscriptions is about, as a noun phrase inside a sentence, with no capital letter.
+            return InterfaceText.line("persistenceSubsystem.topic.feedRecords", "feed subscriptions")
+        case .originalFileCleanup:
+            // Translators: What the failure to remove the original files of imported books is about, as a noun phrase inside a sentence, with no capital letter.
+            return InterfaceText.line("persistenceSubsystem.topic.originalFileCleanup", "original files")
         }
     }
 
     /// What a successful operation here does to its files: "saved", or
     /// "removed" for original-file cleanup.
     var outcomeWord: String {
-        self == .originalFileCleanup ? "removed" : "saved"
+        self == .originalFileCleanup ? "removed" : "saved" // l10n: no (debug log text)
     }
 
     /// What VoiceOver says for the banner's Retry button, which a sighted
     /// user sees beside the sentence it retries: "Retry saving settings".
     var retryLabel: String {
-        self == .originalFileCleanup ? "Retry removing \(topic)" : "Retry saving \(topic)"
+        self == .originalFileCleanup
+            // Translators: VoiceOver label of the failure banner's Retry button for the original files. %@ is what failed, as a noun phrase, such as "original files".
+            ? InterfaceText.line("persistenceSubsystem.retryLabel.removing", "Retry removing \(topic)")
+            // Translators: VoiceOver label of the failure banner's Retry button. %@ is what failed to save, as a noun phrase, such as "settings".
+            : InterfaceText.line("persistenceSubsystem.retryLabel.saving", "Retry saving \(topic)")
     }
 
     /// What VoiceOver says for the banner's Dismiss button: "Dismiss the
     /// notice about settings".
     var dismissLabel: String {
-        "Dismiss the notice about \(topic)"
+        // Translators: VoiceOver label of the failure banner's Dismiss button. %@ is what the notice is about, as a noun phrase, such as "settings".
+        InterfaceText.line("persistenceSubsystem.dismissLabel", "Dismiss the notice about \(topic)")
     }
 
     /// What VoiceOver says once a retry has settled every failure here:
     /// "Settings saved.", "Original files removed."
     var retriedAnnouncement: String {
-        topic.prefix(1).uppercased() + topic.dropFirst() + " \(outcomeWord)."
+        switch self {
+        case .libraryIndex:
+            // Translators: Announcement after a retry saved the library changes that had failed to save.
+            return InterfaceText.line("persistenceSubsystem.retried.libraryIndex", "Library changes saved.")
+        case .bookRecord:
+            // Translators: Announcement after a retry saved the changes to books' records that had failed to save.
+            return InterfaceText.line("persistenceSubsystem.retried.bookRecord", "Changes to books saved.")
+        case .statistics:
+            // Translators: Announcement after a retry saved the listening statistics that had failed to save.
+            return InterfaceText.line("persistenceSubsystem.retried.statistics", "Listening statistics saved.")
+        case .configuration:
+            // Translators: Announcement after a retry saved the settings that had failed to save.
+            return InterfaceText.line("persistenceSubsystem.retried.configuration", "Settings saved.")
+        case .substitutions:
+            // Translators: Announcement after a retry saved the text substitution rules that had failed to save.
+            return InterfaceText.line("persistenceSubsystem.retried.substitutions", "Text substitution rules saved.")
+        case .feedRecords:
+            // Translators: Announcement after a retry saved the feed subscriptions that had failed to save.
+            return InterfaceText.line("persistenceSubsystem.retried.feedRecords", "Feed subscriptions saved.")
+        case .originalFileCleanup:
+            // Translators: Announcement after a retry removed the original files of imported books that had failed to be removed.
+            return InterfaceText.line("persistenceSubsystem.originalFilesRemoved", "Original files removed.")
+        }
     }
 
     /// The sentence that follows a banner row's failure when `count` more
@@ -80,17 +121,14 @@ enum PersistenceSubsystem: CaseIterable, Comparable, Sendable {
         guard count > 0 else { return nil }
         switch self {
         case .bookRecord:
-            return count == 1
-                ? "Changes to 1 other book could not be saved either."
-                : "Changes to \(count) other books could not be saved either."
+            // Translators: Sentence after a failure notice: more books' records failed to save too. %lld is how many more.
+            return InterfaceText.line("persistenceSubsystem.othersSentence.bookRecord", "Changes to \(number: count) other books could not be saved either.")
         case .feedRecords:
-            return count == 1
-                ? "Changes to 1 other feed could not be saved either."
-                : "Changes to \(count) other feeds could not be saved either."
+            // Translators: Sentence after a failure notice: more feeds' records failed to save too. %lld is how many more.
+            return InterfaceText.line("persistenceSubsystem.othersSentence.feedRecords", "Changes to \(number: count) other feeds could not be saved either.")
         case .originalFileCleanup:
-            return count == 1
-                ? "1 other original file could not be removed either."
-                : "\(count) other original files could not be removed either."
+            // Translators: Sentence after a failure notice: more original files could not be removed too. %lld is how many more.
+            return InterfaceText.line("persistenceSubsystem.others.originalFileCleanup", "\(number: count) other original files could not be removed either.")
         case .libraryIndex, .statistics, .configuration, .substitutions:
             return nil
         }
@@ -164,6 +202,14 @@ struct PersistenceFailure: Identifiable, Sendable {
     let date: Date
     /// Runs it again, or nil when it cannot be run again with the same data.
     let retry: Retry?
+    /// Whether the retry must wait while an operation holds the storage work
+    /// (`StorageBoundary.heldFor`): a retry that writes into the data
+    /// directory, or moves a package, from the main thread, where the
+    /// boundary holds nothing back. Run during a data-directory move's copy
+    /// it would write the data directory being copied and call the change
+    /// saved, and during a folder edit it would race the edit's moves, so
+    /// the center keeps it until the operation ends.
+    let waitsForStorageWork: Bool
 
     /// The key a later outcome settles this failure by.
     var key: Key { subject.key }
@@ -184,7 +230,10 @@ struct PersistenceFailure: Identifiable, Sendable {
     /// mark, or an exclamation mark.
     static func sentence(_ text: String) -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let last = trimmed.last else { return "No reason was given." }
+        guard let last = trimmed.last else {
+            // Translators: Said in place of a reason when the system gave no reason a file could not be saved.
+            return InterfaceText.line("persistenceFailure.sentence", "No reason was given.")
+        }
         return ".!?".contains(last) ? trimmed : trimmed + "."
     }
 }
@@ -237,25 +286,108 @@ extension PersistenceFailure.Subject {
     func sentence(reason: String) -> String {
         switch self {
         case .libraryIndex:
-            return "Library changes could not be saved: \(reason)"
+            // Translators: Failure notice: the library's changes could not be saved. %@ is the reason, a sentence from the system.
+            return InterfaceText.line("subject.sentence.libraryIndex", "Library changes could not be saved: \(reason)")
         case .bookRecord(_, let title):
-            return "Changes to “\(title)” could not be saved: \(reason)"
+            // Translators: Failure notice: a book's changes could not be saved. %1$@ is the book's title; %2$@ is the reason, a sentence from the system.
+            return InterfaceText.line("subject.sentence.bookRecord", "Changes to “\(title)” could not be saved: \(reason)")
         case .strandedPackage(_, let title, let location, let home):
-            return "“\(title)” could not be moved back after a failed move, "
-                + "so its files are at \(location) instead of \(home): \(reason)"
+            // Translators: Failure notice: a book's files could not be put back after a move failed. %1$@ is the book's title; %2$@ is where its files are now; %3$@ is where they belong; %4$@ is the reason, a sentence from the system.
+            return InterfaceText.line("subject.sentence.strandedPackage", "“\(title)” could not be moved back after a failed move, so its files are at \(location) instead of \(home): \(reason)")
         case .statistics:
-            return "Listening statistics could not be saved: \(reason)"
+            // Translators: Failure notice: the listening statistics could not be saved. %@ is the reason, a sentence from the system.
+            return InterfaceText.line("subject.sentence.statistics", "Listening statistics could not be saved: \(reason)")
         case .configuration:
-            return "Settings could not be saved: \(reason)"
+            // Translators: Failure notice: the settings could not be saved. %@ is the reason, a sentence from the system.
+            return InterfaceText.line("subject.sentence.configuration", "Settings could not be saved: \(reason)")
         case .substitutions:
-            return "Text substitution rules could not be saved: \(reason)"
+            // Translators: Failure notice: the text substitution rules could not be saved. %@ is the reason, a sentence from the system.
+            return InterfaceText.line("subject.sentence.substitutions", "Text substitution rules could not be saved: \(reason)")
         case .feedRecord(_, let title):
-            return "Changes to the feed “\(title)” could not be saved: \(reason)"
+            // Translators: Failure notice: a feed's changes could not be saved. %1$@ is the feed's title; %2$@ is the reason, a sentence from the system.
+            return InterfaceText.line("subject.sentence.feedRecord", "Changes to the feed “\(title)” could not be saved: \(reason)")
         case .originalFile(let path, let movesToTrash):
             return OriginalFileDeletionWording(
                 movesToTrash: movesToTrash,
                 fileName: URL(fileURLWithPath: path).lastPathComponent
             ).failureSentence(reason: reason)
+        }
+    }
+}
+
+// MARK: - Retries Waiting for Storage Work
+
+/// Why a retry has not run yet: `operation` holds the storage work, and the
+/// failure center runs the retry once it ends (`PersistenceFailureCenter`,
+/// `PersistenceFailure.waitsForStorageWork`). Its description ends the
+/// banner's sentence and what VoiceOver hears, and says when the retry runs:
+/// "Settings could not be saved: TextMouth saves them once the move of its
+/// data directory ends."
+struct RetryWaitsForStorageWork: LocalizedError, Equatable {
+    /// The operation holding the storage work.
+    let operation: StorageHoldReason
+    /// What the retry does once the operation ends.
+    let action: StorageWorkWaitWording.Action
+
+    var errorDescription: String? {
+        StorageWorkWaitWording.sentence(action, waitingFor: operation)
+    }
+}
+
+/// The words for a retry that waits while an operation holds the storage
+/// work: what TextMouth does once the operation ends, as the reason that
+/// ends a failure's sentence, for every subsystem's retry, a feed record's
+/// included (`FeedStore.retryWrite`), with the verb of what the retry does.
+enum StorageWorkWaitWording {
+    /// What a waiting retry does once the operation ends.
+    enum Action: Equatable, Sendable {
+        /// Saves the changes that could not be saved.
+        case save
+        /// Moves a package back where the library expects it.
+        case moveBack
+
+        /// The action of a retry for `subject`.
+        init(for subject: PersistenceFailure.Subject) {
+            if case .strandedPackage = subject {
+                self = .moveBack
+            } else {
+                self = .save
+            }
+        }
+    }
+
+    /// The reason for a retry that does `action` and waits for `operation`:
+    /// "TextMouth saves them once it has finished moving books between
+    /// folders."
+    static func sentence(_ action: Action, waitingFor operation: StorageHoldReason) -> String {
+        // One whole sentence for each action and each operation that holds the work.
+        switch (operation, action) {
+        case (.movingDataDirectory, .save):
+            // Translators: Why a failed save waits: it runs when the move of the data directory ends. "Them" is the changes that could not be saved.
+            return InterfaceText.line("storageWorkWait.sentence.savesMoveEnds", "TextMouth saves them once the move of its data directory ends.")
+        case (.movingDataDirectory, .moveBack):
+            // Translators: Why a failed move of files waits: it runs when the move of the data directory ends. "Them" is the files.
+            return InterfaceText.line("storageWorkWait.sentence.movesMoveEnds", "TextMouth moves them back once the move of its data directory ends.")
+        case (.rebuildingDirectory, .save):
+            // Translators: Why a failed save waits: it runs when the data directory has been rebuilt. "Them" is the changes that could not be saved.
+            return InterfaceText.line("storageWorkWait.sentence.savesRebuilding", "TextMouth saves them once it has finished rebuilding its data directory.")
+        case (.rebuildingDirectory, .moveBack):
+            // Translators: Why a failed move of files waits: it runs when the data directory has been rebuilt. "Them" is the files.
+            return InterfaceText.line("storageWorkWait.sentence.movesRebuilding", "TextMouth moves them back once it has finished rebuilding its data directory.")
+        case (.movingBooksBetweenFolders, .save):
+            // Translators: Why a failed save waits: it runs when books have been moved between folders. "Them" is the changes that could not be saved.
+            return InterfaceText.line("storageWorkWait.sentence.betweenFolders", "TextMouth saves them once it has finished moving books between folders.")
+        case (.movingBooksBetweenFolders, .moveBack):
+            // Translators: Why a failed move of files waits: it runs when books have been moved between folders. "Them" is the files.
+            return InterfaceText.line("storageWorkWait.sentence.movingBetweenFolders", "TextMouth moves them back once it has finished moving books between folders.")
+        // A switch ends with TextMouth opening again on the other library,
+        // not with the retry: the words say what stays here.
+        case (.switchingLibraries, .save):
+            // Translators: Why a failed save stays unsaved: TextMouth is switching to another library. "They" is the changes that could not be saved.
+            return InterfaceText.line("storageWorkWait.sentence.unsaved", "TextMouth is opening again on another library, so they stay unsaved in this one.")
+        case (.switchingLibraries, .moveBack):
+            // Translators: Why a failed move of files stays undone: TextMouth is switching to another library. "They" is the files.
+            return InterfaceText.line("storageWorkWait.sentence.where", "TextMouth is opening again on another library, so they stay where they are in this one.")
         }
     }
 }
@@ -289,16 +421,18 @@ struct PersistenceBannerRow: Identifiable, Equatable {
     static func announcement(for rows: [PersistenceBannerRow]) -> String? {
         guard !rows.isEmpty else { return nil }
         let action = rows.contains(where: \.canRetry)
-            ? "Retry is at the top of the Library window."
-            : "Details are at the top of the Library window."
-        return (rows.map(\.text) + [action]).joined(separator: " ")
+            // Translators: Said after a failure notice: where to find the Retry button.
+            ? InterfaceText.line("persistenceBannerRow.announcement.retry", "Retry is at the top of the Library window.")
+            // Translators: Said after a failure notice: where to find its details.
+            : InterfaceText.line("persistenceBannerRow.announcement.details", "Details are at the top of the Library window.")
+        return SentenceWording.joined(rows.map(\.text) + [action])
     }
 
     /// The rows for `failures`, one for each subsystem among them, in
     /// subsystem order. Each row leads with its subsystem's latest failure.
     static func rows(for failures: [PersistenceFailure]) -> [PersistenceBannerRow] {
         let bySubsystem = Dictionary(grouping: failures, by: \.subsystem)
-        return bySubsystem.keys.sorted().compactMap { subsystem in
+        return bySubsystem.keys.sortedStably().compactMap { subsystem in
             guard let group = bySubsystem[subsystem],
                   let latest = group.max(by: { $0.id < $1.id }) else { return nil }
             let others = subsystem.othersSentence(count: group.count - 1)
@@ -357,7 +491,7 @@ private final class PersistenceFailureLedger: @unchecked Sendable {
     func snapshot() -> [PersistenceFailure] {
         lock.lock()
         defer { lock.unlock() }
-        return failures.values.sorted { $0.id < $1.id }
+        return failures.values.sortedStably { $0.id < $1.id }
     }
 
     /// Whether the failure `id` is still outstanding: no later outcome has
@@ -414,6 +548,13 @@ private final class PersistenceFailureLedger: @unchecked Sendable {
 /// subsystem, and VoiceOver announces a subsystem once when it starts to
 /// fail. Failures recur every half second while a disk stays unavailable,
 /// so nothing here is ever a modal alert.
+///
+/// Every Retry runs through here: the banner's, Storage settings' Retry
+/// Saving, and the quit prompt's. A retry that must not run while an
+/// operation holds the storage work (`PersistenceFailure.waitsForStorageWork`:
+/// a data-directory move, Rebuild Directory, a folder edit, a switch of
+/// libraries) is kept until that operation ends, saying so in its row, and
+/// then runs by itself, which VoiceOver hears.
 @MainActor
 final class PersistenceFailureCenter: ObservableObject {
     /// The center every service reports to.
@@ -436,9 +577,29 @@ final class PersistenceFailureCenter: ObservableObject {
     /// The outstanding failures, readable and writable from any thread.
     nonisolated private let ledger = PersistenceFailureLedger()
 
-    /// A center with no failures. The app uses `shared`; tests make their
-    /// own so they never disturb it.
-    nonisolated init() {}
+    /// The boundary whose holds a retry that waits for storage work waits
+    /// for (`PersistenceFailure.waitsForStorageWork`).
+    nonisolated private let boundary: StorageBoundary
+
+    /// The retries an operation holding the storage work made wait, by the
+    /// key of the failure each retries, with that failure's subsystem: each
+    /// runs, for the failure outstanding for its key then, once the
+    /// operation ends (`runRetriesKeptForStorageWork()`).
+    private var retriesKeptForStorageWork: [PersistenceFailure.Key: PersistenceSubsystem] = [:]
+
+    /// The wait for the operation holding the storage work to end, while any
+    /// retry is kept for it.
+    private var storageWorkWait: Task<Void, Never>?
+    /// The number of the latest such wait, so a wait that `reset()`
+    /// abandoned does nothing when it ends.
+    private var storageWorkWaitNumber = 0
+
+    /// A center with no failures, whose waiting retries wait for `boundary`'s
+    /// holds. The app uses `shared`; tests make their own so they never
+    /// disturb it.
+    nonisolated init(boundary: StorageBoundary = .shared) {
+        self.boundary = boundary
+    }
 
     // MARK: Reporting, from any thread
 
@@ -452,15 +613,26 @@ final class PersistenceFailureCenter: ObservableObject {
     ///   - subject: What the operation was for.
     ///   - path: The file or folder it was for.
     ///   - error: Why it failed.
+    ///   - waitsForStorageWork: Whether `retry` must wait while an operation
+    ///     holds the storage work (`PersistenceFailure.waitsForStorageWork`).
     ///   - retry: Runs it again with the same data; nil when it cannot.
     nonisolated func recordFailure(
         _ subject: PersistenceFailure.Subject,
         path: String,
         error: any Error,
+        waitsForStorageWork: Bool = false,
         retry: PersistenceFailure.Retry? = nil
     ) {
         let (failure, replaced) = ledger.record { id in
-            PersistenceFailure(id: id, subject: subject, path: path, error: error, date: Date(), retry: retry)
+            PersistenceFailure(
+                id: id,
+                subject: subject,
+                path: path,
+                error: error,
+                date: Date(),
+                retry: retry,
+                waitsForStorageWork: waitsForStorageWork
+            )
         }
         if !replaced {
             Self.log("PERSISTENCE_FAILURE: \(failure.sentence) Path: \(DiagnosticLog.loggablePath(path))")
@@ -484,7 +656,23 @@ final class PersistenceFailureCenter: ObservableObject {
             "PERSISTENCE_WITHDRAWN: \(withdrawn.subject.logName) no longer needs to be "
                 + withdrawn.subsystem.outcomeWord
         )
+        forgetKeptRetry(for: key)
         schedulePublish()
+    }
+
+    /// Forgets a retry kept for the failure of `key` until storage work is
+    /// free, once that failure is withdrawn: nothing is left to save, so
+    /// nothing is said of it when the operation ends. On the main actor at
+    /// once, or soon from any other thread.
+    nonisolated private func forgetKeptRetry(for key: PersistenceFailure.Key) {
+        let forget: @MainActor @Sendable () -> Void = { [self] in
+            retriesKeptForStorageWork[key] = nil
+        }
+        if Thread.isMainThread {
+            MainActor.assumeIsolated(forget)
+        } else {
+            DispatchQueue.main.async { MainActor.assumeIsolated(forget) }
+        }
     }
 
     // MARK: Questions, from any thread
@@ -529,7 +717,9 @@ final class PersistenceFailureCenter: ObservableObject {
     /// Runs again every outstanding failure of `subsystem` that can be, then
     /// tells VoiceOver how it went: the subsystem is saved, or the row's
     /// sentence, now naming the latest failure. Each retry finishes before
-    /// this returns, so the banner is up to date at once.
+    /// this returns, so the banner is up to date at once, except one kept
+    /// while an operation holds the storage work, whose row says when it
+    /// runs (`RetryWaitsForStorageWork`).
     func retry(_ subsystem: PersistenceSubsystem) {
         rerun(outstandingFailures().filter { $0.subsystem == subsystem })
         publish()
@@ -546,6 +736,24 @@ final class PersistenceFailureCenter: ObservableObject {
         if announcing {
             announceRetryOutcome(for: Set(unsaved.map(\.subsystem)))
         }
+    }
+
+    /// Tells VoiceOver how a retry of `subsystem` went once the writes it
+    /// had to wait for have ended (`announceOutcomeOfWaitingRetries(of:)`):
+    /// a feed store whose boundary is not the center's calls this once the
+    /// last such write has ended (`FeedStore`).
+    func announceOutcomeOfWaitingRetry(of subsystem: PersistenceSubsystem) {
+        announceOutcomeOfWaitingRetries(of: [subsystem])
+    }
+
+    /// Tells VoiceOver how the retries of `subsystems` went once the writes
+    /// they had to wait for have ended, as `retry(_:)` tells of one that ran
+    /// at once, in one announcement: "Feed subscriptions saved. Settings
+    /// saved.", or "Retry did not succeed." and the rows still failing. So
+    /// the save a waiting retry promised is never a silent one.
+    func announceOutcomeOfWaitingRetries(of subsystems: Set<PersistenceSubsystem>) {
+        publish()
+        announceRetryOutcome(for: subsystems)
     }
 
     /// Hides `subsystem`'s banner row until the subsystem has no failure
@@ -577,13 +785,121 @@ final class PersistenceFailureCenter: ObservableObject {
         }
     }
 
-    /// Forgets every failure and dismissal at once, announcing nothing.
-    /// Tests that report through `shared` start and end with this.
+    /// Forgets every failure, dismissal, and kept retry at once, announcing
+    /// nothing. Tests that report through `shared` start and end with this.
     func reset() {
         ledger.removeAll()
         failures = []
         dismissedSubsystems = []
         subsystemsFailingAtLastPublish = []
+        retriesKeptForStorageWork = [:]
+        storageWorkWait = nil
+        storageWorkWaitNumber += 1
+    }
+
+    // MARK: Retries Kept for Storage Work
+
+    /// Runs each retry an operation holding the storage work made wait, once
+    /// that operation has ended, for the failure outstanding for its key
+    /// then, and tells VoiceOver how they went, in one announcement:
+    /// "Settings saved.", or "Retry did not succeed." and the rows still
+    /// failing. A retry whose failure a later save settled meanwhile has
+    /// nothing left to run, and is told as saved. Does nothing while an
+    /// operation holds the work, or when no retry is kept. The wait for the
+    /// operation's end calls this; so does the flush before quitting
+    /// (`UnsavedChangesTerminationGuard.flushPendingWrites()`), in case the
+    /// quit comes between the end and that wait's turn. Without
+    /// `announcing`, as for an operation's own outcome, which is said
+    /// instead (`LibraryViewModel.outcomeConfirmingSaves`), only the banner
+    /// is brought up to date.
+    func runRetriesKeptForStorageWork(announcing: Bool = true) {
+        guard boundary.heldFor == nil, !retriesKeptForStorageWork.isEmpty else { return }
+        let kept = retriesKeptForStorageWork
+        retriesKeptForStorageWork = [:]
+        rerun(outstandingFailures().filter { kept[$0.key] != nil })
+        if announcing {
+            announceOutcomeOfWaitingRetries(of: Set(kept.values))
+        } else {
+            publish()
+        }
+    }
+
+    /// Returns once the wait for the operation holding the storage work has
+    /// seen it end: the kept retries have run, or, when another operation
+    /// took the work before their turn, they are kept for that one, which
+    /// this does not wait for. Returns at once when no retry is kept, as
+    /// after `reset()`. Tests await this after letting a hold go, never
+    /// while it still holds, or it would wait for good.
+    func waitForRetriesKeptForStorageWork() async {
+        while let wait = storageWorkWait {
+            await wait.value
+            // Kept again for an operation that still holds the work: that
+            // one ends only when the test lets it go.
+            if boundary.heldFor != nil {
+                return
+            }
+        }
+    }
+
+    /// Keeps `retry` of `failure` until `operation`, which holds the storage
+    /// work, ends: the failure is reported again with that operation as its
+    /// reason, saying when the retry runs (`RetryWaitsForStorageWork`), and
+    /// the retry runs once the operation ends
+    /// (`runRetriesKeptForStorageWork()`). A retry kept already for the
+    /// failure's key is not kept twice.
+    private func keep(_ failure: PersistenceFailure, _ retry: @escaping PersistenceFailure.Retry, until operation: StorageHoldReason) {
+        recordFailure(
+            failure.subject,
+            path: failure.path,
+            error: RetryWaitsForStorageWork(operation: operation, action: .init(for: failure.subject)),
+            waitsForStorageWork: true,
+            retry: retry
+        )
+        if retriesKeptForStorageWork.updateValue(failure.subsystem, forKey: failure.key) == nil {
+            Self.log("PERSISTENCE_RETRY_WAITS: \(failure.subject.logName) waits for \(operation) to end")
+        }
+        waitForStorageWorkToBeFree()
+    }
+
+    /// Starts waiting for the operation holding the storage work to end,
+    /// unless a wait is under way already. The releases are counted now,
+    /// not in the wait's first turn: a release that comes before that turn,
+    /// with another operation holding the work by then, is seen, and the
+    /// retries are kept for that operation with its words.
+    private func waitForStorageWorkToBeFree() {
+        guard storageWorkWait == nil else { return }
+        storageWorkWaitNumber += 1
+        let number = storageWorkWaitNumber
+        let seen = boundary.releases
+        storageWorkWait = Task { [weak self, boundary] in
+            await boundary.waitForRelease(after: seen)
+            self?.storageWorkWasReleased(wait: number)
+        }
+    }
+
+    /// The wait `number` saw the storage work released. Unless `reset()`
+    /// abandoned that wait, the kept retries run now, on the main actor,
+    /// where every hold is taken, so none can begin while they run; or, when
+    /// another operation took the work before this turn, they are kept for
+    /// that one, and each still waiting says so.
+    private func storageWorkWasReleased(wait number: Int) {
+        guard number == storageWorkWaitNumber else { return }
+        storageWorkWait = nil
+        guard !retriesKeptForStorageWork.isEmpty else { return }
+        guard let operation = boundary.heldFor else {
+            runRetriesKeptForStorageWork()
+            return
+        }
+        // A failure whose later save failed for a reason of its own keeps
+        // that reason: its retry still runs once this operation ends.
+        for failure in outstandingFailures()
+        where retriesKeptForStorageWork[failure.key] != nil && failure.error is RetryWaitsForStorageWork {
+            if let retry = failure.retry {
+                keep(failure, retry, until: operation)
+            }
+        }
+        publish()
+        waitForStorageWorkToBeFree()
     }
 
     // MARK: Private
@@ -596,15 +912,24 @@ final class PersistenceFailureCenter: ObservableObject {
         guard !subsystems.isEmpty else { return }
         let stillFailing = PersistenceBannerRow.rows(for: failures).filter { subsystems.contains($0.subsystem) }
         let message = stillFailing.isEmpty
-            ? subsystems.sorted().map(\.retriedAnnouncement)
-            : ["Retry did not succeed."] + stillFailing.map(\.text)
-        VoiceOverAnnouncer.announce(message.joined(separator: " "))
+            ? subsystems.sortedStably().map(\.retriedAnnouncement)
+            // Translators: Announcement when retrying a failed save failed again. The failure notices follow.
+            : [InterfaceText.line("persistenceFailureCenter.announceRetryOutcome", "Retry did not succeed.")] + stillFailing.map(\.text)
+        VoiceOverAnnouncer.announce(SentenceWording.joined(message))
     }
 
-    /// Runs the retry of each of `failures` that has one, oldest first.
+    /// Runs the retry of each of `failures` that has one, oldest first. A
+    /// retry that must wait for the storage work
+    /// (`PersistenceFailure.waitsForStorageWork`) is kept instead while an
+    /// operation holds it, and runs once that operation ends (`keep`).
     private func rerun(_ failures: [PersistenceFailure]) {
         for failure in failures {
-            failure.retry?(failure.id)
+            guard let retry = failure.retry else { continue }
+            if failure.waitsForStorageWork, let operation = boundary.heldFor {
+                keep(failure, retry, until: operation)
+            } else {
+                retry(failure.id)
+            }
         }
     }
 
@@ -637,8 +962,10 @@ extension OperationOutcome {
     func confirmingSaves(_ unsaved: [PersistenceFailure]) -> OperationOutcome {
         guard succeeded, !unsaved.isEmpty else { return self }
         let done = message.map(Self.withoutDoneClaim) ?? ""
-        let report = [done, "Some changes are not saved."] + PersistenceBannerRow.rows(for: unsaved).map(\.text)
-        return .failure(report.filter { !$0.isEmpty }.joined(separator: " "))
+        // Translators: Sentence that replaces a claim of success when some changes could not be saved. The failure notices follow.
+        let report = [done, InterfaceText.line("operationOutcome.confirmingSaves", "Some changes are not saved.")]
+            + PersistenceBannerRow.rows(for: unsaved).map(\.text)
+        return .failure(SentenceWording.joined(report.filter { !$0.isEmpty }))
     }
 
     /// `message` without the "Done." that Storage settings' successes begin

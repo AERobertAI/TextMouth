@@ -46,7 +46,7 @@ The voice sheet's Reset to Global Settings clears the book's voice, speed, and p
 - Run only `TextFieldEditingKeysTests`, `ShortcutManagerTests`, `MenuKeyShortcutTests`, and `A10AccessibilityTests`, plus the class you test B in, if it is another.
 - Start each build in the background and check on it no more often than every 4 minutes.
 - `-jobs 4` is required (the orchestrator's #2107).
-- Scratch files go in `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/d79ccbfe-f907-4768-bef3-66390cef7d23/scratchpad/`, each named `polish-smallfixes-…`.
+- Scratch files go in `<session folder>/scratchpad/`, each named `polish-smallfixes-…`.
 
     BBS_AGENT=polish-smallfixes .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath "${TMPDIR}TextMouth-DerivedData-polish-smallfixes" -only-testing:TextMouthProductionTests/TextFieldEditingKeysTests -only-testing:TextMouthProductionTests/ShortcutManagerTests -only-testing:TextMouthProductionTests/MenuKeyShortcutTests -only-testing:TextMouthProductionTests/A10AccessibilityTests > <scratchpad>/polish-smallfixes-build-1.log 2>&1
 

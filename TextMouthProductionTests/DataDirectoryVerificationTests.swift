@@ -99,7 +99,7 @@ final class DataDirectoryVerificationTests: XCTestCase {
         }
         addTeardownBlock { center.removeObserver(observer) }
         let url = try makeConfigFileURL()
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         addTeardownBlock { service.shutdown() }
         let settings = SettingsViewModel(
             notificationCenter: center,

@@ -44,9 +44,9 @@ In `TextMouthProductionTests/ReaderCloudDownloadTests.swift`, beside `testAutoPl
 ## Build and test
 - Run `ReaderCloudDownloadTests` and `MediaCommandPlaybackTests`.
 - Start each build in the background, and check on it no more often than every 4 minutes, with one short command.
-- Scratch files go in `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/d79ccbfe-f907-4768-bef3-66390cef7d23/scratchpad/`, each named `polish2-secondplay-…`. If the worktree guard refuses `${TMPDIR}`, write the folder's literal path, `/var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-polish2-secondplay`.
+- Scratch files go in `<session folder>/scratchpad/`, each named `polish2-secondplay-…`. If the worktree guard refuses `${TMPDIR}`, write the folder's literal path, `$TMPDIR/TextMouth-DerivedData-polish2-secondplay`.
 
-      BBS_AGENT=polish2-secondplay .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath "${TMPDIR}TextMouth-DerivedData-polish2-secondplay" -only-testing:TextMouthProductionTests/ReaderCloudDownloadTests -only-testing:TextMouthProductionTests/MediaCommandPlaybackTests > /private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/d79ccbfe-f907-4768-bef3-66390cef7d23/scratchpad/polish2-secondplay-build-1.log 2>&1
+      BBS_AGENT=polish2-secondplay .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath "${TMPDIR}TextMouth-DerivedData-polish2-secondplay" -only-testing:TextMouthProductionTests/ReaderCloudDownloadTests -only-testing:TextMouthProductionTests/MediaCommandPlaybackTests > <session folder>/scratchpad/polish2-secondplay-build-1.log 2>&1
 
 - Read a result with `grep -E "Executed [0-9]+ tests|error:|failed \(" <log> | tail -20`.
 

@@ -1,0 +1,54 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Alpha" : {
+      "extractionState" : "manual"
+    },
+    "Gone" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ido"
+          }
+        }
+      }
+    },
+    "apple" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "una"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "otras"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "zebra %lld" : {
+      "comment" : "a changed comment",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "cebra %lld é/ü"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

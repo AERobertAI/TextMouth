@@ -15,6 +15,13 @@ enum ReadingTimeEstimator {
     }
 }
 
+/// The formats TextMouth reads. Each case's raw value is written into the
+/// library index and each package's record, and is never changed. A case
+/// added later is unknown to an older TextMouth: one from 0.2.1 on opens a
+/// library that holds such a book without that book, keeping its row as it
+/// was written (`UnreadableLibraryRow`, V03), while one before 0.2.1 cannot
+/// decode the index and refuses the whole library. The changelog cautions the
+/// user each time a case is added.
 enum BookFormat: String, Codable, CaseIterable {
     case epub
     case txt
@@ -46,15 +53,76 @@ enum BookFormat: String, Codable, CaseIterable {
     case daisy
     case pdf
     case audio
+    // A Kindle book (MOBI 6, FMT42), read by TextMouth's own reader
+    // (`MOBIParser`) on the Mac and on iOS. Added after V03 (see above):
+    // TextMouth 0.2.1 to 0.2.6 opens a library that holds one without it,
+    // and one before 0.2.1 refuses the library.
+    case mobi
+    // A DRM-free Kindle KFX book (FMT52), read by TextMouth's own reader
+    // (`KFXParser`) on the Mac and on iOS. Added after V03 (see above):
+    // TextMouth 0.2.1 to 0.3.2 opens a library that holds one without it,
+    // and one before 0.2.1 refuses the library.
+    case kfx
+    // A picture of a page (FMT34): a PNG, JPEG, HEIC, or TIFF photograph or
+    // scan, read by text recognition (`PageImageReader`), a chapter for each
+    // page of a TIFF of several. Added after V03 (see above): TextMouth 0.2.1
+    // to 0.4.11 opens a library that holds one without it, and one before
+    // 0.2.1 refuses the library.
+    case picture
+    // A comic book archive (FMT34): a ZIP of pictures named .cbz, read as a
+    // book of pages by the same reader. The same holds for older builds.
+    case comic
 
+    /// The format's name as the interface shows it: a name that is a product
+    /// or standard ("EPUB", "PDF") reads the same in every language, and the
+    /// rest are localized.
     var displayName: String {
         switch self {
         case .epub: return "EPUB"
+        // Translators: Name of the book format of a plain text file (.txt), shown in a book's information, the format column, and the duplicate finder.
+        case .txt: return InterfaceText.line("bookFormat.displayName.txt", "Plain Text")
+        // Translators: Name of the book format of a Markdown file (.md), shown in a book's information, the format column, and the duplicate finder.
+        case .markdown: return InterfaceText.line("common.markdown", "Markdown")
+        case .html: return "HTML"
+        // Translators: Name of the book format of a Safari web archive (.webarchive), shown in a book's information, the format column, and the duplicate finder.
+        case .webarchive: return InterfaceText.line("bookFormat.displayName.webarchive", "Web Archive")
+        case .ssml: return "SSML"
+        // Translators: Name of the book format of a Microsoft Word document (.docx), shown in a book's information, the format column, and the duplicate finder.
+        case .docx: return InterfaceText.line("bookFormat.displayName.docx", "Word Document")
+        // Translators: Name of the book format of a Rich Text Format file (.rtf), shown in a book's information, the format column, and the duplicate finder.
+        case .rtf: return InterfaceText.line("bookFormat.displayName.rtf", "Rich Text")
+        // Translators: Name of the book format of a Rich Text Format package with attachments (.rtfd), shown in a book's information, the format column, and the duplicate finder.
+        case .rtfd: return InterfaceText.line("bookFormat.displayName.rtfd", "Rich Text with Attachments")
+        // Translators: Name of the book format of an old Microsoft Word document (.doc), from Word 97 to 2003, shown in a book's information, the format column, and the duplicate finder.
+        case .doc: return InterfaceText.line("bookFormat.displayName.doc", "Word 97-2003 Document")
+        // Translators: Name of the book format of an OpenDocument text file (.odt), shown in a book's information, the format column, and the duplicate finder.
+        case .odt: return InterfaceText.line("bookFormat.displayName.odt", "OpenDocument Text")
+        // Translators: Name of the book format of a Word 2003 XML document, shown in a book's information, the format column, and the duplicate finder.
+        case .wordml: return InterfaceText.line("bookFormat.displayName.wordml", "Word 2003 XML")
+        // Translators: Name of the book format of a braille file (.brf or .brl), shown in a book's information, the format column, and the duplicate finder.
+        case .braille: return InterfaceText.line("common.braille", "Braille")
+        case .daisy: return "DAISY"
+        case .pdf: return "PDF"
+        // Translators: Name of the book format of an audiobook, a book made of audio files, shown in a book's information, the format column, and the duplicate finder.
+        case .audio: return InterfaceText.line("common.audio", "Audio")
+        // Translators: Name of the book format of a Kindle book in the MOBI format (MOBI is a format name), shown in a book's information, the format column, and the duplicate finder.
+        case .mobi: return InterfaceText.line("bookFormat.displayName.mobi", "Kindle Book (MOBI)")
+        // Translators: Name of the book format of a Kindle book in the KFX format (KFX is a format name), shown in a book's information, the format column, and the duplicate finder.
+        case .kfx: return InterfaceText.line("bookFormat.displayName.kfx", "Kindle Book (KFX)")
+        // Translators: Name of the book format of a picture of a page (a PNG, JPEG, HEIC, or TIFF photograph or scan) that text recognition reads, shown in a book's information, the format column, and the duplicate finder.
+        case .picture: return InterfaceText.line("bookFormat.displayName.picture", "Picture")
+        // Translators: Name of the book format of a comic book archive (.cbz), a ZIP of pictures (CBZ is a format name), shown in a book's information, the format column, and the duplicate finder.
+        case .comic: return InterfaceText.line("bookFormat.displayName.comic", "Comic Book Archive (CBZ)")
+        }
+    }
+
+    /// The format's name in English, for the debug log, which stays English
+    /// whatever language the interface speaks.
+    var logName: String {
+        switch self {
         case .txt: return "Plain Text"
         case .markdown: return "Markdown"
-        case .html: return "HTML"
         case .webarchive: return "Web Archive"
-        case .ssml: return "SSML"
         case .docx: return "Word Document"
         case .rtf: return "Rich Text"
         case .rtfd: return "Rich Text with Attachments"
@@ -62,9 +130,13 @@ enum BookFormat: String, Codable, CaseIterable {
         case .odt: return "OpenDocument Text"
         case .wordml: return "Word 2003 XML"
         case .braille: return "Braille"
-        case .daisy: return "DAISY"
-        case .pdf: return "PDF"
         case .audio: return "Audio"
+        case .mobi: return "Kindle Book (MOBI)"
+        case .kfx: return "Kindle Book (KFX)"
+        case .picture: return "Picture"
+        case .comic: return "Comic Book Archive (CBZ)"
+        // The names that read the same in every language.
+        case .epub, .html, .ssml, .daisy, .pdf: return displayName
         }
     }
 
@@ -82,6 +154,12 @@ enum BookFormat: String, Codable, CaseIterable {
     /// (`ImportAudioConverter`), and only the converted file is played. A
     /// Mac whose afconvert cannot read a format (Ogg before macOS 15.4, for
     /// one) refuses such a file by name at "Converting its audio".
+    ///
+    /// The formats only ffmpeg reads (`FFmpegAudioConverter.extensions`:
+    /// Windows Media, Speex, Musepack, Matroska and WebM, AVI, Flash video,
+    /// and RealMedia, FMT31 and FMT32) are converted at import the same way,
+    /// by the installed ffmpeg; a Mac without it refuses them at "Converting
+    /// its audio" with what to install, and the iPhone refuses them.
     ///
     /// A Word template (.dotx), a macro-enabled document (.docm), and a
     /// macro-enabled template (.dotm) are the same Office Open XML package
@@ -107,14 +185,60 @@ enum BookFormat: String, Codable, CaseIterable {
         // WordML is an .xml file, known by its root element through
         // `XMLDocumentSniffer` (see `detect(from:)`), never by an extension.
         case .wordml: return []
-        case .braille: return ["brf", "brl", "pef"]
+        // .bopf is an NLS BARD braille book's package file, which stands for
+        // its BRF volumes (FMT56).
+        case .braille: return ["brf", "brl", "pef", "bopf"]
         case .daisy: return ["daisy", "opf"]
         case .pdf: return ["pdf"]
         case .audio:
             return ["mp3", "m4a", "m4b", "wav", "aiff", "aif", "flac", "alac", "aac", "ogg", "oga", "opus", "mp4", "m4v", "mov"]
-                + ImportAudioConverter.coreAudioExtensions.sorted()
+                + ImportAudioConverter.importOnlyExtensions.sortedStably()
+                + FFmpegAudioConverter.extensions.sortedStably()
+        // .prc is a Palm database, which a Kindle book of the first
+        // generation was named, .azw is an Amazon Kindle book, and .azw3 is
+        // one in the newer KF8 format (FMT48); all are read by the book's own
+        // headers (`MOBIPalmDatabase`), not by the name.
+        case .mobi: return ["mobi", "prc", "azw", "azw3"]
+        // .kfx is a KFX container; .azw8 is the same container as Kindle for
+        // iOS and Mac name it; .kfx-zip is calibre's bundle of a book's
+        // containers. .kpf is a Kindle Create package, which is taken only
+        // to be refused with its own sentence (`KFXError.kindleCreatePackage`)
+        // rather than as an unknown type. An `.azw` file holding KFX bytes is
+        // a MOBI-named file read by its bytes (`MOBIParser`), not listed here.
+        case .kfx: return ["kfx", "kfx-zip", "azw8", "kpf"]
+        // The pictures text recognition reads as pages (FMT34). The bytes
+        // decide in the end: a file of another kind under one of these names
+        // is refused by its kind (`PageImageDecoding.readableTypes`).
+        case .picture: return ["png", "jpg", "jpeg", "heic", "heif", "tif", "tiff"]
+        // A real RAR comic (.cbr) is not read: its advice is FMT02's.
+        case .comic: return ["cbz"]
         }
     }
+
+    /// Whether a file of this format found among other files, in a ZIP
+    /// archive of books or in a DAISY book's archive, is a book of its own
+    /// (beside an audiobook's tracks the rule is `isBookBesideTracks`). A
+    /// picture is not: there it is a cover, artwork, or a page of the book
+    /// beside it, so only a picture chosen on its own is read as a book of
+    /// its text (FMT34), and an archive's pictures stay among its files
+    /// passed over. Every other format is, a comic book archive among them.
+    var isBookAmongOtherFiles: Bool { self != .picture }
+
+    /// The format of the file at `url` when, found among other files, it is
+    /// a book of its own (`isBookAmongOtherFiles`); nil for a picture there
+    /// and for a file of no format TextMouth reads.
+    static func detectBookAmongOtherFiles(from url: URL) -> BookFormat? {
+        detect(from: url).flatMap { $0.isBookAmongOtherFiles ? $0 : nil }
+    }
+
+    /// Whether a file of this format beside an archive's audio tracks makes
+    /// the archive a batch of books rather than one audiobook
+    /// (`LibraryViewModel.isAudioZip(url:)`). A picture does not, as among
+    /// any other files, and neither does a comic book archive: such an
+    /// archive imported as one audiobook, its comic passed over, before
+    /// TextMouth read comic book archives (FMT34), and so it still does.
+    /// Every other format TextMouth reads does.
+    var isBookBesideTracks: Bool { isBookAmongOtherFiles && self != .comic }
 
     /// The extensions, in lowercase, that a package's track scan takes as
     /// tracks: the audio list without the formats added on October 18, 2026
@@ -135,8 +259,14 @@ enum BookFormat: String, Codable, CaseIterable {
     /// holds, and that conversion reads a book's index before converting it,
     /// which needs the book's Ogg tracks found. The reader's guards refuse
     /// an Ogg track by name and by content.
+    ///
+    /// The formats only ffmpeg reads (`FFmpegAudioConverter.extensions`,
+    /// FMT31) are left out too: a package holds the .m4a made from each, and
+    /// no TextMouth before them ever kept one.
     static var packageTrackExtensions: Set<String> {
-        Set(BookFormat.audio.fileExtensions).subtracting(ImportAudioConverter.coreAudioExtensions)
+        Set(BookFormat.audio.fileExtensions)
+            .subtracting(ImportAudioConverter.importOnlyExtensions)
+            .subtracting(FFmpegAudioConverter.extensions)
     }
 
     var isAudio: Bool { self == .audio }
@@ -174,6 +304,16 @@ enum BookFormat: String, Codable, CaseIterable {
                 return format
             }
         }
+        // An NLS BARD braille book (FMT56) has a package of the DAISY 3 form
+        // and is told from a DAISY book by it: a ZIP holding one, or a folder
+        // with one at its top level, is a braille book, as a `.bopf` file is
+        // by its extension above.
+        if ext == "zip" && BardBraillePackage.isPackageZip(url: url) {
+            return .braille
+        }
+        if ext != "tmb", ext != "zip", BardBraillePackage.isPackage(at: url) {
+            return .braille
+        }
         // Check if a ZIP file is actually a DAISY package
         if ext == "zip" && DAISYParser.isDAISYZip(url: url) {
             return .daisy
@@ -197,48 +337,310 @@ enum BookFormat: String, Codable, CaseIterable {
 /// (`Book.applyContentAnalysis(_:cacheFormatVersion:)`). The record is kept
 /// with the book's analysis fields (`Book.ContentAnalysisFields`), in its
 /// library row and its package record, so a rebuilt library keeps it.
-struct EditedText: Codable, Hashable, Sendable {
+struct EditedText: Codable, Hashable, Sendable, KeepsUnknownKeys {
     /// The digest of the content.md bytes the edit left, as
     /// `BookTextEditSessions.check` computes it (`FingerprintHasher.digestOfData`).
     var cacheDigest: String
     /// When TextMouth took the edit as the book's text.
     var takenAt: Date
+    /// The keys of the stored record that this TextMouth does not know
+    /// (V04), written back as they were; none in a record made here.
+    var unknownKeys = UnknownKeys()
 }
 
-struct Book: Identifiable, Codable, Hashable {
-    let id: UUID
-    var title: String
-    var author: String
-    var format: BookFormat
-    var filePath: String
-    var md5Hash: String
-    var folderPath: String  // e.g. "Fiction/Sci-Fi" or "" for root
-    var dateAdded: Date
-    var lastOpened: Date?
-    /// A book is unopened while it has never been opened (`lastOpened` is
-    /// nil). It is what the Unopened category lists, and what a row's "New"
-    /// and `BookState.isNew` read.
-    var isUnopened: Bool { lastOpened == nil }
-    var readingPosition: ReadingPosition?
-    var bookmarks: [Bookmark]
+// The coding is in an extension, so the struct keeps its memberwise
+// initializer.
+extension EditedText {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case cacheDigest, takenAt
+    }
+
+    /// The names of the record's keys that this version knows.
+    private static let knownKeyNames = CodingKeys.names
+
+    /// What a stored record of an edit holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames)
+
+    /// Reads a record as the synthesized decoder read it, both fields
+    /// required, and keeps every other key as it is (V04).
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        cacheDigest = try container.decode(String.self, forKey: .cacheDigest)
+        takenAt = try container.decode(Date.self, forKey: .takenAt)
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+    }
+
+    /// Writes the record as the synthesized encoder wrote it, after the
+    /// keys this version does not know (V04).
+    func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(cacheDigest, forKey: .cacheDigest)
+        try container.encode(takenAt, forKey: .takenAt)
+    }
+}
+
+/// One book of the library: its row, and what the app keeps of it.
+///
+/// A `Book` is a value, and it behaves as one: copying it and changing the
+/// copy never changes the original. It holds its fields, though, in one
+/// shared box (`Storage`), copied only when a copy is written (copy on
+/// write, as `Array` does). A book has about fifty fields, and a struct that
+/// held them inline made every type that holds a book copy and destroy each
+/// field by its own written-out code; one reference makes each of those a
+/// retain and a release, which is a megabyte less in the app (audit C13).
+///
+/// The API is the struct's own: every field is a property, and `Codable`,
+/// `Equatable`, and `Hashable` read the fields, so the stored JSON is
+/// exactly what a plain struct of the same fields wrote
+/// (`OnDiskContractTests`).
+struct Book: Identifiable, Codable, Hashable, KeepsUnknownKeys {
+    /// Every stored field of a book, held once and shared by every copy of
+    /// the struct until one is written.
+    ///
+    /// The fields follow the struct's documented order, and each is
+    /// documented on the `Book` property that reads it. Nothing outside
+    /// `Book` can reach a box.
+    ///
+    /// `@unchecked Sendable`: a box is never written while it is shared.
+    /// Every write goes through `Book.makeUnique()` first, so a box that two
+    /// `Book` values can reach is never changed, and a box one value owns is
+    /// written only by that value, which as a struct only one thread at a
+    /// time may write (no lock is needed).
+    private final class Storage: @unchecked Sendable {
+        var id: UUID
+        var title: String = ""
+        var author: String = ""
+        var format: BookFormat
+        var filePath: String = ""
+        var md5Hash: String = ""
+        var folderPath: String = ""
+        var dateAdded: Date
+        var lastOpened: Date? = nil
+        var readingPosition: ReadingPosition? = nil
+        var bookmarks: [Bookmark] = []
+        var totalWordCount: Int? = nil
+        var totalCharacterCount: Int? = nil
+        var tmbDirectoryName: String = ""
+        var sourceFilePath: String? = nil
+        var lastPlaybackStarted: Date? = nil
+        var lastPlaybackStopped: Date? = nil
+        var localVoiceID: String? = nil
+        var localWPM: Double? = nil
+        var localPitch: Double? = nil
+        var skippedHeadingIDs: [String]? = nil
+        var skippedHeadings: [SkippedHeading]? = nil
+        var waitingSkippedHeadings: [SkippedHeading]? = nil
+        var localEndOfBookBehavior: String? = nil
+        var localSkipForwardUnit: String? = nil
+        var localSkipBackwardUnit: String? = nil
+        var manualSortOrder: Int? = nil
+        var audioDuration: TimeInterval? = nil
+        var audioAlbum: String? = nil
+        var audioGenre: String? = nil
+        var audioYear: String? = nil
+        var epubPublisher: String? = nil
+        var epubPublicationDate: String? = nil
+        var epubISBN: String? = nil
+        var epubLanguage: String? = nil
+        var epubIdentifier: String? = nil
+        var epubVersion: String? = nil
+        var cacheFormatVersion: String? = nil
+        var contentIndexVersion: String? = nil
+        var textCacheFingerprint: TextCacheFingerprint? = nil
+        var editedText: EditedText? = nil
+        var pageReaderVersion: String? = nil
+        var metadataReaderVersion: String? = nil
+        var handEdits: HandEdits? = nil
+        var feedLink: FeedBookLink? = nil
+        var brailleTable: String? = nil
+        var brailleTableVersion: String? = nil
+        var brailleTableOrigin: BrailleTableOrigin? = nil
+        var brailleFileCode: String? = nil
+        var textEncoding: String? = nil
+        var textEncodingSource: TextEncodingSource? = nil
+        var unknownKeys = UnknownKeys()
+        init(id: UUID, format: BookFormat, dateAdded: Date) {
+            self.id = id
+            self.format = format
+            self.dateAdded = dateAdded
+        }
+        /// A field-for-field copy, for a write to a shared box.
+        func copy() -> Storage {
+            let c = Storage(id: id, format: format, dateAdded: dateAdded)
+            c.title = title
+            c.author = author
+            c.filePath = filePath
+            c.md5Hash = md5Hash
+            c.folderPath = folderPath
+            c.lastOpened = lastOpened
+            c.readingPosition = readingPosition
+            c.bookmarks = bookmarks
+            c.totalWordCount = totalWordCount
+            c.totalCharacterCount = totalCharacterCount
+            c.tmbDirectoryName = tmbDirectoryName
+            c.sourceFilePath = sourceFilePath
+            c.lastPlaybackStarted = lastPlaybackStarted
+            c.lastPlaybackStopped = lastPlaybackStopped
+            c.localVoiceID = localVoiceID
+            c.localWPM = localWPM
+            c.localPitch = localPitch
+            c.skippedHeadingIDs = skippedHeadingIDs
+            c.skippedHeadings = skippedHeadings
+            c.waitingSkippedHeadings = waitingSkippedHeadings
+            c.localEndOfBookBehavior = localEndOfBookBehavior
+            c.localSkipForwardUnit = localSkipForwardUnit
+            c.localSkipBackwardUnit = localSkipBackwardUnit
+            c.manualSortOrder = manualSortOrder
+            c.audioDuration = audioDuration
+            c.audioAlbum = audioAlbum
+            c.audioGenre = audioGenre
+            c.audioYear = audioYear
+            c.epubPublisher = epubPublisher
+            c.epubPublicationDate = epubPublicationDate
+            c.epubISBN = epubISBN
+            c.epubLanguage = epubLanguage
+            c.epubIdentifier = epubIdentifier
+            c.epubVersion = epubVersion
+            c.cacheFormatVersion = cacheFormatVersion
+            c.contentIndexVersion = contentIndexVersion
+            c.textCacheFingerprint = textCacheFingerprint
+            c.editedText = editedText
+            c.pageReaderVersion = pageReaderVersion
+            c.metadataReaderVersion = metadataReaderVersion
+            c.handEdits = handEdits
+            c.feedLink = feedLink
+            c.brailleTable = brailleTable
+            c.brailleTableVersion = brailleTableVersion
+            c.brailleTableOrigin = brailleTableOrigin
+            c.brailleFileCode = brailleFileCode
+            c.textEncoding = textEncoding
+            c.textEncodingSource = textEncodingSource
+            c.unknownKeys = unknownKeys
+            return c
+        }
+    }
+    /// The box that holds this book's fields. Shared by every copy of the
+    /// book until one of them is written; only `makeUnique()` replaces it.
+    private var storage: Storage
+
+    /// Gives this copy its own box before a write when the box is shared.
+    /// Every setter and `_modify` below calls it first, so a shared box is
+    /// never written. The accessors below all read and write `storage`
+    /// the same way, and each is documented as the field it stands for.
+    private mutating func makeUnique() {
+        if !isKnownUniquelyReferenced(&storage) { storage = storage.copy() }
+    }
+
+    /// The book's identity: fixed when it is made, never written.
+    var id: UUID { storage.id }
+    /// The book's title.
+    var title: String {
+        get { storage.title }
+        set { makeUnique(); storage.title = newValue }
+        _modify { makeUnique(); yield &storage.title }
+    }
+    var author: String {
+        get { storage.author }
+        set { makeUnique(); storage.author = newValue }
+        _modify { makeUnique(); yield &storage.author }
+    }
+    var format: BookFormat {
+        get { storage.format }
+        set { makeUnique(); storage.format = newValue }
+        _modify { makeUnique(); yield &storage.format }
+    }
+    var filePath: String {
+        get { storage.filePath }
+        set { makeUnique(); storage.filePath = newValue }
+        _modify { makeUnique(); yield &storage.filePath }
+    }
+    var md5Hash: String {
+        get { storage.md5Hash }
+        set { makeUnique(); storage.md5Hash = newValue }
+        _modify { makeUnique(); yield &storage.md5Hash }
+    }
+    /// e.g. "Fiction/Sci-Fi" or "" for root
+    var folderPath: String {
+        get { storage.folderPath }
+        set { makeUnique(); storage.folderPath = newValue }
+        _modify { makeUnique(); yield &storage.folderPath }
+    }
+    var dateAdded: Date {
+        get { storage.dateAdded }
+        set { makeUnique(); storage.dateAdded = newValue }
+        _modify { makeUnique(); yield &storage.dateAdded }
+    }
+    var lastOpened: Date? {
+        get { storage.lastOpened }
+        set { makeUnique(); storage.lastOpened = newValue }
+        _modify { makeUnique(); yield &storage.lastOpened }
+    }
+    var readingPosition: ReadingPosition? {
+        get { storage.readingPosition }
+        set { makeUnique(); storage.readingPosition = newValue }
+        _modify { makeUnique(); yield &storage.readingPosition }
+    }
+    var bookmarks: [Bookmark] {
+        get { storage.bookmarks }
+        set { makeUnique(); storage.bookmarks = newValue }
+        _modify { makeUnique(); yield &storage.bookmarks }
+    }
     /// Total word count — populated when the book is first opened and parsed
-    var totalWordCount: Int?
+    var totalWordCount: Int? {
+        get { storage.totalWordCount }
+        set { makeUnique(); storage.totalWordCount = newValue }
+        _modify { makeUnique(); yield &storage.totalWordCount }
+    }
     /// Total character count — populated when the book is first opened and parsed
-    var totalCharacterCount: Int?
+    var totalCharacterCount: Int? {
+        get { storage.totalCharacterCount }
+        set { makeUnique(); storage.totalCharacterCount = newValue }
+        _modify { makeUnique(); yield &storage.totalCharacterCount }
+    }
     /// Name of the .tmb directory (e.g. "Title-Author-123456.tmb")
-    var tmbDirectoryName: String
+    var tmbDirectoryName: String {
+        get { storage.tmbDirectoryName }
+        set { makeUnique(); storage.tmbDirectoryName = newValue }
+        _modify { makeUnique(); yield &storage.tmbDirectoryName }
+    }
     /// Path to the original source file this book was imported from
-    var sourceFilePath: String?
+    var sourceFilePath: String? {
+        get { storage.sourceFilePath }
+        set { makeUnique(); storage.sourceFilePath = newValue }
+        _modify { makeUnique(); yield &storage.sourceFilePath }
+    }
     /// When playback was last started (for rewind-on-resume)
-    var lastPlaybackStarted: Date?
+    var lastPlaybackStarted: Date? {
+        get { storage.lastPlaybackStarted }
+        set { makeUnique(); storage.lastPlaybackStarted = newValue }
+        _modify { makeUnique(); yield &storage.lastPlaybackStarted }
+    }
     /// When playback was last stopped/paused (for rewind-on-resume)
-    var lastPlaybackStopped: Date?
+    var lastPlaybackStopped: Date? {
+        get { storage.lastPlaybackStopped }
+        set { makeUnique(); storage.lastPlaybackStopped = newValue }
+        _modify { makeUnique(); yield &storage.lastPlaybackStopped }
+    }
     /// Per-book voice ID override (nil = use global setting)
-    var localVoiceID: String?
+    var localVoiceID: String? {
+        get { storage.localVoiceID }
+        set { makeUnique(); storage.localVoiceID = newValue }
+        _modify { makeUnique(); yield &storage.localVoiceID }
+    }
     /// Per-book WPM override (nil = use global setting)
-    var localWPM: Double?
+    var localWPM: Double? {
+        get { storage.localWPM }
+        set { makeUnique(); storage.localWPM = newValue }
+        _modify { makeUnique(); yield &storage.localWPM }
+    }
     /// Per-book pitch multiplier override (nil = use global setting, range 0.5–2.0)
-    var localPitch: Double?
+    var localPitch: Double? {
+        get { storage.localPitch }
+        set { makeUnique(); storage.localPitch = newValue }
+        _modify { makeUnique(); yield &storage.localPitch }
+    }
     /// Heading IDs that should be skipped during playback (`Heading.id`):
     /// what the reader matches against the book's headings, and all older
     /// builds read. Written from `skippedHeadings`, which the reader saves
@@ -247,7 +649,8 @@ struct Book: Identifiable, Codable, Hashable {
     /// set them: `skippedHeadings` then follows, keeping the anchor of each
     /// heading still named.
     var skippedHeadingIDs: [String]? {
-        didSet { skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: skippedHeadings) }
+        get { storage.skippedHeadingIDs }
+        set { makeUnique(); storage.skippedHeadingIDs = newValue; storage.skippedHeadings = SkippedHeading.inStep(with: storage.skippedHeadingIDs, keeping: storage.skippedHeadings) }
     }
     /// The headings skipped during playback by their level, label, and
     /// place, with the text at their start (T06), so a skip can follow its
@@ -257,7 +660,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// before T06 does, has them made from its IDs, without anchors; one
     /// holding both keeps the anchor of each heading its IDs name, since
     /// the IDs, which every build writes, say which headings are skipped.
-    private(set) var skippedHeadings: [SkippedHeading]?
+    private(set) var skippedHeadings: [SkippedHeading]? {
+        get { storage.skippedHeadings }
+        set { makeUnique(); storage.skippedHeadings = newValue }
+        _modify { makeUnique(); yield &storage.skippedHeadings }
+    }
     /// The headings skipped during playback for which a rebuild of the
     /// book's text found no heading (T06's branch D). Each waits, naming no
     /// heading, so neither this build's reader nor an older build skips
@@ -265,45 +672,121 @@ struct Book: Identifiable, Codable, Hashable {
     /// heading. Never in `skippedHeadingIDs`; written with the moved places
     /// (`takeMovedPlaces(original:moved:)`). Nil when there are none, never
     /// an empty array.
-    var waitingSkippedHeadings: [SkippedHeading]?
+    var waitingSkippedHeadings: [SkippedHeading]? {
+        get { storage.waitingSkippedHeadings }
+        set { makeUnique(); storage.waitingSkippedHeadings = newValue }
+        _modify { makeUnique(); yield &storage.waitingSkippedHeadings }
+    }
     /// Per-book end-of-book behavior override (nil = use global)
-    var localEndOfBookBehavior: String?
+    var localEndOfBookBehavior: String? {
+        get { storage.localEndOfBookBehavior }
+        set { makeUnique(); storage.localEndOfBookBehavior = newValue }
+        _modify { makeUnique(); yield &storage.localEndOfBookBehavior }
+    }
     /// Per-book forward navigation unit (nil or invalid = use global).
-    var localSkipForwardUnit: String?
+    var localSkipForwardUnit: String? {
+        get { storage.localSkipForwardUnit }
+        set { makeUnique(); storage.localSkipForwardUnit = newValue }
+        _modify { makeUnique(); yield &storage.localSkipForwardUnit }
+    }
     /// Per-book backward navigation unit (nil or invalid = use global).
-    var localSkipBackwardUnit: String?
+    var localSkipBackwardUnit: String? {
+        get { storage.localSkipBackwardUnit }
+        set { makeUnique(); storage.localSkipBackwardUnit = newValue }
+        _modify { makeUnique(); yield &storage.localSkipBackwardUnit }
+    }
     /// Manual sort order within folder (lower = earlier)
-    var manualSortOrder: Int?
+    var manualSortOrder: Int? {
+        get { storage.manualSortOrder }
+        set { makeUnique(); storage.manualSortOrder = newValue }
+        _modify { makeUnique(); yield &storage.manualSortOrder }
+    }
     /// Total audio duration in seconds (for audio books only)
-    var audioDuration: TimeInterval?
+    var audioDuration: TimeInterval? {
+        get { storage.audioDuration }
+        set { makeUnique(); storage.audioDuration = newValue }
+        _modify { makeUnique(); yield &storage.audioDuration }
+    }
     /// Audio-specific metadata fields (album, genre, year) persisted in bookInfo.json
-    var audioAlbum: String?
-    var audioGenre: String?
-    var audioYear: String?
+    var audioAlbum: String? {
+        get { storage.audioAlbum }
+        set { makeUnique(); storage.audioAlbum = newValue }
+        _modify { makeUnique(); yield &storage.audioAlbum }
+    }
+    var audioGenre: String? {
+        get { storage.audioGenre }
+        set { makeUnique(); storage.audioGenre = newValue }
+        _modify { makeUnique(); yield &storage.audioGenre }
+    }
+    var audioYear: String? {
+        get { storage.audioYear }
+        set { makeUnique(); storage.audioYear = newValue }
+        _modify { makeUnique(); yield &storage.audioYear }
+    }
     /// EPUB metadata is stored independently from optional file write-back so
     /// library-only edits survive reopening the editor and saving reading state.
-    var epubPublisher: String?
-    var epubPublicationDate: String?
-    var epubISBN: String?
-    var epubLanguage: String?
-    var epubIdentifier: String?
-    var epubVersion: String?
+    var epubPublisher: String? {
+        get { storage.epubPublisher }
+        set { makeUnique(); storage.epubPublisher = newValue }
+        _modify { makeUnique(); yield &storage.epubPublisher }
+    }
+    var epubPublicationDate: String? {
+        get { storage.epubPublicationDate }
+        set { makeUnique(); storage.epubPublicationDate = newValue }
+        _modify { makeUnique(); yield &storage.epubPublicationDate }
+    }
+    var epubISBN: String? {
+        get { storage.epubISBN }
+        set { makeUnique(); storage.epubISBN = newValue }
+        _modify { makeUnique(); yield &storage.epubISBN }
+    }
+    var epubLanguage: String? {
+        get { storage.epubLanguage }
+        set { makeUnique(); storage.epubLanguage = newValue }
+        _modify { makeUnique(); yield &storage.epubLanguage }
+    }
+    var epubIdentifier: String? {
+        get { storage.epubIdentifier }
+        set { makeUnique(); storage.epubIdentifier = newValue }
+        _modify { makeUnique(); yield &storage.epubIdentifier }
+    }
+    var epubVersion: String? {
+        get { storage.epubVersion }
+        set { makeUnique(); storage.epubVersion = newValue }
+        _modify { makeUnique(); yield &storage.epubVersion }
+    }
     /// Version of the content.md cache format. When this is lower than
     /// MarkdownCacheService.currentCacheVersion the cache will be regenerated
     /// on the next app launch to pick up parser improvements.
-    var cacheFormatVersion: String?
+    var cacheFormatVersion: String? {
+        get { storage.cacheFormatVersion }
+        set { makeUnique(); storage.cacheFormatVersion = newValue }
+        _modify { makeUnique(); yield &storage.cacheFormatVersion }
+    }
     /// Compact validity marker for the full index stored in bookInfo.json.
-    var contentIndexVersion: String?
+    var contentIndexVersion: String? {
+        get { storage.contentIndexVersion }
+        set { makeUnique(); storage.contentIndexVersion = newValue }
+        _modify { makeUnique(); yield &storage.contentIndexVersion }
+    }
     /// The fingerprints of the source and content.md the text cache was
     /// written from (see `TextCacheFingerprint`), recorded with the analysis
     /// that measured them; nil for audio and for a cache written before
     /// fingerprints. Startup maintenance compares them with the files.
-    var textCacheFingerprint: TextCacheFingerprint?
+    var textCacheFingerprint: TextCacheFingerprint? {
+        get { storage.textCacheFingerprint }
+        set { makeUnique(); storage.textCacheFingerprint = newValue }
+        _modify { makeUnique(); yield &storage.textCacheFingerprint }
+    }
     /// The edit of the book's text that content.md holds, if the user made
     /// one with Edit Text (`EditedText`, B12): nil for every book until an
     /// edit is taken, and again once content.md is no longer that edit. It
     /// is an analysis field, so it follows the fingerprints it describes.
-    var editedText: EditedText?
+    var editedText: EditedText? {
+        get { storage.editedText }
+        set { makeUnique(); storage.editedText = newValue }
+        _modify { makeUnique(); yield &storage.editedText }
+    }
     /// The version of the page reader (`PageReaderVersions`, PG09) that read
     /// the book's file into content.md: the version of its format when
     /// content.md was last written from the file with page markers, nil for
@@ -315,7 +798,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// after the version, as in "1.0.0+failed-once", says that reader could
     /// not read the book's pages (`PageReaderVersions.stamp(for:pageRunFailed:previous:)`).
     /// An analysis field, like the cache's own version.
-    var pageReaderVersion: String?
+    var pageReaderVersion: String? {
+        get { storage.pageReaderVersion }
+        set { makeUnique(); storage.pageReaderVersion = newValue }
+        _modify { makeUnique(); yield &storage.pageReaderVersion }
+    }
     /// The version of the metadata reader (`ImportedFileMetadata.readerVersion`)
     /// that last read this book's file for its title and author: the
     /// import's, or the launch refresh's. A row stamped by an older reader,
@@ -324,18 +811,29 @@ struct Book: Identifiable, Codable, Hashable {
     /// in the row and, from the book's next save on, in its record, so a
     /// library rebuilt from its records reads again only the books whose
     /// records were written before that.
-    var metadataReaderVersion: String?
+    var metadataReaderVersion: String? {
+        get { storage.metadataReaderVersion }
+        set { makeUnique(); storage.metadataReaderVersion = newValue }
+        _modify { makeUnique(); yield &storage.metadataReaderVersion }
+    }
     /// Which of this book's metadata fields the user edited by hand, and
     /// since when (`HandEdits`); nil for a book nothing has recorded for:
-    /// every row saved before October 7, 2026, and every book made since,
-    /// until an editor's save begins its record. Every editor's save
-    /// records the fields it changed (`LibraryViewModel.updateBookMetadata`),
-    /// Book Info says which values are the user's own, and the launch
-    /// metadata refresh never replaces a recorded field
-    /// (`LibraryViewModel.refreshedValues(of:from:)`). Kept in the row and
-    /// in the book's record; a reader's copy takes the row's
-    /// (`EditableMetadata`).
-    var handEdits: HandEdits?
+    /// every row saved before October 7, 2026, and a book made since by an
+    /// import that does not begin a record (a feed's download, a recording,
+    /// New from Text, an audio or DAISY archive), until an editor's save
+    /// begins one. A file imported since then begins an empty record kept
+    /// since the import (`HandEdits.noneSinceImport`, `FileImportService`).
+    /// Every editor's save records the fields it changed
+    /// (`LibraryViewModel.updateBookMetadata`), Book Info says which
+    /// values are the user's own, and the launch metadata refresh never
+    /// replaces a recorded field (`LibraryViewModel.refreshedValues(of:from:)`).
+    /// Kept in the row and in the book's record; a reader's copy takes the
+    /// row's (`EditableMetadata`).
+    var handEdits: HandEdits? {
+        get { storage.handEdits }
+        set { makeUnique(); storage.handEdits = newValue }
+        _modify { makeUnique(); yield &storage.handEdits }
+    }
     /// The feed item this row's book was downloaded from (FR03): set for a
     /// podcast episode or an article while it belongs to its feed (FR11),
     /// nil for every other book. A row with a link is a feed item's: its
@@ -346,8 +844,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// so library.json's rows are exactly as they were. The package's record
     /// keeps the link too (`BookMetadata.feedLink`), and keeps it when a
     /// row's link is cleared.
-    var feedLink: FeedBookLink?
-
+    var feedLink: FeedBookLink? {
+        get { storage.feedLink }
+        set { makeUnique(); storage.feedLink = newValue }
+        _modify { makeUnique(); yield &storage.feedLink }
+    }
     /// The braille table this braille book's text was read with (FMT21), by
     /// its stored value (`BrailleTableSource`): a bundled table's file name,
     /// such as "en-ueb-g2.ctb", or "mac:" and the file name of one of this
@@ -360,8 +861,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// fails by name. Nil for every other book, and read as
     /// `BrailleTableCatalog.defaultTableID` for a braille book whose row and
     /// record lack one. Kept in the row and the record.
-    var brailleTable: String?
-
+    var brailleTable: String? {
+        get { storage.brailleTable }
+        set { makeUnique(); storage.brailleTable = newValue }
+        _modify { makeUnique(); yield &storage.brailleTable }
+    }
     /// The liblouis version of this Mac's tables when this braille book was
     /// read with one of them (review R2, decision 8), such as "3.34.0", from
     /// the property list beside the Mac's tables. Apple installs liblouis's
@@ -372,8 +876,25 @@ struct Book: Identifiable, Codable, Hashable {
     /// for a bundled table, for a book imported before it was recorded, and
     /// when the Mac's tables name no version. Kept in the row, the record,
     /// and the removal marker.
-    var brailleTableVersion: String?
+    var brailleTableVersion: String? {
+        get { storage.brailleTableVersion }
+        set { makeUnique(); storage.brailleTableVersion = newValue }
+        _modify { makeUnique(); yield &storage.brailleTableVersion }
+    }
 
+    /// Who chose `brailleTable` when it was not the listener (brfguess):
+    /// `.guessed` for a BRF or BRL whose import found it clearly written in
+    /// English Braille, American Edition, and read it with that code's table
+    /// in place of the Braille setting's contracted Unified English table
+    /// (`BrailleTableGuess`). Nil for every other book, every book imported
+    /// before guesses were recorded, and one whose table the listener
+    /// chose; choosing a table in Book Information sets it nil for good. A
+    /// value that cannot be read, as a later TextMouth's might be, is nil.
+    var brailleTableOrigin: BrailleTableOrigin? {
+        get { storage.brailleTableOrigin }
+        set { makeUnique(); storage.brailleTableOrigin = newValue }
+        _modify { makeUnique(); yield &storage.brailleTableOrigin }
+    }
     /// The braille file characters this BRF or BRL book's file writes its
     /// cells in (braillecodes), by the code's id (`BrailleFileCode`), such
     /// as "ascii-na" for North American Braille ASCII, "ascii-eurobraille"
@@ -398,8 +919,11 @@ struct Book: Identifiable, Codable, Hashable {
     /// changelog asks that such a library not be opened in an earlier
     /// TextMouth (the review of October 30, finding 1). Kept in the row, the
     /// record, and the removal marker.
-    var brailleFileCode: String?
-
+    var brailleFileCode: String? {
+        get { storage.brailleFileCode }
+        set { makeUnique(); storage.brailleFileCode = newValue }
+        _modify { makeUnique(); yield &storage.brailleFileCode }
+    }
     /// The encoding TextMouth guessed this plain-text, Markdown, or HTML
     /// book's file is in (FMT16), by its identifier in `TextEncodingCatalog`,
     /// such as "windows-1251" or "koi8-r": set when the book is imported from
@@ -417,32 +941,260 @@ struct Book: Identifiable, Codable, Hashable {
     /// Since the listener can choose a book's encoding in Book Information
     /// (encodingchoice), it holds the choice too, and `textEncodingSource`
     /// says who decided it: the two travel together (`textEncodingRecord`).
-    var textEncoding: String?
-
+    var textEncoding: String? {
+        get { storage.textEncoding }
+        set { makeUnique(); storage.textEncoding = newValue }
+        _modify { makeUnique(); yield &storage.textEncoding }
+    }
     /// Who decided `textEncoding` (encodingchoice): the listener's choice of
     /// an encoding, or of Automatic, in Book Information; nil for the
     /// import (FMT16), which is every book the listener has not chosen for,
     /// so their rows and records are written exactly as before. A value that
     /// cannot be read, as a later TextMouth's might be, is nil. Kept in the
     /// row, the record, and the removal marker.
-    var textEncodingSource: TextEncodingSource?
+    var textEncodingSource: TextEncodingSource? {
+        get { storage.textEncodingSource }
+        set { makeUnique(); storage.textEncodingSource = newValue }
+        _modify { makeUnique(); yield &storage.textEncodingSource }
+    }
+    /// The keys of this book's library row that this TextMouth does not know
+    /// (V04, `UnknownKeys`): what a later TextMouth added to the row, read
+    /// with it and written back with it exactly as they were. Empty for
+    /// every row this version or an earlier one wrote, and for every book
+    /// made here. They are the row's own: every change to a field leaves
+    /// them alone, a copy keeps them, and they are compared by `==`. The
+    /// package's record keeps its own (`BookInfo.unknownKeys`,
+    /// `BookMetadata.unknownKeys`, `BookState.unknownKeys`), under names of
+    /// its own, so neither is ever written into the other.
+    var unknownKeys: UnknownKeys {
+        get { storage.unknownKeys }
+        set { makeUnique(); storage.unknownKeys = newValue }
+        _modify { makeUnique(); yield &storage.unknownKeys }
+    }
+    /// The keys of a library row. `CaseIterable`, so that the names this
+    /// version knows can be listed (`knownKeyNames`) and tests can hold the
+    /// hand-written encoder and decoder to them.
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case id, title, author, format, filePath, md5Hash, folderPath, dateAdded, lastOpened, readingPosition, bookmarks, totalWordCount, totalCharacterCount, tmbDirectoryName, sourceFilePath, lastPlaybackStarted, lastPlaybackStopped, localVoiceID, localWPM, localPitch, skippedHeadingIDs, skippedHeadings, waitingSkippedHeadings, localEndOfBookBehavior, localSkipForwardUnit, localSkipBackwardUnit, manualSortOrder, audioDuration, audioAlbum, audioGenre, audioYear, epubPublisher, epubPublicationDate, epubISBN, epubLanguage, epubIdentifier, epubVersion, cacheFormatVersion, contentIndexVersion, textCacheFingerprint, editedText, pageReaderVersion, metadataReaderVersion, handEdits, feedLink, brailleTable, brailleTableVersion, brailleTableOrigin, brailleFileCode, textEncoding, textEncodingSource
+    }
+    /// The names of a row's keys that this version knows: every other member
+    /// of a row is kept as it is (`unknownKeys`). Not private, so a test can
+    /// hold the encoder and the box's fields to them.
+    static let knownKeyNames = CodingKeys.names
+    /// What a stored row holds, for the scan that says whether a file can
+    /// hold unknown keys (`StoredKeyScan`): its keys, and each member that
+    /// is a record keeping unknown keys of its own, or a list of them. A
+    /// field added to `Book` whose type keeps unknown keys is added here
+    /// too (`UnknownKeysTests` fails until it is).
+    static let keySchema = StoredKeySchema(
+        names: knownKeyNames,
+        objects: [
+            CodingKeys.readingPosition.stringValue: ReadingPosition.keySchema,
+            CodingKeys.bookmarks.stringValue: Bookmark.keySchema,
+            CodingKeys.skippedHeadings.stringValue: SkippedHeading.keySchema,
+            CodingKeys.waitingSkippedHeadings.stringValue: SkippedHeading.keySchema,
+            CodingKeys.textCacheFingerprint.stringValue: TextCacheFingerprint.keySchema,
+            CodingKeys.editedText.stringValue: EditedText.keySchema,
+            CodingKeys.handEdits.stringValue: HandEdits.keySchema,
+            CodingKeys.feedLink.stringValue: FeedBookLink.keySchema,
+        ]
+    )
+    func encode(to encoder: Encoder) throws {
+        // The row's unknown keys first, so a field always wins (V04);
+        // nothing at all for a row without any.
+        try storage.unknownKeys.write(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(storage.id, forKey: .id)
+        try container.encode(storage.title, forKey: .title)
+        try container.encode(storage.author, forKey: .author)
+        try container.encode(storage.format, forKey: .format)
+        try container.encode(storage.filePath, forKey: .filePath)
+        try container.encode(storage.md5Hash, forKey: .md5Hash)
+        try container.encode(storage.folderPath, forKey: .folderPath)
+        try container.encode(storage.dateAdded, forKey: .dateAdded)
+        try container.encodeIfPresent(storage.lastOpened, forKey: .lastOpened)
+        try container.encodeIfPresent(storage.readingPosition, forKey: .readingPosition)
+        try container.encode(storage.bookmarks, forKey: .bookmarks)
+        try container.encodeIfPresent(storage.totalWordCount, forKey: .totalWordCount)
+        try container.encodeIfPresent(storage.totalCharacterCount, forKey: .totalCharacterCount)
+        try container.encode(storage.tmbDirectoryName, forKey: .tmbDirectoryName)
+        try container.encodeIfPresent(storage.sourceFilePath, forKey: .sourceFilePath)
+        try container.encodeIfPresent(storage.lastPlaybackStarted, forKey: .lastPlaybackStarted)
+        try container.encodeIfPresent(storage.lastPlaybackStopped, forKey: .lastPlaybackStopped)
+        try container.encodeIfPresent(storage.localVoiceID, forKey: .localVoiceID)
+        try container.encodeIfPresent(storage.localWPM, forKey: .localWPM)
+        try container.encodeIfPresent(storage.localPitch, forKey: .localPitch)
+        try container.encodeIfPresent(storage.skippedHeadingIDs, forKey: .skippedHeadingIDs)
+        try container.encodeIfPresent(storage.skippedHeadings, forKey: .skippedHeadings)
+        try container.encodeIfPresent(storage.waitingSkippedHeadings, forKey: .waitingSkippedHeadings)
+        try container.encodeIfPresent(storage.localEndOfBookBehavior, forKey: .localEndOfBookBehavior)
+        try container.encodeIfPresent(storage.localSkipForwardUnit, forKey: .localSkipForwardUnit)
+        try container.encodeIfPresent(storage.localSkipBackwardUnit, forKey: .localSkipBackwardUnit)
+        try container.encodeIfPresent(storage.manualSortOrder, forKey: .manualSortOrder)
+        try container.encodeIfPresent(storage.audioDuration, forKey: .audioDuration)
+        try container.encodeIfPresent(storage.audioAlbum, forKey: .audioAlbum)
+        try container.encodeIfPresent(storage.audioGenre, forKey: .audioGenre)
+        try container.encodeIfPresent(storage.audioYear, forKey: .audioYear)
+        try container.encodeIfPresent(storage.epubPublisher, forKey: .epubPublisher)
+        try container.encodeIfPresent(storage.epubPublicationDate, forKey: .epubPublicationDate)
+        try container.encodeIfPresent(storage.epubISBN, forKey: .epubISBN)
+        try container.encodeIfPresent(storage.epubLanguage, forKey: .epubLanguage)
+        try container.encodeIfPresent(storage.epubIdentifier, forKey: .epubIdentifier)
+        try container.encodeIfPresent(storage.epubVersion, forKey: .epubVersion)
+        try container.encodeIfPresent(storage.cacheFormatVersion, forKey: .cacheFormatVersion)
+        try container.encodeIfPresent(storage.contentIndexVersion, forKey: .contentIndexVersion)
+        try container.encodeIfPresent(storage.textCacheFingerprint, forKey: .textCacheFingerprint)
+        try container.encodeIfPresent(storage.editedText, forKey: .editedText)
+        try container.encodeIfPresent(storage.pageReaderVersion, forKey: .pageReaderVersion)
+        try container.encodeIfPresent(storage.metadataReaderVersion, forKey: .metadataReaderVersion)
+        try container.encodeIfPresent(storage.handEdits, forKey: .handEdits)
+        try container.encodeIfPresent(storage.feedLink, forKey: .feedLink)
+        try container.encodeIfPresent(storage.brailleTable, forKey: .brailleTable)
+        try container.encodeIfPresent(storage.brailleTableVersion, forKey: .brailleTableVersion)
+        try container.encodeIfPresent(storage.brailleTableOrigin, forKey: .brailleTableOrigin)
+        try container.encodeIfPresent(storage.brailleFileCode, forKey: .brailleFileCode)
+        try container.encodeIfPresent(storage.textEncoding, forKey: .textEncoding)
+        try container.encodeIfPresent(storage.textEncodingSource, forKey: .textEncodingSource)
+    }
+    static func == (lhs: Book, rhs: Book) -> Bool {
+        if lhs.storage === rhs.storage { return true }
+        return lhs.storage.id == rhs.storage.id
+            && lhs.storage.title == rhs.storage.title
+            && lhs.storage.author == rhs.storage.author
+            && lhs.storage.format == rhs.storage.format
+            && lhs.storage.filePath == rhs.storage.filePath
+            && lhs.storage.md5Hash == rhs.storage.md5Hash
+            && lhs.storage.folderPath == rhs.storage.folderPath
+            && lhs.storage.dateAdded == rhs.storage.dateAdded
+            && lhs.storage.lastOpened == rhs.storage.lastOpened
+            && lhs.storage.readingPosition == rhs.storage.readingPosition
+            && lhs.storage.bookmarks == rhs.storage.bookmarks
+            && lhs.storage.totalWordCount == rhs.storage.totalWordCount
+            && lhs.storage.totalCharacterCount == rhs.storage.totalCharacterCount
+            && lhs.storage.tmbDirectoryName == rhs.storage.tmbDirectoryName
+            && lhs.storage.sourceFilePath == rhs.storage.sourceFilePath
+            && lhs.storage.lastPlaybackStarted == rhs.storage.lastPlaybackStarted
+            && lhs.storage.lastPlaybackStopped == rhs.storage.lastPlaybackStopped
+            && lhs.storage.localVoiceID == rhs.storage.localVoiceID
+            && lhs.storage.localWPM == rhs.storage.localWPM
+            && lhs.storage.localPitch == rhs.storage.localPitch
+            && lhs.storage.skippedHeadingIDs == rhs.storage.skippedHeadingIDs
+            && lhs.storage.skippedHeadings == rhs.storage.skippedHeadings
+            && lhs.storage.waitingSkippedHeadings == rhs.storage.waitingSkippedHeadings
+            && lhs.storage.localEndOfBookBehavior == rhs.storage.localEndOfBookBehavior
+            && lhs.storage.localSkipForwardUnit == rhs.storage.localSkipForwardUnit
+            && lhs.storage.localSkipBackwardUnit == rhs.storage.localSkipBackwardUnit
+            && lhs.storage.manualSortOrder == rhs.storage.manualSortOrder
+            && lhs.storage.audioDuration == rhs.storage.audioDuration
+            && lhs.storage.audioAlbum == rhs.storage.audioAlbum
+            && lhs.storage.audioGenre == rhs.storage.audioGenre
+            && lhs.storage.audioYear == rhs.storage.audioYear
+            && lhs.storage.epubPublisher == rhs.storage.epubPublisher
+            && lhs.storage.epubPublicationDate == rhs.storage.epubPublicationDate
+            && lhs.storage.epubISBN == rhs.storage.epubISBN
+            && lhs.storage.epubLanguage == rhs.storage.epubLanguage
+            && lhs.storage.epubIdentifier == rhs.storage.epubIdentifier
+            && lhs.storage.epubVersion == rhs.storage.epubVersion
+            && lhs.storage.cacheFormatVersion == rhs.storage.cacheFormatVersion
+            && lhs.storage.contentIndexVersion == rhs.storage.contentIndexVersion
+            && lhs.storage.textCacheFingerprint == rhs.storage.textCacheFingerprint
+            && lhs.storage.editedText == rhs.storage.editedText
+            && lhs.storage.pageReaderVersion == rhs.storage.pageReaderVersion
+            && lhs.storage.metadataReaderVersion == rhs.storage.metadataReaderVersion
+            && lhs.storage.handEdits == rhs.storage.handEdits
+            && lhs.storage.feedLink == rhs.storage.feedLink
+            && lhs.storage.brailleTable == rhs.storage.brailleTable
+            && lhs.storage.brailleTableVersion == rhs.storage.brailleTableVersion
+            && lhs.storage.brailleTableOrigin == rhs.storage.brailleTableOrigin
+            && lhs.storage.brailleFileCode == rhs.storage.brailleFileCode
+            && lhs.storage.textEncoding == rhs.storage.textEncoding
+            && lhs.storage.textEncodingSource == rhs.storage.textEncodingSource
+            && lhs.storage.unknownKeys == rhs.storage.unknownKeys
+    }
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(storage.id)
+        hasher.combine(storage.title)
+        hasher.combine(storage.author)
+        hasher.combine(storage.format)
+        hasher.combine(storage.filePath)
+        hasher.combine(storage.md5Hash)
+        hasher.combine(storage.folderPath)
+        hasher.combine(storage.dateAdded)
+        hasher.combine(storage.lastOpened)
+        hasher.combine(storage.readingPosition)
+        hasher.combine(storage.bookmarks)
+        hasher.combine(storage.totalWordCount)
+        hasher.combine(storage.totalCharacterCount)
+        hasher.combine(storage.tmbDirectoryName)
+        hasher.combine(storage.sourceFilePath)
+        hasher.combine(storage.lastPlaybackStarted)
+        hasher.combine(storage.lastPlaybackStopped)
+        hasher.combine(storage.localVoiceID)
+        hasher.combine(storage.localWPM)
+        hasher.combine(storage.localPitch)
+        hasher.combine(storage.skippedHeadingIDs)
+        hasher.combine(storage.skippedHeadings)
+        hasher.combine(storage.waitingSkippedHeadings)
+        hasher.combine(storage.localEndOfBookBehavior)
+        hasher.combine(storage.localSkipForwardUnit)
+        hasher.combine(storage.localSkipBackwardUnit)
+        hasher.combine(storage.manualSortOrder)
+        hasher.combine(storage.audioDuration)
+        hasher.combine(storage.audioAlbum)
+        hasher.combine(storage.audioGenre)
+        hasher.combine(storage.audioYear)
+        hasher.combine(storage.epubPublisher)
+        hasher.combine(storage.epubPublicationDate)
+        hasher.combine(storage.epubISBN)
+        hasher.combine(storage.epubLanguage)
+        hasher.combine(storage.epubIdentifier)
+        hasher.combine(storage.epubVersion)
+        hasher.combine(storage.cacheFormatVersion)
+        hasher.combine(storage.contentIndexVersion)
+        hasher.combine(storage.textCacheFingerprint)
+        hasher.combine(storage.editedText)
+        hasher.combine(storage.pageReaderVersion)
+        hasher.combine(storage.metadataReaderVersion)
+        hasher.combine(storage.handEdits)
+        hasher.combine(storage.feedLink)
+        hasher.combine(storage.brailleTable)
+        hasher.combine(storage.brailleTableVersion)
+        hasher.combine(storage.brailleTableOrigin)
+        hasher.combine(storage.brailleFileCode)
+        hasher.combine(storage.textEncoding)
+        hasher.combine(storage.textEncodingSource)
+        // The unknown keys add nothing to a hash (`UnknownKeys.hash(into:)`).
+    }
+    /// A book is unopened while it has never been opened (`lastOpened` is
+    /// nil). It is what the Unopened category lists, and what a row's "New"
+    /// and `BookState.isNew` read.
+    var isUnopened: Bool { lastOpened == nil }
 
     /// Whether this row is a feed item's download (FR11): its feed lists it,
     /// and the library's own lists, counts, and maintenance leave it out.
     var isFeedItem: Bool {
         feedLink != nil
     }
-
     /// The author a book is listed under when nothing names one: what every
     /// import, parser, and recording writes for it, which a reader leaves
     /// out of its window title and a metadata refresh may replace
     /// (`isUnknownAuthor(_:)`).
-    static let unknownAuthor = "Unknown"
+    static let unknownAuthor = "Unknown" // l10n: no (stored id: the library keeps this placeholder as written; the interface shows `displayAuthor`)
 
     /// Whether `author` is the placeholder for an author nothing named:
     /// empty, or `unknownAuthor`.
     static func isUnknownAuthor(_ author: String) -> Bool {
         author.isEmpty || author == unknownAuthor
+    }
+
+    /// The author as the interface shows it: the placeholder `unknownAuthor`
+    /// (which the library stores in English) in the interface language, and
+    /// any other author as written.
+    nonisolated static func displayAuthor(_ author: String) -> String {
+        author == unknownAuthor
+            // Translators: The author shown for a book whose author nothing names, in the library's author column and a book's information.
+            ? InterfaceText.line("book.unknownAuthor", "Unknown")
+            : author
     }
 
     init(
@@ -495,58 +1247,62 @@ struct Book: Identifiable, Codable, Hashable {
         brailleTableVersion: String? = nil,
         brailleFileCode: String? = nil,
         textEncoding: String? = nil,
-        textEncodingSource: TextEncodingSource? = nil
+        textEncodingSource: TextEncodingSource? = nil,
+        brailleTableOrigin: BrailleTableOrigin? = nil
     ) {
-        self.id = id
-        self.title = title
-        self.author = author
-        self.format = format
-        self.filePath = filePath
-        self.md5Hash = md5Hash
-        self.folderPath = folderPath
-        self.dateAdded = dateAdded
-        self.lastOpened = lastOpened
-        self.readingPosition = readingPosition
-        self.bookmarks = bookmarks
-        self.totalWordCount = totalWordCount
-        self.totalCharacterCount = totalCharacterCount
-        self.tmbDirectoryName = tmbDirectoryName
-        self.sourceFilePath = sourceFilePath
-        self.lastPlaybackStarted = lastPlaybackStarted
-        self.lastPlaybackStopped = lastPlaybackStopped
-        self.localVoiceID = localVoiceID
-        self.localWPM = localWPM
-        self.localPitch = localPitch
-        self.skippedHeadingIDs = skippedHeadingIDs
-        self.skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: skippedHeadings)
-        self.waitingSkippedHeadings = SkippedHeading.stored(waitingSkippedHeadings)
-        self.localEndOfBookBehavior = localEndOfBookBehavior
-        self.localSkipForwardUnit = localSkipForwardUnit
-        self.localSkipBackwardUnit = localSkipBackwardUnit
-        self.manualSortOrder = manualSortOrder
-        self.audioDuration = audioDuration
-        self.audioAlbum = audioAlbum
-        self.audioGenre = audioGenre
-        self.audioYear = audioYear
-        self.epubPublisher = epubPublisher
-        self.epubPublicationDate = epubPublicationDate
-        self.epubISBN = epubISBN
-        self.epubLanguage = epubLanguage
-        self.epubIdentifier = epubIdentifier
-        self.epubVersion = epubVersion
-        self.cacheFormatVersion = cacheFormatVersion
-        self.contentIndexVersion = contentIndexVersion
-        self.textCacheFingerprint = textCacheFingerprint
-        self.editedText = editedText
-        self.pageReaderVersion = pageReaderVersion
-        self.metadataReaderVersion = metadataReaderVersion
-        self.handEdits = handEdits
-        self.feedLink = feedLink
-        self.brailleTable = brailleTable
-        self.brailleTableVersion = brailleTableVersion
-        self.brailleFileCode = brailleFileCode
-        self.textEncoding = textEncoding
-        self.textEncodingSource = textEncodingSource
+        storage = Storage(id: id, format: format, dateAdded: dateAdded)
+        // The assignments below write this new, unshared box directly, so
+        // they need no copy on write.
+        storage.title = title
+        storage.author = author
+        storage.format = format
+        storage.filePath = filePath
+        storage.md5Hash = md5Hash
+        storage.folderPath = folderPath
+        storage.dateAdded = dateAdded
+        storage.lastOpened = lastOpened
+        storage.readingPosition = readingPosition
+        storage.bookmarks = bookmarks
+        storage.totalWordCount = totalWordCount
+        storage.totalCharacterCount = totalCharacterCount
+        storage.tmbDirectoryName = tmbDirectoryName
+        storage.sourceFilePath = sourceFilePath
+        storage.lastPlaybackStarted = lastPlaybackStarted
+        storage.lastPlaybackStopped = lastPlaybackStopped
+        storage.localVoiceID = localVoiceID
+        storage.localWPM = localWPM
+        storage.localPitch = localPitch
+        storage.skippedHeadingIDs = skippedHeadingIDs
+        storage.skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: skippedHeadings)
+        storage.waitingSkippedHeadings = SkippedHeading.stored(waitingSkippedHeadings)
+        storage.localEndOfBookBehavior = localEndOfBookBehavior
+        storage.localSkipForwardUnit = localSkipForwardUnit
+        storage.localSkipBackwardUnit = localSkipBackwardUnit
+        storage.manualSortOrder = manualSortOrder
+        storage.audioDuration = audioDuration
+        storage.audioAlbum = audioAlbum
+        storage.audioGenre = audioGenre
+        storage.audioYear = audioYear
+        storage.epubPublisher = epubPublisher
+        storage.epubPublicationDate = epubPublicationDate
+        storage.epubISBN = epubISBN
+        storage.epubLanguage = epubLanguage
+        storage.epubIdentifier = epubIdentifier
+        storage.epubVersion = epubVersion
+        storage.cacheFormatVersion = cacheFormatVersion
+        storage.contentIndexVersion = contentIndexVersion
+        storage.textCacheFingerprint = textCacheFingerprint
+        storage.editedText = editedText
+        storage.pageReaderVersion = pageReaderVersion
+        storage.metadataReaderVersion = metadataReaderVersion
+        storage.handEdits = handEdits
+        storage.feedLink = feedLink
+        storage.brailleTable = brailleTable
+        storage.brailleTableVersion = brailleTableVersion
+        storage.brailleFileCode = brailleFileCode
+        storage.textEncoding = textEncoding
+        storage.textEncodingSource = textEncodingSource
+        storage.brailleTableOrigin = brailleTableOrigin
     }
 
     // Custom decoding to handle missing fields from old library.json.
@@ -556,95 +1312,105 @@ struct Book: Identifiable, Codable, Hashable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let fields = LenientFields(container, source: SettingsPolicy.bookStateSource)
-        id = try container.decode(UUID.self, forKey: .id)
-        title = try container.decode(String.self, forKey: .title)
-        author = try container.decode(String.self, forKey: .author)
-        format = try container.decode(BookFormat.self, forKey: .format)
-        filePath = try container.decode(String.self, forKey: .filePath)
-        md5Hash = try container.decode(String.self, forKey: .md5Hash)
-        folderPath = try container.decode(String.self, forKey: .folderPath)
-        dateAdded = try container.decode(Date.self, forKey: .dateAdded)
-        lastOpened = try container.decodeIfPresent(Date.self, forKey: .lastOpened)
-        readingPosition = try container.decodeIfPresent(ReadingPosition.self, forKey: .readingPosition)
-        bookmarks = try container.decode([Bookmark].self, forKey: .bookmarks)
-        totalWordCount = fields.count(.totalWordCount)
-        totalCharacterCount = fields.count(.totalCharacterCount)
-        tmbDirectoryName = try container.decodeIfPresent(String.self, forKey: .tmbDirectoryName) ?? ""
-        sourceFilePath = try container.decodeIfPresent(String.self, forKey: .sourceFilePath)
-        lastPlaybackStarted = try container.decodeIfPresent(Date.self, forKey: .lastPlaybackStarted)
-        lastPlaybackStopped = try container.decodeIfPresent(Date.self, forKey: .lastPlaybackStopped)
-        localVoiceID = try container.decodeIfPresent(String.self, forKey: .localVoiceID)
+        // The box needs an id, a format, and a date to exist; each is
+        // overwritten by its decoded value just below.
+        storage = Storage(id: UUID(), format: .epub, dateAdded: Date())
+        storage.id = try container.decode(UUID.self, forKey: .id)
+        storage.title = try container.decode(String.self, forKey: .title)
+        storage.author = try container.decode(String.self, forKey: .author)
+        storage.format = try container.decode(BookFormat.self, forKey: .format)
+        storage.filePath = try container.decode(String.self, forKey: .filePath)
+        storage.md5Hash = try container.decode(String.self, forKey: .md5Hash)
+        storage.folderPath = try container.decode(String.self, forKey: .folderPath)
+        storage.dateAdded = try container.decode(Date.self, forKey: .dateAdded)
+        storage.lastOpened = try container.decodeIfPresent(Date.self, forKey: .lastOpened)
+        storage.readingPosition = try container.decodeIfPresent(ReadingPosition.self, forKey: .readingPosition)
+        storage.bookmarks = try container.decode([Bookmark].self, forKey: .bookmarks)
+        storage.totalWordCount = fields.count(.totalWordCount)
+        storage.totalCharacterCount = fields.count(.totalCharacterCount)
+        storage.tmbDirectoryName = try container.decodeIfPresent(String.self, forKey: .tmbDirectoryName) ?? ""
+        storage.sourceFilePath = try container.decodeIfPresent(String.self, forKey: .sourceFilePath)
+        storage.lastPlaybackStarted = try container.decodeIfPresent(Date.self, forKey: .lastPlaybackStarted)
+        storage.lastPlaybackStopped = try container.decodeIfPresent(Date.self, forKey: .lastPlaybackStopped)
+        storage.localVoiceID = try container.decodeIfPresent(String.self, forKey: .localVoiceID)
         // `localWPM` holds words per minute for text and a multiplier for audio.
         let isAudio = format.isAudio
-        localWPM = fields.optionalValue(.localWPM) { SettingsPolicy.validatedLocalSpeed($0, isAudio: isAudio) }
-        localPitch = fields.optionalValue(.localPitch, validate: SettingsPolicy.validatedLocalPitch)
-        skippedHeadingIDs = try container.decodeIfPresent([String].self, forKey: .skippedHeadingIDs)
+        storage.localWPM = fields.optionalValue(.localWPM) { SettingsPolicy.validatedLocalSpeed($0, isAudio: isAudio) }
+        storage.localPitch = fields.optionalValue(.localPitch, validate: SettingsPolicy.validatedLocalPitch)
+        storage.skippedHeadingIDs = try container.decodeIfPresent([String].self, forKey: .skippedHeadingIDs)
         // Skipped headings that cannot be read count as none; either way
         // they are put in step with the IDs, which an older build may have
         // changed alone.
-        skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: fields.optionalValue(.skippedHeadings) { $0 })
+        storage.skippedHeadings = SkippedHeading.inStep(with: skippedHeadingIDs, keeping: fields.optionalValue(.skippedHeadings) { $0 })
         // Waiting skips that cannot be read count as none; an empty list is
         // none too.
-        waitingSkippedHeadings = SkippedHeading.stored(fields.optionalValue(.waitingSkippedHeadings) { $0 })
-        localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
-        localSkipForwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipForwardUnit)
-        localSkipBackwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipBackwardUnit)
-        manualSortOrder = try container.decodeIfPresent(Int.self, forKey: .manualSortOrder)
-        audioDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .audioDuration)
-        audioAlbum = try container.decodeIfPresent(String.self, forKey: .audioAlbum)
-        audioGenre = try container.decodeIfPresent(String.self, forKey: .audioGenre)
-        audioYear = try container.decodeIfPresent(String.self, forKey: .audioYear)
-        epubPublisher = try container.decodeIfPresent(String.self, forKey: .epubPublisher)
-        epubPublicationDate = try container.decodeIfPresent(String.self, forKey: .epubPublicationDate)
-        epubISBN = try container.decodeIfPresent(String.self, forKey: .epubISBN)
-        epubLanguage = try container.decodeIfPresent(String.self, forKey: .epubLanguage)
-        epubIdentifier = try container.decodeIfPresent(String.self, forKey: .epubIdentifier)
-        epubVersion = try container.decodeIfPresent(String.self, forKey: .epubVersion)
+        storage.waitingSkippedHeadings = SkippedHeading.stored(fields.optionalValue(.waitingSkippedHeadings) { $0 })
+        storage.localEndOfBookBehavior = try container.decodeIfPresent(String.self, forKey: .localEndOfBookBehavior)
+        storage.localSkipForwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipForwardUnit)
+        storage.localSkipBackwardUnit = try container.decodeIfPresent(String.self, forKey: .localSkipBackwardUnit)
+        storage.manualSortOrder = try container.decodeIfPresent(Int.self, forKey: .manualSortOrder)
+        storage.audioDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .audioDuration)
+        storage.audioAlbum = try container.decodeIfPresent(String.self, forKey: .audioAlbum)
+        storage.audioGenre = try container.decodeIfPresent(String.self, forKey: .audioGenre)
+        storage.audioYear = try container.decodeIfPresent(String.self, forKey: .audioYear)
+        storage.epubPublisher = try container.decodeIfPresent(String.self, forKey: .epubPublisher)
+        storage.epubPublicationDate = try container.decodeIfPresent(String.self, forKey: .epubPublicationDate)
+        storage.epubISBN = try container.decodeIfPresent(String.self, forKey: .epubISBN)
+        storage.epubLanguage = try container.decodeIfPresent(String.self, forKey: .epubLanguage)
+        storage.epubIdentifier = try container.decodeIfPresent(String.self, forKey: .epubIdentifier)
+        storage.epubVersion = try container.decodeIfPresent(String.self, forKey: .epubVersion)
         // Decode as String, falling back to converting old Int values for compatibility
         if let str = try? container.decodeIfPresent(String.self, forKey: .cacheFormatVersion) {
-            cacheFormatVersion = str
+            storage.cacheFormatVersion = str
         } else if let intVal = try? container.decodeIfPresent(Int.self, forKey: .cacheFormatVersion) {
-            cacheFormatVersion = "\(intVal).0.0"
+            storage.cacheFormatVersion = "\(intVal).0.0"
         } else {
-            cacheFormatVersion = nil
+            storage.cacheFormatVersion = nil
         }
-        contentIndexVersion = try container.decodeIfPresent(String.self, forKey: .contentIndexVersion)
+        storage.contentIndexVersion = try container.decodeIfPresent(String.self, forKey: .contentIndexVersion)
         // A fingerprint that cannot be read counts as none: the cache is then
         // checked as one written before fingerprints, instead of the whole
         // library failing over one damaged field.
-        textCacheFingerprint = fields.optionalValue(.textCacheFingerprint) { $0 }
+        storage.textCacheFingerprint = fields.optionalValue(.textCacheFingerprint) { $0 }
         // A record of an edit that cannot be read counts as none, as a
         // fingerprint does; older rows have none (B12).
-        editedText = fields.optionalValue(.editedText) { $0 }
+        storage.editedText = fields.optionalValue(.editedText) { $0 }
         // A version that cannot be read counts as none: the book is then
         // read again for its pages, which only keeps its text if it is
         // unchanged (PG09).
-        pageReaderVersion = fields.optionalValue(.pageReaderVersion) { $0 }
-        metadataReaderVersion = try container.decodeIfPresent(String.self, forKey: .metadataReaderVersion)
+        storage.pageReaderVersion = fields.optionalValue(.pageReaderVersion) { $0 }
+        storage.metadataReaderVersion = try container.decodeIfPresent(String.self, forKey: .metadataReaderVersion)
         // A record of hand edits that cannot be read counts as none, as a
         // fingerprint does: the row is then one nothing was recorded for,
         // which the metadata refresh treats with the most care.
-        handEdits = fields.optionalValue(.handEdits) { $0 }
+        storage.handEdits = fields.optionalValue(.handEdits) { $0 }
         // A feed link that cannot be read counts as none (FR11): the row is
         // then a book of the library's own rather than the whole library
         // failing over it.
-        feedLink = fields.optionalValue(.feedLink) { $0 }
+        storage.feedLink = fields.optionalValue(.feedLink) { $0 }
         // A braille table name that cannot be read counts as none (FMT21),
         // so the book reads with the default table instead of the whole
         // library failing over one damaged field.
-        brailleTable = fields.optionalValue(.brailleTable) { $0 }
-        brailleTableVersion = fields.optionalValue(.brailleTableVersion) { $0 }
+        storage.brailleTable = fields.optionalValue(.brailleTable) { $0 }
+        storage.brailleTableVersion = fields.optionalValue(.brailleTableVersion) { $0 }
         // A braille file code that cannot be read counts as none
         // (braillecodes), as a damaged table name does, instead of the whole
         // library failing over it; the package record's code, when it names
         // one, stands over it (`BrailleFileCodeRecord.standing(row:recorded:)`).
-        brailleFileCode = fields.optionalValue(.brailleFileCode) { $0 }
+        storage.brailleFileCode = fields.optionalValue(.brailleFileCode) { $0 }
         // A text encoding that cannot be read counts as none (FMT16): the book
         // is then read as every book was before guesses were recorded.
-        textEncoding = fields.optionalValue(.textEncoding) { $0 }
+        storage.textEncoding = fields.optionalValue(.textEncoding) { $0 }
         // Who decided it, when it cannot be read (a later TextMouth's value),
         // counts as the import: the encoding then reads as a guess.
-        textEncodingSource = fields.optionalValue(.textEncodingSource) { $0 }
+        storage.textEncodingSource = fields.optionalValue(.textEncodingSource) { $0 }
+        // Who chose the braille table, when it cannot be read (a later
+        // TextMouth's value), counts as nobody: the table then reads as the
+        // listener's own, with no "guessed" said of it.
+        storage.brailleTableOrigin = fields.optionalValue(.brailleTableOrigin) { $0 }
+        // Every member that is none of the keys above is kept as it is, to
+        // be written back with the row (V04).
+        storage.unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
     }
 
     /// The .tmb package directory URL: in the library, or, while an import
@@ -908,8 +1674,10 @@ struct Book: Identifiable, Codable, Hashable {
     /// library changes that row while the reader has the book open (TODO
     /// P10): where the book's files are, its editable metadata, what content
     /// analysis measured, the encoding its text file is read in, with who
-    /// decided it (encodingchoice), and the braille file characters its BRF
-    /// or BRL file is read in (braillecodes), so the reader's Book
+    /// decided it (encodingchoice), the braille file characters its BRF
+    /// or BRL file is read in (braillecodes), and the braille table its
+    /// braille is translated to print by, with the version of this Mac's
+    /// tables it was read under (FMT21), so the reader's Book
     /// Information shows a new choice and any reading of the file the
     /// reader makes uses it.
     ///
@@ -925,6 +1693,9 @@ struct Book: Identifiable, Codable, Hashable {
         var analysis: ContentAnalysisFields
         var textEncoding: TextEncodingRecord
         var brailleFileCode: String?
+        var brailleTable: String?
+        var brailleTableVersion: String?
+        var brailleTableOrigin: BrailleTableOrigin?
     }
 
     /// This book's library fields. Setting them changes exactly those
@@ -936,7 +1707,10 @@ struct Book: Identifiable, Codable, Hashable {
                 metadata: editableMetadata,
                 analysis: contentAnalysisFields,
                 textEncoding: textEncodingRecord,
-                brailleFileCode: brailleFileCode
+                brailleFileCode: brailleFileCode,
+                brailleTable: brailleTable,
+                brailleTableVersion: brailleTableVersion,
+                brailleTableOrigin: brailleTableOrigin
             )
         }
         set {
@@ -945,6 +1719,53 @@ struct Book: Identifiable, Codable, Hashable {
             contentAnalysisFields = newValue.analysis
             textEncodingRecord = newValue.textEncoding
             brailleFileCode = newValue.brailleFileCode
+            brailleTable = newValue.brailleTable
+            brailleTableVersion = newValue.brailleTableVersion
+            brailleTableOrigin = newValue.brailleTableOrigin
+        }
+    }
+
+    /// This book's reading state (`ReadingState`, in Book+ReadingState.swift,
+    /// risk 2 of the local-first research). Setting it changes exactly those
+    /// fields, as `libraryFields` changes its own, so everything else stays.
+    /// It lives here, beside the fields, because the skipped headings are
+    /// set together: their IDs first, which the headings follow, then the
+    /// headings exactly as the state holds them, so the two lists stay the
+    /// pair the state's copy of the book kept.
+    var readingState: ReadingState {
+        get {
+            ReadingState(
+                readingPosition: readingPosition,
+                lastOpened: lastOpened,
+                lastPlaybackStarted: lastPlaybackStarted,
+                lastPlaybackStopped: lastPlaybackStopped,
+                bookmarks: bookmarks,
+                skippedHeadingIDs: skippedHeadingIDs,
+                skippedHeadings: skippedHeadings,
+                waitingSkippedHeadings: waitingSkippedHeadings,
+                localVoiceID: localVoiceID,
+                localWPM: localWPM,
+                localPitch: localPitch,
+                localEndOfBookBehavior: localEndOfBookBehavior,
+                localSkipForwardUnit: localSkipForwardUnit,
+                localSkipBackwardUnit: localSkipBackwardUnit
+            )
+        }
+        set {
+            readingPosition = newValue.readingPosition
+            lastOpened = newValue.lastOpened
+            lastPlaybackStarted = newValue.lastPlaybackStarted
+            lastPlaybackStopped = newValue.lastPlaybackStopped
+            bookmarks = newValue.bookmarks
+            skippedHeadingIDs = newValue.skippedHeadingIDs
+            skippedHeadings = newValue.skippedHeadings
+            waitingSkippedHeadings = newValue.waitingSkippedHeadings
+            localVoiceID = newValue.localVoiceID
+            localWPM = newValue.localWPM
+            localPitch = newValue.localPitch
+            localEndOfBookBehavior = newValue.localEndOfBookBehavior
+            localSkipForwardUnit = newValue.localSkipForwardUnit
+            localSkipBackwardUnit = newValue.localSkipBackwardUnit
         }
     }
 
@@ -1083,10 +1904,18 @@ struct Book: Identifiable, Codable, Hashable {
     /// (`DataDirectoryMigrator`). The record it replaces is read without its
     /// content index (`StoredBookRecord`), or is nil when there is none or
     /// it cannot be read, and the package keeps its content index file as
-    /// it is unless `contentIndex` replaces it.
-    func saveBookInfoThrowing(contentIndex: BookContentIndex? = nil, inPackageAt tmbDir: URL) throws {
+    /// it is unless `contentIndex` replaces it. `movedToLibrary` is the time
+    /// Move to Library… made the book the library's own, which the record
+    /// notes (`BookMetadata.movedToLibrary`, risk 4); nil keeps the note
+    /// the record holds, if any.
+    func saveBookInfoThrowing(
+        contentIndex: BookContentIndex? = nil,
+        inPackageAt tmbDir: URL,
+        notingMoveToLibraryAt movedToLibrary: Date? = nil
+    ) throws {
         let stored = try? StoredBookRecord.read(from: tmbDir)
-        try bookInfo(replacing: stored, contentIndex: contentIndex).saveRecord(to: tmbDir)
+        try bookInfo(replacing: stored, contentIndex: contentIndex, notingMoveToLibraryAt: movedToLibrary)
+            .saveRecord(to: tmbDir)
     }
 
     /// The record now in this book's package, with its content index, or
@@ -1140,20 +1969,30 @@ struct Book: Identifiable, Codable, Hashable {
     }
 
     /// The metadata of the record now in this book's package when that
-    /// record is this book's own (its `bookID` is this row's `id`), read
-    /// without downloading anything: what `recordedTextEncodingRecord()`
-    /// and `recordedBrailleFileCode()` weigh against the row. Nil for a book
-    /// without a package, and when the package holds no record, one that
-    /// cannot be read, one only in the cloud, or another book's, as an old
-    /// shared package's may: such a record must never give this row that
+    /// record is this book's own (`ownStoredRecord()`): what
+    /// `recordedTextEncodingRecord()` and `recordedBrailleFileCode()` weigh
+    /// against the row. Such a record must never give this row another
     /// book's encoding or braille file code, which every later reading of
     /// this book would then use.
     private func ownStoredMetadata() -> BookMetadata? {
+        ownStoredRecord()?.metadata
+    }
+
+    /// The record now in this book's package, without its content index,
+    /// when that record is this book's own (its `bookID` is this row's
+    /// `id`), read without downloading anything. Nil for a book without a
+    /// package, and when the package holds no record, one that cannot be
+    /// read, one only in the cloud, or another book's, as an old shared
+    /// package's may. The load that opens a book weighs the reading state it
+    /// holds against the reader's copy of the book
+    /// (`ReaderViewModel.readContent(of:audioTagsFrom:readingTexts:weighingRecordedState:)`,
+    /// risk 2). Blocks on the file, so call it off the main thread.
+    func ownStoredRecord() -> BookInfo? {
         guard !tmbDirectoryName.isEmpty else { return nil }
         let stored = try? DatalessFiles.withoutDownloading { try StoredBookRecord.read(from: tmbDirectory) }
         // The record counts only when it is this book's.
-        guard let metadata = stored?.info.metadata, metadata.bookID == id else { return nil }
-        return metadata
+        guard let info = stored?.info, info.metadata.bookID == id else { return nil }
+        return info
     }
 
     /// The record this book writes over `stored`, the record now in its
@@ -1186,6 +2025,12 @@ struct Book: Identifiable, Codable, Hashable {
     /// (FR11), and otherwise the one the stored record holds, so a row that
     /// never carried a link, or whose link was cleared, never erases it.
     ///
+    /// The note that Move to Library… made a feed's download the library's
+    /// own (`BookMetadata.movedToLibrary`, risk 4) is record-only, as the
+    /// transcript note is: the write that makes the move passes its time
+    /// (`movedToLibrary`), and every other write keeps the stored record's,
+    /// so no save of the book's state ever erases it.
+    ///
     /// A braille book's table (`BookMetadata.brailleTable`, FMT21) is kept
     /// the same way: the stored record's survives a row that lost it; and so
     /// is the Mac's liblouis version it was read with (review R2).
@@ -1213,6 +2058,17 @@ struct Book: Identifiable, Codable, Hashable {
     /// (`TextEncodingRecord.standing(row:recorded:)`), which a recovered
     /// analysis and every reading of the book's file follow too.
     ///
+    /// The listener's reading state (`ReadingState`: the place, the playback
+    /// times, the bookmarks, the skipped headings, and the book's own
+    /// settings) is the one that stands between the row's and the stored
+    /// record's (`readingState(standingAgainst:)`, risk 2 of the local-first
+    /// research): the row's, unless the stored record, this book's own, holds
+    /// a place saved later, as another Mac sharing the library writes one
+    /// while this Mac's row lags behind. So a row that lags never writes its
+    /// older place, bookmarks, or settings over the record's. On one Mac the
+    /// record is written from the row, and the row's state is written as it
+    /// always was.
+    ///
     /// The revision is one more than the stored record's, or one more than
     /// `revisionFloor` when that is higher. The metadata queue passes the
     /// highest revision it has written for this book, so its revisions keep
@@ -1226,20 +2082,38 @@ struct Book: Identifiable, Codable, Hashable {
     ///     file code, this book's own: a re-read in other braille file
     ///     characters (`LibraryPersistenceService.saveContentAnalysis`'s
     ///     `brailleFileCode`).
+    ///   - movedToLibrary: When Move to Library… made the book the library's
+    ///     own, for the write that makes the move; nil keeps the stored
+    ///     record's note.
     func bookInfo(
         replacing stored: StoredBookRecord?,
         contentIndex: BookContentIndex?,
         revisionFloor: Int = 0,
         decidingTextEncoding: Bool = false,
-        decidingBrailleFileCode: Bool = false
+        decidingBrailleFileCode: Bool = false,
+        notingMoveToLibraryAt movedToLibrary: Date? = nil,
+        takingStandingReadingState: Bool = true
     ) -> BookInfo {
         var recorded = self
+        // The reading state that stands between the row and the stored
+        // record: the record's only when it holds the later place (risk 2).
+        // A sync merge's write keeps the row's, which the merge chose
+        // (`LibraryPersistenceService.saveBookInfo(for:asMerged:)`).
+        if let stored, takingStandingReadingState {
+            recorded.takeStandingReadingState(of: stored.info)
+        }
         var index = contentIndex
         if index == nil, let stored, stored.keepsContentIndex {
             index = stored.info.contentIndex
             recorded.contentAnalysisFields = stored.info.state.contentAnalysisFields
         }
         var info = recorded.makeBookInfo()
+        // The keys of the stored record that this TextMouth does not know,
+        // at its top level, in its metadata, and in its state (V04): the
+        // new record is made from the row, which knows nothing of them.
+        if let stored {
+            info.keepUnknownKeys(of: stored.info)
+        }
         info.contentIndex = index
         if let contentIndex {
             info.state.transcript = contentIndex.transcript?.transcript
@@ -1249,9 +2123,26 @@ struct Book: Identifiable, Codable, Hashable {
         info.state.revision = BookState.revision(after: max(stored?.info.state.revision ?? 0, revisionFloor))
         // The feed item: the row's, or else the stored record's (FR03, FR11).
         info.metadata.feedLink = feedLink ?? stored?.info.metadata.feedLink
+        // Move to Library's note: this write's, or else the stored record's
+        // (risk 4).
+        info.metadata.movedToLibrary = movedToLibrary ?? stored?.info.metadata.movedToLibrary
         // The braille table: the row's, or else the stored record's (FMT21).
-        info.metadata.brailleTable = brailleTable ?? stored?.info.metadata.brailleTable
-        info.metadata.brailleTableVersion = brailleTableVersion ?? stored?.info.metadata.brailleTableVersion
+        // Its version is the row's, or else the stored record's only when
+        // that describes the same table: a book read again from one of this
+        // Mac's tables to a bundled one has no version, and keeps none of
+        // the Mac table's.
+        let storedTable = stored?.info.metadata.brailleTable
+        info.metadata.brailleTable = brailleTable ?? storedTable
+        info.metadata.brailleTableVersion = brailleTableVersion
+            ?? (info.metadata.brailleTable == storedTable ? stored?.info.metadata.brailleTableVersion : nil)
+        // Who chose that table (brfguess) goes with it, as the version does:
+        // the row's own when the row holds a table, so a choice in Book
+        // Information (which sets the table and clears the guess) replaces a
+        // guess the record holds; the stored record's only when the row
+        // holds no table at all and the record's is the one used.
+        info.metadata.brailleTableOrigin = brailleTable != nil
+            ? brailleTableOrigin
+            : stored?.info.metadata.brailleTableOrigin
         // The braille file code (braillecodes): this write's own when it
         // decides anew, and otherwise the one that stands between the row
         // and the stored record, the record's whenever it names one.
@@ -1327,6 +2218,7 @@ struct Book: Identifiable, Codable, Hashable {
         info.metadata.feedLink = feedLink
         info.metadata.brailleTable = brailleTable
         info.metadata.brailleTableVersion = brailleTableVersion
+        info.metadata.brailleTableOrigin = brailleTableOrigin
         info.metadata.brailleFileCode = brailleFileCode
         info.metadata.textEncodingRecord = textEncodingRecord
         return info
@@ -1339,6 +2231,17 @@ struct Book: Identifiable, Codable, Hashable {
     /// where its package is now; a caller that found the package in the
     /// Library folder clears the link, since a package there is a book of
     /// the library's own (`placedInLibraryFolder()`, FR11).
+    ///
+    /// The row made here holds no unknown keys of its own (V04), on
+    /// purpose: a record keeps the keys it does not know under its own
+    /// sections (`BookInfo.unknownKeys`, and its metadata's and state's),
+    /// whose names are not a row's (a record's "publisher" is a row's
+    /// "epubPublisher"), so nothing says which of them a later TextMouth
+    /// would write in a row. The record keeps them; a row rebuilt from it,
+    /// as Rebuild Library Index rebuilds every row, starts without. The
+    /// places and the other records nested in it (the reading position, the
+    /// bookmarks, the fingerprints) keep theirs, since they are the same
+    /// objects in a row and in a record.
     init(record: BookInfo, filePath: String, folderPath: String, tmbDirectoryName: String) {
         let metadata = record.metadata
         let state = record.state
@@ -1392,7 +2295,8 @@ struct Book: Identifiable, Codable, Hashable {
             brailleTableVersion: metadata.brailleTableVersion,
             brailleFileCode: metadata.brailleFileCode,
             textEncoding: metadata.textEncoding,
-            textEncodingSource: metadata.textEncodingSource
+            textEncodingSource: metadata.textEncodingSource,
+            brailleTableOrigin: metadata.brailleTableOrigin
         )
     }
 
@@ -1554,8 +2458,47 @@ extension Book {
         /// so the book's file still gives its value later, as it does for
         /// a cloud-only book's EPUB publisher and date or an audiobook's
         /// album, genre, and year. Only a value typed into it is saved.
+        ///
+        /// A title of nothing but blanks is never a change: a book keeps
+        /// the name it has, and a book with none is not given spaces, nor
+        /// has its blank swapped for another (`clearsTitle(opened:edited:)`),
+        /// whichever editor asks, so that the refusal an editor makes is not
+        /// the only thing between a save and a book with no name.
+        ///
+        /// Every value is saved without the blanks around it, whichever
+        /// editor typed it, so a field of nothing but blanks over an empty
+        /// one is no change, and "Press " is saved as "Press". A field is
+        /// a change only when what was typed differs from what the editor
+        /// opened with, and so does the trimmed value: a value the editor
+        /// opened with and the user left alone is never rewritten, even
+        /// when it keeps blanks an earlier version saved.
         var changes: MetadataValues {
-            saved.filter { field, value in (opened[field] ?? "") != value }
+            var changed: MetadataValues = [:]
+            for (field, typed) in saved {
+                if field == .title, Self.isBlank(typed) { continue }
+                let before = opened[field] ?? ""
+                let value = Self.trimmed(typed)
+                if typed != before, value != before { changed[field] = value }
+            }
+            return changed
+        }
+
+        /// `text` without the blanks and line breaks around it.
+        private static func trimmed(_ text: String) -> String {
+            text.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        /// Whether `title` holds nothing but blanks, or nothing.
+        private static func isBlank(_ title: String) -> Bool {
+            trimmed(title).isEmpty
+        }
+
+        /// Whether saving `edited` as a title would leave the book without
+        /// one: the editor opened with a title, and the edit holds nothing
+        /// but blanks. A book that had no title to begin with may be saved
+        /// without one, so a change to another field is never held back.
+        static func clearsTitle(opened: String, edited: String) -> Bool {
+            !isBlank(opened) && isBlank(edited)
         }
     }
 
@@ -1563,7 +2506,7 @@ extension Book {
     /// when the record has been kept. Every editor's save adds the fields
     /// it changed (`Book.markEditedByHand(_:)`); nothing ever removes one,
     /// so a field edited back to an earlier value stays the user's own.
-    struct HandEdits: Codable, Hashable, Sendable {
+    struct HandEdits: Codable, Hashable, Sendable, KeepsUnknownKeys {
         /// The fields edited by hand, in `MetadataField.allCases` order and
         /// each once (`MetadataField.ordered(_:)`), so one record is always
         /// written as the same bytes.
@@ -1575,6 +2518,20 @@ extension Book {
         /// may hold older edits nothing recorded, so the launch metadata
         /// refresh treats them as it treats a row without a record.
         var sinceImport: Bool
+        /// The keys of the stored record that this TextMouth does not know
+        /// (V04), written back as they were; none in a record made here.
+        var unknownKeys = UnknownKeys()
+
+        private enum CodingKeys: String, CodingKey, CaseIterable {
+            case fields, sinceImport
+        }
+
+        /// The names of the record's keys that this version knows.
+        private static let knownKeyNames = CodingKeys.names
+
+        /// What a stored record of hand edits holds, for the scan that says
+        /// whether a file can hold unknown keys (`StoredKeyScan`).
+        static let keySchema = StoredKeySchema(names: knownKeyNames)
 
         /// The record of `fields`, kept since the import when `sinceImport`.
         init(fields: Set<MetadataField> = [], sinceImport: Bool) {
@@ -1589,12 +2546,23 @@ extension Book {
         /// Decodes a record, keeping the fields this version knows: a name
         /// a newer version of TextMouth wrote for a field this one cannot
         /// edit is left out rather than failing the row, and a record
-        /// without `sinceImport` counts as begun by an edit.
+        /// without `sinceImport` counts as begun by an edit. Every other key
+        /// of the record is kept as it is (V04).
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             let names = try container.decodeIfPresent([String].self, forKey: .fields) ?? []
             fields = MetadataField.ordered(Set(names.compactMap(MetadataField.init(rawValue:))))
             sinceImport = try container.decodeIfPresent(Bool.self, forKey: .sinceImport) ?? false
+            unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+        }
+
+        /// Writes the record as the synthesized encoder wrote it, after the
+        /// keys this version does not know (V04).
+        func encode(to encoder: Encoder) throws {
+            try unknownKeys.write(to: encoder)
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(fields, forKey: .fields)
+            try container.encode(sinceImport, forKey: .sinceImport)
         }
 
         /// Whether `field` was edited by hand.
@@ -1633,7 +2601,7 @@ extension Book {
     }
 }
 
-struct ReadingPosition: Codable, Hashable {
+struct ReadingPosition: Codable, Hashable, KeepsUnknownKeys {
     var chapterIndex: Int
     var headingIndex: Int?
     var characterOffset: Int
@@ -1644,6 +2612,22 @@ struct ReadingPosition: Codable, Hashable {
     /// found again when the book's text is read anew (`TextAnchorFinder`);
     /// nil for a place saved before anchors, or by a build without them.
     var anchor: TextAnchor?
+    /// The keys of the stored position that this TextMouth does not know
+    /// (V04), written back as they were. A position made here, as for a new
+    /// place, has none: what a later TextMouth noted about the place it
+    /// replaces would describe the wrong place.
+    var unknownKeys = UnknownKeys()
+
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case chapterIndex, headingIndex, characterOffset, globalCharacterOffset, lastUpdated, anchor
+    }
+
+    /// The names of a position's keys that this version knows.
+    private static let knownKeyNames = CodingKeys.names
+
+    /// What a stored position holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames, objects: ["anchor": TextAnchor.keySchema])
 
     init(chapterIndex: Int = 0, headingIndex: Int? = nil, characterOffset: Int = 0, globalCharacterOffset: Int? = nil, anchor: TextAnchor? = nil) {
         self.chapterIndex = chapterIndex
@@ -1658,7 +2642,8 @@ struct ReadingPosition: Codable, Hashable {
     /// can have (negative, or too large for an `Int`) instead of failing the
     /// book and, with it, the whole library. The reader still clamps the
     /// result against the loaded content. An anchor that cannot be read
-    /// counts as none: the place keeps its numbers.
+    /// counts as none: the place keeps its numbers. Every other key of the
+    /// position is kept as it is (V04).
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let fields = LenientFields(container, source: SettingsPolicy.bookStateSource)
@@ -1668,10 +2653,50 @@ struct ReadingPosition: Codable, Hashable {
         globalCharacterOffset = fields.optionalPosition(.globalCharacterOffset)
         lastUpdated = try container.decode(Date.self, forKey: .lastUpdated)
         anchor = fields.optionalValue(.anchor) { $0 }
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+    }
+
+    /// Writes the position as the synthesized encoder wrote it (an optional
+    /// field is left out when nil), after the keys this version does not
+    /// know (V04).
+    func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(chapterIndex, forKey: .chapterIndex)
+        try container.encodeIfPresent(headingIndex, forKey: .headingIndex)
+        try container.encode(characterOffset, forKey: .characterOffset)
+        try container.encodeIfPresent(globalCharacterOffset, forKey: .globalCharacterOffset)
+        try container.encode(lastUpdated, forKey: .lastUpdated)
+        try container.encodeIfPresent(anchor, forKey: .anchor)
     }
 }
 
-struct Bookmark: Identifiable, Codable, Hashable {
+extension ReadingPosition {
+    /// This position with the unknown keys of `stored`, the position it is
+    /// saved over, where the two are the same (V04): the position's own
+    /// when they are at the same chapter and offset, and the anchor's when
+    /// both hold an anchor of the same words. For a position made anew at
+    /// a place that has not moved, as a reader makes one at every save
+    /// (`Library.updateReadingPosition`). A position or an anchor that
+    /// already holds unknown keys keeps its own, and a place that moved, or
+    /// words that changed, take none: what a later TextMouth noted would
+    /// describe another place or other words.
+    func keepingUnknownKeys(ofSamePlaceIn stored: ReadingPosition?) -> ReadingPosition {
+        guard let stored else { return self }
+        var kept = self
+        if unknownKeys.isEmpty, chapterIndex == stored.chapterIndex, characterOffset == stored.characterOffset {
+            kept.unknownKeys = stored.unknownKeys
+        }
+        if var anchor = anchor, let storedAnchor = stored.anchor, anchor.unknownKeys.isEmpty,
+           anchor.before == storedAnchor.before, anchor.after == storedAnchor.after {
+            anchor.unknownKeys = storedAnchor.unknownKeys
+            kept.anchor = anchor
+        }
+        return kept
+    }
+}
+
+struct Bookmark: Identifiable, Codable, Hashable, KeepsUnknownKeys {
     let id: UUID
     var number: Int
     var chapterIndex: Int
@@ -1683,6 +2708,21 @@ struct Bookmark: Identifiable, Codable, Hashable {
     /// (`TextAnchorFinder`); nil for a bookmark made before anchors, or by a
     /// build without them.
     var anchor: TextAnchor?
+    /// The keys of the stored bookmark that this TextMouth does not know
+    /// (V04), written back as they were; none in a bookmark made here. A
+    /// bookmark renamed or given its words in place keeps them.
+    var unknownKeys = UnknownKeys()
+
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case id, number, chapterIndex, characterOffset, label, dateCreated, anchor
+    }
+
+    /// The names of a bookmark's keys that this version knows.
+    private static let knownKeyNames = CodingKeys.names
+
+    /// What a stored bookmark holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames, objects: ["anchor": TextAnchor.keySchema])
 
     init(
         id: UUID = UUID(),
@@ -1705,7 +2745,7 @@ struct Bookmark: Identifiable, Codable, Hashable {
     /// Decodes a saved bookmark, repairing a location no bookmark can have
     /// (negative, or too large for an `Int`) instead of failing the book. An
     /// anchor that cannot be read counts as none: the bookmark keeps its
-    /// numbers.
+    /// numbers. Every other key of the bookmark is kept as it is (V04).
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let fields = LenientFields(container, source: SettingsPolicy.bookStateSource)
@@ -1716,6 +2756,29 @@ struct Bookmark: Identifiable, Codable, Hashable {
         label = try container.decode(String.self, forKey: .label)
         dateCreated = try container.decode(Date.self, forKey: .dateCreated)
         anchor = fields.optionalValue(.anchor) { $0 }
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+    }
+
+    /// Writes the bookmark as the synthesized encoder wrote it (the anchor
+    /// is left out when nil), after the keys this version does not know
+    /// (V04).
+    func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(number, forKey: .number)
+        try container.encode(chapterIndex, forKey: .chapterIndex)
+        try container.encode(characterOffset, forKey: .characterOffset)
+        try container.encode(label, forKey: .label)
+        try container.encode(dateCreated, forKey: .dateCreated)
+        try container.encodeIfPresent(anchor, forKey: .anchor)
+    }
+
+    /// The bookmark's name, by its number, as its row shows it and VoiceOver
+    /// says it after a move to it: "Bookmark 3". Localized (FR35).
+    var name: String {
+        // Translators: A bookmark's name, by its number: the first line of its row in the Bookmarks list, and what VoiceOver says after a move to it. %@ is the bookmark's number, an identifier written without digit grouping.
+        InterfaceText.line("common.bookmarkValue", "Bookmark \(String(number))")
     }
 
     /// Concise label shared by bookmark rows and the bookmarks rotor, such as
@@ -1725,20 +2788,31 @@ struct Bookmark: Identifiable, Codable, Hashable {
     /// location is simply omitted: internal content-unit numbers are never
     /// shown in its place. The date is the one the row shows (`dateText`),
     /// which VoiceOver did not hear until TODO A10.
+    ///
+    /// Localized as one whole label for each set of parts a bookmark has
+    /// (FR35), not parts joined by commas, so a language may order them as it
+    /// needs.
     func accessibilityLabel(headingText: String?) -> String {
-        var parts = ["Bookmark \(number)"]
-        if let headingText = headingText?.nonBlank {
-            parts.append(headingText)
+        switch (headingText?.nonBlank, label.isEmpty ? nil : label) {
+        case let (heading?, note?):
+            // Translators: VoiceOver label of a bookmark's row in the Bookmarks list and its rotor. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the heading it is under; %3$@ its note, written by the listener; %4$@ the day it was added, such as October 9, 2026.
+            return InterfaceText.line("bookmark.accessibilityLabel.headingNoteAdded", "Bookmark \(String(number)), \(heading), Note: \(note), added \(dateText)")
+        case let (heading?, nil):
+            // Translators: VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the heading it is under; %3$@ the day it was added, such as October 9, 2026.
+            return InterfaceText.line("bookmark.accessibilityLabel.headingAdded", "Bookmark \(String(number)), \(heading), added \(dateText)")
+        case let (nil, note?):
+            // Translators: VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark under no heading. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ its note, written by the listener; %3$@ the day it was added, such as October 9, 2026.
+            return InterfaceText.line("bookmark.accessibilityLabel.numberNoteAdded", "Bookmark \(String(number)), Note: \(note), added \(dateText)")
+        case (nil, nil):
+            // Translators: VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note under no heading. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the day it was added, such as October 9, 2026.
+            return InterfaceText.line("bookmark.accessibilityLabel.numberAdded", "Bookmark \(String(number)), added \(dateText)")
         }
-        if !label.isEmpty { parts.append("Note: \(label)") }
-        parts.append("added \(dateText)")
-        return parts.joined(separator: ", ")
     }
 
     /// The day the bookmark was added, as its row shows it and its label
     /// speaks it: the long date of the user's locale, "October 9, 2026".
     var dateText: String {
-        dateCreated.formatted(date: .long, time: .omitted)
+        dateCreated.interfaceFormatted(date: .long, time: .omitted)
     }
 }
 
@@ -1754,7 +2828,7 @@ struct Bookmark: Identifiable, Codable, Hashable {
 /// section 5). A book keeps both, in step (`Book.skippedHeadings`,
 /// `Book.skippedHeadingIDs`): the IDs for older builds, which know nothing
 /// else.
-struct SkippedHeading: Codable, Hashable, Sendable {
+struct SkippedHeading: Codable, Hashable, Sendable, KeepsUnknownKeys {
     /// The heading's level, 1 to 6.
     var level: Int
     /// The heading's label, as the Headings sheet shows it.
@@ -1767,6 +2841,21 @@ struct SkippedHeading: Codable, Hashable, Sendable {
     /// The text at the heading's start when it was skipped; nil for a skip
     /// made before anchors.
     var anchor: TextAnchor?
+    /// The keys of the stored skip that this TextMouth does not know (V04),
+    /// written back as they were; none in a skip made here, or read from a
+    /// heading ID alone.
+    var unknownKeys = UnknownKeys()
+
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case level, label, chapterIndex, characterOffset, anchor
+    }
+
+    /// The names of a skip's keys that this version knows.
+    private static let knownKeyNames = CodingKeys.names
+
+    /// What a stored skipped heading holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames, objects: ["anchor": TextAnchor.keySchema])
 
     init(level: Int, label: String, chapterIndex: Int, characterOffset: Int, anchor: TextAnchor? = nil) {
         self.level = level
@@ -1774,6 +2863,31 @@ struct SkippedHeading: Codable, Hashable, Sendable {
         self.chapterIndex = chapterIndex
         self.characterOffset = characterOffset
         self.anchor = anchor
+    }
+
+    /// Reads a skip as the synthesized decoder read it (its level, label,
+    /// chapter, and offset required; its anchor optional), and keeps every
+    /// other key as it is (V04).
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        level = try container.decode(Int.self, forKey: .level)
+        label = try container.decode(String.self, forKey: .label)
+        chapterIndex = try container.decode(Int.self, forKey: .chapterIndex)
+        characterOffset = try container.decode(Int.self, forKey: .characterOffset)
+        anchor = try container.decodeIfPresent(TextAnchor.self, forKey: .anchor)
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+    }
+
+    /// Writes the skip as the synthesized encoder wrote it (the anchor is
+    /// left out when nil), after the keys this version does not know (V04).
+    func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(level, forKey: .level)
+        try container.encode(label, forKey: .label)
+        try container.encode(chapterIndex, forKey: .chapterIndex)
+        try container.encode(characterOffset, forKey: .characterOffset)
+        try container.encodeIfPresent(anchor, forKey: .anchor)
     }
 
     /// The skip of `heading`, with the text at its start.

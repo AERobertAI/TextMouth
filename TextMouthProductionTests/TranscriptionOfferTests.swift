@@ -134,8 +134,8 @@ final class TranscriptionOfferTests: XCTestCase {
         // download there, the listener chooses Transcribe (board #1092).
         XCTAssertEqual(
             ImportDecisionChoiceWording.transcribe.hint,
-            "Opens Transcribe Audio for the book, which starts transcribing at once when its language's speech model "
-                + "is on this Mac; otherwise, download the model there, then choose Transcribe."
+            "Opens Transcribe Audio, which starts at once if the language's model "
+                + "is on this Mac; otherwise, download it there, then choose Transcribe."
         )
     }
 

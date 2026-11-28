@@ -30,30 +30,182 @@ enum PageReaderVersions {
     /// theirs later, each with a case of its own and its own version, which
     /// reads again only its own books (V07).
     ///
-    /// EPUB and HTML are at "1.0.1": the HTML converter they share no longer
-    /// leaves a page-break element's number in the label of a heading that
-    /// holds one ("Part 9Two" is "Part Two"), which changes the reading text
-    /// of the books that have such a heading and of no others.
+    /// EPUB is at "1.0.3", and HTML at "1.0.4" (below). At "1.0.1" the HTML converter they
+    /// share stopped leaving a page-break element's number in the label of a
+    /// heading that holds one ("Part 9Two" is "Part Two"), which changed the
+    /// reading text of the books that have such a heading and of no others.
+    /// At "1.0.2" a label that is only the word "Page" names no page
+    /// (`MarkdownPageMarker.namesNoPage`), and an EPUB page list that labels
+    /// none of its pages, such as one whose only entry is the id it links
+    /// to, is passed over (`EPUBParser.readPageList`). That changes the
+    /// pages of the books that have either, and their reading text only
+    /// where such a book's page-break element holds its page's number,
+    /// which is then the page's label and no longer read (ST02). At "1.0.3"
+    /// a label's leading word "Page" is taken off ("Page 12" is the page
+    /// "12", MarkdownPageMarker's normalization), so a number a page-break
+    /// element holds under such a label is its page's own and no longer
+    /// read. Every format's labels lose the word whenever their content.md
+    /// is read, so only these two formats are read again: only their text
+    /// can change.
+    ///
+    /// HTML is at "1.0.4", ahead of EPUB. At "1.0.4" the decoder every plain
+    /// text and HTML book goes through (`TextFileDecoder`) recognizes UTF-16
+    /// in an alphabet and in Chinese, Japanese, and Korean, and UTF-32,
+    /// written without a byte-order mark, and reads an HTML file that
+    /// declares ISO-2022-JP in it, unless the book recorded its encoding.
+    /// That changes what a book of an HTML file in one of those makes, and no
+    /// EPUB's, which has its own readers; so each HTML book is read again
+    /// once, its content.md byte for byte as before unless it is one of
+    /// those. A web archive's page and a .doc that is a web page keep the old
+    /// steps (`TextFileDecoder.Evidence.legacy`), since they have no such
+    /// version to raise.
     static func current(for format: BookFormat) -> String? {
         switch format {
-        case .epub, .html:
+        case .epub:
+            return "1.0.3"
+        case .html:
+            return "1.0.4"
+        case .pdf:
+            return "1.0.0"
+        case .daisy:
+            // DAISY started at "1.0.0" with PDF. At "1.0.1" a DAISY 3 book
+            // of several DTBook files numbers a page that holds no words by
+            // its place in the whole book (1, 2, then 3, 4), where each file
+            // began again at 1. The same bump fixes the order those files are
+            // read in (the spine's, else the order its SMIL files point at
+            // them, else the manifest's, where a dictionary's changed from
+            // launch to launch). Every stamped DAISY book is read again once;
+            // only a book of several DTBook files with a wordless page after
+            // an earlier page, or one whose files were read out of order,
+            // makes another text. The rest read byte for byte as before.
             return "1.0.1"
-        case .pdf, .docx, .daisy:
-            return "1.0.0"
-        case .rtf, .rtfd, .doc, .odt, .wordml:
-            return "1.0.0"
+        case .docx:
+            // The DOCX reader follows the policy every document reader of
+            // TextMouth follows: hidden text (w:vanish) is not read, a
+            // text box written twice is read once, and the footnotes and
+            // endnotes are read after the text. Every .docx book is read
+            // again once ("1.1.0"). At "1.2.0" the toggle rule for hidden
+            // text takes in a table style's own w:vanish and the document
+            // defaults' (not a table style's conditional formatting), so
+            // every .docx book is read again once more. At "1.3.0" a symbol
+            // (w:sym) and text typed in a symbol font (U+F020 to U+F0FF) are
+            // read through the tables by font that the Word 97 reader uses,
+            // so every .docx book is read again once more.
+            return "1.3.0"
+        case .rtf, .rtfd:
+            // TextMouth's own reader reads rich text (FMT47) instead of
+            // textutil: headings from the style sheet, bold and italic, and
+            // pages at every \page, \pagebb, and page-starting \sect, so the
+            // books of these two formats are read again once ("1.1.0"). At
+            // "1.2.0" text a tracked change deleted or moved away is not
+            // read, a list item inside a table cell is a list in the Markdown
+            // (the reading text leaves every list's number out), footnotes
+            // and endnotes are read after the text, and a shape's text box
+            // right after the paragraph that holds it.
+            return "1.2.0"
+        case .doc:
+            // Word 97-2003 is read by TextMouth's own reader (FMT47) from
+            // "1.1.0", which finds the pages and the headings by the
+            // document's own structure, so every .doc book is read again once.
+            // At "1.2.0" it leaves hidden text out, reads the formatting
+            // that a fast-saved document keeps in its pieces, makes Word's own
+            // numbered and bulleted paragraphs list items (their numbers are
+            // not heard while `WordDocumentReader.speaksListNumbers` is off),
+            // and reads the main document's text boxes after the notes, so
+            // every .doc book is read again once more. At "1.3.0" it reads
+            // Word 6 and Word 95 documents too (which textutil read before on
+            // the Mac): their headings from the style sheet, their hidden
+            // text, tracked deletions, numbering and notes by the same
+            // policy, and Far East and Cyrillic text in the code page their
+            // fonts name, so every .doc book is read again once more.
+            return "1.3.0"
+        case .odt:
+            // OpenDocument text (FMT27) is read by TextMouth's own reader from
+            // "1.1.0": the document's own headings, the pages of its style
+            // breaks, master pages, and soft page breaks, hidden text left
+            // out, and notes after the text, so every such book is read again
+            // once.
+            return "1.1.0"
+        case .wordml:
+            // Word 2003 XML (FMT53) is read by TextMouth's own reader from
+            // "1.1.0", with the same policy for hidden text and notes. At
+            // "1.2.0" a row marked hidden (`w:trPr/w:hidden`) no longer hides
+            // the visible words in it, which each run's own toggle decides
+            // (the hidden row rule of `DOCXHiding`), so every such book is
+            // read again once more. At "1.3.0" a symbol (w:sym) and text
+            // typed in a symbol font are read through the tables by font
+            // that the Word 97 reader uses, so every such book is read again
+            // once more.
+            return "1.3.0"
         case .braille:
             // Braille gained its pages later, each braille page of a BRF or
             // a PEF (PG12), so its own case reads again only braille books
             // (V07). A BRL, which has no pages, shares the format: it is read
             // again once, as every braille book from before pages is, and
-            // then stamped.
-            return "1.0.0"
+            // then stamped. At "1.1.0" the page analyzer drops a running head
+            // that repeats on three pages or more (and takes a braille page
+            // number at its left), takes a Roman numeral print page change
+            // line out of the text, and reads a centered "Chapter" row that
+            // runs straight into an indented row as a heading, so every
+            // braille book is read again once; a book with none of those
+            // reads byte for byte as before. (The braille helper's own
+            // fixes, `brfdecode`'s, ride on this bump.) At "1.1.1" a running
+            // head that differs only by a part or volume number from the
+            // repeating one is left out too ("life of pi. part2" among
+            // "part1" pages); 1.1.0 shipped in 0.4.8, so books stamped
+            // 1.1.0 are read again once more. At "1.1.2" the longest line a
+            // book's width can be measured from leaves out the longest line
+            // of each of the longest twentieth of its pages
+            // (`BraillePageAnalyzer`'s `longestLine(ofPages:)`, FMT56), so a
+            // stray long line no longer widens the page and keeps its
+            // centered headings and page numbers from being found; 1.1.1
+            // shipped in 0.4.9, so every braille book is read again once
+            // more. A book of fewer than 20 pages, or one whose longest line
+            // is on more of its pages than that, reads byte for byte as
+            // before.
+            return "1.1.2"
         case .txt:
             // Plain text's form feeds begin pages (PG13), and its own case
             // reads again only plain text books (V07). Most hold no form
             // feed between words: each is read again once, its content.md
-            // byte for byte as before, and then stamped.
+            // byte for byte as before, and then stamped. At "1.0.1" the
+            // decoder recognizes UTF-16 in an alphabet and in Chinese,
+            // Japanese, and Korean, and UTF-32, written without a
+            // byte-order mark (`TextFileDecoder.unmarkedUnicode(in:)`), so a
+            // book of such a file, read before as UTF-8 with control
+            // characters in it (Cyrillic UTF-16 is valid UTF-8) or as
+            // Windows-1252, is read again once, and every other plain text
+            // book a second time, byte for byte as before. (Markdown has no
+            // page reader and no version: its books read the new way
+            // whenever their text is built again, by Redo Text Extraction or
+            // a stale cache, and a Markdown file imported from now on reads
+            // so at once.)
+            return "1.0.1"
+        case .mobi:
+            // A Kindle book of the MOBI family has pages when it is in KF8
+            // (FMT48): that format keeps the page-break elements of the EPUB
+            // it was made from, and they are read as pages. A MOBI 6 book
+            // has none. A hybrid file is read from its KF8 half from
+            // "1.0.0", which keeps the headings at the levels the author gave
+            // them, so every .mobi book is read again once. At "1.1.0" a soft
+            // hyphen is left out of a MOBI 6 book's words and contents too (a
+            // KF8 book's already were; a soft hyphen hid a word from search, was
+            // a hyphen in braille, and a pause in speech), a KF8 book's pieces
+            // that calibre cut are joined into chapters by a rule that gives
+            // an essay after a header its own chapter and a licence's opening
+            // words their licence's chapter, so every .mobi book (.azw3
+            // included) is read again once more.
+            return "1.1.0"
+        case .kfx:
+            // A KFX book (FMT52) has pages when it carries a print page
+            // list; one named APPROXIMATE_PAGE_LIST is a machine's guess and
+            // is not read as pages. The format has its own case and version.
+            return "1.0.0"
+        case .picture, .comic:
+            // Pictures of pages (FMT34) have their pages from their first
+            // reading: each picture, each page of a TIFF, and each picture of
+            // a comic book archive is a page of the book. Each format has its
+            // own case and version.
             return "1.0.0"
         default:
             return nil

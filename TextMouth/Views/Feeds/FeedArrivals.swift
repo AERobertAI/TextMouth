@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 import Foundation
 import UserNotifications
@@ -50,13 +54,19 @@ struct FeedArrivalAlert: Identifiable, Equatable {
     var title: String {
         let nouns = Set(arrivals.map(\.noun))
         let noun = nouns.count == 1 ? (nouns.first ?? .item) : .item
-        return "New \(noun.plural.capitalized)"
+        return noun.choose(
+            // Translators: Title of the alert shown after a refresh TextMouth made by itself brought new episodes. Title case.
+            episode: InterfaceText.line("feedArrivalAlert.title.episodes", "New Episodes"),
+            // Translators: Title of the alert shown after a refresh TextMouth made by itself brought new articles. Title case.
+            article: InterfaceText.line("feedArrivalAlert.title.articles", "New Articles"),
+            // Translators: Title of the alert shown after a refresh TextMouth made by itself brought new episodes and articles, or from several kinds of feed. Title case.
+            item: InterfaceText.line("common.newItems", "New Items"))
     }
 
     /// The alert's message: a sentence for each feed, "Planet Money: 2 new
     /// episodes."
     var message: String {
-        arrivals.map { FeedWording.arrivalSentence($0) }.joined(separator: " ")
+        SentenceWording.joined(arrivals.map { FeedWording.arrivalSentence($0) })
     }
 }
 
@@ -315,7 +325,15 @@ extension FeedWording {
     /// One feed's arrivals as the alert says them: "Planet Money: 2 new
     /// episodes."
     static func arrivalSentence(_ arrival: FeedArrival) -> String {
-        "\(arrival.feedTitle): \(arrival.count) new \(arrival.count == 1 ? arrival.noun.singular : arrival.noun.plural)."
+        let title = arrival.feedTitle
+        let count = arrival.count
+        return arrival.noun.choose(
+            // Translators: A sentence of the alert after a refresh brought new episodes: one feed's arrivals. %@ is the feed's title; %lld is how many new episodes.
+            episode: InterfaceText.line("feed.newEpisodes", "\(title): \(number: count) new episodes."),
+            // Translators: A sentence of the alert after a refresh brought new articles: one feed's arrivals. %@ is the feed's title; %lld is how many new articles.
+            article: InterfaceText.line("feed.newArticles", "\(title): \(number: count) new articles."),
+            // Translators: A sentence of the alert after a refresh brought new items, episodes and articles: one feed's arrivals. %@ is the feed's title; %lld is how many new items.
+            item: InterfaceText.line("feed.newItems", "\(title): \(number: count) new items."))
     }
 
     /// The notification of one feed's arrivals: titled with the feed, and
@@ -325,11 +343,29 @@ extension FeedWording {
         let body: String
         switch (arrival.count, arrival.latestTitle) {
         case (1, let title?):
-            body = "New \(arrival.noun.singular): “\(title)”"
-        case (_, let title?):
-            body = "\(arrival.count) new \(arrival.noun.plural), the newest “\(title)”"
-        case (_, nil):
-            body = "\(arrival.count) new \(arrival.count == 1 ? arrival.noun.singular : arrival.noun.plural)"
+            body = arrival.noun.choose(
+                // Translators: The body of the notification of one new episode. %@ is its title.
+                episode: InterfaceText.line("feed.notification.episode", "New episode: “\(title)”"),
+                // Translators: The body of the notification of one new article. %@ is its title.
+                article: InterfaceText.line("feed.notification.article", "New article: “\(title)”"),
+                // Translators: The body of the notification of one new item, an episode or an article. %@ is its title.
+                item: InterfaceText.line("feed.notification.item", "New item: “\(title)”"))
+        case (let count, let title?):
+            body = arrival.noun.choose(
+                // Translators: The body of the notification of new episodes. %lld is how many; %@ is the newest one's title.
+                episode: InterfaceText.line("feed.notification.episodesNewest", "\(number: count) new episodes, the newest “\(title)”"),
+                // Translators: The body of the notification of new articles. %lld is how many; %@ is the newest one's title.
+                article: InterfaceText.line("feed.notification.articlesNewest", "\(number: count) new articles, the newest “\(title)”"),
+                // Translators: The body of the notification of new items, episodes and articles. %lld is how many; %@ is the newest one's title.
+                item: InterfaceText.line("feed.notification.itemsNewest", "\(number: count) new items, the newest “\(title)”"))
+        case (let count, nil):
+            body = arrival.noun.choose(
+                // Translators: The body of the notification of new episodes when the newest one's title is not known. %lld is how many.
+                episode: InterfaceText.line("feed.notification.newEpisodes", "\(number: count) new episodes"),
+                // Translators: The body of the notification of new articles when the newest one's title is not known. %lld is how many.
+                article: InterfaceText.line("feed.notification.newArticles", "\(number: count) new articles"),
+                // Translators: The body of the notification of new items when the newest one's title is not known. %lld is how many.
+                item: InterfaceText.line("feed.notification.newItems", "\(number: count) new items"))
         }
         return FeedNotification(
             identifier: "feed-\(arrival.feedID.uuidString)-\(Int(date.timeIntervalSince1970))",
@@ -341,5 +377,8 @@ extension FeedWording {
 
     /// What the notifications setting's help says while notifications are
     /// not allowed.
-    static let notificationsRefused = "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth."
+    static var notificationsRefused: String {
+        // Translators: What the notifications setting's help says while macOS does not allow TextMouth to post notifications. System Settings and Notifications are macOS's own names, in the language of macOS.
+        InterfaceText.line("feed.notificationsRefused", "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.")
+    }
 }

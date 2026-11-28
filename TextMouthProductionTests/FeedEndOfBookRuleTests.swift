@@ -207,7 +207,7 @@ final class FeedEndOfBookRuleTests: FeedItemIndexTestCase {
             notificationCenter: notifications,
             initializeServices: false,
             userDefaults: makeSandboxedPreferences("FeedEndRuleSettings"),
-            configService: ConfigService(fileURL: configFile)
+            configService: makeConfigService(fileURL: configFile)
         )
         settings.endOfBookBehavior = global
         return FeedSetup(world: world, settings: settings, notifications: notifications, third: third, second: second, first: first)
