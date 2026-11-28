@@ -94,11 +94,11 @@ final class FeedUITests: TextMouthUITestCase {
             "Add Feed", "Cancel", Self.addressLabel, "A feed address, such as a link ending in .rss or .xml…", "Subscribe",
             "Folder to hold the feed's own folder", "Search for a podcast",
         ], in: elements)
-        try audit(
-            app,
-            screen: "Add Feed sheet",
-            accepting: [.navigationTitle("Add Feed"), .barItem("Cancel")]
-        )
+        let accepted: [Accepted] = [
+            .navigationTitle("Add Feed"), .barItem("Cancel"), .dimmedButton("Subscribe"), .dimmedButton("Search"),
+            .clippedField(Self.addressLabel),
+        ] + Accepted.sectionHeader("Search for a podcast")
+        try audit(app, screen: "Add Feed sheet", accepting: accepted)
 
         app.buttons["Cancel"].tap()
         XCTAssertTrue(app.navigationBars["Library"].waitForExistence(timeout: Self.patience), "Cancel did not return to the Library:\n\(app.debugDescription)")

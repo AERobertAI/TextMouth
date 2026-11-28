@@ -31,7 +31,7 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         let elements = try elementsOfSheet(titled: "Add to Library", in: app)
         let note = Accepted.onlyOnTheMacNote.label
         assertOrder(["Add to Library", "Cancel", "Open Book…", "Import Folder…", "Add Feed…", note], in: elements)
-        try audit(app, screen: "Add to Library sheet", accepting: [.navigationTitle("Add to Library"), .barItem("Cancel"), .onlyOnTheMacNote])
+        try audit(app, screen: "Add to Library sheet", accepting: [.navigationTitle("Add to Library"), .barItem("Cancel"), .onlyOnTheMacNote, .addFeedRow, .addFeedSummary])
     }
 
     // MARK: - Settings

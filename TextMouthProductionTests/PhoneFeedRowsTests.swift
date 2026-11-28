@@ -46,8 +46,8 @@ final class PhoneFeedRowsTests: XCTestCase {
         let folders = try XCTUnwrap(rows.sections.first { $0.id == "folders" })
         XCTAssertEqual(folders.rows.count, 1, "the feed's own folder was listed")
         XCTAssertEqual(folders.rows.first?.id, .folder(world.bookFolder.id))
-        XCTAssertEqual(folders.rows.first?.label, "\(world.bookFolder.name), 0 books, 1 feed")
-        XCTAssertEqual(folders.rows.first?.detail, "0 books, 1 feed")
+        XCTAssertEqual(folders.rows.first?.label, "\(world.bookFolder.name), 1 feed")
+        XCTAssertEqual(folders.rows.first?.detail, "1 feed")
     }
 
     /// With no feed there is no Feeds section, and a library of books lists as it did.
@@ -218,7 +218,7 @@ final class PhoneFeedRowsTests: XCTestCase {
         XCTAssertTrue(arrival.hasPrefix("The Tactile Atlas, Feed, 2 episodes"), arrival)
 
         let parent = PhoneRowWording.folderArrival(at: world.folder.path, in: world.library.library, feedFolders: feedFolders)
-        XCTAssertTrue(parent.hasSuffix(", 0 books, 1 feed"), parent)
+        XCTAssertTrue(parent.hasSuffix(", 1 feed"), parent)
     }
 
     // MARK: - What Republishes
