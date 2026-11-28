@@ -34,6 +34,8 @@ struct SyncRecordResult: Equatable, Sendable {
     /// How many book removals were held back, not sent: a library emptied at once (index recovery, a
     /// wrong folder) is not a person's removal of every book.
     var heldRemovals = 0
+    /// How many feed removals were held back, not sent, the same way (FR56).
+    var heldFeedRemovals = 0
 }
 
 /// What names this device in the store.
@@ -229,29 +231,23 @@ actor SyncEngine {
         let projection = SyncProjection.of(library, contents: contents(), feeds: feeds)
         launchHold.observeLaunch(baseline: baseline, now: projection)
         var changes = SyncMerge.changes(from: baseline, to: projection, hold: launchHold)
-        // A feed deleted here takes the copies of it that other devices subscribed apart (FR56).
+
+        // A mass removal is not a person's: index recovery or a wrong folder empties the library, or the
+        // feeds (FR56), at once. Books and feeds are each measured against their own number.
+        let heldBooks = massRemoval(in: changes) { if case .book(_, .presence) = $0 { return true } else { return false } }
+        let heldFeeds = massRemoval(in: changes) { if case .feed(_, .presence) = $0 { return true } else { return false } }
+        heldKeys = heldBooks.union(heldFeeds)
+        for key in heldKeys { changes[key] = nil }
+        if !heldKeys.isEmpty {
+            DiagnosticLog.event(.storage, "SYNC_RUN: \(heldBooks.count) book and \(heldFeeds.count) feed removals were held back, not sent, as they are most of the library or too many at once") // l10n: no (debug log text)
+        }
+        // A feed deleted here takes the copies of it that other devices subscribed apart (FR56), once its own
+        // removal is sent: a copy is never counted toward a mass removal, nor sent while its feed's is held.
         if let feeds {
             let copies = SyncFeedValues.removalsOfCopies(removedBy: changes, baseline: baseline, winners: registers.entries, feeds: feeds)
             changes.merge(copies, uniquingKeysWith: { reported, _ in reported })
         }
 
-        // A mass removal is not a person's: index recovery or a wrong folder empties the library at once.
-        let removals = changes.filter { key, value in
-            if case .book(_, .presence) = key { return value == .null }
-            return false
-        }.keys
-        let known = baseline.values.keys.filter { if case .book(_, .presence) = $0 { return true } else { return false } }.count
-        var held = 0
-        // The removals the person confirmed with Sync Now (`confirmHeldRemovals`) are theirs; any other is held.
-        let unconfirmed = removals.filter { !confirmedKeys.contains($0) }
-        if removals.count > Self.massRemovalLimit || (known >= 4 && removals.count * 2 > known), !unconfirmed.isEmpty {
-            for key in unconfirmed { changes[key] = nil }
-            held = unconfirmed.count
-            heldKeys = Set(unconfirmed)
-            DiagnosticLog.event(.storage, "SYNC_RUN: \(held) book removals were held back, not sent, as they are most of the library or too many at once") // l10n: no (debug log text)
-        }
-
-        if held == 0 { heldKeys = [] }
         let ordered = changes.sorted { "\($0.key)" < "\($1.key)" }
         let joining = outbox.device.hasRecordedLibrary != true
         let recorded = try append(
@@ -262,7 +258,19 @@ actor SyncEngine {
             try outbox.updateDevice { $0.hasRecordedLibrary = true }
         }
         try stopAfter?(.record)
-        return SyncRecordResult(recorded: recorded, heldRemovals: held)
+        return SyncRecordResult(recorded: recorded, heldRemovals: heldBooks.count, heldFeedRemovals: heldFeeds.count)
+    }
+
+    /// The removals of one kind (`isKind`: the presence keys of books, or of feeds) that `changes`
+    /// reports and that look like a mass removal, to be held back: more than `massRemovalLimit` at
+    /// once, or more than half of the kind's at least four in the baseline. Empty when they look
+    /// like a person's, and empty of the removals the person confirmed with Sync Now
+    /// (`confirmHeldRemovals`), which are theirs.
+    private func massRemoval(in changes: [SyncKey: JSONValue], ofKind isKind: (SyncKey) -> Bool) -> Set<SyncKey> {
+        let removals = changes.filter { key, value in isKind(key) && value == .null }.keys
+        let known = baseline.values.keys.filter(isKind).count
+        guard removals.count > Self.massRemovalLimit || (known >= 4 && removals.count * 2 > known) else { return [] }
+        return Set(removals.filter { !confirmedKeys.contains($0) })
     }
 
     /// The person chose Sync Now while removals were held: exactly those removals are now theirs to send. Any other

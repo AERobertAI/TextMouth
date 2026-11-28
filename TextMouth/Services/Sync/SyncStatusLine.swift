@@ -38,7 +38,9 @@ enum SyncStatusLine {
             break
         }
         // Removals held back as a mistake are said before anything is called up to date.
-        if status.heldRemovals > 0 { return SyncWording.heldRemovals(books: status.heldRemovals, device: device) }
+        if status.heldRemovals > 0 || status.heldFeedRemovals > 0 {
+            return SyncWording.heldRemovals(books: status.heldRemovals, feeds: status.heldFeedRemovals, device: device)
+        }
         if status.isOffline { return SyncWording.statusOffline(changes: status.pendingChanges, device: device) }
         if status.pendingChanges > 0 { return SyncWording.statusUploading(changes: status.pendingChanges) }
         if case .notDownloaded? = status.problem { return SyncWording.statusNotDownloaded(isPhone: isPhone) }

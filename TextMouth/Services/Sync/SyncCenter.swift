@@ -378,7 +378,7 @@ struct SyncCenterEnvironment {
         environment.announce(SyncWording.announceSyncing)
         // The removals held now are the ones the person is answering: the confirmation is asked of the engine at once,
         // ahead of any record made after the press, and the run waits for it.
-        if status.heldRemovals > 0 {
+        if status.heldRemovals > 0 || status.heldFeedRemovals > 0 {
             confirmation = Task { [weak self] in
                 guard let engine = await self?.readyEngine() else { return }
                 await engine.confirmHeldRemovals()
@@ -592,6 +592,7 @@ struct SyncCenterEnvironment {
         // A record that throws leaves what was held as it was.
         if let result = try? await engine.record(library: library, feeds: feeds) {
             status.heldRemovals = result.heldRemovals
+            status.heldFeedRemovals = result.heldFeedRemovals
         }
         status.pendingChanges = await engine.pendingChanges()
     }
@@ -730,6 +731,7 @@ struct SyncCenterEnvironment {
             let sourceFeeds = host.syncFeeds
             let recorded = try await engine.record(library: source, feeds: sourceFeeds)
             status.heldRemovals = recorded.heldRemovals
+            status.heldFeedRemovals = recorded.heldFeedRemovals
             let application = await engine.application(for: source, feeds: sourceFeeds, voices: host.availableVoiceIDs)
             // Who wrote each winning value, by name, for the host's words.
             deviceNames.merge(result.read.names) { _, new in new }

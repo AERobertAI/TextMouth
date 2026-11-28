@@ -92,6 +92,8 @@ struct SyncStatus: Equatable, Sendable {
     var booksBackedUp: Int?, booksToBackUp: Int?
     /// How many book removals were held back, not sent, as a mass removal (index recovery, a wrong folder).
     var heldRemovals = 0
+    /// How many feed removals were held back the same way (FR56).
+    var heldFeedRemovals = 0
     /// How many books the setting "Books you open or keep" would take off this device but kept, because their copies in
     /// iCloud Drive are not confirmed yet (FR45); never a count of what was removed.
     var removalsWaiting = 0
