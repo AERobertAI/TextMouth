@@ -198,15 +198,16 @@ enum PhoneReaderControls {
     /// that Play always shows below it on the first screen.
     static let bookContentShareOfScreen = 0.55
 
-    /// Book content's height (FR48): about twelve lines of body text
-    /// (`scaled`, which grows with the text size), but never more than
+    /// Book content's height (FR48): the lines Settings choose, twelve by
+    /// default (`scaled`, which grows with the text size, FR54), but never more than
     /// `bookContentShareOfScreen` of the `visible` height. At the largest
     /// accessibility sizes twelve lines are taller than the screen, and a text
     /// area that fills it leaves a finger nothing outside it to scroll the
     /// screen by, so Play could not be reached by touch.
     ///
     /// - Parameters:
-    ///   - scaled: Twelve lines' height at the text size in force, in points.
+    ///   - scaled: The chosen lines' height at the text size in force, in
+    ///     points (`PhoneBookContentHeight.scaled(fromTwelveLines:)`).
     ///   - visible: The height of the reader's scrolling column, in points.
     static func bookContentHeight(scaled: Double, visible: Double) -> Double {
         guard visible > 0 else { return scaled }

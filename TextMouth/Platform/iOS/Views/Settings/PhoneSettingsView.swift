@@ -199,6 +199,7 @@ struct PhoneSettingsView: View {
             switchRow(.sayPageInWhereAmI, isOn: noted($settings.saysPageInWhereAmI))
         case .reading:
             switchRow(.followInBraille, isOn: followsInBraille)
+            choiceRow(.bookContentHeight, value: bookContentHeight.title)
             switchRow(.hideSkipButtons, isOn: hidesSkipsFromVoiceOver)
         case .braille:
             // The table braille files are read with from now on, a row opening the tables of every language, then the
@@ -443,6 +444,15 @@ struct PhoneSettingsView: View {
                 settings.brailleTable = id
                 noteChange()
             }
+        case .bookContentHeight:
+            PhoneChoiceSheet(
+                title: row.title,
+                choices: PhoneSettingsModel.bookContentHeightChoices,
+                selected: bookContentHeight
+            ) { height in
+                PhoneDefaults.setBookContentHeight(height, in: TextMouthRuntime.current.preferences)
+                noteChange()
+            }
         case .brailleFileCode:
             PhoneChoiceSheet(
                 title: row.title,
@@ -600,6 +610,12 @@ struct PhoneSettingsView: View {
     /// Follow in Braille, as kept in `PhoneDefaults`.
     private var followsInBraille: Binding<Bool> {
         phonePreference(get: PhoneDefaults.followInBraille(in:), set: PhoneDefaults.setFollowInBraille(_:in:))
+    }
+
+    /// How tall the reader's Book content stands (FR54), as kept in
+    /// `PhoneDefaults`.
+    private var bookContentHeight: PhoneBookContentHeight {
+        PhoneDefaults.bookContentHeight(in: TextMouthRuntime.current.preferences)
     }
 
     /// Hide skip buttons from VoiceOver (FR54), as kept in `PhoneDefaults`.

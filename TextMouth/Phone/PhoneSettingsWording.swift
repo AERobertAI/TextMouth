@@ -67,6 +67,12 @@ enum PhoneSettingsWording {
         // Translators: Switch in iPhone Settings: while a book plays, the book's text moves on with the speech, for a braille display.
         InterfaceText.line("phoneSettings.followInBraille", "Follow in Braille")
     }
+    /// The row choosing how tall the reader's Book content stands (FR54).
+    static var bookContentHeight: String {
+        // Translators: Label and title of the iPhone Settings row that chooses how tall the reader's Book content (the book's text area) stands. "Book content" is the element's name as VoiceOver reads it.
+        InterfaceText.line("phoneSettings.bookContentHeight", "Book content height")
+    }
+
     /// The switch that hides Skip backward and Skip forward from VoiceOver
     /// (FR54).
     static var hideSkipButtons: String {

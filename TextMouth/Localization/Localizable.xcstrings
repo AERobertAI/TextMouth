@@ -547729,6 +547729,54 @@
         }
       }
     },
+    "phoneSettings.bookContentHeight" : {
+      "comment" : "Label and title of the iPhone Settings row that chooses how tall the reader's Book content (the book's text area) stands. \"Book content\" is the element's name as VoiceOver reads it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Book content height"
+          }
+        }
+      }
+    },
+    "phoneSettings.bookContentHeight.medium" : {
+      "comment" : "A choice of the Book content height row in iPhone Settings: about twelve lines, the default.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medium"
+          }
+        }
+      }
+    },
+    "phoneSettings.bookContentHeight.short" : {
+      "comment" : "A choice of the Book content height row in iPhone Settings: the book's text area on the reader is about six lines tall.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Short"
+          }
+        }
+      }
+    },
+    "phoneSettings.bookContentHeight.tall" : {
+      "comment" : "A choice of the Book content height row in iPhone Settings: about eighteen lines.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tall"
+          }
+        }
+      }
+    },
     "phoneSettings.brailleCaption" : {
       "comment" : "The caption under the Braille code row in the iPhone's Settings. A book keeps the braille code it was added with.",
       "extractionState" : "manual",

@@ -51,6 +51,7 @@ final class PhoneSettingsModelTests: XCTestCase {
                 .brailleFileCode, "Braille file characters", "Braille file characters",
                 "How a BRF or BRL file writes each braille cell. Most files use North American Braille ASCII."
             ),
+            (.bookContentHeight, "Book content height", "Book content height", nil),
             (
                 .interfaceLanguage, "Interface Language", "Interface Language",
                 "Chooses the language of TextMouth's menus, windows, and messages. The change applies at once."
@@ -275,6 +276,25 @@ final class PhoneSettingsModelTests: XCTestCase {
     }
 
     // MARK: - Fixed Lists
+
+    /// Book content height offers Short, Medium, and Tall, shortest first,
+    /// six, twelve, and eighteen lines, Medium the default and round 1's
+    /// twelve lines (FR54).
+    func testBookContentHeightOffersThreeHeights() {
+        let choices = PhoneSettingsModel.bookContentHeightChoices
+        XCTAssertEqual(choices.map(\.id), [.short, .medium, .tall])
+        XCTAssertEqual(choices.map(\.label), ["Short", "Medium", "Tall"])
+        XCTAssertEqual(PhoneBookContentHeight.allCases.map(\.lines), [6, 12, 18])
+        XCTAssertEqual(PhoneBookContentHeight.default, .medium)
+        XCTAssertEqual(PhoneBookContentHeight.medium.scaled(fromTwelveLines: 300), 300)
+        XCTAssertEqual(PhoneBookContentHeight.short.scaled(fromTwelveLines: 300), 150)
+        XCTAssertEqual(PhoneBookContentHeight.tall.scaled(fromTwelveLines: 300), 450)
+        // Tall is still held to 55 percent of the screen, so Play shows below it.
+        XCTAssertEqual(
+            PhoneReaderControls.bookContentHeight(scaled: PhoneBookContentHeight.tall.scaled(fromTwelveLines: 300), visible: 560),
+            308, accuracy: 0.001
+        )
+    }
 
     /// A text book can move by every one of the Mac's units, in its order.
     func testTextBooksOfferEveryUnit() {

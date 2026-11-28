@@ -124,6 +124,23 @@ enum PhoneDefaults {
         preferences.set(isOn, forKey: followInBrailleKey)
     }
 
+    // MARK: - Book Content's Height
+
+    /// The preference that holds how tall the reader's Book content stands
+    /// (FR54): Settings' "Book content height" under Reading.
+    nonisolated static let bookContentHeightKey = "phoneBookContentHeight"
+
+    /// How tall Book content stands: Medium, its twelve lines, until the
+    /// listener chooses, or when what is kept names no height.
+    static func bookContentHeight(in preferences: UserDefaults) -> PhoneBookContentHeight {
+        preferences.string(forKey: bookContentHeightKey).flatMap(PhoneBookContentHeight.init(rawValue:)) ?? .default
+    }
+
+    /// Keeps how tall Book content stands.
+    static func setBookContentHeight(_ height: PhoneBookContentHeight, in preferences: UserDefaults) {
+        preferences.set(height.rawValue, forKey: bookContentHeightKey)
+    }
+
     // MARK: - Hide Skip Buttons from VoiceOver
 
     /// The preference that holds whether VoiceOver passes over Skip backward

@@ -33,8 +33,9 @@ struct PhoneReaderView: View {
 
     /// At accessibility text sizes the grid becomes one column.
     @Environment(\.dynamicTypeSize) private var typeSize
-    /// Book content's height: about twelve lines of body text at any size,
-    /// the reader's main area, as Voice Dream Reader's text is (FR48).
+    /// Twelve lines of body text at any size: Book content's height at
+    /// Medium, the reader's main area, as Voice Dream Reader's text is (FR48);
+    /// Settings' Book content height scales it (FR54).
     @ScaledMetric(relativeTo: .body) private var textHeight: CGFloat = 300
     /// Play's height, the same in every book.
     @ScaledMetric(relativeTo: .title2) private var playHeight: CGFloat = 88
@@ -132,17 +133,20 @@ struct PhoneReaderView: View {
     /// Book content, Play, and the grid. No `accessibilityElement(children:)`
     /// wraps it, or the UIKit views would vanish from VoiceOver.
     private var column: some View {
-        VStack(spacing: 12) {
+        // Book content's chosen lines at the text size in force (FR54), read
+        // here, as the reader is drawn, and not inside the frame's closure.
+        let contentLines = Self.contentHeight.scaled(fromTwelveLines: Double(textHeight))
+        return VStack(spacing: 12) {
             PhoneBookContent(
                 model: model,
                 snapshot: session.snapshot,
                 followsInBraille: { PhoneReaderView.followsInBraille }
             )
-            // Twelve lines, but never so tall that Play falls below the first
-            // screen at the largest text sizes: the share is of the reader's
-            // scroll view, the nearest container.
+            // The lines Settings choose, but never so tall that Play falls
+            // below the first screen at the largest text sizes: the share is
+            // of the reader's scroll view, the nearest container.
             .containerRelativeFrame(.vertical) { visible, _ in
-                CGFloat(PhoneReaderControls.bookContentHeight(scaled: Double(textHeight), visible: Double(visible)))
+                CGFloat(PhoneReaderControls.bookContentHeight(scaled: contentLines, visible: Double(visible)))
             }
 
             playRow
@@ -487,6 +491,12 @@ struct PhoneReaderView: View {
                 return UIAccessibilityCustomRotor(name: PhoneReaderVocabulary.bookmarks, itemSearch: search)
             }
         }
+    }
+
+    /// Settings' Book content height, read from preferences as the reader is
+    /// drawn (FR54).
+    private static var contentHeight: PhoneBookContentHeight {
+        PhoneDefaults.bookContentHeight(in: TextMouthRuntime.current.preferences)
     }
 
     /// Whether Settings' "Hide skip buttons from VoiceOver" is on, read from

@@ -14,6 +14,7 @@ final class PhoneSettingsDefaultsTests: XCTestCase {
         XCTAssertEqual(PhoneDefaults.followInBrailleKey, "phoneFollowInBraille")
         XCTAssertEqual(PhoneDefaults.shakeRestartsSleepTimerKey, "phoneShakeRestartsSleepTimer")
         XCTAssertEqual(PhoneDefaults.hidesSkipsFromVoiceOverKey, "phoneHidesSkipsFromVoiceOver")
+        XCTAssertEqual(PhoneDefaults.bookContentHeightKey, "phoneBookContentHeight")
     }
 
     /// Nothing stored, the rows say the defaults the reviews gave: Sentence
@@ -27,6 +28,20 @@ final class PhoneSettingsDefaultsTests: XCTestCase {
         XCTAssertFalse(PhoneDefaults.followInBraille(in: store))
         XCTAssertTrue(PhoneDefaults.shakeRestartsSleepTimer(in: store))
         XCTAssertFalse(PhoneDefaults.hidesSkipsFromVoiceOver(in: store))
+        XCTAssertEqual(PhoneDefaults.bookContentHeight(in: store), .medium)
+    }
+
+    /// Book content height is kept by its raw value and reads back; what
+    /// names no height reads as Medium (FR54).
+    func testBookContentHeightIsKeptAsItIsChosen() {
+        let store = makeSandboxedPreferences("PhoneSettingsDefaults")
+        for height in PhoneBookContentHeight.allCases {
+            PhoneDefaults.setBookContentHeight(height, in: store)
+            XCTAssertEqual(PhoneDefaults.bookContentHeight(in: store), height)
+        }
+        XCTAssertEqual(store.string(forKey: "phoneBookContentHeight"), "tall")
+        store.set("enormous", forKey: "phoneBookContentHeight")
+        XCTAssertEqual(PhoneDefaults.bookContentHeight(in: store), .medium)
     }
 
     /// Hide skip buttons from VoiceOver is kept as a Boolean, and reads back
