@@ -124,6 +124,9 @@ final class SyncFeedHostTests: XCTestCase {
         let failed = await world.center.applySync(SyncFeedApplication(feedsToRemove: [show.id]))
         XCTAssertEqual(failed, [])
         XCTAssertNil(world.center.store.record(of: show.id))
+        // Its library folder, empty here, is the deleting device's to remove: it may hold a book
+        // there that hasn't arrived yet, and the folder's own keys carry what it chose.
+        XCTAssertEqual(world.library.library.folders.map(\.id), [world.bookFolder.id])
     }
 
     /// Before the records load nothing lands, and every feed named is reported not landed.

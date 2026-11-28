@@ -46,7 +46,8 @@ extension FeedCenter {
             }
             do {
                 // Nil: no record (gone already, which is the merge's aim) or a deletion under way.
-                if try await deleteFeed(feedID) == nil, store.record(of: feedID) != nil { failed.insert(feedID) }
+                // Its library folder follows the folder's own keys, as the deleting device left it.
+                if try await deleteFeed(feedID, leavingLibraryFolder: true) == nil, store.record(of: feedID) != nil { failed.insert(feedID) }
             } catch {
                 failed.insert(feedID)
                 DiagnosticLog.event(.feeds, "FEED_SYNC: a feed another device deleted stays for now (\(type(of: error)))") // l10n: no (debug log text, which stays English)
