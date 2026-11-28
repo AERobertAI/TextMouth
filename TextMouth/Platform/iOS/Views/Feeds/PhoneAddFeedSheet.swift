@@ -82,11 +82,10 @@ struct PhoneAddFeedSheet: View {
                         onSubscribed(feed)
                     }
                 }
-                // A page that names several feeds replaces the address: focus goes to the first of them.
+                // A page that names several feeds replaces the address: focus goes to the first of them. Back takes them
+                // away with the Back button VoiceOver was on, so focus returns to the address, which they replaced.
                 .onChange(of: model.isChoosing) { _, choosing in
-                    if choosing {
-                        PhoneListFocus.focus(PhoneAddFeedElement.link(0), proxy: proxy, state: $focus)
-                    }
+                    PhoneListFocus.focus(choosing ? PhoneAddFeedElement.link(0) : .address, proxy: proxy, state: $focus)
                 }
                 // The places are a list of the app's own, never a menu, which wouldn't return focus (the spec, "Choices").
                 .sheet(isPresented: $isChoosingFolder, onDismiss: {
