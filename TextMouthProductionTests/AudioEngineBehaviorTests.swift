@@ -1424,6 +1424,60 @@ final class AudioEngineBehaviorTests: XCTestCase {
         let scale = pow(10, Double(places))
         return (value * scale).rounded() / scale
     }
+
+    // MARK: - The Render's Wait for Its Write
+
+    /// A buffer of `frames` frames of silence, mono at 22,050 Hz, for a
+    /// render's delivery; it is never played.
+    private static func silentBuffer(frames: Int) throws -> AVAudioPCMBuffer {
+        let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate: 22_050, channels: 1))
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(max(frames, 1))))
+        buffer.frameLength = AVAudioFrameCount(frames)
+        return buffer
+    }
+
+    /// The render's wait ends at the synthesizer's finish or cancel, which
+    /// signal the semaphore, and says the write delivered its last piece.
+    func testARendersWaitEndsAtTheSynthesizersFinish() {
+        let semaphore = DispatchSemaphore(value: 0)
+        let delivery = SpeechBufferDelivery(onBuffer: { _ in }, waking: semaphore)
+        semaphore.signal()
+
+        XCTAssertTrue(AudioEngineService.waitForWrite(waking: semaphore, delivery: delivery, limit: 5, quietAfterSegmentEnd: 5))
+    }
+
+    /// An empty buffer, the end of one of the synthesizer's segments (about
+    /// a sentence on macOS 27), does not end the render's wait: the wait
+    /// goes on until the quiet after it reaches its limit, the fallback for
+    /// a synthesizer that never reports its finish. Ending at the first
+    /// empty buffer kept one sentence of each chapter, and the reader played
+    /// it and skipped to the next chapter.
+    func testASegmentsEndAloneDoesNotEndARendersWaitBeforeTheQuietLimit() throws {
+        let semaphore = DispatchSemaphore(value: 0)
+        let pieces = OSAllocatedUnfairLock(initialState: 0)
+        let delivery = SpeechBufferDelivery(onBuffer: { _ in pieces.withLock { $0 += 1 } }, waking: semaphore)
+        delivery.deliver(try Self.silentBuffer(frames: 100))
+        delivery.deliver(try Self.silentBuffer(frames: 0))
+        let started = ContinuousClock.now
+
+        XCTAssertTrue(AudioEngineService.waitForWrite(waking: semaphore, delivery: delivery, limit: 5, quietAfterSegmentEnd: 0.5))
+
+        XCTAssertGreaterThanOrEqual(started.duration(to: .now), .seconds(0.5), "a segment's end ended the wait at once")
+        XCTAssertLessThan(started.duration(to: .now), .seconds(4))
+        delivery.deliver(try Self.silentBuffer(frames: 100))
+        XCTAssertEqual(pieces.withLock { $0 }, 1, "a piece reached the render after its wait ended")
+    }
+
+    /// A write that neither finishes nor ends a segment is waited for only
+    /// to the limit, and its wait says it did not deliver its last piece.
+    func testARendersWaitGivesUpAtItsLimit() {
+        let semaphore = DispatchSemaphore(value: 0)
+        let delivery = SpeechBufferDelivery(onBuffer: { _ in }, waking: semaphore)
+        let started = ContinuousClock.now
+
+        XCTAssertFalse(AudioEngineService.waitForWrite(waking: semaphore, delivery: delivery, limit: 0.5, quietAfterSegmentEnd: 0.1))
+        XCTAssertLessThan(started.duration(to: .now), .seconds(4))
+    }
 }
 
 /// The slices an engine reports scheduling, kept under a lock, since the

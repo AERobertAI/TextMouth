@@ -100,6 +100,11 @@ struct SystemSpeechBufferSynthesizer: SpeechBufferSynthesizing {
         var firstBufferPerUnit: TimeInterval
         /// The time from each buffer to the next, in seconds.
         var betweenBuffers: TimeInterval
+        /// The quiet after an empty buffer, the end of one of the
+        /// synthesizer's segments, after which the write counts as finished
+        /// although the synthesizer never said so
+        /// (`SpeechBufferDelivery.quietAfterSegmentEnd`).
+        var afterSegmentEnd: TimeInterval = SpeechBufferDelivery.quietAfterSegmentEnd
 
         /// The app's limits.
         ///
@@ -190,21 +195,27 @@ struct SystemSpeechBufferSynthesizer: SpeechBufferSynthesizing {
         writer.start(
             Self.speechUtterance(for: utterance, in: voice),
             onBuffer: { buffer in delivery.deliver(buffer) },
+            onFinish: { wake.signal() },
             onCancel: {
                 refused.withLock { $0 = true }
                 wake.signal()
             }
         )
 
-        // Wait for the last buffer, a refusal, or a failure of `onBuffer`,
-        // a slice at a time, looking at Stop and the stall limits between
-        // slices.
+        // Wait for the synthesizer's finish, a refusal, or a failure of
+        // `onBuffer`, a slice at a time, looking at Stop, the quiet after a
+        // segment's end, and the stall limits between slices.
         let firstBufferLimit = stallLimits.firstBuffer(forUnits: utterance.text.utf16.count)
         while wake.wait(timeout: .now() + Self.waitSlice) == .timedOut {
             if cancellation.isCancelled {
                 delivery.end()
                 writer.stop()
                 throw CancellationError()
+            }
+            // A synthesizer that never reports its finish has finished once
+            // nothing has followed a segment's end for the limit.
+            if delivery.endIfQuietAfterSegmentEnd(limit: stallLimits.afterSegmentEnd) {
+                break
             }
             if delivery.endIfStalled(firstBufferLimit: firstBufferLimit, betweenBuffersLimit: stallLimits.betweenBuffers) {
                 writer.stop()
@@ -265,25 +276,37 @@ struct SystemSpeechBufferSynthesizer: SpeechBufferSynthesizing {
 protocol SpeechBufferWriting: AnyObject {
     /// Starts writing `utterance` into buffers, never aloud. Each buffer goes
     /// to `onBuffer` as it comes, on whichever thread the synthesizer
-    /// delivers it (the Mac's synthesizer delivers them on the main thread),
-    /// the last one empty. Should the speech engine cancel the utterance on
-    /// its own, `onCancel` is called.
-    func start(_ utterance: AVSpeechUtterance, onBuffer: @escaping (AVAudioBuffer) -> Void, onCancel: @escaping @Sendable () -> Void)
+    /// delivers it (the Mac's synthesizer delivers them on the main thread).
+    /// An empty buffer ends one of the synthesizer's segments, not the
+    /// utterance: macOS 27 sends one after about every sentence. Once the
+    /// last buffer has come, `onFinish` is called; should the speech engine
+    /// cancel the utterance on its own, `onCancel` is called instead.
+    func start(
+        _ utterance: AVSpeechUtterance,
+        onBuffer: @escaping (AVAudioBuffer) -> Void,
+        onFinish: @escaping @Sendable () -> Void,
+        onCancel: @escaping @Sendable () -> Void
+    )
     /// Stops the write at once.
     func stop()
 }
 
 /// The app's `SpeechBufferWriting`: a fresh `AVSpeechSynthesizer` for one
-/// write, whose cancel it relays.
+/// write, whose finish and cancel it relays.
 final class AVSpeechBufferWriter: SpeechBufferWriting {
     /// The synthesizer the write uses, and only this write.
     private let synthesizer = AVSpeechSynthesizer()
-    /// Relays the synthesizer's cancel. The synthesizer's delegate is weak,
-    /// so the relay is held here for the write's length.
-    private var relay: SpeechCancelRelay?
+    /// Relays the synthesizer's finish and cancel. The synthesizer's
+    /// delegate is weak, so the relay is held here for the write's length.
+    private var relay: SpeechWriteRelay?
 
-    func start(_ utterance: AVSpeechUtterance, onBuffer: @escaping (AVAudioBuffer) -> Void, onCancel: @escaping @Sendable () -> Void) {
-        let relay = SpeechCancelRelay(onCancel: onCancel)
+    func start(
+        _ utterance: AVSpeechUtterance,
+        onBuffer: @escaping (AVAudioBuffer) -> Void,
+        onFinish: @escaping @Sendable () -> Void,
+        onCancel: @escaping @Sendable () -> Void
+    ) {
+        let relay = SpeechWriteRelay(onFinish: onFinish, onCancel: onCancel)
         self.relay = relay
         synthesizer.delegate = relay
         synthesizer.write(utterance, toBufferCallback: onBuffer)
@@ -300,18 +323,37 @@ final class AVSpeechBufferWriter: SpeechBufferWriting {
     }
 }
 
-/// The delegate that tells a write that its synthesizer cancelled the
-/// utterance, which, while the write still holds it, is the speech engine
-/// refusing the text (see `SpeechMarkupGuard`). It is Sendable, as every
-/// delegate of a synthesizer is (`NS_SWIFT_SENDABLE`), with nothing but a
-/// Sendable closure in it.
-private final class SpeechCancelRelay: NSObject, AVSpeechSynthesizerDelegate {
-    /// Called once the synthesizer cancels.
+/// The delegate that tells a write of `AVSpeechSynthesizer.write(_:toBufferCallback:)`
+/// how it ended, for the speech export's writes and `AudioEngineService`'s
+/// renders alike:
+/// - **finished**: the synthesizer has delivered its last buffer. This, and
+///   not an empty buffer, is the write's end: on macOS 27 the synthesizer
+///   sends an empty buffer after each of its segments, about a sentence
+///   each, and the finish only after the last (probed November 28, 2026). A
+///   render that took the first empty buffer for its end kept one sentence
+///   of each chapter, and the reader moved on to the next chapter after it.
+/// - **cancelled**: while the write still holds it, the speech engine
+///   refused the text (see `SpeechMarkupGuard`). Measured offline, a refused
+///   write made no buffer callback at all and was cancelled within 0.03 s,
+///   so only the cancel wakes the wait before its limit.
+///
+/// It is Sendable, as every delegate of a synthesizer is
+/// (`NS_SWIFT_SENDABLE`), with nothing but Sendable closures in it.
+final class SpeechWriteRelay: NSObject, AVSpeechSynthesizerDelegate {
+    /// Called once the synthesizer finishes the utterance.
+    private let onFinish: @Sendable () -> Void
+    /// Called once the synthesizer cancels the utterance.
     private let onCancel: @Sendable () -> Void
 
-    /// A relay calling `onCancel`.
-    init(onCancel: @escaping @Sendable () -> Void) {
+    /// A relay calling `onFinish` at the utterance's finish and `onCancel`
+    /// at its cancel.
+    init(onFinish: @escaping @Sendable () -> Void, onCancel: @escaping @Sendable () -> Void) {
+        self.onFinish = onFinish
         self.onCancel = onCancel
+    }
+
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        onFinish()
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
@@ -340,8 +382,8 @@ final class SpeechBufferDelivery {
     private let lock = NSLock()
     /// Where each buffer goes: the caller's.
     private let onBuffer: (AVAudioPCMBuffer) throws -> Void
-    /// The waiting thread's semaphore: signalled at the last buffer and when
-    /// `onBuffer` fails.
+    /// The waiting thread's semaphore: signalled when `onBuffer` fails (the
+    /// synthesizer's finish and cancel signal it through the write's relay).
     private let wake: DispatchSemaphore
     /// Whether the write has ended, after which nothing is handed on.
     private var hasEnded = false
@@ -356,6 +398,18 @@ final class SpeechBufferDelivery {
     /// Whether a buffer has been handed on, after which the limit between
     /// buffers applies rather than the first buffer's.
     private var hasHandedOn = false
+    /// When, by `clock`, the latest empty buffer came, the end of one of the
+    /// synthesizer's segments, while no buffer with audio has come since;
+    /// nil otherwise.
+    private var segmentEndedAt: TimeInterval?
+
+    /// The quiet after a segment's end, in seconds, after which a write
+    /// counts as finished although its synthesizer never said so
+    /// (`endIfQuietAfterSegmentEnd(limit:)`): a fallback for a synthesizer
+    /// that never reports `didFinish` for a write. Between buffers no voice
+    /// has paused more than 0.41 s (`StallLimits.standard`), so ten seconds
+    /// never cuts off a segment still to come.
+    static let quietAfterSegmentEnd: TimeInterval = 10
 
     /// A delivery to `onBuffer` that signals `wake` at its end, timing its stall limits by `clock`.
     init(
@@ -376,22 +430,24 @@ final class SpeechBufferDelivery {
     }
 
     /// On the synthesizer's delivering thread: hand `buffer` on, unless the
-    /// write has ended. A zero-length buffer is the synthesizer's last: it
-    /// wakes the waiting thread instead. A failure of `onBuffer` is kept,
-    /// ends the write, and wakes the waiting thread. Anything but PCM audio
-    /// is ignored.
+    /// write has ended. A zero-length buffer ends one of the synthesizer's
+    /// segments, not the write: it is not handed on, and only its time is
+    /// kept (`endIfQuietAfterSegmentEnd(limit:)`); the synthesizer's finish
+    /// ends the write. A failure of `onBuffer` is kept, ends the write, and
+    /// wakes the waiting thread. Anything but PCM audio is ignored.
     func deliver(_ buffer: AVAudioBuffer) {
         guard let pcm = buffer as? AVAudioPCMBuffer else { return }
         lock.withLock {
             guard !hasEnded else { return }
             guard pcm.frameLength > 0 else {
-                wake.signal()
+                segmentEndedAt = clock.now()
                 return
             }
             do {
                 try onBuffer(pcm)
                 lastProgress = clock.now()
                 hasHandedOn = true
+                segmentEndedAt = nil
             } catch {
                 keptFailure = error
                 hasEnded = true
@@ -404,6 +460,18 @@ final class SpeechBufferDelivery {
     /// it that is under way.
     func end() {
         lock.withLock { hasEnded = true }
+    }
+
+    /// End the write if a segment's end came `limit` seconds ago or more,
+    /// with no buffer of audio since, and say whether it did: the fallback
+    /// end of a write whose synthesizer never reports its finish. The time
+    /// is read under the lock, so a buffer handed on meanwhile counts.
+    func endIfQuietAfterSegmentEnd(limit: TimeInterval) -> Bool {
+        lock.withLock {
+            guard !hasEnded, let segmentEndedAt, clock.now() >= segmentEndedAt + limit else { return false }
+            hasEnded = true
+            return true
+        }
     }
 
     /// End the write if no buffer has come for its limit, and say whether it

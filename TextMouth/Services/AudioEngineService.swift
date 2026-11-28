@@ -90,39 +90,6 @@ struct SpeechRenderRequest: Sendable {
     }
 }
 
-/// Hears, on whatever thread the synthesizer calls it, that a render's
-/// synthesizer cancelled its utterance, and wakes the render queue, which
-/// waits for the utterance's last piece of audio. An utterance the engine
-/// refuses (see `SpeechMarkupGuard`) is cancelled before any piece, so
-/// nothing else would wake the queue until its two-minute limit: measured
-/// offline, a refused write made no buffer callback at all, and was
-/// cancelled within 0.03 s.
-///
-/// It is Sendable, as every delegate of a synthesizer is (the SDK marks
-/// `AVSpeechSynthesizerDelegate` `NS_SWIFT_SENDABLE`), and the compiler
-/// checks that it is: a final class whose only state is a semaphore and a
-/// flag kept in an `OSAllocatedUnfairLock`, both Sendable and never
-/// replaced.
-final class RenderCancellationObserver: NSObject, AVSpeechSynthesizerDelegate {
-    /// The render queue's wait for the last piece.
-    private let finished: DispatchSemaphore
-    /// Whether the synthesizer cancelled the utterance.
-    private let cancelled = OSAllocatedUnfairLock(initialState: false)
-
-    /// An observer that signals `finished` once the synthesizer cancels.
-    init(waking finished: DispatchSemaphore) {
-        self.finished = finished
-    }
-
-    /// Whether the synthesizer cancelled the utterance.
-    var wasCancelled: Bool { cancelled.withLock { $0 } }
-
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
-        cancelled.withLock { $0 = true }
-        finished.signal()
-    }
-}
-
 /// Identifies one render of an `AudioEngineService` (TODO Q06). Each render
 /// makes a fresh ticket and keeps it beside its synthesizer while it is the
 /// engine's current render; its completion, which runs on the main queue,
@@ -1150,9 +1117,9 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
                     completion(false)
                 }
             }
-            // A render that timed out may still be writing pieces, so its
-            // builder is left alone; one the synthesizer cancelled holds at
-            // most part of the speech, which the frame map could not fit.
+            // A render that timed out holds only part of the speech, as does
+            // one the synthesizer cancelled, which the frame map could not
+            // fit; no piece reaches the builder after the write's wait.
             guard written.isComplete else {
                 reportFailure()
                 return
@@ -1243,7 +1210,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
 
     /// On the render queue: write `spokenText` in `voice` with a fresh
     /// synthesizer, required for write()'s reliability, and wait for its
-    /// last piece, its cancel, or two minutes. The synthesizer is held as
+    /// finish, its cancel, or two minutes (`waitForWrite`). The synthesizer is held as
     /// the engine's current render under `ticket`, so that `cancelRender()`
     /// can stop it. A retry (`asRetry`) writes nothing once the engine has
     /// let go of the render (`RenderWrite.notWritten`), which it checks as
@@ -1269,24 +1236,40 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         utterance.prefersAssistiveTechnologySettings = false
 
         // Each piece is copied into the audio's blocks as it arrives,
-        // so no piece outlives the callback that delivers it.
+        // so no piece outlives the callback that delivers it. The delivery
+        // hands pieces to the builder only until the write ends, so the
+        // builder is this queue's alone once the wait below returns.
         let builder = RenderedSpeechAudio.Builder()
         let semaphore = DispatchSemaphore(value: 0)
-        // A cancel wakes the wait too: the synthesizer's delegate is
-        // weak, so the observer is held here until the wait returns.
-        let cancellation = RenderCancellationObserver(waking: semaphore)
-        renderSynth.delegate = cancellation
-
-        renderSynth.write(utterance) { buffer in
-            guard let pcm = buffer as? AVAudioPCMBuffer else { return }
-            if pcm.frameLength > 0 {
-                builder.append(pcm)
-            } else {
+        let clock = SystemSpeechBufferSynthesizer.defaultClock
+        clock.hold()
+        defer { clock.release() }
+        let delivery = SpeechBufferDelivery(onBuffer: { builder.append($0) }, waking: semaphore, clock: clock)
+        // The synthesizer's finish, not an empty buffer, ends the write: an
+        // empty buffer ends only one of its segments, about a sentence
+        // (`SpeechWriteRelay`). A cancel wakes the wait too. The
+        // synthesizer's delegate is weak, so the relay is held here until
+        // the wait returns.
+        let cancelled = OSAllocatedUnfairLock(initialState: false)
+        let relay = SpeechWriteRelay(
+            onFinish: { semaphore.signal() },
+            onCancel: {
+                cancelled.withLock { $0 = true }
                 semaphore.signal()
             }
-        }
+        )
+        renderSynth.delegate = relay
 
-        let result = semaphore.wait(timeout: .now() + 120)
+        renderSynth.write(utterance) { buffer in delivery.deliver(buffer) }
+
+        let delivered = Self.waitForWrite(
+            waking: semaphore,
+            delivery: delivery,
+            limit: Self.renderWriteLimit,
+            quietAfterSegmentEnd: SpeechBufferDelivery.quietAfterSegmentEnd
+        )
+        // However the wait ended, no piece reaches the builder after it.
+        delivery.end()
         renderSynth.delegate = nil
 
         // Whether this render was let go of while the write was waited for.
@@ -1295,10 +1278,45 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         renderLock.unlock()
         return RenderWrite(
             builder: builder,
-            deliveredItsLastPiece: result == .success,
+            deliveredItsLastPiece: delivered,
             wasLetGo: wasLetGo,
-            synthesizerCancelled: cancellation.wasCancelled
+            synthesizerCancelled: cancelled.withLock { $0 }
         )
+    }
+
+    /// The longest a render's write is waited for, in seconds.
+    static let renderWriteLimit: TimeInterval = 120
+
+    /// How often a render's wait looks at the quiet after a segment's end,
+    /// in seconds.
+    private static let renderWaitSlice: TimeInterval = 0.25
+
+    /// On the render queue: wait for a write's end, and say whether the
+    /// synthesizer delivered its last piece: `semaphore` signalled (the
+    /// synthesizer's finish or cancel), or `quietAfterSegmentEnd` seconds
+    /// with nothing after a segment's end, the fallback for a synthesizer
+    /// that never reports its finish. False after `limit` seconds.
+    ///
+    /// - Parameters:
+    ///   - semaphore: Signalled at the synthesizer's finish and its cancel.
+    ///   - delivery: The write's delivery, which knows when its latest
+    ///     segment ended.
+    ///   - limit: The longest wait, in seconds.
+    ///   - quietAfterSegmentEnd: The quiet after a segment's end that counts
+    ///     as the write's end, in seconds.
+    /// - Returns: Whether the write ended within `limit`.
+    static func waitForWrite(
+        waking semaphore: DispatchSemaphore,
+        delivery: SpeechBufferDelivery,
+        limit: TimeInterval,
+        quietAfterSegmentEnd: TimeInterval
+    ) -> Bool {
+        let deadline = DispatchTime.now() + limit
+        while semaphore.wait(timeout: min(deadline, .now() + renderWaitSlice)) == .timedOut {
+            if delivery.endIfQuietAfterSegmentEnd(limit: quietAfterSegmentEnd) { return true }
+            if DispatchTime.now() >= deadline { return false }
+        }
+        return true
     }
 
     /// The map from offsets into a text `charCount` UTF-16 units long to
